@@ -58,7 +58,7 @@ TabularisDB/registry/                       # monorepo root
 **Workspace tool:** Bun workspaces (`"workspaces": ["apps/*", "packages/*"]`) + Turbo. `bun install` at the root resolves every workspace.
 
 **`turbo.json` pipeline:**
-- `dev` — runs `apps/backend` and `apps/frontend` in parallel. Backend on `:3000`, frontend Vite dev on `:5173` with a proxy for `/api/*` and `/auth/*` to backend.
+- `dev` — runs `apps/backend` and `apps/frontend` in parallel. Backend on `:3000`, frontend Vite dev on `:5180` with a proxy for `/api/*` and `/auth/*` to backend.
 - `build` — `apps/backend#build` (no-op, runs `bun src/index.ts` only at runtime) and `apps/frontend#build` (Vite production build to `apps/frontend/dist`).
 - `test` — runs `bun test` in each workspace (frontend's test suite stays small).
 - `lint` — placeholder; no linter pinned by this spec.

@@ -185,7 +185,7 @@ export default defineConfig({
     },
   },
   server: {
-    port: 5173,
+    port: 5180,
   },
   build: {
     outDir: 'dist',
@@ -332,7 +332,7 @@ Expected: workspace dep `@tabularis/registry-frontend` resolves; no errors. Ther
 (cd apps/frontend && bun run dev > /tmp/fe-task1.log 2>&1) &
 SP=$!
 sleep 4
-curl -s -o /dev/null -w "HTTP %{http_code}\n" http://localhost:5173/
+curl -s -o /dev/null -w "HTTP %{http_code}\n" http://localhost:5180/
 kill $SP 2>/dev/null
 head -10 /tmp/fe-task1.log
 ```
@@ -1305,9 +1305,9 @@ EOF
 SP=$!
 sleep 5
 ls apps/frontend/src/routeTree.gen.ts 2>&1
-curl -s http://localhost:5173/ | grep -o 'Tabularis Registry' | head -1
+curl -s http://localhost:5180/ | grep -o 'Tabularis Registry' | head -1
 echo "---"
-curl -s -o /dev/null -w "HTTP %{http_code}\n" http://localhost:5173/
+curl -s -o /dev/null -w "HTTP %{http_code}\n" http://localhost:5180/
 kill $SP 2>/dev/null
 head -20 /tmp/fe-task5.log
 ```
@@ -1514,7 +1514,7 @@ BE=$!
 FE=$!
 sleep 4
 echo "=== home page contains hero ==="
-curl -s http://localhost:5173/ | grep -o 'plugin registry for Tabularis' | head -1
+curl -s http://localhost:5180/ | grep -o 'plugin registry for Tabularis' | head -1
 echo "=== backend has 8 plugins ==="
 curl -s http://localhost:3000/api/plugins | head -c 80
 echo
@@ -2669,5 +2669,5 @@ Reply: **DONE**, **DONE_WITH_CONCERNS**, **BLOCKED**, or **NEEDS_CONTEXT**. Unde
 - **Eden Treaty quirks.** Eden's chain shape is `api.<path-segments-as-properties>.<verb>(body, opts)`. Path params use a call syntax: `api.api.plugins({ slug: 'duckdb' }).get()`. Verbs are lowercase. Where the path has hyphens, the segments are camelCase or bracket-access (e.g., `api.api['submit-oauth']` would be needed if the path were `/api/submit-oauth`, but ours uses subdirectories so it's `api.api.submit.oauth`).
 - **TanStack Router file conventions.** `$param.tsx` becomes `:param`. `__root.tsx` is the layout. `index.tsx` inside a folder is the index for that folder. The Vite plugin generates `routeTree.gen.ts` automatically; it's gitignored.
 - **Tailwind v4 dark mode.** The `@custom-variant dark (&:where(.dark, .dark *))` CSS at-rule is what makes `dark:bg-foo` work in v4. Don't add a `darkMode: 'class'` JS config — that's v3.
-- **Cookie auth in dev.** Eden Treaty is initialized with `credentials: 'include'`. The backend cookie is set with `sameSite: 'lax'`; when the frontend at `:5173` POSTs to the backend at `:3000`, the browser MAY or may not include the cookie depending on the request method and SameSite policy. For login flows, the user lands on the backend via redirect anyway — the cookie is set on the backend origin. To use that cookie from the Vite dev server, accept that some auth flows need to be tested via the production build (serve the SPA from the backend itself).
+- **Cookie auth in dev.** Eden Treaty is initialized with `credentials: 'include'`. The backend cookie is set with `sameSite: 'lax'`; when the frontend at `:5180` POSTs to the backend at `:3000`, the browser MAY or may not include the cookie depending on the request method and SameSite policy. For login flows, the user lands on the backend via redirect anyway — the cookie is set on the backend origin. To use that cookie from the Vite dev server, accept that some auth flows need to be tested via the production build (serve the SPA from the backend itself).
 - **Backend is unchanged in this plan.** Plan A wired everything; Plan B only adds the frontend.
