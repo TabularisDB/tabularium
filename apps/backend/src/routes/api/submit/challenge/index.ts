@@ -4,7 +4,7 @@ import { challenges } from '../../../../db/schema'
 import { generateChallengeToken } from '../../../../lib/challenge'
 
 export default new Elysia()
-  .post('/api/submit/challenge', async ({ body }) => {
+  .post('/', async ({ body }) => {
     const token = generateChallengeToken()
     await db.insert(challenges).values({
       token,

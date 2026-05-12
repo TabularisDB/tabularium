@@ -5,7 +5,7 @@ import { pluginRequests } from '../../../db/schema'
 import { desc, count, eq } from 'drizzle-orm'
 
 export default new Elysia()
-  .get('/api/requests', async ({ query }) => {
+  .get('/', async ({ query }) => {
     const page = Number(query.page ?? 1)
     const limit = Math.min(Number(query.limit ?? 20), 100)
     const offset = (page - 1) * limit
@@ -29,7 +29,7 @@ export default new Elysia()
     }),
   })
   .use(authMiddleware)
-  .post('/api/requests', async ({ user, body, set }) => {
+  .post('/', async ({ user, body, set }) => {
     const existing = await db.query.pluginRequests.findFirst({
       where: eq(pluginRequests.slug, body.slug),
     })

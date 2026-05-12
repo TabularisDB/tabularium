@@ -23,7 +23,7 @@ function compareSemver(a: string, b: string): number {
 }
 
 export default new Elysia()
-  .post('/api/webhooks/release', async ({ request, set }) => {
+  .post('/', async ({ request, set }) => {
     const rawBody = await request.arrayBuffer()
     const bodyBuffer = Buffer.from(rawBody)
 

@@ -2,7 +2,7 @@ import { Elysia, t } from 'elysia'
 import { GitHub, Gitea, generateState, generateCodeVerifier } from 'arctic'
 
 export default new Elysia()
-  .get('/auth/:provider', async ({ params, query, set, cookie, redirect }) => {
+  .get('/', async ({ params, query, set, cookie, redirect }) => {
     const state = generateState()
 
     if (params.provider === 'github') {

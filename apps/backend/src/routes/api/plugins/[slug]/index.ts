@@ -4,7 +4,7 @@ import { plugins } from '../../../../db/schema'
 import { eq } from 'drizzle-orm'
 
 export default new Elysia()
-  .get('/api/plugins/:slug', async ({ params, set }) => {
+  .get('/', async ({ params, set }) => {
     const plugin = await db.query.plugins.findFirst({
       where: eq(plugins.id, params.slug),
       with: { releases: true },

@@ -6,7 +6,7 @@ import { signJwt } from '../../../lib/jwt'
 import { eq, and } from 'drizzle-orm'
 
 export default new Elysia()
-  .get('/auth/:provider/callback', async ({ params, query, cookie, set, redirect }) => {
+  .get('/', async ({ params, query, cookie, set, redirect }) => {
     const stateStr = cookie.oauth_state?.value
     if (!stateStr) {
       set.status = 400

@@ -4,7 +4,7 @@ import { plugins } from '../../../db/schema'
 import { like, or, count } from 'drizzle-orm'
 
 export default new Elysia()
-  .get('/api/plugins', async ({ query }) => {
+  .get('/', async ({ query }) => {
     const page = Number(query.page ?? 1)
     const limit = Math.min(Number(query.limit ?? 20), 100)
     const offset = (page - 1) * limit

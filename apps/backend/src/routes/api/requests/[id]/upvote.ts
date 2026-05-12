@@ -6,7 +6,7 @@ import { eq, and, sql } from 'drizzle-orm'
 
 export default new Elysia()
   .use(authMiddleware)
-  .post('/api/requests/:id/upvote', async ({ user, params, set }) => {
+  .post('/', async ({ user, params, set }) => {
     const request = await db.query.pluginRequests.findFirst({
       where: eq(pluginRequests.id, params.id),
     })

@@ -14,7 +14,7 @@ function generateWebhookSecret(): string {
 
 export default new Elysia()
   .use(authMiddleware)
-  .post('/api/submit/oauth', async ({ user, body, set }) => {
+  .post('/', async ({ user, body, set }) => {
     const { repoUrl, name, description } = body
 
     const dbUser = await db.query.users.findFirst({

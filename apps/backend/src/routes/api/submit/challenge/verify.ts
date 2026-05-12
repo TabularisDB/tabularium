@@ -14,7 +14,7 @@ function generateWebhookSecret(): string {
 
 export default new Elysia()
   .use(authMiddleware)
-  .post('/api/submit/challenge/verify', async ({ user, query, body, set }) => {
+  .post('/', async ({ user, query, body, set }) => {
     const challenge = await db.query.challenges.findFirst({
       where: eq(challenges.token, query.token),
     })
