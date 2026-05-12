@@ -22,7 +22,10 @@
     "arctic": "^3.7.0",
     "drizzle-orm": "^0.45.2",
     "elysia": "^1.4.28",
-    "elysia-file-router": "/home/newt/Projekte/Personal/TabularisDB/vendor/elysia-file-router",
+    "elysia-file-router": "file:/home/newt/Projekte/Personal/TabularisDB/vendor/elysia-file-router/elysia-file-router-0.0.1.tgz",
     "jose": "^6.2.3"
+  },
+  "overrides": {
+    "elysia": "^1.4.28"
   }
 }
