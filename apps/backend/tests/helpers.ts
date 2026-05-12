@@ -1,4 +1,7 @@
 // tests/helpers.ts
+import { Elysia } from 'elysia'
+import { fileRouter } from 'elysia-file-router'
+import { resolve } from 'node:path'
 import { db } from '../src/db'
 import * as schema from '../src/db/schema'
 
@@ -43,4 +46,18 @@ export async function makePlugin(
   }
   await db.insert(schema.plugins).values(plugin)
   return plugin
+}
+
+let cachedApp: Elysia | null = null
+
+export async function buildApp() {
+  if (cachedApp) return cachedApp
+  cachedApp = new Elysia({ systemRouter: false }).use(
+    await fileRouter({
+      dir: resolve(import.meta.dir, '../src/routes'),
+      types: false,
+      logLevel: 'silent',
+    }),
+  )
+  return cachedApp
 }

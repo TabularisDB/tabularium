@@ -1,14 +1,8 @@
 import { describe, it, expect, beforeEach } from 'bun:test'
-import { Elysia } from 'elysia'
-import { clearDb, makeUser, makePlugin } from '../helpers'
+import { clearDb, makeUser, makePlugin, buildApp } from '../helpers'
 import { db } from '../../src/db'
 import { plugins, releases } from '../../src/db/schema'
 import { eq } from 'drizzle-orm'
-
-async function buildWebhookApp() {
-  const { default: webhookRoute } = await import('../../src/routes/api/webhooks/release')
-  return new Elysia().use(webhookRoute)
-}
 
 function makeGithubReleasePayload(repoUrl: string, tagName: string, assetName: string) {
   return {
@@ -35,7 +29,7 @@ describe('POST /api/webhooks/release', () => {
 
   it('returns 404 when plugin not found for repo URL', async () => {
     const body = JSON.stringify(makeGithubReleasePayload('https://github.com/nobody/repo', 'v1.0.0', 'plugin-linux-x64.zip'))
-    const app = await buildWebhookApp()
+    const app = await buildApp()
     const res = await app.handle(
       new Request('http://localhost/api/webhooks/release', {
         method: 'POST',
@@ -58,7 +52,7 @@ describe('POST /api/webhooks/release', () => {
     })
 
     const body = JSON.stringify(makeGithubReleasePayload(plugin.repoUrl, 'v1.0.0', 'plugin-linux-x64.zip'))
-    const app = await buildWebhookApp()
+    const app = await buildApp()
     const res = await app.handle(
       new Request('http://localhost/api/webhooks/release', {
         method: 'POST',
@@ -84,7 +78,7 @@ describe('POST /api/webhooks/release', () => {
     const body = JSON.stringify(payload)
     const sig = await signPayload('test-secret', body)
 
-    const app = await buildWebhookApp()
+    const app = await buildApp()
     const res = await app.handle(
       new Request('http://localhost/api/webhooks/release', {
         method: 'POST',
@@ -122,7 +116,7 @@ describe('POST /api/webhooks/release', () => {
     const body = JSON.stringify(payload)
     const sig = await signPayload('test-secret', body)
 
-    const app = await buildWebhookApp()
+    const app = await buildApp()
     const res = await app.handle(
       new Request('http://localhost/api/webhooks/release', {
         method: 'POST',

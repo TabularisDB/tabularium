@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'bun:test'
 import { Elysia } from 'elysia'
 import { authMiddleware } from '../../src/middleware/auth'
-import { clearDb, makeUser } from '../helpers'
+import { clearDb, makeUser, buildApp } from '../helpers'
 
 describe('authMiddleware', () => {
   beforeEach(clearDb)
@@ -53,8 +53,7 @@ describe('authMiddleware', () => {
 
 describe('GET /auth/:provider', () => {
   it('redirects to GitHub auth URL and sets state cookie', async () => {
-    const { default: authStart } = await import('../../src/routes/auth/[provider]/index')
-    const app = new Elysia().use(authStart)
+    const app = await buildApp()
 
     const res = await app.handle(new Request('http://localhost/auth/github'))
     expect(res.status).toBe(302)
@@ -66,8 +65,7 @@ describe('GET /auth/:provider', () => {
   })
 
   it('redirects to Gitea auth URL for gitea provider with instance param', async () => {
-    const { default: authStart } = await import('../../src/routes/auth/[provider]/index')
-    const app = new Elysia().use(authStart)
+    const app = await buildApp()
 
     const res = await app.handle(
       new Request('http://localhost/auth/gitea?instance=https://codeberg.org'),
@@ -78,8 +76,7 @@ describe('GET /auth/:provider', () => {
   })
 
   it('returns 400 for unknown provider', async () => {
-    const { default: authStart } = await import('../../src/routes/auth/[provider]/index')
-    const app = new Elysia().use(authStart)
+    const app = await buildApp()
 
     const res = await app.handle(new Request('http://localhost/auth/twitter'))
     expect(res.status).toBe(400)
@@ -90,7 +87,6 @@ describe('GET /auth/me', () => {
   beforeEach(clearDb)
 
   it('returns current user for valid JWT', async () => {
-    const { default: meRoute } = await import('../../src/routes/auth/me')
     const user = await makeUser()
     const { signJwt } = await import('../../src/lib/jwt')
     const token = await signJwt({
@@ -100,7 +96,7 @@ describe('GET /auth/me', () => {
       providerInstanceUrl: user.providerInstanceUrl,
     })
 
-    const app = new Elysia().use(meRoute)
+    const app = await buildApp()
     const res = await app.handle(
       new Request('http://localhost/auth/me', {
         headers: { Authorization: `Bearer ${token}` },

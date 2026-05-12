@@ -1,21 +1,14 @@
 import { describe, it, expect, beforeEach } from 'bun:test'
-import { Elysia } from 'elysia'
-import { clearDb, makeUser } from '../helpers'
+import { clearDb, makeUser, buildApp } from '../helpers'
 import { signJwt } from '../../src/lib/jwt'
 import { db } from '../../src/db'
 import { pluginRequests } from '../../src/db/schema'
-
-async function buildRequestsApp() {
-  const { default: requestsIndex } = await import('../../src/routes/api/requests/index')
-  const { default: upvoteRoute } = await import('../../src/routes/api/requests/[id]/upvote')
-  return new Elysia().use(requestsIndex).use(upvoteRoute)
-}
 
 describe('GET /api/requests', () => {
   beforeEach(clearDb)
 
   it('returns empty list', async () => {
-    const app = await buildRequestsApp()
+    const app = await buildApp()
     const res = await app.handle(new Request('http://localhost/api/requests'))
     expect(res.status).toBe(200)
     const data = await res.json() as { total: number; requests: unknown[] }
@@ -29,7 +22,7 @@ describe('GET /api/requests', () => {
       { id: crypto.randomUUID(), slug: 'mysql', name: 'MySQL', description: 'MySQL', requesterId: user.id, upvotes: 10 },
     ])
 
-    const app = await buildRequestsApp()
+    const app = await buildApp()
     const res = await app.handle(new Request('http://localhost/api/requests?sort=upvotes'))
     const data = await res.json() as { requests: Array<{ slug: string }> }
     expect(data.requests[0].slug).toBe('mysql')
@@ -40,7 +33,7 @@ describe('POST /api/requests', () => {
   beforeEach(clearDb)
 
   it('returns 401 without auth', async () => {
-    const app = await buildRequestsApp()
+    const app = await buildApp()
     const res = await app.handle(
       new Request('http://localhost/api/requests', {
         method: 'POST',
@@ -54,7 +47,7 @@ describe('POST /api/requests', () => {
   it('creates a request and returns 409 on duplicate slug', async () => {
     const user = await makeUser()
     const token = await signJwt({ sub: user.id, username: user.username, provider: 'github', providerInstanceUrl: null })
-    const app = await buildRequestsApp()
+    const app = await buildApp()
 
     const res1 = await app.handle(
       new Request('http://localhost/api/requests', {
@@ -87,7 +80,7 @@ describe('POST /api/requests/:id/upvote', () => {
       id: requestId, slug: 'elastic', name: 'Elasticsearch', description: 'Search engine', requesterId: user.id, upvotes: 0,
     })
 
-    const app = await buildRequestsApp()
+    const app = await buildApp()
 
     const res1 = await app.handle(
       new Request(`http://localhost/api/requests/${requestId}/upvote`, {

@@ -1,21 +1,15 @@
 import { describe, it, expect, beforeEach, spyOn } from 'bun:test'
-import { Elysia } from 'elysia'
-import { clearDb, makeUser } from '../helpers'
+import { clearDb, makeUser, buildApp } from '../helpers'
 import { signJwt } from '../../src/lib/jwt'
 import { db } from '../../src/db'
 import { plugins, challenges } from '../../src/db/schema'
 import { eq } from 'drizzle-orm'
 
-async function buildSubmitApp() {
-  const { default: submitOauth } = await import('../../src/routes/api/submit/oauth')
-  return new Elysia().use(submitOauth)
-}
-
 describe('POST /api/submit/oauth', () => {
   beforeEach(clearDb)
 
   it('returns 401 without auth', async () => {
-    const app = await buildSubmitApp()
+    const app = await buildApp()
     const res = await app.handle(
       new Request('http://localhost/api/submit/oauth', {
         method: 'POST',
@@ -37,7 +31,7 @@ describe('POST /api/submit/oauth', () => {
       return new Response('Not found', { status: 404 })
     })
 
-    const app = await buildSubmitApp()
+    const app = await buildApp()
     const res = await app.handle(
       new Request('http://localhost/api/submit/oauth', {
         method: 'POST',
@@ -69,7 +63,7 @@ describe('POST /api/submit/oauth', () => {
       new Response(JSON.stringify({ owner: { login: 'bob' } }), { status: 200 }),
     )
 
-    const app = await buildSubmitApp()
+    const app = await buildApp()
     const res = await app.handle(
       new Request('http://localhost/api/submit/oauth', {
         method: 'POST',
@@ -83,17 +77,11 @@ describe('POST /api/submit/oauth', () => {
   })
 })
 
-async function buildChallengeApp() {
-  const { default: challengeIndex } = await import('../../src/routes/api/submit/challenge/index')
-  const { default: challengeVerify } = await import('../../src/routes/api/submit/challenge/verify')
-  return new Elysia().use(challengeIndex).use(challengeVerify)
-}
-
 describe('POST /api/submit/challenge', () => {
   beforeEach(clearDb)
 
   it('creates a challenge and returns a token', async () => {
-    const app = await buildChallengeApp()
+    const app = await buildApp()
     const res = await app.handle(
       new Request('http://localhost/api/submit/challenge', {
         method: 'POST',
@@ -112,7 +100,7 @@ describe('POST /api/submit/challenge/verify', () => {
   beforeEach(clearDb)
 
   it('returns 401 without auth', async () => {
-    const app = await buildChallengeApp()
+    const app = await buildApp()
     const res = await app.handle(
       new Request('http://localhost/api/submit/challenge/verify?token=abc', {
         method: 'POST',
@@ -140,7 +128,7 @@ describe('POST /api/submit/challenge/verify', () => {
       new Response(challengeToken, { status: 200 }),
     )
 
-    const app = await buildChallengeApp()
+    const app = await buildApp()
     const res = await app.handle(
       new Request(`http://localhost/api/submit/challenge/verify?token=${challengeToken}`, {
         method: 'POST',

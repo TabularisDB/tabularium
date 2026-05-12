@@ -1,15 +1,7 @@
 import { describe, it, expect, beforeEach } from 'bun:test'
-import { Elysia } from 'elysia'
 import { db } from '../../src/db'
 import { releases } from '../../src/db/schema'
-import { clearDb, makeUser, makePlugin } from '../helpers'
-
-async function buildApp() {
-  const { default: pluginsIndex } = await import('../../src/routes/api/plugins/index')
-  const { default: pluginSlug } = await import('../../src/routes/api/plugins/[slug]/index')
-  const { default: pluginLatest } = await import('../../src/routes/api/plugins/[slug]/latest')
-  return new Elysia().use(pluginsIndex).use(pluginSlug).use(pluginLatest)
-}
+import { clearDb, makeUser, makePlugin, buildApp } from '../helpers'
 
 describe('GET /api/plugins', () => {
   beforeEach(clearDb)
