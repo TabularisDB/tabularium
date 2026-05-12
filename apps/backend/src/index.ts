@@ -27,13 +27,15 @@ const app = new Elysia({ systemRouter: false })
       },
     }),
   )
-  .use(staticPlugin({ assets: resolve('../frontend/dist'), prefix: '/' }))
   .use(await fileRouter({ dir: resolve('./src/routes'), types: false }))
-  .onError(({ code, path, set }) => {
-    if (code === 'NOT_FOUND' && !path.startsWith('/api') && !path.startsWith('/auth') && !path.startsWith('/openapi')) {
-      set.headers['content-type'] = 'text/html; charset=utf-8'
-      return Bun.file(resolve('../frontend/dist/index.html'))
+  .use(staticPlugin({ assets: resolve('../frontend/dist'), prefix: '/', noCache: false }))
+  .get('/*', ({ path, set }) => {
+    if (path.startsWith('/api') || path.startsWith('/auth') || path.startsWith('/openapi')) {
+      set.status = 404
+      return { error: 'Not found' }
     }
+    set.headers['content-type'] = 'text/html; charset=utf-8'
+    return Bun.file(resolve('../frontend/dist/index.html'))
   })
   .listen(Number(Bun.env.PORT ?? 3000))
 
