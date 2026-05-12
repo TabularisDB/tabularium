@@ -93,4 +93,6 @@ export default new Elysia()
     }
 
     return { ok: true, version, assets: Object.keys(assetMap) }
+  }, {
+    detail: { tags: ['Webhooks'] },
   })

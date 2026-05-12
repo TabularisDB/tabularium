@@ -71,6 +71,7 @@ export default new Elysia()
       webhookUrl: `${Bun.env.BASE_URL}/api/webhooks/release`,
     }
   }, {
+    detail: { tags: ['Submit'] },
     body: t.Object({
       repoUrl: t.String(),
       name: t.String(),

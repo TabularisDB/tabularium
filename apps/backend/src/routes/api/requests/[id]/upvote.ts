@@ -57,4 +57,6 @@ export default new Elysia()
       })
       return { upvotes: updated!.upvotes, voted: true }
     }
+  }, {
+    detail: { tags: ['Requests'] },
   })

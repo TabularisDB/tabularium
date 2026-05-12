@@ -52,6 +52,7 @@ export default new Elysia()
     set.status = 400
     return { error: `Unknown provider: ${params.provider}` }
   }, {
+    detail: { tags: ['Auth'] },
     query: t.Object({
       instance: t.Optional(t.String()),
     }),

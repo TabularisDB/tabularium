@@ -41,6 +41,7 @@ export default new Elysia()
       download_url: downloadUrl,
     }
   }, {
+    detail: { tags: ['Plugins'] },
     query: t.Object({
       os: t.String(),
       arch: t.String(),

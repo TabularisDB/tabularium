@@ -43,6 +43,7 @@ export default new Elysia()
       })),
     }
   }, {
+    detail: { tags: ['Plugins'] },
     query: t.Object({
       search: t.Optional(t.String()),
       page: t.Optional(t.String()),

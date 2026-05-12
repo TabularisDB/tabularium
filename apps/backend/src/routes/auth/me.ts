@@ -8,4 +8,6 @@ export default new Elysia()
     username: user.username,
     provider: user.provider,
     providerInstanceUrl: user.providerInstanceUrl,
-  }))
+  }), {
+    detail: { tags: ['Auth'] },
+  })

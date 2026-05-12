@@ -17,5 +17,6 @@ export default new Elysia()
       instructions: `Place this token in a file named .tabularis (plain text) or tabularis.json (as {"tabularis_token":"${token}"}) at the root of ${body.repoUrl} on the main or master branch. Then call POST /api/submit/challenge/verify?token=${token}`,
     }
   }, {
+    detail: { tags: ['Submit'] },
     body: t.Object({ repoUrl: t.String() }),
   })

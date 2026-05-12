@@ -23,4 +23,6 @@ export default new Elysia()
         assets: JSON.parse(r.assets) as Record<string, string>,
       })),
     }
+  }, {
+    detail: { tags: ['Plugins'] },
   })

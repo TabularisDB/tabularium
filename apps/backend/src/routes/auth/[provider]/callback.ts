@@ -123,6 +123,7 @@ export default new Elysia()
       return { error: 'Internal error during auth' }
     }
   }, {
+    detail: { tags: ['Auth'] },
     query: t.Object({
       code: t.String(),
       state: t.String(),

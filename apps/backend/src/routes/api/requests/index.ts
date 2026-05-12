@@ -22,6 +22,7 @@ export default new Elysia()
 
     return { total, page, limit, requests: rows }
   }, {
+    detail: { tags: ['Requests'] },
     query: t.Object({
       page: t.Optional(t.String()),
       limit: t.Optional(t.String()),
@@ -48,6 +49,7 @@ export default new Elysia()
     await db.insert(pluginRequests).values(request)
     return request
   }, {
+    detail: { tags: ['Requests'] },
     body: t.Object({
       slug: t.String({ pattern: '^[a-z0-9-]+$' }),
       name: t.String(),
