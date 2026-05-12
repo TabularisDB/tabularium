@@ -4,6 +4,33 @@ import { db } from '../../../db'
 import { pluginRequests } from '../../../db/schema'
 import { desc, count, eq } from 'drizzle-orm'
 
+const requestSchema = t.Object({
+  id: t.String(),
+  slug: t.String(),
+  name: t.String(),
+  description: t.String(),
+  requesterId: t.String(),
+  upvotes: t.Number(),
+  createdAt: t.Number(),
+})
+
+const requestListResponseSchema = t.Object({
+  total: t.Number(),
+  page: t.Number(),
+  limit: t.Number(),
+  requests: t.Array(requestSchema),
+})
+
+const createRequestResponseSchema = t.Object({
+  id: t.String(),
+  slug: t.String(),
+  name: t.String(),
+  description: t.String(),
+  requesterId: t.String(),
+})
+
+const errorSchema = t.Object({ error: t.String() })
+
 export default new Elysia()
   .get('/', async ({ query }) => {
     const page = Number(query.page ?? 1)
@@ -28,6 +55,7 @@ export default new Elysia()
       limit: t.Optional(t.String()),
       sort: t.Optional(t.Union([t.Literal('upvotes'), t.Literal('recent')])),
     }),
+    response: { 200: requestListResponseSchema },
   })
   .use(authMiddleware)
   .post('/', async ({ user, body, set }) => {
@@ -55,4 +83,8 @@ export default new Elysia()
       name: t.String(),
       description: t.String(),
     }),
+    response: {
+      200: createRequestResponseSchema,
+      409: errorSchema,
+    },
   })

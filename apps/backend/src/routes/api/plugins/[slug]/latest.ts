@@ -3,6 +3,14 @@ import { db } from '../../../../db'
 import { plugins, releases } from '../../../../db/schema'
 import { eq, and } from 'drizzle-orm'
 
+const latestSuccessSchema = t.Object({
+  version: t.String(),
+  min_tabularis_version: t.Nullable(t.String()),
+  download_url: t.String(),
+})
+
+const errorSchema = t.Object({ error: t.String() })
+
 export default new Elysia()
   .get('/', async ({ params, query, set }) => {
     const plugin = await db.query.plugins.findFirst({
@@ -46,4 +54,9 @@ export default new Elysia()
       os: t.String(),
       arch: t.String(),
     }),
+    response: {
+      200: latestSuccessSchema,
+      404: errorSchema,
+      422: errorSchema,
+    },
   })

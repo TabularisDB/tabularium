@@ -3,6 +3,36 @@ import { db } from '../../../db'
 import { plugins } from '../../../db/schema'
 import { like, or, count } from 'drizzle-orm'
 
+const releaseSchema = t.Object({
+  id: t.String(),
+  pluginId: t.String(),
+  version: t.String(),
+  minTabularisVersion: t.Nullable(t.String()),
+  assets: t.Record(t.String(), t.String()),
+  createdAt: t.Number(),
+})
+
+const pluginSummarySchema = t.Object({
+  id: t.String(),
+  ownerId: t.String(),
+  name: t.String(),
+  description: t.String(),
+  author: t.String(),
+  repoUrl: t.String(),
+  homepage: t.String(),
+  latestVersion: t.Nullable(t.String()),
+  createdAt: t.Number(),
+  updatedAt: t.Number(),
+  releases: t.Array(releaseSchema),
+})
+
+const pluginListResponseSchema = t.Object({
+  total: t.Number(),
+  page: t.Number(),
+  limit: t.Number(),
+  plugins: t.Array(pluginSummarySchema),
+})
+
 export default new Elysia()
   .get('/', async ({ query }) => {
     const page = Number(query.page ?? 1)
@@ -49,4 +79,5 @@ export default new Elysia()
       page: t.Optional(t.String()),
       limit: t.Optional(t.String()),
     }),
+    response: { 200: pluginListResponseSchema },
   })
