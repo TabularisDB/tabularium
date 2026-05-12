@@ -1,5 +1,5 @@
 node_modules/
+.turbo/
 dist/
-data/
 .env
-routes.ts
+.env.local

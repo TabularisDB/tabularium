@@ -1,0 +1,32 @@
+{
+  "name": "@tabularis/registry-backend",
+  "version": "0.0.0",
+  "private": true,
+  "module": "src/index.ts",
+  "type": "module",
+  "scripts": {
+    "dev": "bun --hot src/index.ts",
+    "start": "bun src/index.ts",
+    "build": "echo 'no build step — Bun runs TS directly'",
+    "test": "bun test",
+    "seed": "bun src/db/seed.ts",
+    "migrate": "bunx drizzle-kit migrate",
+    "generate": "bunx drizzle-kit generate"
+  },
+  "devDependencies": {
+    "@tabularis/tsconfig": "workspace:*",
+    "drizzle-kit": "^0.31.10"
+  },
+  "peerDependencies": {
+    "typescript": "^5"
+  },
+  "dependencies": {
+    "@elysiajs/openapi": "^1.4.5",
+    "@elysiajs/static": "^1.4.10",
+    "arctic": "^3.7.0",
+    "drizzle-orm": "^0.45.2",
+    "elysia": "^1.4.28",
+    "elysia-file-router": "file:../../../vendor/elysia-file-router/elysia-file-router-0.0.1.tgz",
+    "jose": "^6.2.3"
+  }
+}
