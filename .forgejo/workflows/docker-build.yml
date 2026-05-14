@@ -23,7 +23,7 @@ jobs:
   build:
     runs-on: codeberg-small
     container:
-      image: node:20-bookworm-slim
+      image: node:24-bookworm-slim
     steps:
       - name: Install buildah
         run: |
