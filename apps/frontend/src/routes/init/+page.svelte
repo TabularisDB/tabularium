@@ -4,6 +4,9 @@
 	import ShieldCheck from '@lucide/svelte/icons/shield-check'
 	import LogIn from '@lucide/svelte/icons/log-in'
 	import Database from '@lucide/svelte/icons/database'
+	import Check from '@lucide/svelte/icons/check'
+	import X from '@lucide/svelte/icons/x'
+	import Plug from '@lucide/svelte/icons/plug'
 	import Button from '$components/ui/Button.svelte'
 	import Card from '$components/ui/Card.svelte'
 	import CardContent from '$components/ui/CardContent.svelte'
@@ -12,18 +15,53 @@
 	import CardTitle from '$components/ui/CardTitle.svelte'
 	import Input from '$components/ui/Input.svelte'
 	import Label from '$components/ui/Label.svelte'
+	import Select from '$components/ui/Select.svelte'
 	import { eden } from '$lib/eden'
 	import type { InitStatus, InitDefaults } from '$lib/types'
 	import { m } from '$lib/paraglide/messages'
 
 	type Phase = 'checking' | 'login' | 'wizard' | 'submitting' | 'waiting' | 'done'
+	type Dialect = 'pg' | 'mysql' | 'sqlite'
 
 	let phase = $state<Phase>('checking')
 	let formError = $state<string | null>(null)
 
 	let bootEmail = $state('admin@example.com')
 	let bootPassword = $state('')
-	let dbUrl = $state('')
+
+	let dialect = $state<Dialect>('pg')
+	let useUrlInput = $state(false)
+	let rawUrl = $state('')
+
+	let host = $state('localhost')
+	let port = $state<number>(5432)
+	let dbName = $state('registry')
+	let dbUser = $state('registry')
+	let dbPass = $state('')
+	let sqlitePath = $state('./data/registry.sqlite')
+
+	let probeState = $state<'idle' | 'probing' | 'ok' | 'failed'>('idle')
+	let probeError = $state<string | null>(null)
+
+	const computedUrl = $derived.by(() => {
+		if (useUrlInput) return rawUrl.trim()
+		if (dialect === 'sqlite') return `sqlite:${sqlitePath.trim()}`
+		const scheme = dialect === 'pg' ? 'postgres' : 'mysql'
+		const auth = dbUser ? `${encodeURIComponent(dbUser)}${dbPass ? `:${encodeURIComponent(dbPass)}` : ''}@` : ''
+		const portPart = port ? `:${port}` : ''
+		return `${scheme}://${auth}${host.trim()}${portPart}/${encodeURIComponent(dbName.trim())}`
+	})
+
+	$effect(() => {
+		void computedUrl
+		probeState = 'idle'
+		probeError = null
+	})
+
+	$effect(() => {
+		if (dialect === 'pg' && port === 3306) port = 5432
+		if (dialect === 'mysql' && port === 5432) port = 3306
+	})
 
 	onMount(async () => {
 		try {
@@ -49,10 +87,54 @@
 			const defaultsRes = await eden.api.init.defaults.get()
 			if (defaultsRes.error) throw new Error(typeof defaultsRes.error.value === 'string' ? defaultsRes.error.value : ((defaultsRes.error.value as { error?: string })?.error ?? `Request failed (${defaultsRes.error.status})`))
 			const defaults = defaultsRes.data as InitDefaults
-			dbUrl = defaults.database.url
+			seedFromDefaults(defaults.database.url)
 			phase = 'wizard'
 		} catch (e) {
 			formError = e instanceof Error ? e.message : m.init_login_failed()
+		}
+	}
+
+	function seedFromDefaults(url: string) {
+		if (!url) return
+		rawUrl = url
+		if (/^sqlite:/i.test(url) || (!/^postgres(ql)?:\/\//i.test(url) && !/^mysql:\/\//i.test(url))) {
+			dialect = 'sqlite'
+			sqlitePath = url.replace(/^sqlite:(\/\/)?/, '') || './data/registry.sqlite'
+			return
+		}
+		try {
+			const u = new URL(url.replace(/^postgresql:/, 'postgres:'))
+			dialect = u.protocol.startsWith('mysql') ? 'mysql' : 'pg'
+			host = u.hostname || 'localhost'
+			port = Number(u.port) || (dialect === 'pg' ? 5432 : 3306)
+			dbUser = decodeURIComponent(u.username || '')
+			dbPass = decodeURIComponent(u.password || '')
+			dbName = decodeURIComponent(u.pathname.replace(/^\//, '')) || 'registry'
+		} catch {
+			useUrlInput = true
+		}
+	}
+
+	async function testConnection() {
+		probeState = 'probing'
+		probeError = null
+		try {
+			const { data, error } = await eden.api.init['test-db'].post({ url: computedUrl })
+			if (error) {
+				probeState = 'failed'
+				probeError = typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `HTTP ${error.status}`)
+				return
+			}
+			const result = data as { ok: boolean; dialect: string; error?: string }
+			if (result.ok) {
+				probeState = 'ok'
+			} else {
+				probeState = 'failed'
+				probeError = result.error ?? m.init_test_db_failed()
+			}
+		} catch (e) {
+			probeState = 'failed'
+			probeError = e instanceof Error ? e.message : m.init_test_db_failed()
 		}
 	}
 
@@ -60,7 +142,7 @@
 		e.preventDefault()
 		formError = null
 		phase = 'submitting'
-		const { error } = await eden.api.init.complete.post({ database: { url: dbUrl } })
+		const { error } = await eden.api.init.complete.post({ database: { url: computedUrl } })
 		if (error) {
 			const v = error.value as { error?: string; detail?: string } | string | null
 			formError = (typeof v === 'object' && v?.detail) ? v.detail : (typeof v === 'string' ? v : (v?.error ?? m.init_setup_failed()))
@@ -149,20 +231,84 @@
 			<CardContent>
 				<form onsubmit={submitWizard} class="space-y-4">
 					<div class="space-y-2">
-						<Label for="dbUrl">{m.init_connection_url()}</Label>
-						<Input
-							id="dbUrl"
-							bind:value={dbUrl}
-							placeholder="postgres://user:pass@host:5432/db"
-							required
-							disabled={phase === 'submitting'}
-						/>
+						<Label for="dbDialect">{m.init_db_type()}</Label>
+						<Select id="dbDialect" bind:value={dialect} disabled={phase === 'submitting' || useUrlInput}>
+							<option value="pg">PostgreSQL</option>
+							<option value="mysql">MySQL</option>
+							<option value="sqlite">SQLite</option>
+						</Select>
 					</div>
+
+					{#if !useUrlInput}
+						{#if dialect === 'sqlite'}
+							<div class="space-y-2">
+								<Label for="sqlitePath">{m.init_db_file_path()}</Label>
+								<Input id="sqlitePath" bind:value={sqlitePath} placeholder="./data/registry.sqlite" required disabled={phase === 'submitting'} />
+							</div>
+						{:else}
+							<div class="grid grid-cols-3 gap-2">
+								<div class="col-span-2 space-y-2">
+									<Label for="dbHost">{m.init_db_host()}</Label>
+									<Input id="dbHost" bind:value={host} placeholder="localhost" required disabled={phase === 'submitting'} />
+								</div>
+								<div class="space-y-2">
+									<Label for="dbPort">{m.init_db_port()}</Label>
+									<Input id="dbPort" type="number" bind:value={port} required disabled={phase === 'submitting'} />
+								</div>
+							</div>
+							<div class="space-y-2">
+								<Label for="dbName">{m.init_db_name()}</Label>
+								<Input id="dbName" bind:value={dbName} placeholder="registry" required disabled={phase === 'submitting'} />
+							</div>
+							<div class="grid grid-cols-2 gap-2">
+								<div class="space-y-2">
+									<Label for="dbUser">{m.init_db_user()}</Label>
+									<Input id="dbUser" bind:value={dbUser} placeholder="registry" required disabled={phase === 'submitting'} />
+								</div>
+								<div class="space-y-2">
+									<Label for="dbPass">{m.init_db_password()}</Label>
+									<Input id="dbPass" type="password" bind:value={dbPass} autocomplete="off" disabled={phase === 'submitting'} />
+								</div>
+							</div>
+						{/if}
+					{:else}
+						<div class="space-y-2">
+							<Label for="rawUrl">{m.init_connection_url()}</Label>
+							<Input id="rawUrl" bind:value={rawUrl} placeholder="postgres://user:pass@host:5432/db" required disabled={phase === 'submitting'} />
+						</div>
+					{/if}
+
+					<div class="flex items-center justify-between text-xs text-muted-foreground">
+						<button type="button" class="text-primary hover:underline" onclick={() => (useUrlInput = !useUrlInput)} disabled={phase === 'submitting'}>
+							{useUrlInput ? m.init_db_use_form() : m.init_db_use_url()}
+						</button>
+						<code class="font-mono text-[10px] opacity-70 truncate max-w-[60%]" title={computedUrl}>{computedUrl}</code>
+					</div>
+
+					<div class="flex items-center gap-2">
+						<Button type="button" variant="outline" size="sm" onclick={testConnection} disabled={phase === 'submitting' || probeState === 'probing' || !computedUrl}>
+							<Plug class="h-3.5 w-3.5" />
+							{probeState === 'probing' ? m.init_db_testing() : m.init_db_test()}
+						</Button>
+						{#if probeState === 'ok'}
+							<span class="inline-flex items-center gap-1 text-xs text-success"><Check class="h-3.5 w-3.5" />{m.init_db_test_ok()}</span>
+						{:else if probeState === 'failed'}
+							<span class="inline-flex items-center gap-1 text-xs text-destructive"><X class="h-3.5 w-3.5" />{m.init_db_test_failed()}</span>
+						{/if}
+					</div>
+
+					{#if probeError}
+						<div class="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive break-all">
+							{probeError}
+						</div>
+					{/if}
+
 					{#if formError}
 						<div class="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive break-all">
 							{formError}
 						</div>
 					{/if}
+
 					<Button type="submit" disabled={phase === 'submitting'} class="w-full">
 						{phase === 'submitting' ? m.init_setting_up() : m.init_complete_setup()}
 					</Button>
