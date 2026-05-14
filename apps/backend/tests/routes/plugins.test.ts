@@ -145,3 +145,34 @@ describe('GET /api/plugins ?kind filter', () => {
     expect(data.total).toBe(0)
   })
 })
+
+describe('GET /api/plugins facets.kinds', () => {
+  beforeEach(clearDb)
+
+  it('counts plugins per registered kind, including multi-kind tags', async () => {
+    await createKind({ key: 'theme', label: 'Themes', description: null })
+    await createKind({ key: 'snippet', label: 'Snippets', description: null })
+    const user = await makeUser()
+    await makePlugin(user.id, { id: 'a', tags: JSON.stringify(['theme', 'dark']) })
+    await makePlugin(user.id, { id: 'b', tags: JSON.stringify(['snippet']) })
+    await makePlugin(user.id, { id: 'c', tags: JSON.stringify(['theme', 'snippet']) })
+
+    const app = await buildApp()
+    const res = await app.handle(new Request('http://localhost/api/plugins'))
+    const data = await res.json() as { facets: { kinds: Array<{ key: string; count: number }> } }
+    const byKey = Object.fromEntries(data.facets.kinds.map((k) => [k.key, k.count]))
+    expect(byKey.theme).toBe(2)
+    expect(byKey.snippet).toBe(2)
+  })
+
+  it('omits kinds that are not in the registry', async () => {
+    await createKind({ key: 'theme', label: 'Themes', description: null })
+    const user = await makeUser()
+    await makePlugin(user.id, { id: 'a', tags: JSON.stringify(['theme', 'unknown-bucket']) })
+
+    const app = await buildApp()
+    const res = await app.handle(new Request('http://localhost/api/plugins'))
+    const data = await res.json() as { facets: { kinds: Array<{ key: string }> } }
+    expect(data.facets.kinds.map((k) => k.key)).toEqual(['theme'])
+  })
+})

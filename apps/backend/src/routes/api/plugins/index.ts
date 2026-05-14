@@ -3,7 +3,7 @@ import { db } from '../../../db'
 import { plugins } from '../../../db/schema'
 import { like, or, count, and, eq } from 'drizzle-orm'
 import { projectPlugin } from '../../../lib/plugin-projection'
-import { isKindKey } from '../../../lib/kinds'
+import { getKinds, isKindKey } from '../../../lib/kinds'
 
 const screenshotSchema = t.Object({
   url: t.String(),
@@ -132,12 +132,36 @@ export default new Elysia()
       .map((c) => ({ value: c.value as string, count: c.count }))
       .sort((a, b) => b.count - a.count)
 
+    const kinds = getKinds()
+    let kindFacet: Array<{ key: string; label: string; count: number }> = []
+    if (kinds.length > 0) {
+      const tagRows = await db
+        .select({ tags: plugins.tags })
+        .from(plugins)
+        .where(eq(plugins.status, 'approved'))
+      const counts = new Map<string, number>()
+      for (const row of tagRows) {
+        if (!row.tags) continue
+        let arr: unknown
+        try { arr = JSON.parse(row.tags) } catch { continue }
+        if (!Array.isArray(arr)) continue
+        const seen = new Set<string>()
+        for (const t of arr) {
+          if (typeof t === 'string' && !seen.has(t)) {
+            seen.add(t)
+            if (kinds.some((k) => k.key === t)) counts.set(t, (counts.get(t) ?? 0) + 1)
+          }
+        }
+      }
+      kindFacet = kinds.map((k) => ({ key: k.key, label: k.label, count: counts.get(k.key) ?? 0 }))
+    }
+
     return {
       total,
       page,
       limit,
       plugins: rows.map((p) => projectPlugin(p)),
-      facets: { categories, kinds: [] },
+      facets: { categories, kinds: kindFacet },
     }
   }, {
     detail: {
