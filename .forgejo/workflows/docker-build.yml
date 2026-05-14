@@ -9,9 +9,8 @@
 name: Build Docker image
 
 on:
-  push:
-    branches: [main]
-    tags: ['v*']
+  release:
+    types: [published]
   workflow_dispatch:
 
 jobs:
@@ -33,15 +32,13 @@ jobs:
         run: |
           set -eu
           IMAGE="codeberg.org/${{ github.repository_owner }}/tabularium"
+          VERSION="${{ github.event.release.tag_name }}"
+          VERSION="${VERSION#v}"
           docker build \
             -t "$IMAGE:${{ github.sha }}" \
+            -t "$IMAGE:$VERSION" \
             -t "$IMAGE:latest" \
             .
-          REF="${GITHUB_REF#refs/tags/}"
-          if [ "$REF" != "$GITHUB_REF" ]; then
-            VERSION="${REF#v}"
-            docker tag "$IMAGE:${{ github.sha }}" "$IMAGE:$VERSION"
-          fi
 
       - name: Push image
         run: |
