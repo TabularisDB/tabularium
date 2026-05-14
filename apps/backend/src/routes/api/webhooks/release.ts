@@ -118,7 +118,7 @@ export default new Elysia()
 
     await cache().del(latestCacheKey(plugin.id))
 
-    // Re-fetch .pluggr at the tag in the background.
+    // Re-fetch .tabularium at the tag in the background.
     queueMicrotask(async () => {
       try {
         const ref = parseRepoUrl(plugin.repoUrl)

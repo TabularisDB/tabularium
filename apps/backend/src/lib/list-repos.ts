@@ -121,7 +121,7 @@ export async function listReposFor(
     return listGithubFlavored(
       apiBase, token,
       '/user/repos?affiliation=owner,organization_member,collaborator&sort=pushed',
-      100, 3, 'pluggr/1.0', instance.id,
+      100, 3, 'tabularium/1.0', instance.id,
     )
   }
   if (instance.kind === 'gitea') {

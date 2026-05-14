@@ -9,8 +9,12 @@
 	import Badge from '$components/ui/Badge.svelte'
 	import Button from '$components/ui/Button.svelte'
 	import PluginCard from '$components/PluginCard.svelte'
-	import { api } from '$lib/api'
-	import type { Plugin, PluginListResponse } from '$lib/types'
+	import CmsPage from '$components/CmsPage.svelte'
+	import { eden } from '$lib/eden'
+	import type { Plugin, PluginListResponse, PageRendered } from '$lib/types'
+
+	let cmsOverride = $state<PageRendered | null>(null)
+	let cmsChecked = $state(false)
 
 	let search = $state('')
 	let category = $state('')
@@ -26,7 +30,16 @@
 	let debounce: ReturnType<typeof setTimeout> | null = null
 
 	// Sync from URL on first mount so deep-links work.
-	onMount(() => {
+	onMount(async () => {
+		try {
+			const { data, error } = await eden.api.pages['by-path'].get({ query: { path: '/plugins' } })
+			if (error) throw error
+			cmsOverride = data as PageRendered
+			cmsChecked = true
+			return
+		} catch {
+			cmsChecked = true
+		}
 		const url = page.url
 		search = url.searchParams.get('search') ?? ''
 		category = url.searchParams.get('category') ?? ''
@@ -40,15 +53,17 @@
 	async function fetchPlugins() {
 		loading = true
 		try {
-			const q = new URLSearchParams({ page: String(pageNum), limit: '24', sort })
-			if (search.trim()) q.set('search', search.trim())
-			if (category) q.set('category', category)
-			if (tag) q.set('tag', tag)
-			if (onlyFeatured) q.set('featured', '1')
-			const data = await api.get<PluginListResponse>(`/api/plugins?${q}`)
-			plugins = data.plugins
-			total = data.total
-			categories = data.facets.categories
+			const query: Record<string, string> = { page: String(pageNum), limit: '24', sort }
+			if (search.trim()) query.search = search.trim()
+			if (category) query.category = category
+			if (tag) query.tag = tag
+			if (onlyFeatured) query.featured = '1'
+			const { data, error } = await eden.api.plugins.get({ query })
+			if (error) throw error
+			const payload = data as PluginListResponse
+			plugins = payload.plugins
+			total = payload.total
+			categories = payload.facets.categories
 		} catch {
 			plugins = []
 			total = 0
@@ -87,6 +102,18 @@
 	}
 </script>
 
+{#if !cmsChecked}
+	<div class="mx-auto max-w-6xl px-6 py-12">
+		<p class="text-sm text-muted-foreground">Loading…</p>
+	</div>
+{:else if cmsOverride}
+	<div class="mx-auto max-w-4xl px-6 py-12 space-y-6">
+		<header class="space-y-2">
+			<h1 class="text-3xl font-semibold tracking-tight">{cmsOverride.title}</h1>
+		</header>
+		<CmsPage html={cmsOverride.html} />
+	</div>
+{:else}
 <div class="mx-auto max-w-6xl px-6 py-12 space-y-8">
 	<header class="space-y-2">
 		<h1 class="text-3xl font-semibold tracking-tight">Plugins</h1>
@@ -170,3 +197,4 @@
 		</div>
 	{/if}
 </div>
+{/if}

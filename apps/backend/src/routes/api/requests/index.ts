@@ -5,6 +5,7 @@ import { rateLimit } from '../../../middleware/rate-limit'
 import { db } from '../../../db'
 import { pluginRequests } from '../../../db/schema'
 import { desc, count, eq } from 'drizzle-orm'
+import { getFeatures } from '../../../lib/features'
 
 const requestSchema = t.Object({
   id: t.String(),
@@ -76,6 +77,10 @@ export default new Elysia()
   .use(authMiddleware)
   .use(rateLimit({ bucket: 'requests-create', limit: 5, windowSeconds: 3600 }))
   .post('/', async ({ user, body, set }) => {
+    if (!getFeatures().requestsEnabled) {
+      set.status = 403
+      return { error: 'Plugin requests are disabled on this instance.' }
+    }
     const existing = await db.query.pluginRequests.findFirst({
       where: { slug: body.slug },
     })
@@ -108,6 +113,7 @@ export default new Elysia()
     }),
     response: {
       200: createRequestResponseSchema,
+      403: errorSchema,
       409: errorSchema,
     },
   })

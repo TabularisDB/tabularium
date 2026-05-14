@@ -8,22 +8,20 @@
 	import CardHeader from '$components/ui/CardHeader.svelte'
 	import CardTitle from '$components/ui/CardTitle.svelte'
 	import ProviderIcon from '$components/brand/ProviderIcon.svelte'
-	import { api } from '$lib/api'
+	import { eden } from '$lib/eden'
 	import type { InitStatus, ProviderInfo } from '$lib/types'
 
 	let providers = $state<ProviderInfo[] | null>(null)
-	let initStatus = $state<InitStatus | null>(null)
 
 	onMount(async () => {
-		const status = await api.get<InitStatus>('/api/init/status').catch(() => null)
+		const statusRes = await eden.api.init.status.get()
+		const status = (statusRes.data ?? null) as InitStatus | null
 		if (status?.requiresInit) {
 			goto('/init')
 			return
 		}
-		initStatus = status
-		const { providers: list } = await api
-			.get<{ providers: ProviderInfo[] }>('/auth/providers')
-			.catch(() => ({ providers: [] }))
+		const providersRes = await eden.auth.providers.get()
+		const list = ((providersRes.data ?? { providers: [] }) as { providers: ProviderInfo[] }).providers
 		providers = list
 	})
 </script>
@@ -58,13 +56,6 @@
 			{/if}
 		</CardContent>
 	</Card>
-
-	{#if initStatus?.emailRecoveryAvailable}
-		<p class="text-center text-xs text-muted-foreground">
-			Bootstrap admin?
-			<a href="/login/admin" class="text-primary hover:underline">Sign in with email</a>
-		</p>
-	{/if}
 
 	<p class="text-xs text-muted-foreground text-center">
 		Tokens are encrypted at rest. We only see your username and an access token used to verify repository ownership when you

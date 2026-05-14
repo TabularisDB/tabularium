@@ -81,7 +81,7 @@ export async function checkOwnership(
     const apiBase = instance.baseUrl === 'https://github.com'
       ? 'https://api.github.com'
       : `${instance.baseUrl}/api/v3`
-    return checkGithubFlavored(apiBase, accessToken, ref, username, 'pluggr/1.0')
+    return checkGithubFlavored(apiBase, accessToken, ref, username, 'tabularium/1.0')
   }
   if (instance.kind === 'gitea') {
     return checkGithubFlavored(`${instance.baseUrl}/api/v1`, accessToken, ref, username, null)

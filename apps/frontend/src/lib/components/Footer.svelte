@@ -1,7 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte'
 	import ExternalLink from '@lucide/svelte/icons/external-link'
-	import { api } from '$lib/api'
+	import { eden } from '$lib/eden'
 	import { branding } from '$lib/stores/branding.svelte'
 	import type { PageSummary } from '$lib/types'
 
@@ -9,8 +9,10 @@
 
 	onMount(async () => {
 		try {
-			const data = await api.get<{ pages: PageSummary[] }>('/api/pages')
-			footerPages = data.pages.filter((p) => p.showInFooter)
+			const { data, error } = await eden.api.pages.get()
+			if (error) throw error
+			const payload = data as { pages: PageSummary[] }
+			footerPages = payload.pages.filter((p) => p.showInFooter)
 		} catch {
 			footerPages = []
 		}
@@ -32,7 +34,7 @@
 					OpenAPI <ExternalLink class="h-3 w-3" />
 				</a>
 				<a href="/api/manifest" class="hover:text-foreground inline-flex items-center gap-1.5">
-					.pluggr spec <ExternalLink class="h-3 w-3" />
+					.tabularium spec <ExternalLink class="h-3 w-3" />
 				</a>
 				<a href="/openapi/json" class="hover:text-foreground inline-flex items-center gap-1.5">
 					Spec JSON <ExternalLink class="h-3 w-3" />

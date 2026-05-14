@@ -1,5 +1,5 @@
 {
-  "extends": "@pluggr/tsconfig/base.json",
+  "extends": "@tabularium/tsconfig/base.json",
   "compilerOptions": {
     "outDir": "dist",
     "baseUrl": ".",

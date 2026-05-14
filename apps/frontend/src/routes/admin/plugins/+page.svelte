@@ -19,7 +19,7 @@
 	import Tabs from '$components/ui/Tabs.svelte'
 	import TabsList from '$components/ui/TabsList.svelte'
 	import TabsTrigger from '$components/ui/TabsTrigger.svelte'
-	import { api } from '$lib/api'
+	import { eden } from '$lib/eden'
 
 	type AdminPlugin = {
 		id: string
@@ -46,9 +46,10 @@
 	async function load() {
 		loading = true
 		try {
-			const q = filter === 'all' ? '' : `?status=${filter}`
-			const data = await api.get<{ plugins: AdminPlugin[] }>(`/api/admin/plugins${q}`)
-			plugins = data.plugins
+			const query = filter === 'all' ? {} : { status: filter }
+			const { data, error } = await eden.api.admin.plugins.get({ query })
+			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
+			plugins = (data as { plugins: AdminPlugin[] }).plugins
 			selected = new Set([...selected].filter((id) => plugins.some((p) => p.id === id)))
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : 'Failed to load plugins')
@@ -84,10 +85,11 @@
 		}
 		bulkBusy = true
 		try {
-			const res = await api.post<{ ok: boolean; action: string; affected: number; missing: string[] }>(
-				'/api/admin/plugins/bulk',
+			const { data, error } = await eden.api.admin.plugins.bulk.post(
 				{ ids: [...selected], action, rejectionReason },
 			)
+			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
+			const res = data as { ok: boolean; action: string; affected: number; missing: string[] }
 			toast.success(`${res.action}: ${res.affected} affected${res.missing.length > 0 ? `, ${res.missing.length} missing` : ''}`)
 			selected = new Set()
 			await load()
@@ -110,7 +112,8 @@
 		if (status === 'rejected' && reason === null) return
 		busy = { ...busy, [p.id]: true }
 		try {
-			await api.patch(`/api/admin/plugins/${p.id}`, { status, rejectionReason: reason ?? undefined })
+			const { error } = await eden.api.admin.plugins({ id: p.id }).patch({ status, rejectionReason: reason ?? undefined })
+			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
 			toast.success(`${p.name} → ${status}`)
 			await load()
 		} catch (e) {
@@ -123,7 +126,8 @@
 	async function toggleFeatured(p: AdminPlugin) {
 		busy = { ...busy, [p.id]: true }
 		try {
-			await api.patch(`/api/admin/plugins/${p.id}`, { featured: !p.featured })
+			const { error } = await eden.api.admin.plugins({ id: p.id }).patch({ featured: !p.featured })
+			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
 			toast.success(p.featured ? 'Unpinned' : 'Pinned to featured')
 			await load()
 		} catch (e) {
@@ -136,7 +140,8 @@
 	async function refreshManifest(p: AdminPlugin) {
 		busy = { ...busy, [p.id]: true }
 		try {
-			await api.post(`/api/admin/plugins/${p.id}/refresh-manifest`, {})
+			const { error } = await eden.api.admin.plugins({ id: p.id })['refresh-manifest'].post({})
+			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
 			toast.success(`Manifest refreshed for ${p.name}`)
 			await load()
 		} catch (e) {
@@ -149,10 +154,9 @@
 	async function replayWebhook(p: AdminPlugin) {
 		busy = { ...busy, [p.id]: true }
 		try {
-			const res = await api.post<{ ok: boolean; version?: string; assets?: string[]; skipped?: boolean; reason?: string }>(
-				`/api/admin/plugins/${p.id}/replay-webhook`,
-				{},
-			)
+			const { data, error } = await eden.api.admin.plugins({ id: p.id })['replay-webhook'].post({})
+			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
+			const res = data as { ok: boolean; version?: string; assets?: string[]; skipped?: boolean; reason?: string }
 			if (res.skipped) toast(`Skipped: ${res.reason}`)
 			else toast.success(`Replayed v${res.version} (${res.assets?.length ?? 0} assets)`)
 			await load()
@@ -167,7 +171,8 @@
 		if (!confirm(`Delete ${p.name}? This wipes releases too.`)) return
 		busy = { ...busy, [p.id]: true }
 		try {
-			await api.delete(`/api/admin/plugins/${p.id}`)
+			const { error } = await eden.api.admin.plugins({ id: p.id }).delete()
+			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
 			toast.success(`${p.name} deleted`)
 			await load()
 		} catch (e) {
@@ -278,7 +283,7 @@
 						<Button variant="ghost" size="sm" onclick={() => toggleFeatured(p)} disabled={busy[p.id]} aria-label={p.featured ? 'Unpin' : 'Pin to featured'} title={p.featured ? 'Unpin' : 'Pin to featured'}>
 							{#if p.featured}<StarOff class="h-3.5 w-3.5" />{:else}<Star class="h-3.5 w-3.5" />{/if}
 						</Button>
-						<Button variant="ghost" size="sm" onclick={() => refreshManifest(p)} disabled={busy[p.id]} aria-label="Refresh manifest" title="Refresh .pluggr manifest">
+						<Button variant="ghost" size="sm" onclick={() => refreshManifest(p)} disabled={busy[p.id]} aria-label="Refresh manifest" title="Refresh .tabularium manifest">
 							<RefreshCw class="h-3.5 w-3.5" />
 						</Button>
 						<Button variant="ghost" size="sm" onclick={() => replayWebhook(p)} disabled={busy[p.id]} aria-label="Replay webhook" title="Re-ingest latest upstream release">

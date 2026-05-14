@@ -10,7 +10,7 @@
 	import CardTitle from '$components/ui/CardTitle.svelte'
 	import Input from '$components/ui/Input.svelte'
 	import Label from '$components/ui/Label.svelte'
-	import { api } from '$lib/api'
+	import { eden } from '$lib/eden'
 	import { auth } from '$lib/stores/auth.svelte'
 	import type { InitStatus } from '$lib/types'
 
@@ -23,7 +23,9 @@
 
 	onMount(async () => {
 		try {
-			const status = await api.get<InitStatus>('/api/init/status')
+			const { data, error } = await eden.api.init.status.get()
+			if (error) throw error
+			const status = data as InitStatus
 			if (status.requiresInit) {
 				goto('/init')
 				return
@@ -39,7 +41,8 @@
 		formError = null
 		submitting = true
 		try {
-			await api.post('/auth/email/login', { email, password })
+			const { error } = await eden.auth.email.login.post({ email, password })
+			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
 			await auth.refresh()
 			await goto('/admin')
 		} catch (e) {

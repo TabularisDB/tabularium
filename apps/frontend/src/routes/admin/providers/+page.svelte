@@ -13,7 +13,7 @@
 	import Label from '$components/ui/Label.svelte'
 	import Select from '$components/ui/Select.svelte'
 	import ProviderIcon from '$components/brand/ProviderIcon.svelte'
-	import { api } from '$lib/api'
+	import { eden } from '$lib/eden'
 	import { toast } from 'svelte-sonner'
 	import type { ProviderInstanceAdmin, ProviderKind } from '$lib/types'
 
@@ -33,8 +33,9 @@
 	async function load() {
 		loading = true
 		try {
-			const data = await api.get<{ instances: ProviderInstanceAdmin[] }>('/api/admin/provider-instances')
-			instances = data.instances
+			const { data, error } = await eden.api.admin['provider-instances'].get()
+			if (error) throw error
+			instances = (data as { instances: ProviderInstanceAdmin[] }).instances
 		} finally {
 			loading = false
 		}
@@ -57,7 +58,7 @@
 		formError = null
 		creating = true
 		try {
-			await api.post('/api/admin/provider-instances', {
+			const { error } = await eden.api.admin['provider-instances'].post({
 				id: newId,
 				kind: newKind,
 				displayName: newDisplayName,
@@ -66,6 +67,7 @@
 				clientSecret: newClientSecret,
 				logoUrl: newLogoUrl.trim() ? newLogoUrl.trim() : null,
 			})
+			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
 			toast.success(`${newDisplayName} added`)
 			newId = ''
 			newDisplayName = ''
@@ -82,7 +84,8 @@
 
 	async function toggleInstance(inst: ProviderInstanceAdmin) {
 		try {
-			await api.patch(`/api/admin/provider-instances/${inst.id}`, { enabled: !inst.enabled })
+			const { error } = await eden.api.admin['provider-instances']({ id: inst.id }).patch({ enabled: !inst.enabled })
+			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
 			await load()
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : 'Update failed')
@@ -92,7 +95,8 @@
 	async function deleteInstance(inst: ProviderInstanceAdmin) {
 		if (!confirm(`Delete provider instance '${inst.id}'?`)) return
 		try {
-			await api.delete(`/api/admin/provider-instances/${inst.id}`)
+			const { error } = await eden.api.admin['provider-instances']({ id: inst.id }).delete()
+			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
 			toast.success('Deleted')
 			await load()
 		} catch (e) {

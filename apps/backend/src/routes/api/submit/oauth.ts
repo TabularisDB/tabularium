@@ -11,6 +11,7 @@ import { env } from '$lib/env'
 import { getSetting } from '$lib/settings'
 import { resolveManifest, rawContentBase } from '$lib/manifest'
 import { manifestPatch, applyManifestToPlugin } from '$lib/manifest-apply'
+import { getFeatures } from '$lib/features'
 import { logger } from '$lib/logger'
 
 const log = logger.child({ module: 'submit-oauth' })
@@ -25,6 +26,10 @@ export default new Elysia()
   .use(authMiddleware)
   .use(rateLimit({ bucket: 'submit', limit: 10, windowSeconds: 3600 }))
   .post('/', async ({ user, body, set }) => {
+    if (!getFeatures().submissionsEnabled) {
+      set.status = 403
+      return { error: 'Plugin submissions are disabled on this instance.' }
+    }
     const ref = parseRepoUrl(body.repoUrl)
     if (!ref) {
       set.status = 400
@@ -84,7 +89,7 @@ export default new Elysia()
         await applyManifestToPlugin(slug, patch)
         log.info({ slug, source: manifest.source }, 'manifest applied at submit')
       } else {
-        log.info({ slug }, 'no .pluggr manifest found at submit — using fallback metadata')
+        log.info({ slug }, 'no .tabularium manifest found at submit — using fallback metadata')
       }
     } catch (err) {
       log.warn({ err, slug }, 'manifest fetch failed at submit — continuing without it')

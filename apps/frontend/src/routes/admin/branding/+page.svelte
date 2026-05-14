@@ -12,7 +12,7 @@
 	import Input from '$components/ui/Input.svelte'
 	import Label from '$components/ui/Label.svelte'
 	import Textarea from '$components/ui/Textarea.svelte'
-	import { api } from '$lib/api'
+	import { eden } from '$lib/eden'
 	import { branding, type Branding } from '$lib/stores/branding.svelte'
 
 	type FormState = {
@@ -56,7 +56,9 @@
 
 	async function load() {
 		try {
-			const res = await api.get<{ current: Branding; defaults: Branding }>('/api/admin/branding')
+			const { data, error } = await eden.api.admin.branding.get()
+			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
+			const res = data as { current: Branding; defaults: Branding }
 			form = toForm(res.current)
 			defaults = res.defaults
 		} catch (e) {
@@ -83,7 +85,9 @@
 				analyticsScript: form.analyticsScript || null,
 				allowIndexing: form.allowIndexing,
 			}
-			const res = await api.put<{ ok: boolean; branding: Branding }>('/api/admin/branding', body)
+			const { data, error } = await eden.api.admin.branding.put(body)
+			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
+			const res = data as { ok: boolean; branding: Branding }
 			branding.set(res.branding)
 			form = toForm(res.branding)
 			toast.success('Branding saved')

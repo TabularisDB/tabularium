@@ -4,7 +4,7 @@
 	import MessageSquare from '@lucide/svelte/icons/message-square'
 	import Card from '$components/ui/Card.svelte'
 	import CardContent from '$components/ui/CardContent.svelte'
-	import { api } from '$lib/api'
+	import { eden } from '$lib/eden'
 	import type { PluginListResponse } from '$lib/types'
 
 	let { heading = '' }: { heading?: string } = $props()
@@ -14,12 +14,14 @@
 
 	onMount(async () => {
 		try {
-			const [p, r] = await Promise.all([
-				api.get<PluginListResponse>('/api/plugins?limit=1'),
-				api.get<{ total: number }>('/api/requests?limit=1'),
+			const [pluginsRes, requestsRes] = await Promise.all([
+				eden.api.plugins.get({ query: { limit: '1' } }),
+				eden.api.requests.get({ query: { limit: '1' } }),
 			])
-			pluginsTotal = p.total
-			requestsTotal = r.total
+			if (pluginsRes.error) throw pluginsRes.error
+			if (requestsRes.error) throw requestsRes.error
+			pluginsTotal = (pluginsRes.data as PluginListResponse).total
+			requestsTotal = (requestsRes.data as { total: number }).total
 		} catch {
 			pluginsTotal = 0
 			requestsTotal = 0

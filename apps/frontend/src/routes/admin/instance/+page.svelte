@@ -11,7 +11,7 @@
 	import Button from '$components/ui/Button.svelte'
 	import Label from '$components/ui/Label.svelte'
 	import Badge from '$components/ui/Badge.svelte'
-	import { api } from '$lib/api'
+	import { eden } from '$lib/eden'
 
 	type RateLimitBucket = {
 		id: string
@@ -33,7 +33,9 @@
 
 	async function load() {
 		try {
-			const res = await api.get<InstanceState>('/api/admin/instance')
+			const { data, error } = await eden.api.admin.instance.get()
+			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
+			const res = data as InstanceState
 			requireApproval = res.requireApproval
 			rateLimits = res.rateLimits
 		} catch (e) {
@@ -48,10 +50,11 @@
 	async function save() {
 		saving = true
 		try {
-			await api.put('/api/admin/instance', {
+			const { error } = await eden.api.admin.instance.put({
 				requireApproval,
 				rateLimits: rateLimits.map((r) => ({ id: r.id, limit: r.limit, windowSeconds: r.windowSeconds })),
 			})
+			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
 			toast.success('Saved')
 			await load()
 		} catch (e) {
@@ -63,9 +66,10 @@
 
 	async function resetBucket(bucket: RateLimitBucket) {
 		try {
-			await api.put('/api/admin/instance', {
+			const { error } = await eden.api.admin.instance.put({
 				rateLimits: [{ id: bucket.id, limit: bucket.defaultLimit, windowSeconds: bucket.defaultWindowSeconds, reset: true }],
 			})
+			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
 			toast.success(`${bucket.id} reset to default`)
 			await load()
 		} catch (e) {

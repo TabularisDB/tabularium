@@ -7,8 +7,8 @@ import { logger } from './logger'
 const log = logger.child({ module: 'manifest' })
 
 /**
- * .pluggr manifest schema.
- * Plugin authors drop a `.pluggr` (YAML) or `.pluggr.json` file at the root of their repo.
+ * .tabularium manifest schema.
+ * Plugin authors drop a `.tabularium` (YAML) or `.tabularium.json` file at the root of their repo.
  * Re-fetched on every release webhook and persisted to the plugin row.
  */
 export const ManifestSchema = Type.Object({
@@ -42,12 +42,12 @@ export type ResolvedManifest = {
   raw: string
   parsed: Manifest
   readmeMarkdown: string | null
-  source: 'pluggr.yaml' | 'pluggr.json'
+  source: 'tabularium.yaml' | 'tabularium.json'
 }
 
 export function parseManifestText(text: string, source: ResolvedManifest['source']): Manifest {
   let json: unknown
-  if (source === 'pluggr.json') {
+  if (source === 'tabularium.json') {
     json = JSON.parse(text)
   } else {
     json = parseYaml(text)
@@ -99,7 +99,7 @@ function fetcherFor(accessToken: string, ref: RepoRef, branch?: string): FileFet
     const apiBase = instance.baseUrl === 'https://github.com'
       ? 'https://api.github.com'
       : `${instance.baseUrl}/api/v3`
-    return makeGithubFlavoredFetcher(apiBase, accessToken, ref, branch, 'pluggr/1.0')
+    return makeGithubFlavoredFetcher(apiBase, accessToken, ref, branch, 'tabularium/1.0')
   }
   if (instance.kind === 'gitea') {
     return makeGithubFlavoredFetcher(`${instance.baseUrl}/api/v1`, accessToken, ref, branch, null)
@@ -108,10 +108,10 @@ function fetcherFor(accessToken: string, ref: RepoRef, branch?: string): FileFet
 }
 
 const MANIFEST_PATHS: Array<{ path: string; source: ResolvedManifest['source'] }> = [
-  { path: '.pluggr', source: 'pluggr.yaml' },
-  { path: '.pluggr.yaml', source: 'pluggr.yaml' },
-  { path: '.pluggr.yml', source: 'pluggr.yaml' },
-  { path: '.pluggr.json', source: 'pluggr.json' },
+  { path: '.tabularium', source: 'tabularium.yaml' },
+  { path: '.tabularium.yaml', source: 'tabularium.yaml' },
+  { path: '.tabularium.yml', source: 'tabularium.yaml' },
+  { path: '.tabularium.json', source: 'tabularium.json' },
 ]
 
 export function rawContentBase(ref: RepoRef, branch: string): string {

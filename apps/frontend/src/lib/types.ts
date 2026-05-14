@@ -150,9 +150,19 @@ export type AdminUser = {
 
 export type InitStatus = {
 	requiresInit: boolean
-	hasAdmin: boolean
-	enabledProviders: number
+	setupCompleted: boolean
 	emailRecoveryAvailable: boolean
+}
+
+export type InitDefaults = {
+	database: { url: string }
+	baseUrl: string
+	webBaseUrl: string | null
+	providers: {
+		github: { clientId: string; clientSecretSet: boolean }
+		gitlab: { clientId: string; clientSecretSet: boolean }
+		codeberg: { clientId: string; clientSecretSet: boolean }
+	}
 }
 
 export type SubmitSuccess = {

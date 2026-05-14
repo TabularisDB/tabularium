@@ -5,6 +5,6 @@ export default defineConfig({
   out: './src/db/migrations.mysql',
   dialect: 'mysql',
   dbCredentials: {
-    url: process.env.DATABASE_URL ?? 'mysql://root:root@localhost:3306/pluggr',
+    url: process.env.DATABASE_URL ?? 'mysql://root:root@localhost:3306/tabularium',
   },
 })

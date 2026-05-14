@@ -2,7 +2,7 @@
 	import { onMount } from 'svelte'
 	import { goto } from '$app/navigation'
 	import { page } from '$app/state'
-	import { api } from '$lib/api'
+	import { eden } from '$lib/eden'
 	import LayoutDashboard from '@lucide/svelte/icons/layout-dashboard'
 	import Plug from '@lucide/svelte/icons/plug'
 	import UsersRound from '@lucide/svelte/icons/users-round'
@@ -13,6 +13,7 @@
 	import ShieldAlert from '@lucide/svelte/icons/shield-alert'
 	import FileText from '@lucide/svelte/icons/file-text'
 	import ListChecks from '@lucide/svelte/icons/list-checks'
+	import ToggleRight from '@lucide/svelte/icons/toggle-right'
 	import Menu from '@lucide/svelte/icons/menu'
 	import X from '@lucide/svelte/icons/x'
 	import { auth } from '$lib/stores/auth.svelte'
@@ -30,7 +31,9 @@
 			return
 		}
 		try {
-			const status = await api.get<{ setupCompleted: boolean }>('/api/init/status')
+			const { data, error } = await eden.api.init.status.get()
+			if (error) throw error
+			const status = data as { setupCompleted: boolean }
 			if (!status.setupCompleted) {
 				goto('/welcome')
 				return
@@ -40,8 +43,9 @@
 		}
 		gated = false
 		try {
-			const pending = await api.get<{ total: number }>('/api/admin/plugins?status=pending&limit=1')
-			pendingCount = pending.total
+			const { data, error } = await eden.api.admin.plugins.get({ query: { status: 'pending', limit: '1' } })
+			if (error) throw error
+			pendingCount = (data as { total: number }).total
 		} catch {
 			// ignore
 		}
@@ -56,6 +60,7 @@
 		{ href: '/admin/infra', label: 'Infrastructure', icon: ServerCog, badge: 0 },
 		{ href: '/admin/branding', label: 'Branding', icon: Palette, badge: 0 },
 		{ href: '/admin/instance', label: 'Instance', icon: SlidersHorizontal, badge: 0 },
+		{ href: '/admin/features', label: 'Features', icon: ToggleRight, badge: 0 },
 		{ href: '/admin/audit', label: 'Audit log', icon: ListChecks, badge: 0 },
 	])
 

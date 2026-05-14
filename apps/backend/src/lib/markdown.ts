@@ -8,14 +8,14 @@ const marked = new Marked({
 })
 
 /**
- * Tags we let through the sanitizer. `pluggr-widget` is a custom element the
+ * Tags we let through the sanitizer. `tabularium-widget` is a custom element the
  * frontend hydrates with a Svelte component (see lib/widgets).
  */
 const ALLOWED_TAGS = [
   'a', 'abbr', 'b', 'blockquote', 'br', 'code', 'em', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
   'hr', 'i', 'img', 'kbd', 'li', 'ol', 'p', 'pre', 's', 'strong', 'sub', 'sup', 'table',
   'tbody', 'td', 'th', 'thead', 'tr', 'ul', 'span', 'del', 'div', 'figure', 'figcaption',
-  'pluggr-widget',
+  'tabularium-widget',
 ]
 
 const ALLOWED_ATTR = [
@@ -26,7 +26,7 @@ const ALLOWED_ATTR = [
 ]
 
 DOMPurify.addHook('uponSanitizeElement', (node, data) => {
-  if (data.tagName === 'pluggr-widget' && node instanceof Element) {
+  if (data.tagName === 'tabularium-widget' && node instanceof Element) {
     // Normalize `name="…"` / `limit="…"` etc. into `data-*` so the frontend mounter can read them.
     for (const attr of Array.from(node.attributes)) {
       if (attr.name.startsWith('data-')) continue
@@ -46,7 +46,7 @@ export function renderMarkdown(raw: string): string {
     ALLOWED_ATTR,
     ALLOW_DATA_ATTR: true,
     CUSTOM_ELEMENT_HANDLING: {
-      tagNameCheck: /^pluggr-widget$/,
+      tagNameCheck: /^tabularium-widget$/,
       attributeNameCheck: /^(data-.*|name|limit|cols|category|tag|sort|heading|show-counts|variant)$/,
       allowCustomizedBuiltInElements: false,
     },

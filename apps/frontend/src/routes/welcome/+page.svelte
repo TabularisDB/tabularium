@@ -16,7 +16,7 @@
 	import Label from '$components/ui/Label.svelte'
 	import Select from '$components/ui/Select.svelte'
 	import Badge from '$components/ui/Badge.svelte'
-	import { api } from '$lib/api'
+	import { eden } from '$lib/eden'
 	import { auth } from '$lib/stores/auth.svelte'
 	import { branding, type Branding } from '$lib/stores/branding.svelte'
 	import type { ProviderKind } from '$lib/types'
@@ -25,7 +25,7 @@
 	let busy = $state(false)
 	let gated = $state(true)
 
-	let brandName = $state('Pluggr')
+	let brandName = $state('Tabularium')
 	let brandTagline = $state('Discover, submit, ship plugins.')
 	let brandPrimary = $state('#3b82f6')
 
@@ -43,7 +43,9 @@
 			goto('/login/admin')
 			return
 		}
-		const status = await api.get<{ setupCompleted: boolean }>('/api/init/status')
+		const { data, error } = await eden.api.init.status.get()
+		if (error) throw error
+		const status = data as { setupCompleted: boolean }
 		if (status.setupCompleted) {
 			goto('/admin')
 			return
@@ -63,11 +65,13 @@
 	async function saveBranding() {
 		busy = true
 		try {
-			const res = await api.put<{ ok: boolean; branding: Branding }>('/api/admin/branding', {
+			const { data, error } = await eden.api.admin.branding.put({
 				name: brandName,
 				tagline: brandTagline,
 				primaryHex: brandPrimary,
 			})
+			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
+			const res = data as { ok: boolean; branding: Branding }
 			branding.set(res.branding)
 			step = 2
 		} catch (e) {
@@ -81,7 +85,7 @@
 		e.preventDefault()
 		busy = true
 		try {
-			await api.post('/api/admin/provider-instances', {
+			const { error } = await eden.api.admin['provider-instances'].post({
 				id: provId.trim(),
 				kind: provKind,
 				displayName: provDisplayName.trim(),
@@ -90,6 +94,7 @@
 				clientSecret: provClientSecret,
 				logoUrl: null,
 			})
+			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
 			step = 3
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : 'Failed to add provider')
@@ -106,7 +111,8 @@
 	async function finish() {
 		busy = true
 		try {
-			await api.post('/api/admin/setup/complete')
+			const { error } = await eden.api.admin.setup.complete.post({})
+			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
 			toast.success('Setup complete!')
 			goto('/admin')
 		} catch (e) {

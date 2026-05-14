@@ -2,7 +2,7 @@ import { Type, type Static } from '@sinclair/typebox'
 import { Value } from '@sinclair/typebox/value'
 
 const EnvSchema = Type.Object({
-  DATABASE_URL: Type.String({ minLength: 1, default: './data/registry.db' }),
+  DATABASE_URL: Type.Optional(Type.String({ minLength: 1 })),
   JWT_SECRET: Type.String({
     minLength: 32,
     pattern: '^(?!change-me-in-production$).+$',

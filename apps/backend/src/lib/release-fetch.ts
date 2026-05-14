@@ -11,7 +11,7 @@ export async function fetchLatestRelease(accessToken: string, ref: RepoRef): Pro
     const apiBase = instance.baseUrl === 'https://github.com'
       ? 'https://api.github.com'
       : `${instance.baseUrl}/api/v3`
-    return fetchGithubFlavored(apiBase, accessToken, ref, 'pluggr/1.0')
+    return fetchGithubFlavored(apiBase, accessToken, ref, 'tabularium/1.0')
   }
   if (instance.kind === 'gitea') {
     return fetchGithubFlavored(`${instance.baseUrl}/api/v1`, accessToken, ref, null)

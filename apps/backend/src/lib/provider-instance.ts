@@ -34,7 +34,7 @@ function toInstance(row: typeof providerInstances.$inferSelect): ProviderInstanc
 }
 
 export async function initProviderInstances(): Promise<void> {
-  const rows = await db.select().from(providerInstances).all()
+  const rows = await db.select().from(providerInstances)
   cache = new Map(rows.map((r) => [r.id, toInstance(r)]))
   initialized = true
 }

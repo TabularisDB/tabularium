@@ -4,7 +4,7 @@
 	import Skeleton from '$components/ui/Skeleton.svelte'
 	import Button from '$components/ui/Button.svelte'
 	import CmsPage from '$components/CmsPage.svelte'
-	import { api } from '$lib/api'
+	import { eden } from '$lib/eden'
 	import type { PageRendered } from '$lib/types'
 
 	const path = $derived('/' + page.params.path)
@@ -16,13 +16,13 @@
 		loading = true
 		notFound = false
 		pageData = null
-		try {
-			pageData = await api.get<PageRendered>(`/api/pages/by-path?path=${encodeURIComponent(path)}`)
-		} catch (e) {
-			if ((e as { status?: number }).status === 404) notFound = true
-		} finally {
-			loading = false
+		const { data, error } = await eden.api.pages['by-path'].get({ query: { path } })
+		if (error) {
+			if (error.status === 404) notFound = true
+		} else {
+			pageData = data as PageRendered
 		}
+		loading = false
 	}
 
 	onMount(load)

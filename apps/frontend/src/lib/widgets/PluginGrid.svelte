@@ -2,7 +2,7 @@
 	import { onMount } from 'svelte'
 	import PluginCard from '$components/PluginCard.svelte'
 	import Skeleton from '$components/ui/Skeleton.svelte'
-	import { api } from '$lib/api'
+	import { eden } from '$lib/eden'
 	import type { Plugin, PluginListResponse } from '$lib/types'
 
 	type Props = {
@@ -19,11 +19,12 @@
 
 	onMount(async () => {
 		try {
-			const q = new URLSearchParams({ limit: String(limit), sort })
-			if (category) q.set('category', category)
-			if (tag) q.set('tag', tag)
-			const data = await api.get<PluginListResponse>(`/api/plugins?${q}`)
-			plugins = data.plugins
+			const query: Record<string, string> = { limit: String(limit), sort }
+			if (category) query.category = category
+			if (tag) query.tag = tag
+			const { data, error } = await eden.api.plugins.get({ query })
+			if (error) throw error
+			plugins = (data as PluginListResponse).plugins
 		} catch {
 			plugins = []
 		}

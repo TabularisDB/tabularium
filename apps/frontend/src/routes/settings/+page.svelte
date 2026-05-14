@@ -15,7 +15,7 @@
 	import CardHeader from '$components/ui/CardHeader.svelte'
 	import CardTitle from '$components/ui/CardTitle.svelte'
 	import Badge from '$components/ui/Badge.svelte'
-	import { api } from '$lib/api'
+	import { eden } from '$lib/eden'
 	import { auth } from '$lib/stores/auth.svelte'
 	import { toast } from 'svelte-sonner'
 	import type { ProviderInfo } from '$lib/types'
@@ -41,8 +41,9 @@
 
 	async function loadTransfers() {
 		try {
-			const data = await api.get<{ transfers: Transfer[] }>('/auth/me/transfers')
-			transfers = data.transfers
+			const { data, error } = await eden.auth.me.transfers.get()
+			if (error) throw error
+			transfers = (data as { transfers: Transfer[] }).transfers
 		} catch {
 			transfers = []
 		}
@@ -54,14 +55,16 @@
 			goto('/login')
 			return
 		}
-		const { providers: list } = await api.get<{ providers: ProviderInfo[] }>('/auth/providers').catch(() => ({ providers: [] }))
+		const providersRes = await eden.auth.providers.get()
+		const list = ((providersRes.data ?? { providers: [] }) as { providers: ProviderInfo[] }).providers
 		providers = list
 		await loadTransfers()
 	})
 
 	async function respond(transferId: string, action: 'accept' | 'reject' | 'cancel') {
 		try {
-			await api.post(`/auth/me/transfers/${transferId}`, { action })
+			const { error } = await eden.auth.me.transfers({ id: transferId }).post({ action })
+			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
 			toast.success(`Transfer ${action}ed`)
 			await loadTransfers()
 		} catch (e) {
@@ -89,7 +92,8 @@
 	async function unlink(identityId: string) {
 		if (!confirm('Unlink this identity?')) return
 		try {
-			await api.delete(`/auth/me/identities/${identityId}`)
+			const { error } = await eden.auth.me.identities({ id: identityId }).delete()
+			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
 			await auth.refresh()
 			toast.success('Identity unlinked')
 		} catch (e) {
@@ -110,7 +114,8 @@
 	async function deleteAccount() {
 		if (!confirm('Permanently delete your account? This unlinks all identities. Plugins you own must be transferred or deleted first.')) return
 		try {
-			await api.delete('/auth/me')
+			const { error } = await eden.auth.me.delete()
+			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
 			auth.clear()
 			toast.success('Account deleted')
 			goto('/')

@@ -9,7 +9,7 @@
 	import Skeleton from '$components/ui/Skeleton.svelte'
 	import PluginCard from '$components/PluginCard.svelte'
 	import CmsPage from '$components/CmsPage.svelte'
-	import { api } from '$lib/api'
+	import { eden } from '$lib/eden'
 	import { branding } from '$lib/stores/branding.svelte'
 	import type { Plugin, PluginListResponse, PageRendered } from '$lib/types'
 
@@ -23,7 +23,9 @@
 
 	onMount(async () => {
 		try {
-			customHomepage = await api.get<PageRendered>('/api/pages/by-path?path=%2F')
+			const { data, error } = await eden.api.pages['by-path'].get({ query: { path: '/' } })
+			if (error) throw error
+			customHomepage = data as PageRendered
 			homepageChecked = true
 			return
 		} catch {
@@ -31,10 +33,14 @@
 		}
 		homepageChecked = true
 		try {
-			const [feat, rec] = await Promise.all([
-				api.get<PluginListResponse>('/api/plugins?featured=1&sort=featured&limit=6'),
-				api.get<PluginListResponse>('/api/plugins?sort=new&limit=6'),
+			const [featRes, recRes] = await Promise.all([
+				eden.api.plugins.get({ query: { featured: '1', sort: 'featured', limit: '6' } }),
+				eden.api.plugins.get({ query: { sort: 'new', limit: '6' } }),
 			])
+			if (featRes.error) throw featRes.error
+			if (recRes.error) throw recRes.error
+			const feat = featRes.data as PluginListResponse
+			const rec = recRes.data as PluginListResponse
 			featured = feat.plugins
 			recent = rec.plugins
 			total = rec.total

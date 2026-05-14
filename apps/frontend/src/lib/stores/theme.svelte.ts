@@ -1,7 +1,7 @@
 import { browser } from '$app/environment'
 
 type Theme = 'dark' | 'light'
-const KEY = 'pluggr-theme'
+const KEY = 'tabularium-theme'
 
 function readInitial(): Theme {
 	if (!browser) return 'dark'

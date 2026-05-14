@@ -34,7 +34,7 @@ TabularisDB/registry/                       # monorepo root
 │   │   ├── bunfig.toml
 │   │   ├── drizzle.config.ts
 │   │   ├── tsconfig.json
-│   │   └── package.json                    # name: "@tabularis/registry-backend"
+│   │   └── package.json                    # name: "@tabularium/registry-backend"
 │   └── frontend/                           # new Vite + React app
 │       ├── src/
 │       │   ├── routes/                     # TanStack Router file-based routes
@@ -44,7 +44,7 @@ TabularisDB/registry/                       # monorepo root
 │       ├── index.html
 │       ├── vite.config.ts
 │       ├── tsconfig.json
-│       └── package.json                    # name: "@tabularis/registry-frontend"
+│       └── package.json                    # name: "@tabularium/registry-frontend"
 ├── packages/
 │   └── tsconfig/                           # shared "base.json" extended by both apps
 │       ├── base.json
@@ -177,11 +177,11 @@ Every route gets a `detail.tags: ['Plugins']` (or appropriate tag) in its Elysia
 
 ### 4.2 Eden Treaty client
 
-`apps/frontend` adds `"@tabularis/registry-backend": "workspace:*"` to its dependencies. Inside `apps/frontend/src/lib/api.ts`:
+`apps/frontend` adds `"@tabularium/registry-backend": "workspace:*"` to its dependencies. Inside `apps/frontend/src/lib/api.ts`:
 
 ```typescript
 import { treaty } from '@elysiajs/eden'
-import type { App } from '@tabularis/registry-backend/src'
+import type { App } from '@tabularium/registry-backend/src'
 
 export const api = treaty<App>(
   import.meta.env.DEV ? 'http://localhost:3000' : ''

@@ -33,8 +33,8 @@ export default new Elysia()
         published: r.published === 1,
         navOrder: r.navOrder,
         showInFooter: r.showInFooter === 1,
-        createdAt: r.createdAt,
-        updatedAt: r.updatedAt,
+        createdAt: Number(r.createdAt),
+        updatedAt: Number(r.updatedAt),
       })),
     }
   }, {

@@ -15,7 +15,7 @@
 	import Input from '$components/ui/Input.svelte'
 	import Label from '$components/ui/Label.svelte'
 	import Badge from '$components/ui/Badge.svelte'
-	import { api } from '$lib/api'
+	import { eden } from '$lib/eden'
 
 	type AdminPage = {
 		slug: string
@@ -40,8 +40,9 @@
 	async function load() {
 		loading = true
 		try {
-			const data = await api.get<{ pages: AdminPage[] }>('/api/admin/pages')
-			pages = data.pages
+			const { data, error } = await eden.api.admin.pages.get()
+			if (error) throw error
+			pages = (data as { pages: AdminPage[] }).pages
 		} finally {
 			loading = false
 		}
@@ -53,13 +54,14 @@
 		e.preventDefault()
 		busy = true
 		try {
-			await api.post('/api/admin/pages', {
+			const { error } = await eden.api.admin.pages.post({
 				slug: newSlug,
 				path: newPath.trim() || undefined,
 				title: newTitle,
-				content: `# ${newTitle}\n\nWrite your page in Markdown.\n\n<pluggr-widget name="featured-plugins" limit="6" cols="3" />\n`,
+				content: `# ${newTitle}\n\nWrite your page in Markdown.\n\n<tabularium-widget name="featured-plugins" limit="6" cols="3" />\n`,
 				published: false,
 			})
+			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
 			toast.success('Page created')
 			newSlug = ''
 			newTitle = ''
@@ -74,7 +76,8 @@
 
 	async function togglePublish(p: AdminPage) {
 		try {
-			await api.patch(`/api/admin/pages/${p.slug}`, { published: !p.published })
+			const { error } = await eden.api.admin.pages({ slug: p.slug }).patch({ published: !p.published })
+			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
 			await load()
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : 'Failed')
@@ -84,7 +87,8 @@
 	async function remove(p: AdminPage) {
 		if (!confirm(`Delete page '${p.slug}'?`)) return
 		try {
-			await api.delete(`/api/admin/pages/${p.slug}`)
+			const { error } = await eden.api.admin.pages({ slug: p.slug }).delete()
+			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
 			toast.success('Deleted')
 			await load()
 		} catch (e) {

@@ -20,7 +20,7 @@ type Mounted = { el: HTMLElement; instance: ReturnType<typeof mount> }
 
 export function hydrateWidgets(root: HTMLElement): () => void {
 	const mounted: Mounted[] = []
-	for (const node of Array.from(root.querySelectorAll('pluggr-widget'))) {
+	for (const node of Array.from(root.querySelectorAll('tabularium-widget'))) {
 		const el = node as HTMLElement
 		const name = el.dataset.name ?? ''
 		const Component = REGISTRY[name]

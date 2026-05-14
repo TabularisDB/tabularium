@@ -34,8 +34,8 @@ export default new Elysia()
       published: row.published === 1,
       navOrder: row.navOrder,
       showInFooter: row.showInFooter === 1,
-      createdAt: row.createdAt,
-      updatedAt: row.updatedAt,
+      createdAt: Number(row.createdAt),
+      updatedAt: Number(row.updatedAt),
     }
   }, {
     detail: {

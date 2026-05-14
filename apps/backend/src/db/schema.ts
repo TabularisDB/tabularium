@@ -57,7 +57,7 @@ export const plugins = sqliteTable('plugins', {
   webhookSecret: text('webhook_secret').notNull(),
   status: text('status', { enum: ['approved', 'pending', 'rejected'] }).notNull().default('approved'),
   rejectionReason: text('rejection_reason'),
-  // .pluggr manifest fields (re-fetched on every release webhook).
+  // .tabularium manifest fields (re-fetched on every release webhook).
   category: text('category'),
   tags: text('tags'), // JSON-encoded string[] — kept as JSON for portability across dialects.
   license: text('license'),
@@ -114,7 +114,7 @@ export const settings = sqliteTable('settings', {
 export const markdownPages = sqliteTable('markdown_pages', {
   slug: text('slug').primaryKey(),
   title: text('title').notNull(),
-  content: text('content').notNull(), // raw markdown (may include <pluggr-widget …/>)
+  content: text('content').notNull(), // raw markdown (may include <tabularium-widget …/>)
   published: integer('published').notNull().default(1),
   // Public route — must start with `/`. `/` is the homepage override.
   path: text('path').notNull().unique(),

@@ -14,7 +14,7 @@
 	import Badge from '$components/ui/Badge.svelte'
 	import Button from '$components/ui/Button.svelte'
 	import Skeleton from '$components/ui/Skeleton.svelte'
-	import { api } from '$lib/api'
+	import { eden } from '$lib/eden'
 	import { auth } from '$lib/stores/auth.svelte'
 	import { toast } from 'svelte-sonner'
 	import type { Plugin } from '$lib/types'
@@ -31,9 +31,12 @@
 		loading = true
 		notFound = false
 		try {
-			plugin = await api.get<Plugin>(`/api/plugins/${slug}`)
-		} catch (e) {
-			if ((e as { status?: number }).status === 404) notFound = true
+			const { data, error } = await eden.api.plugins({ slug }).get()
+			if (error) {
+				if (error.status === 404) notFound = true
+				return
+			}
+			plugin = data as Plugin
 		} finally {
 			loading = false
 		}
@@ -72,7 +75,8 @@
 		if (!confirm(`Delete plugin '${plugin.id}' and all releases?`)) return
 		deleting = true
 		try {
-			await api.delete(`/api/plugins/${plugin.id}`)
+			const { error } = await eden.api.plugins({ slug: plugin.id }).delete()
+			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
 			toast.success('Plugin deleted')
 			goto('/plugins')
 		} catch (e) {
@@ -89,10 +93,11 @@
 		if (!newOwnerId?.trim()) return
 		const message = prompt('Optional message for the recipient:') ?? undefined
 		try {
-			await api.post(`/api/plugins/${plugin.id}/transfer`, {
+			const { error } = await eden.api.plugins({ slug: plugin.id }).transfer.post({
 				newOwnerId: newOwnerId.trim(),
 				message: message?.trim() || undefined,
 			})
+			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
 			toast.success('Transfer offered — recipient must accept within 7 days')
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : 'Transfer failed')

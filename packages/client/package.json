@@ -1,0 +1,24 @@
+{
+  "name": "@tabularium/client",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "main": "src/index.ts",
+  "module": "src/index.ts",
+  "types": "src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "dependencies": {
+    "@elysiajs/eden": "^1.4.9",
+    "@tabularium/registry-backend": "workspace:*",
+    "elysia": "^1.4.28"
+  },
+  "devDependencies": {
+    "@tabularium/tsconfig": "workspace:*",
+    "typescript": "^5.7.0"
+  }
+}

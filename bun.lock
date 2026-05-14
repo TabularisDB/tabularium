@@ -11,7 +11,7 @@
       },
     },
     "apps/backend": {
-      "name": "@pluggr/registry-backend",
+      "name": "@tabularium/registry-backend",
       "version": "0.0.0",
       "dependencies": {
         "@elysiajs/cors": "^1.4.2",
@@ -32,7 +32,7 @@
         "yaml": "^2.9.0",
       },
       "devDependencies": {
-        "@pluggr/tsconfig": "workspace:*",
+        "@tabularium/tsconfig": "workspace:*",
         "drizzle-kit": "^1.0.0-rc.2",
         "pino-pretty": "^13.1.3",
       },
@@ -41,24 +41,26 @@
       },
     },
     "apps/frontend": {
-      "name": "@pluggr/registry-frontend",
+      "name": "@tabularium/registry-frontend",
       "version": "0.0.1",
       "dependencies": {
         "@lucide/svelte": "^1.3.0",
+        "@tabularium/client": "workspace:*",
         "@tanstack/svelte-query": "^5.62.0",
         "bits-ui": "^2.4.1",
         "carta-md": "^4.11.2",
         "clsx": "^2.1.1",
+        "elysia": "^1.4.28",
         "mode-watcher": "^1.0.7",
         "svelte-sonner": "^1.0.0",
         "tailwind-merge": "^3.0.0",
         "tailwind-variants": "^1.0.0",
       },
       "devDependencies": {
-        "@pluggr/tsconfig": "workspace:*",
         "@sveltejs/adapter-static": "^3.0.6",
         "@sveltejs/kit": "^2.57.0",
         "@sveltejs/vite-plugin-svelte": "^7.0.0",
+        "@tabularium/tsconfig": "workspace:*",
         "@tailwindcss/typography": "^0.5.19",
         "@tailwindcss/vite": "^4.2.2",
         "svelte": "^5.55.2",
@@ -68,8 +70,21 @@
         "vite": "^7.0.0",
       },
     },
+    "packages/client": {
+      "name": "@tabularium/client",
+      "version": "0.0.0",
+      "dependencies": {
+        "@elysiajs/eden": "^1.4.9",
+        "@tabularium/registry-backend": "workspace:*",
+        "elysia": "^1.4.28",
+      },
+      "devDependencies": {
+        "@tabularium/tsconfig": "workspace:*",
+        "typescript": "^5.7.0",
+      },
+    },
     "packages/tsconfig": {
-      "name": "@pluggr/tsconfig",
+      "name": "@tabularium/tsconfig",
       "version": "0.0.0",
     },
   },
@@ -104,6 +119,8 @@
     "@drizzle-team/brocli": ["@drizzle-team/brocli@0.11.0", "", {}, "sha512-hD3pekGiPg0WPCCGAZmusBBJsDqGUR66Y452YgQsZOnkdQ7ViEPKuyP4huUGEZQefp8g34RRodXYmJ2TbCH+tg=="],
 
     "@elysiajs/cors": ["@elysiajs/cors@1.4.2", "", { "peerDependencies": { "elysia": ">= 1.4.0" } }, "sha512-FTCcbH35brTLigF1W7BYySRZomgI/dBEMK9BgK9RP9Nez7zmpGh4koL/Yr1BFv8nYz7CfhRvcM8d/c+XnwMaVQ=="],
+
+    "@elysiajs/eden": ["@elysiajs/eden@1.4.9", "", { "peerDependencies": { "elysia": ">=1.4.19" } }, "sha512-3CKVD4ycVjB8nCNssfmhnUuq3SzSHkUES3v5PNCFr9LxIrx39/HVRAZ8z2sLxrFqzUs48dCBZaxoZzJ5UUVHDA=="],
 
     "@elysiajs/openapi": ["@elysiajs/openapi@1.4.15", "", { "peerDependencies": { "elysia": ">= 1.4.0" } }, "sha512-HDtGIrWfFJk6UJS7qbgRmjifbSqnnRGDM3CsU/GVJkxLbEVEkNuQDf+Quh9fGbytSrJ8g4+tX9eVjshYhCH29w=="],
 
@@ -206,12 +223,6 @@
     "@oxc-project/types": ["@oxc-project/types@0.129.0", "", {}, "sha512-3oz8m3FGdr2nDXVqmFUw7jolKliC4MoyXYIG2c7gpjBnzUWQpUGIYcXYKxTdTi+N2jusvt610ckTMkxdwHkYEg=="],
 
     "@pinojs/redact": ["@pinojs/redact@0.4.0", "", {}, "sha512-k2ENnmBugE/rzQfEcdWHcCY+/FM3VLzH9cYEsbdsoqrvzAKRhUZeRNhAZvB8OitQJ1TBed3yqWtdjzS6wJKBwg=="],
-
-    "@pluggr/registry-backend": ["@pluggr/registry-backend@workspace:apps/backend"],
-
-    "@pluggr/registry-frontend": ["@pluggr/registry-frontend@workspace:apps/frontend"],
-
-    "@pluggr/tsconfig": ["@pluggr/tsconfig@workspace:packages/tsconfig"],
 
     "@polka/url": ["@polka/url@1.0.0-next.29", "", {}, "sha512-wwQAWhWSuHaag8c4q/KN/vCoeOJYshAIvMQwD4GpSb3OiZklFfvAgmj0VCBBImRpuF/aFgIRzllXlVX93Jevww=="],
 
@@ -324,6 +335,14 @@
     "@sveltejs/vite-plugin-svelte": ["@sveltejs/vite-plugin-svelte@7.1.2", "", { "dependencies": { "deepmerge": "^4.3.1", "magic-string": "^0.30.21", "obug": "^2.1.0", "vitefu": "^1.1.2" }, "peerDependencies": { "svelte": "^5.46.4", "vite": "^8.0.0-beta.7 || ^8.0.0" } }, "sha512-DrUBA2UXRfDmUX/ZTiEopd3X40yavsJF1FX2RygcuIScHL7o5YX1fMvoYnDhjeJQC4weCOklirpNWlcb2NiSeA=="],
 
     "@swc/helpers": ["@swc/helpers@0.5.21", "", { "dependencies": { "tslib": "^2.8.0" } }, "sha512-jI/VAmtdjB/RnI8GTnokyX7Ug8c+g+ffD6QRLa6XQewtnGyukKkKSk3wLTM3b5cjt1jNh9x0jfVlagdN2gDKQg=="],
+
+    "@tabularium/client": ["@tabularium/client@workspace:packages/client"],
+
+    "@tabularium/registry-backend": ["@tabularium/registry-backend@workspace:apps/backend"],
+
+    "@tabularium/registry-frontend": ["@tabularium/registry-frontend@workspace:apps/frontend"],
+
+    "@tabularium/tsconfig": ["@tabularium/tsconfig@workspace:packages/tsconfig"],
 
     "@tailwindcss/node": ["@tailwindcss/node@4.3.0", "", { "dependencies": { "@jridgewell/remapping": "^2.3.5", "enhanced-resolve": "^5.21.0", "jiti": "^2.6.1", "lightningcss": "1.32.0", "magic-string": "^0.30.21", "source-map-js": "^1.2.1", "tailwindcss": "4.3.0" } }, "sha512-aFb4gUhFOgdh9AXo4IzBEOzBkkAxm9VigwDJnMIYv3lcfXCJVesNfbEaBl4BNgVRyid92AmdviqwBUBRKSeY3g=="],
 

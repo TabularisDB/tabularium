@@ -6,6 +6,17 @@ export type JwtPayload = {
   identityId: string | null
   username: string
   providerInstanceId: string | null
+  bootstrap?: boolean
+}
+
+export async function signBootstrapJwt(): Promise<string> {
+  return signJwt({
+    sub: 'bootstrap',
+    identityId: null,
+    username: 'admin',
+    providerInstanceId: null,
+    bootstrap: true,
+  })
 }
 
 function getSecret(): Uint8Array {

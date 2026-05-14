@@ -5,6 +5,6 @@ export default defineConfig({
   out: './src/db/migrations.pg',
   dialect: 'postgresql',
   dbCredentials: {
-    url: process.env.DATABASE_URL ?? 'postgres://postgres:postgres@localhost:5432/pluggr',
+    url: process.env.DATABASE_URL ?? 'postgres://postgres:postgres@localhost:5432/tabularium',
   },
 })

@@ -58,7 +58,7 @@ export const plugins = sqliteTable('plugins', {
   webhookSecret: text('webhook_secret').notNull(),
   status: text('status', { enum: ['approved', 'pending', 'rejected'] }).notNull().default('approved'),
   rejectionReason: text('rejection_reason'),
-  // .pluggr manifest fields (re-fetched on every release webhook).
+  // .tabularium manifest fields (re-fetched on every release webhook).
   category: text('category'),
   tags: text('tags'), // JSON-encoded string[] — kept as JSON for portability across dialects.
   license: text('license'),

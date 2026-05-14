@@ -13,8 +13,9 @@ export default defineConfig({
 		},
 	},
 	optimizeDeps: {
-		// Vite's esbuild pre-bundler can't read .svelte files; keep Svelte component
-		// libs out of pre-bundling so the vite-plugin-svelte handles them at runtime.
+		// Svelte component libs stay out — vite-plugin-svelte handles .svelte at runtime.
 		exclude: ['svelte-sonner', 'bits-ui', 'mode-watcher', '@lucide/svelte', 'carta-md'],
+		// Force-bundle CJS-only deps that carta-md pulls in (no native ESM exports).
+		include: ['extend', 'unist-util-visit', 'unist-util-stringify-position'],
 	},
 });

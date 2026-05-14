@@ -1,4 +1,4 @@
-import { api } from '$lib/api'
+import { eden } from '$lib/eden'
 import type { AuthUser } from '$lib/types'
 
 type AuthState = {
@@ -15,12 +15,19 @@ function createAuthStore() {
 		state.loading = true
 		state.error = null
 		try {
-			state.user = await api.get<AuthUser>('/auth/me')
+			const { data, error } = await eden.auth.me.get()
+			if (error) {
+				if (error.status !== 401) {
+					const v = error.value as { error?: string } | string | null
+					state.error = typeof v === 'string' ? v : (v?.error ?? `Request failed (${error.status})`)
+				}
+				state.user = null
+			} else {
+				state.user = data as AuthUser
+			}
 		} catch (e) {
 			state.user = null
-			if ((e as { status?: number }).status !== 401) {
-				state.error = e instanceof Error ? e.message : 'Failed to load user'
-			}
+			state.error = e instanceof Error ? e.message : 'Failed to load user'
 		} finally {
 			state.loading = false
 			loaded = true
@@ -29,7 +36,7 @@ function createAuthStore() {
 
 	async function logout() {
 		try {
-			await api.post('/auth/logout')
+			await eden.auth.logout.post({})
 		} finally {
 			state.user = null
 			state.error = null

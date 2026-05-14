@@ -34,7 +34,7 @@ async function exchangeGithub(inst: ProviderInstance, code: string): Promise<Pro
   log.info({ instance: inst.id }, 'github token issued')
   const apiBase = inst.baseUrl === 'https://github.com' ? 'https://api.github.com' : `${inst.baseUrl}/api/v3`
   const profileRes = await fetch(`${apiBase}/user`, {
-    headers: { Authorization: `Bearer ${accessToken}`, 'User-Agent': 'pluggr/1.0' },
+    headers: { Authorization: `Bearer ${accessToken}`, 'User-Agent': 'tabularium/1.0' },
   })
   const profile = await profileRes.json() as { id: number; login: string }
   return { externalId: String(profile.id), username: profile.login, accessToken }

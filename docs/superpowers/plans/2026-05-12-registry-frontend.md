@@ -14,8 +14,8 @@
 
 ```
 apps/frontend/
-├── package.json                                # name: "@tabularis/registry-frontend"
-├── tsconfig.json                               # extends @tabularis/tsconfig/base.json
+├── package.json                                # name: "@tabularium/registry-frontend"
+├── tsconfig.json                               # extends @tabularium/tsconfig/base.json
 ├── tsconfig.node.json                          # Vite config TS settings
 ├── vite.config.ts                              # Vite + Tailwind + TanStack Router plugins
 ├── index.html
@@ -52,7 +52,7 @@ apps/frontend/
             └── success.tsx                     # /auth/success
 ```
 
-**Backend dependency:** `apps/frontend/package.json` adds `"@tabularis/registry-backend": "workspace:*"` so it can `import type { App } from '@tabularis/registry-backend/src/index'` for Eden Treaty's type parameter. Types only — no runtime import, no bundling of the backend.
+**Backend dependency:** `apps/frontend/package.json` adds `"@tabularium/registry-backend": "workspace:*"` so it can `import type { App } from '@tabularium/registry-backend/src/index'` for Eden Treaty's type parameter. Types only — no runtime import, no bundling of the backend.
 
 **Production mount:** `apps/backend/src/index.ts` already mounts `../frontend/dist` via `@elysiajs/static`. The SPA fallback via `onError` is already wired. No backend changes are needed in Plan B.
 
@@ -82,7 +82,7 @@ mkdir -p apps/frontend/public
 ```bash
 cat > apps/frontend/package.json <<'EOF'
 {
-  "name": "@tabularis/registry-frontend",
+  "name": "@tabularium/registry-frontend",
   "version": "0.0.0",
   "private": true,
   "type": "module",
@@ -95,7 +95,7 @@ cat > apps/frontend/package.json <<'EOF'
   "dependencies": {
     "@elysiajs/eden": "^1.4.0",
     "@hookform/resolvers": "^3.10.0",
-    "@tabularis/registry-backend": "workspace:*",
+    "@tabularium/registry-backend": "workspace:*",
     "@tanstack/react-query": "^5.62.0",
     "@tanstack/react-router": "^1.95.0",
     "class-variance-authority": "^0.7.1",
@@ -110,7 +110,7 @@ cat > apps/frontend/package.json <<'EOF'
     "zod": "^3.24.0"
   },
   "devDependencies": {
-    "@tabularis/tsconfig": "workspace:*",
+    "@tabularium/tsconfig": "workspace:*",
     "@tailwindcss/vite": "^4.0.0",
     "@tanstack/router-plugin": "^1.95.0",
     "@types/react": "^19.0.0",
@@ -130,7 +130,7 @@ EOF
 ```bash
 cat > apps/frontend/tsconfig.json <<'EOF'
 {
-  "extends": "@tabularis/tsconfig/base.json",
+  "extends": "@tabularium/tsconfig/base.json",
   "compilerOptions": {
     "jsx": "react-jsx",
     "useDefineForClassFields": true,
@@ -152,7 +152,7 @@ EOF
 ```bash
 cat > apps/frontend/tsconfig.node.json <<'EOF'
 {
-  "extends": "@tabularis/tsconfig/base.json",
+  "extends": "@tabularium/tsconfig/base.json",
   "compilerOptions": {
     "composite": true,
     "noEmit": false,
@@ -324,7 +324,7 @@ cd /home/newt/Projekte/Personal/TabularisDB/registry
 bun install
 ```
 
-Expected: workspace dep `@tabularis/registry-frontend` resolves; no errors. There may be peer-dep warnings about React 19 — those are fine.
+Expected: workspace dep `@tabularium/registry-frontend` resolves; no errors. There may be peer-dep warnings about React 19 — those are fine.
 
 - [ ] **Step 12: Smoke test the dev server**
 
@@ -1075,7 +1075,7 @@ git commit -m "feat(frontend): add theme hook and toggle"
 ```bash
 cat > apps/frontend/src/lib/api.ts <<'EOF'
 import { treaty } from '@elysiajs/eden'
-import type { App } from '@tabularis/registry-backend/src'
+import type { App } from '@tabularium/registry-backend/src'
 
 const BASE_URL = import.meta.env.DEV ? 'http://localhost:3000' : ''
 
@@ -1085,7 +1085,7 @@ export const api = treaty<App>(BASE_URL, {
 EOF
 ```
 
-Eden Treaty types come from the backend `App` type — that's exported by `apps/backend/src/index.ts` (line `export type App = typeof app`). Bun's workspace resolution + the `@tabularis/registry-backend` dep makes the import work.
+Eden Treaty types come from the backend `App` type — that's exported by `apps/backend/src/index.ts` (line `export type App = typeof app`). Bun's workspace resolution + the `@tabularium/registry-backend` dep makes the import work.
 
 - [ ] **Step 2: Write `apps/frontend/src/lib/auth.ts`**
 
@@ -1327,7 +1327,7 @@ bunx tsc -b --pretty false 2>&1 | head -20
 cd /home/newt/Projekte/Personal/TabularisDB/registry
 ```
 
-Expected: clean. If you see "Cannot find module" for `@tabularis/registry-backend/src`, verify that file exists (`ls apps/backend/src/index.ts`) and `apps/backend/package.json` declares `"module": "src/index.ts"` (it does — from Plan A Task 2).
+Expected: clean. If you see "Cannot find module" for `@tabularium/registry-backend/src`, verify that file exists (`ls apps/backend/src/index.ts`) and `apps/backend/package.json` declares `"module": "src/index.ts"` (it does — from Plan A Task 2).
 
 - [ ] **Step 7: Commit**
 
@@ -2558,7 +2558,7 @@ Expected: clean. If Eden Treaty type errors appear (e.g. property `submit` not f
 
 ```bash
 cd /home/newt/Projekte/Personal/TabularisDB/registry/apps/frontend
-bun -e "import type { App } from '@tabularis/registry-backend/src'; const a: App = null as any; void a"
+bun -e "import type { App } from '@tabularium/registry-backend/src'; const a: App = null as any; void a"
 ```
 
 If that runs (no module-not-found), the type IS being picked up — the property names just may differ. In that case, inspect what Eden expects by hovering `api.api` in your editor. The chain pattern is `api.<segment>(.<segment> or ({param}))...` and the verb is the last property. So `POST /api/submit/oauth` becomes `api.api.submit.oauth.post(body)`.

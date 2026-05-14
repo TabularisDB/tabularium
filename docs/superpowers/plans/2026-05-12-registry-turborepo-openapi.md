@@ -19,7 +19,7 @@ TabularisDB/registry/                          # monorepo root (existing dir, re
 ├── bun.lock                                   # regenerated
 ├── packages/
 │   └── tsconfig/
-│       ├── package.json                       # NEW: { "name": "@tabularis/tsconfig" }
+│       ├── package.json                       # NEW: { "name": "@tabularium/tsconfig" }
 │       └── base.json                          # NEW: shared TS compilerOptions
 ├── apps/
 │   └── backend/                               # all current backend files move here via git mv
@@ -29,7 +29,7 @@ TabularisDB/registry/                          # monorepo root (existing dir, re
 │       ├── docs/                              # NOT moved — stays at root
 │       ├── bunfig.toml                        # moved
 │       ├── drizzle.config.ts                  # moved
-│       ├── tsconfig.json                      # moved + edited to extend @tabularis/tsconfig
+│       ├── tsconfig.json                      # moved + edited to extend @tabularium/tsconfig
 │       ├── package.json                       # moved + renamed
 │       ├── .env.example                       # moved
 │       └── .gitignore                         # moved
@@ -137,7 +137,7 @@ EOF
 mkdir -p packages/tsconfig
 cat > packages/tsconfig/package.json <<'EOF'
 {
-  "name": "@tabularis/tsconfig",
+  "name": "@tabularium/tsconfig",
   "version": "0.0.0",
   "private": true,
   "files": ["base.json"]
@@ -238,7 +238,7 @@ The existing root `package.json` no longer exists at root (you wrote a new one i
 ```bash
 cat > apps/backend/package.json <<'EOF'
 {
-  "name": "@tabularis/registry-backend",
+  "name": "@tabularium/registry-backend",
   "version": "0.0.0",
   "private": true,
   "module": "src/index.ts",
@@ -253,7 +253,7 @@ cat > apps/backend/package.json <<'EOF'
     "generate": "bunx drizzle-kit generate"
   },
   "devDependencies": {
-    "@tabularis/tsconfig": "workspace:*",
+    "@tabularium/tsconfig": "workspace:*",
     "drizzle-kit": "^0.31.10"
   },
   "peerDependencies": {
@@ -273,7 +273,7 @@ EOF
 ```
 
 Two notable diffs vs the old backend `package.json`:
-- The `name` is now `@tabularis/registry-backend` and the workspace adds `@tabularis/tsconfig`.
+- The `name` is now `@tabularium/registry-backend` and the workspace adds `@tabularium/tsconfig`.
 - The vendored tarball path moves from absolute (`file:/home/newt/.../elysia-file-router-0.0.1.tgz`) to relative (`file:../../../vendor/elysia-file-router/elysia-file-router-0.0.1.tgz`). The relative path from `apps/backend/` to `/home/newt/Projekte/Personal/TabularisDB/vendor/elysia-file-router/...` is `../../../vendor/...` — verify by running `ls ../../vendor/elysia-file-router/elysia-file-router-0.0.1.tgz` from inside `apps/backend/` after `cd`. If the file is missing, regenerate it: `cd /home/newt/Projekte/Personal/TabularisDB/vendor/elysia-file-router && bun pm pack`.
 - `@elysiajs/openapi` is added now so a single `bun install` in Task 3 covers everything.
 
@@ -282,7 +282,7 @@ Two notable diffs vs the old backend `package.json`:
 ```bash
 cat > apps/backend/tsconfig.json <<'EOF'
 {
-  "extends": "@tabularis/tsconfig/base.json",
+  "extends": "@tabularium/tsconfig/base.json",
   "compilerOptions": {
     "outDir": "dist",
     "baseUrl": ".",
@@ -333,7 +333,7 @@ The old layout's `node_modules` is no longer correct for the workspace setup.
 bun install
 ```
 
-Expected output near the end: a count of packages installed plus links for the workspace deps (you should see `@tabularis/registry-backend` and `@tabularis/tsconfig` mentioned). No errors.
+Expected output near the end: a count of packages installed plus links for the workspace deps (you should see `@tabularium/registry-backend` and `@tabularium/tsconfig` mentioned). No errors.
 
 - [ ] **Step 3: Verify the backend tests still pass from the new location**
 

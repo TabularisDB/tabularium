@@ -5,7 +5,7 @@
 	import CardHeader from '$components/ui/CardHeader.svelte'
 	import CardTitle from '$components/ui/CardTitle.svelte'
 	import CardDescription from '$components/ui/CardDescription.svelte'
-	import { api } from '$lib/api'
+	import { eden } from '$lib/eden'
 
 	type AuditEntry = {
 		id: string
@@ -24,9 +24,11 @@
 
 	onMount(async () => {
 		try {
-			const data = await api.get<{ total: number; entries: AuditEntry[] }>('/api/admin/audit?limit=200')
-			entries = data.entries
-			total = data.total
+			const { data, error } = await eden.api.admin.audit.get({ query: { limit: '200' } })
+			if (error) throw error
+			const res = data as { total: number; entries: AuditEntry[] }
+			entries = res.entries
+			total = res.total
 		} finally {
 			loading = false
 		}

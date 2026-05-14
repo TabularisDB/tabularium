@@ -2,7 +2,7 @@
 	import { onMount } from 'svelte'
 	import PluginCard from '$components/PluginCard.svelte'
 	import Skeleton from '$components/ui/Skeleton.svelte'
-	import { api } from '$lib/api'
+	import { eden } from '$lib/eden'
 	import type { Plugin, PluginListResponse } from '$lib/types'
 
 	let { limit = 6, cols = 3, heading = '' }: { limit?: number; cols?: number; heading?: string } = $props()
@@ -12,8 +12,9 @@
 	onMount(async () => {
 		try {
 			// We don't track install counts yet — "popular" falls back to most-recently-updated.
-			const data = await api.get<PluginListResponse>(`/api/plugins?sort=updated&limit=${limit}`)
-			plugins = data.plugins
+			const { data, error } = await eden.api.plugins.get({ query: { sort: 'updated', limit: String(limit) } })
+			if (error) throw error
+			plugins = (data as PluginListResponse).plugins
 		} catch {
 			plugins = []
 		}

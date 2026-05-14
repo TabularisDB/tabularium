@@ -1,4 +1,4 @@
-import { api } from '$lib/api'
+import { eden } from '$lib/eden'
 
 export type Branding = {
 	name: string
@@ -14,7 +14,7 @@ export type Branding = {
 }
 
 const DEFAULTS: Branding = {
-	name: 'Pluggr',
+	name: 'Tabularium',
 	tagline: 'Discover, submit, ship plugins.',
 	primaryHex: '#3b82f6',
 	accentHex: '#8b5cf6',
@@ -42,7 +42,7 @@ function createBrandingStore() {
 			if (link) link.href = b.faviconUrl
 		}
 		const head = document.head
-		head.querySelector<HTMLElement>('[data-pluggr-analytics]')?.remove()
+		head.querySelector<HTMLElement>('[data-tabularium-analytics]')?.remove()
 		if (b.analyticsScript) {
 			const wrapper = document.createElement('div')
 			wrapper.innerHTML = b.analyticsScript
@@ -52,28 +52,30 @@ function createBrandingStore() {
 					const clone = document.createElement('script')
 					for (const attr of Array.from(original.attributes)) clone.setAttribute(attr.name, attr.value)
 					clone.text = original.text
-					clone.dataset.pluggrAnalytics = '1'
+					clone.dataset.tabulariumAnalytics = '1'
 					head.appendChild(clone)
 					continue
 				}
-				node.setAttribute('data-pluggr-analytics', '1')
+				node.setAttribute('data-tabularium-analytics', '1')
 				head.appendChild(node)
 			}
 		}
-		const robots = head.querySelector<HTMLMetaElement>('meta[name="robots"][data-pluggr-robots]')
+		const robots = head.querySelector<HTMLMetaElement>('meta[name="robots"][data-tabularium-robots]')
 		robots?.remove()
 		if (!b.allowIndexing) {
 			const meta = document.createElement('meta')
 			meta.name = 'robots'
 			meta.content = 'noindex,nofollow'
-			meta.dataset.pluggrRobots = '1'
+			meta.dataset.tabulariumRobots = '1'
 			head.appendChild(meta)
 		}
 	}
 
 	async function refresh() {
 		try {
-			const fresh = await api.get<Branding>('/api/branding')
+			const { data, error } = await eden.api.branding.get()
+			if (error) throw error
+			const fresh = data as Branding
 			state = fresh
 			applyToDom(fresh)
 		} catch {

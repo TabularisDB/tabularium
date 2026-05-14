@@ -36,7 +36,7 @@ export default new Elysia()
     const manifest = await resolveManifest(token, ref, { ref: branch })
     if (!manifest) {
       set.status = 404
-      return { error: `No .pluggr file found in ${plugin.repoUrl} @ ${branch}` }
+      return { error: `No .tabularium file found in ${plugin.repoUrl} @ ${branch}` }
     }
     const patch = manifestPatch(manifest, {
       repoBase: rawContentBase(ref, branch),
@@ -54,8 +54,8 @@ export default new Elysia()
   }, {
     detail: {
       tags: ['Admin'],
-      summary: 'Re-fetch the .pluggr manifest from the repo',
-      description: 'Pulls `.pluggr` (and the README) from the repo at the given ref (defaults to the latest released tag or HEAD).',
+      summary: 'Re-fetch the .tabularium manifest from the repo',
+      description: 'Pulls `.tabularium` (and the README) from the repo at the given ref (defaults to the latest released tag or HEAD).',
       operationId: 'refreshPluginManifest',
       security: [{ bearerAuth: [] }, { cookieAuth: [] }],
     },

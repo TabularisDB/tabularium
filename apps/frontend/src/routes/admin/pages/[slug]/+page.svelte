@@ -14,7 +14,7 @@
 	import Label from '$components/ui/Label.svelte'
 	import { Carta, MarkdownEditor } from 'carta-md'
 	import 'carta-md/default.css'
-	import { api } from '$lib/api'
+	import { eden } from '$lib/eden'
 
 	const slug = $derived(page.params.slug)
 
@@ -40,12 +40,12 @@
 	let saving = $state(false)
 
 	const WIDGET_SNIPPETS: Array<{ label: string; snippet: string }> = [
-		{ label: 'Featured plugins', snippet: '<pluggr-widget name="featured-plugins" limit="6" cols="3" />' },
-		{ label: 'Recent plugins', snippet: '<pluggr-widget name="recent-plugins" limit="6" cols="3" />' },
-		{ label: 'Popular plugins', snippet: '<pluggr-widget name="popular-plugins" limit="6" cols="3" />' },
-		{ label: 'Plugin grid by category', snippet: '<pluggr-widget name="plugin-grid" category="databases" limit="6" cols="3" />' },
-		{ label: 'Top requests', snippet: '<pluggr-widget name="popular-requests" limit="5" />' },
-		{ label: 'Stats', snippet: '<pluggr-widget name="stats" />' },
+		{ label: 'Featured plugins', snippet: '<tabularium-widget name="featured-plugins" limit="6" cols="3" />' },
+		{ label: 'Recent plugins', snippet: '<tabularium-widget name="recent-plugins" limit="6" cols="3" />' },
+		{ label: 'Popular plugins', snippet: '<tabularium-widget name="popular-plugins" limit="6" cols="3" />' },
+		{ label: 'Plugin grid by category', snippet: '<tabularium-widget name="plugin-grid" category="databases" limit="6" cols="3" />' },
+		{ label: 'Top requests', snippet: '<tabularium-widget name="popular-requests" limit="5" />' },
+		{ label: 'Stats', snippet: '<tabularium-widget name="stats" />' },
 	]
 
 	function insertWidget(snippet: string) {
@@ -57,13 +57,15 @@
 	async function load() {
 		loading = true
 		try {
-			const data = await api.get<AdminPage>(`/api/admin/pages/${slug}`)
-			title = data.title
-			path = data.path
-			content = data.content
-			published = data.published
-			showInFooter = data.showInFooter
-			navOrder = data.navOrder
+			const { data, error } = await eden.api.admin.pages({ slug }).get()
+			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
+			const res = data as AdminPage
+			title = res.title
+			path = res.path
+			content = res.content
+			published = res.published
+			showInFooter = res.showInFooter
+			navOrder = res.navOrder
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : 'Failed to load')
 		} finally {
@@ -76,7 +78,7 @@
 	async function save() {
 		saving = true
 		try {
-			await api.patch(`/api/admin/pages/${slug}`, {
+			const { error } = await eden.api.admin.pages({ slug }).patch({
 				title,
 				path,
 				content,
@@ -84,6 +86,7 @@
 				showInFooter,
 				navOrder,
 			})
+			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
 			toast.success('Saved')
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : 'Failed to save')
@@ -161,7 +164,7 @@
 					<MarkdownEditor {carta} bind:value={content} mode="split" />
 				</div>
 				<p class="text-xs text-muted-foreground">
-					GFM supported. Inline HTML allowed for <code class="font-mono">&lt;pluggr-widget /&gt;</code>. Output is sanitized server-side.
+					GFM supported. Inline HTML allowed for <code class="font-mono">&lt;tabularium-widget /&gt;</code>. Output is sanitized server-side.
 				</p>
 			</div>
 		</CardContent>

@@ -14,7 +14,7 @@ export type Branding = {
 }
 
 const DEFAULTS: Branding = {
-  name: 'Pluggr',
+  name: 'Tabularium',
   tagline: 'Discover, submit, ship plugins.',
   primaryHex: '#3b82f6',
   accentHex: '#8b5cf6',

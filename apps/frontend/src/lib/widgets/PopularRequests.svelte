@@ -3,7 +3,7 @@
 	import ThumbsUp from '@lucide/svelte/icons/thumbs-up'
 	import Skeleton from '$components/ui/Skeleton.svelte'
 	import Badge from '$components/ui/Badge.svelte'
-	import { api } from '$lib/api'
+	import { eden } from '$lib/eden'
 	import type { PluginRequest } from '$lib/types'
 
 	let { limit = 5, heading = 'Top community requests' }: { limit?: number; heading?: string } = $props()
@@ -12,8 +12,9 @@
 
 	onMount(async () => {
 		try {
-			const data = await api.get<{ requests: PluginRequest[] }>(`/api/requests?sort=upvotes&limit=${limit}`)
-			requests = data.requests
+			const { data, error } = await eden.api.requests.get({ query: { sort: 'upvotes', limit: String(limit) } })
+			if (error) throw error
+			requests = (data as { requests: PluginRequest[] }).requests
 		} catch {
 			requests = []
 		}

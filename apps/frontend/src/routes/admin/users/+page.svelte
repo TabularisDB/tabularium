@@ -12,7 +12,7 @@
 	import Input from '$components/ui/Input.svelte'
 	import Label from '$components/ui/Label.svelte'
 	import Select from '$components/ui/Select.svelte'
-	import { api } from '$lib/api'
+	import { eden } from '$lib/eden'
 	import { toast } from 'svelte-sonner'
 	import type { AdminUser } from '$lib/types'
 
@@ -26,8 +26,9 @@
 	async function load() {
 		loading = true
 		try {
-			const data = await api.get<{ users: AdminUser[] }>('/api/admin/users')
-			users = data.users
+			const { data, error } = await eden.api.admin.users.get()
+			if (error) throw error
+			users = (data as { users: AdminUser[] }).users
 		} finally {
 			loading = false
 		}
@@ -47,7 +48,8 @@
 
 	async function quickSetRole(user: AdminUser, role: 'user' | 'admin') {
 		try {
-			await api.patch(`/api/admin/users/${user.id}`, { role })
+			const { error } = await eden.api.admin.users({ id: user.id }).patch({ role })
+			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
 			toast.success(`${user.displayName} → ${role}`)
 			await load()
 		} catch (e) {
@@ -66,7 +68,8 @@
 				closeEdit()
 				return
 			}
-			await api.patch(`/api/admin/users/${editing.id}`, patch)
+			const { error } = await eden.api.admin.users({ id: editing.id }).patch(patch)
+			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
 			toast.success('User updated')
 			closeEdit()
 			await load()

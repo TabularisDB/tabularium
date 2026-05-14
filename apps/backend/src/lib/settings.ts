@@ -9,7 +9,7 @@ const cache = new Map<string, { value: string; encrypted: boolean }>()
 let initialized = false
 
 export async function initSettings(): Promise<void> {
-  const rows = await db.select().from(settings).all()
+  const rows = await db.select().from(settings)
   cache.clear()
   for (const row of rows) {
     const value = row.encrypted ? decryptToken(row.value) : row.value
@@ -45,7 +45,7 @@ export type SettingEntry = {
 
 export async function listSettings(): Promise<SettingEntry[]> {
   assertInit()
-  const rows = await db.select().from(settings).all()
+  const rows = await db.select().from(settings)
   return rows.map((r) => ({
     key: r.key,
     value: r.encrypted === 1 ? (r.value ? MASK : null) : r.value,

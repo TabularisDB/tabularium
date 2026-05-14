@@ -2,9 +2,7 @@
 	import { onMount } from 'svelte'
 	import { toast } from 'svelte-sonner'
 	import Save from '@lucide/svelte/icons/save'
-	import Database from '@lucide/svelte/icons/database'
 	import HardDrive from '@lucide/svelte/icons/hard-drive'
-	import Cloud from '@lucide/svelte/icons/cloud'
 	import Card from '$components/ui/Card.svelte'
 	import CardContent from '$components/ui/CardContent.svelte'
 	import CardDescription from '$components/ui/CardDescription.svelte'
@@ -15,7 +13,7 @@
 	import Label from '$components/ui/Label.svelte'
 	import Select from '$components/ui/Select.svelte'
 	import Badge from '$components/ui/Badge.svelte'
-	import { api } from '$lib/api'
+	import { eden } from '$lib/eden'
 
 	type CacheState = {
 		driver: 'off' | 'memory' | 'redis'
@@ -57,7 +55,9 @@
 
 	async function load() {
 		try {
-			cacheState = await api.get<CacheState>('/api/admin/infra/cache')
+			const { data, error } = await eden.api.admin.infra.cache.get()
+			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
+			cacheState = data as CacheState
 			driver = cacheState.driver
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : 'Failed to load cache state')
@@ -68,7 +68,9 @@
 
 	async function loadStorage() {
 		try {
-			storageState = await api.get<StorageState>('/api/admin/infra/storage')
+			const { data, error } = await eden.api.admin.infra.storage.get()
+			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
+			storageState = data as StorageState
 			storageDriver = storageState.driver
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : 'Failed to load storage state')
@@ -91,7 +93,8 @@
 				if (s3SecretKey) s3.secretKey = s3SecretKey
 				if (Object.keys(s3).length) body.s3 = s3
 			}
-			await api.put('/api/admin/infra/storage', body)
+			const { error } = await eden.api.admin.infra.storage.put(body)
+			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
 			toast.success(`Storage reconfigured to ${storageDriver}`)
 			s3AccessKey = ''
 			s3SecretKey = ''
@@ -113,7 +116,8 @@
 		try {
 			const body: { driver: typeof driver; redisUrl?: string } = { driver }
 			if (driver === 'redis' && redisUrl.trim()) body.redisUrl = redisUrl.trim()
-			await api.put('/api/admin/infra/cache', body)
+			const { error } = await eden.api.admin.infra.cache.put(body)
+			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
 			toast.success(`Cache reconfigured to ${driver}`)
 			redisUrl = ''
 			await load()
@@ -185,18 +189,6 @@
 			</div>
 		{/if}
 	</CardContent>
-</Card>
-
-<Card>
-	<CardHeader>
-		<CardTitle class="text-base flex items-center gap-2">
-			<Database class="h-4 w-4" />
-			Database <Badge variant="secondary" class="ml-1">planned</Badge>
-		</CardTitle>
-		<CardDescription>
-			Configurable in the setup wizard, applied on restart — schema migrations make hot-swap unsafe.
-		</CardDescription>
-	</CardHeader>
 </Card>
 
 <Card>

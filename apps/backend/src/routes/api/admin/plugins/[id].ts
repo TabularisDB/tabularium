@@ -63,7 +63,7 @@ export default new Elysia()
       summary: 'Update plugin (status / moderation / pin / categorize)',
       description:
         'Partial update. `status` toggles approval. `featured: true` pins to the landing grid (use `featuredOrder` to set position). ' +
-        '`category`/`tags` are normally driven by the `.pluggr` manifest but can be overridden here.',
+        '`category`/`tags` are normally driven by the `.tabularium` manifest but can be overridden here.',
       operationId: 'updatePlugin',
       security: [{ bearerAuth: [] }, { cookieAuth: [] }],
     },

@@ -20,7 +20,7 @@ async function setupGithubFlavored(
     Authorization: `Bearer ${accessToken}`,
     'Content-Type': 'application/json',
   }
-  if (kind === 'github') headers['User-Agent'] = 'pluggr/1.0'
+  if (kind === 'github') headers['User-Agent'] = 'tabularium/1.0'
 
   const body = kind === 'github'
     ? { name: 'web', active: true, events: ['release'], config: { url: webhookUrl, content_type: 'json', secret, insecure_ssl: '0' } }

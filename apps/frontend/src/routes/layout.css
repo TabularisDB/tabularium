@@ -4,7 +4,7 @@
 @custom-variant dark (&:where(.dark, .dark *));
 
 /*
- * Pluggr — default brand palette. Override via the admin UI / branding settings
+ * Tabularium — default brand palette. Override via the admin UI / branding settings
  * to whitelabel without touching the build.
  */
 @theme {

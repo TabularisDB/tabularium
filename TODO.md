@@ -3,7 +3,7 @@
 ## Done (latest sprint)
 
 **Manifest + metadata**
-- `.pluggr` / `.pluggr.yaml` / `.pluggr.yml` / `.pluggr.json` manifest spec with TypeBox validation.
+- `.tabularium` / `.tabularium.yaml` / `.tabularium.yml` / `.tabularium.json` manifest spec with TypeBox validation.
 - Fetch on submit + re-fetch in background on every release webhook (via owner's stored OAuth token).
 - Public spec endpoint at `GET /api/manifest` for plugin authors.
 - Admin re-fetch endpoint at `POST /api/admin/plugins/:id/refresh-manifest`.
@@ -21,8 +21,8 @@
 - Footer auto-lists pages with `show_in_footer`.
 
 **Page widgets**
-- DOMPurify allowlists `<pluggr-widget>` as a custom element with `data-*` attributes.
-- Frontend `hydrateWidgets()` walks rendered HTML and mounts a Svelte component into each `<pluggr-widget>`.
+- DOMPurify allowlists `<tabularium-widget>` as a custom element with `data-*` attributes.
+- Frontend `hydrateWidgets()` walks rendered HTML and mounts a Svelte component into each `<tabularium-widget>`.
 - Initial widgets: `featured-plugins`, `recent-plugins`, `popular-plugins`, `plugin-grid` (category/tag/sort params), `popular-requests`, `stats`.
 - Widget params via attributes: `limit`, `cols`, `category`, `tag`, `sort`, `heading`.
 
@@ -62,7 +62,7 @@
 - Three drizzle configs (`drizzle.config.ts`, `drizzle.pg.config.ts`, `drizzle.mysql.config.ts`).
 - `bun run generate` / `generate:pg` / `generate:mysql` scripts.
 - Boot dispatches the right migrator + drizzle client; healthz reflects this.
-- `@pluggr/*` workspace rename completed in earlier sprint.
+- `@tabularium/*` workspace rename completed in earlier sprint.
 
 ## Pending / next sprints
 

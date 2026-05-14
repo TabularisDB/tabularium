@@ -8,7 +8,7 @@
 	import Card from '$components/ui/Card.svelte'
 	import CardContent from '$components/ui/CardContent.svelte'
 	import Badge from '$components/ui/Badge.svelte'
-	import { api } from '$lib/api'
+	import { eden } from '$lib/eden'
 	import type { ProviderInstanceAdmin, AdminUser } from '$lib/types'
 
 	type AdminPluginRow = {
@@ -44,15 +44,27 @@
 
 	onMount(async () => {
 		try {
-			const [pi, us, approved, pending, rejected, auditRes, healthRes] = await Promise.all([
-				api.get<{ instances: ProviderInstanceAdmin[] }>('/api/admin/provider-instances'),
-				api.get<{ users: AdminUser[] }>('/api/admin/users'),
-				api.get<{ total: number; plugins: AdminPluginRow[] }>('/api/admin/plugins?status=approved'),
-				api.get<{ total: number; plugins: AdminPluginRow[] }>('/api/admin/plugins?status=pending'),
-				api.get<{ total: number; plugins: AdminPluginRow[] }>('/api/admin/plugins?status=rejected'),
-				api.get<{ entries: AuditEntry[] }>('/api/admin/audit?limit=8').catch(() => ({ entries: [] })),
-				api.get<typeof health>('/healthz').catch(() => null),
+			const [piRes, usRes, approvedRes, pendingRes, rejectedRes, auditRes, healthRes] = await Promise.all([
+				eden.api.admin['provider-instances'].get(),
+				eden.api.admin.users.get(),
+				eden.api.admin.plugins.get({ query: { status: 'approved' } }),
+				eden.api.admin.plugins.get({ query: { status: 'pending' } }),
+				eden.api.admin.plugins.get({ query: { status: 'rejected' } }),
+				eden.api.admin.audit.get({ query: { limit: '8' } }),
+				eden.healthz.get(),
 			])
+			if (piRes.error) throw piRes.error
+			if (usRes.error) throw usRes.error
+			if (approvedRes.error) throw approvedRes.error
+			if (pendingRes.error) throw pendingRes.error
+			if (rejectedRes.error) throw rejectedRes.error
+			const pi = piRes.data as { instances: ProviderInstanceAdmin[] }
+			const us = usRes.data as { users: AdminUser[] }
+			const approved = approvedRes.data as { total: number; plugins: AdminPluginRow[] }
+			const pending = pendingRes.data as { total: number; plugins: AdminPluginRow[] }
+			const rejected = rejectedRes.data as { total: number; plugins: AdminPluginRow[] }
+			const auditData = (auditRes.data ?? { entries: [] }) as { entries: AuditEntry[] }
+			const healthData = (healthRes.data ?? null) as typeof health
 			counts = {
 				providers: pi.instances.length,
 				providersEnabled: pi.instances.filter((i) => i.enabled).length,
@@ -66,8 +78,8 @@
 				.sort((a, b) => b.updatedAt - a.updatedAt)
 				.slice(0, 5)
 			recent = sorted
-			audit = auditRes.entries
-			health = healthRes
+			audit = auditData.entries
+			health = healthData
 		} finally {
 			loading = false
 		}

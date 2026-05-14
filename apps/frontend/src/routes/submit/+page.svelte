@@ -4,6 +4,9 @@
 	import CheckCircle2 from '@lucide/svelte/icons/circle-check'
 	import ExternalLink from '@lucide/svelte/icons/external-link'
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw'
+	import Search from '@lucide/svelte/icons/search'
+	import Lock from '@lucide/svelte/icons/lock'
+	import Globe from '@lucide/svelte/icons/globe'
 	import Button from '$components/ui/Button.svelte'
 	import Card from '$components/ui/Card.svelte'
 	import CardContent from '$components/ui/CardContent.svelte'
@@ -15,14 +18,19 @@
 	import Textarea from '$components/ui/Textarea.svelte'
 	import CodeBlock from '$components/ui/CodeBlock.svelte'
 	import Select from '$components/ui/Select.svelte'
-	import { api } from '$lib/api'
+	import ProviderIcon from '$components/brand/ProviderIcon.svelte'
+	import { cn } from '$lib/utils'
+	import { eden } from '$lib/eden'
 	import { auth } from '$lib/stores/auth.svelte'
 	import { toast } from 'svelte-sonner'
-	import type { RepoGroup, SubmitSuccess } from '$lib/types'
+	import type { RepoGroup, SubmittableRepo, SubmitSuccess } from '$lib/types'
 
 	let groups = $state<RepoGroup[] | null>(null)
 	let loading = $state(true)
+	let submissionsEnabled = $state(true)
+	let selectedIdentityId = $state('')
 	let selectedUrl = $state('')
+	let search = $state('')
 	let name = $state('')
 	let description = $state('')
 	let submitting = $state(false)
@@ -34,14 +42,23 @@
 			goto('/login')
 			return
 		}
+		const featuresRes = await eden.api.features.get()
+		if (featuresRes.data) submissionsEnabled = (featuresRes.data as { submissionsEnabled: boolean }).submissionsEnabled
+		if (!submissionsEnabled) {
+			loading = false
+			return
+		}
 		await loadRepos()
 	})
 
 	async function loadRepos() {
 		loading = true
 		try {
-			const data = await api.get<{ groups: RepoGroup[] }>('/api/submit/repos')
-			groups = data.groups
+			const { data, error } = await eden.api.submit.repos.get()
+			if (error) throw error
+			groups = (data as { groups: RepoGroup[] }).groups
+			const firstUsable = groups.find((g) => !g.error && g.repos.length > 0)
+			if (firstUsable) selectedIdentityId = firstUsable.identityId
 		} catch {
 			groups = []
 		} finally {
@@ -49,13 +66,28 @@
 		}
 	}
 
-	const allRepos = $derived(groups?.flatMap((g) => g.repos) ?? [])
-	const selectedRepo = $derived(allRepos.find((r) => r.url === selectedUrl) ?? null)
+	const selectedGroup = $derived(groups?.find((g) => g.identityId === selectedIdentityId) ?? null)
+
+	const filteredRepos = $derived.by(() => {
+		const repos = selectedGroup?.repos ?? []
+		const q = search.trim().toLowerCase()
+		if (!q) return repos
+		return repos.filter((r) => r.fullName.toLowerCase().includes(q) || (r.description ?? '').toLowerCase().includes(q))
+	})
+
+	const selectedRepo = $derived<SubmittableRepo | null>(
+		selectedGroup?.repos.find((r) => r.url === selectedUrl) ?? null,
+	)
 
 	$effect(() => {
-		if (selectedRepo && !name) {
-			name = humanize(selectedRepo.name)
-		}
+		// reset repo selection when switching identities
+		void selectedIdentityId
+		selectedUrl = ''
+		search = ''
+	})
+
+	$effect(() => {
+		if (selectedRepo && !name) name = humanize(selectedRepo.name)
 	})
 
 	function humanize(s: string) {
@@ -70,12 +102,18 @@
 		}
 		submitting = true
 		try {
-			const result = await api.post<SubmitSuccess>('/api/submit/oauth', {
+			const { data, error } = await eden.api.submit.oauth.post({
 				repoUrl: selectedRepo.url,
 				name,
 				description,
 			})
-			success = result
+			if (error)
+				throw new Error(
+					typeof error.value === 'string'
+						? error.value
+						: ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`),
+				)
+			success = data as SubmitSuccess
 			toast.success('Plugin registered')
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : 'Submit failed')
@@ -110,9 +148,7 @@
 			<Card>
 				<CardHeader>
 					<CardTitle class="text-base">Webhook setup needed</CardTitle>
-					<CardDescription>
-						We couldn't install the webhook automatically. Add it manually with this secret:
-					</CardDescription>
+					<CardDescription>We couldn't install the webhook automatically. Add it manually with this secret:</CardDescription>
 				</CardHeader>
 				<CardContent class="space-y-3">
 					<div class="space-y-1">
@@ -136,77 +172,140 @@
 	<div class="mx-auto max-w-2xl px-6 py-12 space-y-8">
 		<header class="space-y-2">
 			<h1 class="text-3xl font-semibold tracking-tight">Submit a plugin</h1>
-			<p class="text-muted-foreground">
-				Pick a repo you own on a configured provider instance and Pluggr will install the release webhook for you.
-			</p>
+			<p class="text-muted-foreground">Pick a repo you own and Tabularium will install the release webhook for you.</p>
 		</header>
 
-		<Card>
-			<CardHeader>
-				<CardTitle class="text-base">Your repos</CardTitle>
-				<CardDescription>Across all linked identities.</CardDescription>
-			</CardHeader>
-			<CardContent class="space-y-4">
-				{#if loading}
-					<p class="text-sm text-muted-foreground">Loading repos…</p>
-				{:else if !groups || groups.length === 0}
-					<p class="text-sm text-muted-foreground">
-						No linked identities yet. <a href="/settings" class="text-primary hover:underline">Link one in settings</a>.
-					</p>
-				{:else}
-					{#each groups as g (g.identityId)}
-						<div class="space-y-2">
-							<div class="flex items-center justify-between">
-								<div class="text-sm font-medium">{g.providerDisplayName} · {g.username}</div>
-								<Button variant="ghost" size="sm" href={g.reauthUrl}>
-									<RefreshCw class="h-3 w-3" />
-									Re-authorize
-								</Button>
-							</div>
-							{#if g.error}
-								<p class="text-xs text-destructive">{g.error}</p>
-							{:else if g.repos.length === 0}
-								<p class="text-xs text-muted-foreground">No writable repos on this account.</p>
-							{:else}
-								<Select bind:value={selectedUrl}>
-									<option value="" disabled>Pick a repo…</option>
-									{#each g.repos as r (r.url)}
-										<option value={r.url}>{r.fullName}{r.isPrivate ? ' (private)' : ''}</option>
-									{/each}
-								</Select>
-							{/if}
-						</div>
-					{/each}
-				{/if}
-			</CardContent>
-		</Card>
-
-		{#if selectedRepo}
+		{#if !submissionsEnabled}
+			<div class="rounded-lg border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
+				New plugin submissions are currently disabled on this instance.
+			</div>
+		{:else if loading}
+			<p class="text-sm text-muted-foreground">Loading your repos…</p>
+		{:else if !groups || groups.length === 0}
 			<Card>
-				<CardHeader>
-					<CardTitle class="text-base">Plugin metadata</CardTitle>
-					<CardDescription>
-						Repo: <a href={selectedRepo.url} target="_blank" rel="noreferrer" class="inline-flex items-center gap-1 text-primary hover:underline">
-							{selectedRepo.fullName}<ExternalLink class="h-3 w-3" />
-						</a>
-					</CardDescription>
-				</CardHeader>
-				<CardContent>
-					<form onsubmit={submit} class="space-y-4">
-						<div class="space-y-2">
-							<Label for="name">Display name</Label>
-							<Input id="name" bind:value={name} required maxlength={80} />
-						</div>
-						<div class="space-y-2">
-							<Label for="desc">Description</Label>
-							<Textarea id="desc" bind:value={description} required minlength={10} maxlength={300} rows={3} />
-						</div>
-						<Button type="submit" disabled={submitting}>
-							{submitting ? 'Submitting…' : 'Submit plugin'}
-						</Button>
-					</form>
+				<CardContent class="pt-6 text-sm text-muted-foreground">
+					No linked identities yet. <a href="/settings" class="text-primary hover:underline">Link one in settings</a>.
 				</CardContent>
 			</Card>
+		{:else}
+			<Card>
+				<CardHeader>
+					<CardTitle class="text-base">Repository</CardTitle>
+					<CardDescription>Switch identity to see other repos.</CardDescription>
+				</CardHeader>
+				<CardContent class="space-y-4">
+					<div class="grid gap-2 sm:grid-cols-[1fr_auto] sm:items-end">
+						<div class="space-y-2">
+							<Label for="identity">Identity</Label>
+							<Select id="identity" bind:value={selectedIdentityId}>
+								{#each groups as g (g.identityId)}
+									<option value={g.identityId} disabled={Boolean(g.error) || g.repos.length === 0}>
+										{g.providerDisplayName} · {g.username}{g.error
+											? ' (re-auth needed)'
+											: g.repos.length === 0
+												? ' (no repos)'
+												: ` · ${g.repos.length} repo${g.repos.length === 1 ? '' : 's'}`}
+									</option>
+								{/each}
+							</Select>
+						</div>
+						{#if selectedGroup}
+							<Button variant="ghost" size="sm" href={selectedGroup.reauthUrl}>
+								<RefreshCw class="h-3 w-3" />
+								Re-authorize
+							</Button>
+						{/if}
+					</div>
+
+					{#if selectedGroup?.error}
+						<p class="text-xs text-destructive">{selectedGroup.error}</p>
+					{:else if selectedGroup}
+						<div class="space-y-2">
+							<div class="relative">
+								<Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+								<Input bind:value={search} placeholder="Filter repos by name or description…" class="pl-9" />
+							</div>
+							{#if filteredRepos.length === 0}
+								<p class="text-xs text-muted-foreground">No repos match your filter.</p>
+							{:else}
+								<ul class="max-h-80 overflow-y-auto rounded-md border border-border divide-y divide-border">
+									{#each filteredRepos as r (r.url)}
+										<li>
+											<button
+												type="button"
+												onclick={() => (selectedUrl = r.url)}
+												class={cn(
+													'w-full flex items-start gap-3 px-3 py-2.5 text-left text-sm transition-colors hover:bg-accent/50',
+													selectedUrl === r.url && 'bg-accent text-foreground',
+												)}
+											>
+												<span class="mt-0.5 inline-flex h-5 w-5 items-center justify-center text-muted-foreground">
+													<ProviderIcon
+														kind={selectedGroup.providerKind}
+														baseUrl=""
+														logoUrl={null}
+														class="h-4 w-4"
+													/>
+												</span>
+												<span class="flex-1 min-w-0">
+													<span class="flex items-center gap-2">
+														<span class="font-medium truncate">{r.fullName}</span>
+														{#if r.isPrivate}
+															<Lock class="h-3 w-3 text-muted-foreground" />
+														{:else}
+															<Globe class="h-3 w-3 text-muted-foreground" />
+														{/if}
+													</span>
+													{#if r.description}
+														<span class="block text-xs text-muted-foreground truncate">{r.description}</span>
+													{/if}
+												</span>
+											</button>
+										</li>
+									{/each}
+								</ul>
+								<p class="text-xs text-muted-foreground">
+									{filteredRepos.length} of {selectedGroup.repos.length} repos shown.
+								</p>
+							{/if}
+						</div>
+					{/if}
+				</CardContent>
+			</Card>
+
+			{#if selectedRepo}
+				<Card>
+					<CardHeader>
+						<CardTitle class="text-base">Plugin metadata</CardTitle>
+						<CardDescription>
+							Repo:
+							<a
+								href={selectedRepo.url}
+								target="_blank"
+								rel="noreferrer"
+								class="inline-flex items-center gap-1 text-primary hover:underline"
+							>
+								{selectedRepo.fullName}<ExternalLink class="h-3 w-3" />
+							</a>
+						</CardDescription>
+					</CardHeader>
+					<CardContent>
+						<form onsubmit={submit} class="space-y-4">
+							<div class="space-y-2">
+								<Label for="name">Display name</Label>
+								<Input id="name" bind:value={name} required maxlength={80} />
+							</div>
+							<div class="space-y-2">
+								<Label for="desc">Description</Label>
+								<Textarea id="desc" bind:value={description} required minlength={10} maxlength={300} rows={3} />
+							</div>
+							<Button type="submit" disabled={submitting}>
+								{submitting ? 'Submitting…' : 'Submit plugin'}
+							</Button>
+						</form>
+					</CardContent>
+				</Card>
+			{/if}
 		{/if}
 	</div>
 {/if}
