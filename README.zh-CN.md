@@ -1,10 +1,10 @@
-# ![Tabularium](docs/assets/wordmark.svg)
+# ![Tabularium](assets/wordmark.svg)
 
 > 面向 **TabularisDB** 生态的自托管插件注册中心。基于 [Bun](https://bun.sh)、[Elysia](https://elysiajs.com)、[SvelteKit](https://kit.svelte.dev) 和 [Drizzle ORM](https://orm.drizzle.team) 构建。
 
 🌐 **切换语言:** [English](README.md) · [Deutsch](README.de.md) · [Español](README.es.md) · [Français](README.fr.md) · [Italiano](README.it.md) · [中文](README.zh-CN.md)
 
-📚 **文档:** [Tabularium 文档](docs/)(Docsify,可直接部署到 Codeberg Pages / git-pages.org)
+📚 **文档:** [tabularium.wiki](https://tabularium.wiki)
 
 ---
 
@@ -74,17 +74,16 @@ apps/
 packages/
   client/          @tabularium/client — 类型化 Eden Treaty 客户端
   tsconfig/        共享 tsconfig
-docs/              Docsify 文档(直接可部署)
 .forgejo/          Codeberg Forgejo Actions 工作流
 ```
 
 ## 文档
 
-- 📖 **[本地文档](docs/)** — 在浏览器打开 `docs/index.html`,或 `bunx docsify-cli serve docs`
-- 🚀 **[部署指南](docs/deploy.md)** — Docker、环境变量、反向代理
-- 🛠 **[安装向导原理](docs/install-wizard.md)**
-- 🔌 **[API 参考](docs/api.md)** — OpenAPI spec 位于 `/openapi/json`
-- 🌐 **[Codeberg Pages 部署](docs/deploy-docs.md)** — 从本仓库发布文档
+完整文档见 **[tabularium.wiki](https://tabularium.wiki)**。
+
+- 🚀 **[部署指南](https://tabularium.wiki/#/docs/deploy)** — Docker、环境变量、反向代理
+- 🛠 **[安装向导原理](https://tabularium.wiki/#/docs/install-wizard)**
+- 🔌 **[API 参考](https://tabularium.wiki/#/docs/api)** — OpenAPI spec 位于 `/openapi/json`
 
 ## 许可证
 

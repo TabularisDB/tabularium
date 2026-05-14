@@ -1,10 +1,10 @@
-# ![Tabularium](docs/assets/wordmark.svg)
+# ![Tabularium](assets/wordmark.svg)
 
-> Self-hosted plugin registry for the **TabularisDB** ecosystem. Built with [Bun](https://bun.sh), [Elysia](https://elysiajs.com), [SvelteKit](https://kit.svelte.dev) and [Drizzle ORM](https://orm.drizzle.team).
+> Self-hosted plugin registry. Built with [Bun](https://bun.sh), [Elysia](https://elysiajs.com), [SvelteKit](https://kit.svelte.dev) and [Drizzle ORM](https://orm.drizzle.team).
 
 🌐 **Read in your language:** [English](README.md) · [Deutsch](README.de.md) · [Español](README.es.md) · [Français](README.fr.md) · [Italiano](README.it.md) · [中文](README.zh-CN.md)
 
-📚 **Docs:** [tabularium docs](docs/) (Docsify, deployable on Codeberg Pages / git-pages.org)
+📚 **Docs:** [tabularium.wiki](https://tabularium.wiki)
 
 ---
 
@@ -74,17 +74,16 @@ apps/
 packages/
   client/          @tabularium/client — typed Eden Treaty client
   tsconfig/        Shared tsconfig
-docs/              Docsify documentation (deployable as-is)
 .forgejo/          Codeberg Forgejo Actions workflows
 ```
 
 ## Documentation
 
-- 📖 **[Local docs](docs/)** — open `docs/index.html` in a browser, or `bunx docsify-cli serve docs`
-- 🚀 **[Deploy guide](docs/deploy.md)** — Docker, env vars, reverse proxy
-- 🛠 **[Install wizard internals](docs/install-wizard.md)**
-- 🔌 **[API reference](docs/api.md)** — OpenAPI spec at `/openapi/json`
-- 🌐 **[Codeberg Pages deploy](docs/deploy-docs.md)** — publish the docs from this repo
+Full docs live at **[tabularium.wiki](https://tabularium.wiki)**.
+
+- 🚀 **[Deploy guide](https://tabularium.wiki/#/docs/deploy)** — Docker, env vars, reverse proxy
+- 🛠 **[Install wizard internals](https://tabularium.wiki/#/docs/install-wizard)**
+- 🔌 **[API reference](https://tabularium.wiki/#/docs/api)** — OpenAPI spec at `/openapi/json`
 
 ## License
 

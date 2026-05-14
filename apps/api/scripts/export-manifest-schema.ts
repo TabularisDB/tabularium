@@ -1,7 +1,7 @@
 import { ManifestSchema } from '../src/lib/manifest'
 import { resolve } from 'node:path'
 
-const out = resolve(import.meta.dir, '../../../docs/manifest.schema.json')
+const out = resolve(import.meta.dir, '../.cache/manifest.schema.json')
 const payload = {
   $schema: 'https://json-schema.org/draft/2020-12/schema',
   $id: 'https://tabularium.wiki/manifest.schema.json',
