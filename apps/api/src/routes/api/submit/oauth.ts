@@ -1,8 +1,9 @@
 import { Elysia, t } from 'elysia'
 import { authMiddleware } from '$middleware/auth'
 import { rateLimit } from '$middleware/rate-limit'
+import { eq } from 'drizzle-orm'
 import { db } from '$db'
-import { plugins } from '$db/schema'
+import { plugins, pluginRequests, pluginRequestVotes, pluginRequestClaims } from '$db/schema'
 import { deriveSlug } from '$lib/slug'
 import { parseRepoUrl, checkOwnership } from '$lib/providers'
 import { setupWebhook } from '$lib/setup-webhook'
@@ -93,6 +94,20 @@ export default new Elysia()
       }
     } catch (err) {
       log.warn({ err, slug }, 'manifest fetch failed at submit — continuing without it')
+    }
+
+    try {
+      const matching = await db.query.pluginRequests.findFirst({
+        where: { slug },
+        columns: { id: true },
+      })
+      if (matching) {
+        await db.delete(pluginRequestVotes).where(eq(pluginRequestVotes.requestId, matching.id))
+        await db.delete(pluginRequestClaims).where(eq(pluginRequestClaims.requestId, matching.id))
+        await db.delete(pluginRequests).where(eq(pluginRequests.id, matching.id))
+      }
+    } catch (err) {
+      log.warn({ err, slug }, 'failed to clean up matching plugin request')
     }
 
     const webhookUrl = `${env.BASE_URL}/api/webhooks/release`
