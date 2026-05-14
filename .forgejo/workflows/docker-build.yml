@@ -1,7 +1,8 @@
 # Build and push the Tabularium container image to Codeberg's container registry.
 #
-# Requires a Codeberg Actions runner with Docker available (the default
-# `docker` label on codeberg-ci.org runners satisfies this).
+# Uses Kaniko (rootless) so we don't need a docker socket on the runner.
+# Runs on Codeberg's own `codeberg-small` runner — bring-your-own-runner with
+# a `docker` label is no longer required.
 #
 # Secrets:
 #   PACKAGE_TOKEN — a Codeberg access token with `write:package` scope.
@@ -15,32 +16,30 @@ on:
 
 jobs:
   build:
-    runs-on: docker
+    runs-on: codeberg-small
     container:
-      image: docker.io/library/docker:24-cli
+      image: gcr.io/kaniko-project/executor:debug
     steps:
-      - name: Install git
-        run: apk add --no-cache git
-
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Log in to Codeberg Container Registry
-        run: echo "${{ secrets.PACKAGE_TOKEN }}" | docker login codeberg.org -u "${{ github.actor }}" --password-stdin
+      - name: Configure registry auth
+        run: |
+          mkdir -p /kaniko/.docker
+          AUTH=$(printf '%s:%s' "${{ github.repository_owner }}" "${{ secrets.PACKAGE_TOKEN }}" | base64 | tr -d '\n')
+          cat > /kaniko/.docker/config.json <<EOF
+          {"auths":{"codeberg.org":{"auth":"$AUTH"}}}
+          EOF
 
-      - name: Build image
+      - name: Build and push image
         run: |
           set -eu
           IMAGE="codeberg.org/${{ github.repository_owner }}/tabularium"
           VERSION="${{ github.event.release.tag_name }}"
           VERSION="${VERSION#v}"
-          docker build \
-            -t "$IMAGE:${{ github.sha }}" \
-            -t "$IMAGE:$VERSION" \
-            -t "$IMAGE:latest" \
-            .
-
-      - name: Push image
-        run: |
-          IMAGE="codeberg.org/${{ github.repository_owner }}/tabularium"
-          docker push --all-tags "$IMAGE"
+          /kaniko/executor \
+            --context "$GITHUB_WORKSPACE" \
+            --dockerfile Dockerfile \
+            --destination "$IMAGE:$VERSION" \
+            --destination "$IMAGE:latest" \
+            --destination "$IMAGE:${{ github.sha }}"
