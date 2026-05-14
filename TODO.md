@@ -72,6 +72,14 @@
 **Job queue (deferred until needed)**
 - Only when async work outgrows `queueMicrotask` (huge SHA256 hashing, asset mirroring later). Adapter shape from previous sprint's TODO still applies.
 
+**Plugin stats (downloads + popularity)**
+- Per-plugin download counter — increment on `/api/plugins/:slug/latest` resolution and on direct asset hits (when asset mirroring lands, count from our domain; until then, accept a webhook/ping from the user's runtime or count `latest`-redirect hits).
+- Per-release download breakdown (so we can see which versions are sticky vs. dead).
+- Time-bucketed counters (last-7d / last-30d / all-time) — cheap impl: monotonic total + daily snapshot row, derive deltas at read time.
+- Expose on `GET /api/plugins/:slug` (`downloads: { total, last7d, last30d }`) and surface as a sortable `?sort=popular` on the list endpoint + a "Popular" widget option.
+- Admin view shows per-plugin/per-release counts; consider exporting CSV for plugin authors.
+- Bot/abuse mitigation: bucket by IP+UA hash with a short TTL (`cache.incr` on `dl:<slug>:<ip-hash>:<day>` → drop if already counted).
+
 **Kleinkram**
 - E2E test pass with `@testing-library/svelte` + `bun:test`.
 - Asset mirroring: when SHA256 verified, copy asset into our object storage and serve from our domain.
