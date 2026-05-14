@@ -5,7 +5,7 @@
 #   docker compose -f compose.dev.yml down
 #   docker compose -f compose.dev.yml down -v   # wipe volumes
 #
-# Matching env for apps/backend/.env:
+# Matching env for apps/api/.env:
 #   DATABASE_URL=postgres://registry:registry@localhost:5432/registry
 #   CACHE_DRIVER=redis
 #   REDIS_URL=redis://localhost:6379

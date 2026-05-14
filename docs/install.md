@@ -1,6 +1,6 @@
 # Install
 
-Tabularium ships as a Bun monorepo: `apps/backend` (Elysia API) + `apps/frontend` (SvelteKit SPA).
+Tabularium ships as a Bun monorepo: `apps/api` (Elysia API) + `apps/frontend` (SvelteKit SPA).
 
 ## Requirements
 
@@ -16,13 +16,13 @@ Tabularium ships as a Bun monorepo: `apps/backend` (Elysia API) + `apps/frontend
 | Postgres | Production, multi-instance | `postgres://user:pass@host:5432/db` |
 | MySQL | Existing MySQL fleets | `mysql://user:pass@host:3306/db` |
 
-Set `DATABASE_URL` in `apps/backend/.env`; Tabularium detects the dialect from the URL scheme.
+Set `DATABASE_URL` in `apps/api/.env`; Tabularium detects the dialect from the URL scheme.
 
 ## Boot
 
 ```bash
 bun install
-cd apps/backend && bun --hot src/index.ts
+cd apps/api && bun --hot src/index.ts
 ```
 
 First boot prints a banner:
@@ -60,7 +60,7 @@ The backend serves the built SPA under `/` and the API under `/api`.
 
 ## Reverse proxy
 
-Point your proxy at `apps/backend` on `:3000` and let it serve `/api`, `/auth`, `/openapi`, `/uploads`, and the bundled SPA fallback.
+Point your proxy at `apps/api` on `:3000` and let it serve `/api`, `/auth`, `/openapi`, `/uploads`, and the bundled SPA fallback.
 
 ## Updates
 
@@ -73,7 +73,7 @@ bun install
 ## Reset
 
 ```bash
-rm apps/backend/data/config.json   # drop the wizard lock
+rm apps/api/data/config.json   # drop the wizard lock
 # wipe the DB (or drop schema in pg/mysql)
 # restart backend → wizard appears again
 ```

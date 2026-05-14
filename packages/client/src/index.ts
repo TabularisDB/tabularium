@@ -1,5 +1,5 @@
 import { treaty } from '@elysiajs/eden'
-import type { App } from '@tabularium/registry-backend'
+import type { App } from '@tabularium/api'
 
 export type { App }
 

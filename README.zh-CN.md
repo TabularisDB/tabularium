@@ -33,7 +33,7 @@ bun install
 docker compose -f compose.dev.yml up -d   # postgres + dragonfly(可选)
 
 # 终端 1
-cd apps/backend && bun --hot src/index.ts
+cd apps/api && bun --hot src/index.ts
 
 # 终端 2
 cd apps/frontend && bun dev

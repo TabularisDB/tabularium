@@ -12,12 +12,12 @@ The wizard is Tabularium's cold-start flow: the backend boots **without** a data
 6. **Auto-restart + auto-redirect** — the wizard polls `/api/init/status` every 500 ms (up to 30 s). The endpoint now returns `mode: 'setup' | 'normal'`; the wizard waits for `mode === 'normal'`, meaning the new process has fully booted (DB connected, cache + storage initialized). On first match, it navigates to `/admin`. The auth cookie set in step 5 survives the restart (`JWT_SECRET` is env-loaded), so the admin lands inside `/admin` already signed in.
 7. **Fallback** — if the restart hangs longer than 30 s, the wizard falls back to a manual "sign in at `/login/admin`" CTA.
 
-The dev workflow uses `apps/backend/scripts/dev.sh` which respawns the backend on clean exit.
+The dev workflow uses `apps/api/scripts/dev.sh` which respawns the backend on clean exit.
 
 ## State
 
 ```
-apps/backend/data/config.json
+apps/api/data/config.json
 {
   "installed": true,
   "database": { "url": "postgres://…" }

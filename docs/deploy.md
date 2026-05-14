@@ -11,13 +11,13 @@ services:
     working_dir: /app
     volumes:
       - ./:/app
-      - data:/app/apps/backend/data
+      - data:/app/apps/api/data
     environment:
       DATABASE_URL: postgres://registry:registry@postgres:5432/registry
       CACHE_DRIVER: redis
       REDIS_URL: redis://dragonfly:6379
       JWT_SECRET: change-me
-    command: sh -c "bun install && cd apps/backend && bun src/index.ts"
+    command: sh -c "bun install && cd apps/api && bun src/index.ts"
     ports: ["3000:3000"]
     depends_on: { postgres: { condition: service_healthy } }
 
@@ -71,4 +71,4 @@ registry.example.com {
 
 ## Backups
 
-Snapshot `apps/backend/data/config.json` + the database. The `data/uploads/` directory holds branding assets and provider logos.
+Snapshot `apps/api/data/config.json` + the database. The `data/uploads/` directory holds branding assets and provider logos.

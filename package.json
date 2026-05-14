@@ -11,9 +11,9 @@
     "build": "turbo run build",
     "test": "turbo run test",
     "lint": "turbo run lint",
-    "migrate": "bun --cwd apps/backend run migrate",
-    "generate": "bun --cwd apps/backend run generate",
-    "seed": "bun --cwd apps/backend run seed"
+    "migrate": "bun --cwd apps/api run migrate",
+    "generate": "bun --cwd apps/api run generate",
+    "seed": "bun --cwd apps/api run seed"
   },
   "devDependencies": {
     "@types/bun": "latest",

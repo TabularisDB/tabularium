@@ -14,7 +14,7 @@
   },
   "dependencies": {
     "@elysiajs/eden": "^1.4.9",
-    "@tabularium/registry-backend": "workspace:*",
+    "@tabularium/api": "workspace:*",
     "elysia": "^1.4.28"
   },
   "devDependencies": {

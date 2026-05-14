@@ -4,7 +4,7 @@ Tabularium ships a built-in markdown CMS so the public site is editable without 
 
 ## Default pages
 
-The install wizard seeds six pages from `apps/backend/src/db/seeds/pages/*.md`:
+The install wizard seeds six pages from `apps/api/src/db/seeds/pages/*.md`:
 
 - `home` → `/`
 - `plugins` → `/plugins`

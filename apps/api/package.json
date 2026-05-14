@@ -1,5 +1,5 @@
 {
-  "name": "@tabularium/registry-backend",
+  "name": "@tabularium/api",
   "version": "0.0.0",
   "private": true,
   "module": "src/index.ts",
