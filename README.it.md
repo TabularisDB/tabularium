@@ -1,6 +1,6 @@
 # ![Tabularium](assets/wordmark.svg)
 
-> Registry di plugin self-hosted per l'ecosistema **TabularisDB**. Costruito con [Bun](https://bun.sh), [Elysia](https://elysiajs.com), [SvelteKit](https://kit.svelte.dev) e [Drizzle ORM](https://orm.drizzle.team).
+> Registry di plugin self-hosted. Costruito con [Bun](https://bun.sh), [Elysia](https://elysiajs.com), [SvelteKit](https://kit.svelte.dev) e [Drizzle ORM](https://orm.drizzle.team).
 
 🌐 **Nella tua lingua:** [English](README.md) · [Deutsch](README.de.md) · [Español](README.es.md) · [Français](README.fr.md) · [Italiano](README.it.md) · [中文](README.zh-CN.md)
 

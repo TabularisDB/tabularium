@@ -1,6 +1,6 @@
 # ![Tabularium](assets/wordmark.svg)
 
-> 面向 **TabularisDB** 生态的自托管插件注册中心。基于 [Bun](https://bun.sh)、[Elysia](https://elysiajs.com)、[SvelteKit](https://kit.svelte.dev) 和 [Drizzle ORM](https://orm.drizzle.team) 构建。
+> 自托管插件注册中心。基于 [Bun](https://bun.sh)、[Elysia](https://elysiajs.com)、[SvelteKit](https://kit.svelte.dev) 和 [Drizzle ORM](https://orm.drizzle.team) 构建。
 
 🌐 **切换语言:** [English](README.md) · [Deutsch](README.de.md) · [Español](README.es.md) · [Français](README.fr.md) · [Italiano](README.it.md) · [中文](README.zh-CN.md)
 
