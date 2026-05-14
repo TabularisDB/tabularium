@@ -13,6 +13,7 @@
 	import { eden } from '$lib/eden'
 	import { i18n } from '$lib/stores/i18n.svelte'
 	import type { Plugin, PluginListResponse, PageRendered } from '$lib/types'
+	import { m } from '$lib/paraglide/messages'
 
 	let cmsOverride = $state<PageRendered | null>(null)
 	let cmsChecked = $state(false)
@@ -105,7 +106,7 @@
 
 {#if !cmsChecked}
 	<div class="mx-auto max-w-6xl px-6 py-12">
-		<p class="text-sm text-muted-foreground">Loading…</p>
+		<p class="text-sm text-muted-foreground">{m.common_loading()}</p>
 	</div>
 {:else if cmsOverride}
 	<div class="mx-auto max-w-4xl px-6 py-12 space-y-6">
@@ -117,36 +118,36 @@
 {:else}
 <div class="mx-auto max-w-6xl px-6 py-12 space-y-8">
 	<header class="space-y-2">
-		<h1 class="text-3xl font-semibold tracking-tight">Plugins</h1>
-		<p class="text-muted-foreground">Browse the catalog. {total} indexed.</p>
+		<h1 class="text-3xl font-semibold tracking-tight">{m.plugins_list_title()}</h1>
+		<p class="text-muted-foreground">{m.plugins_list_subtitle({ total })}</p>
 	</header>
 
 	<div class="flex flex-wrap gap-3 items-center">
 		<div class="relative flex-1 min-w-[16rem]">
 			<Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-			<Input bind:value={search} placeholder="Search by name, slug, or description…" class="pl-9" />
+			<Input bind:value={search} placeholder={m.plugins_list_search_placeholder()} class="pl-9" />
 		</div>
 		<Select bind:value={sort}>
-			<option value="updated">Recently updated</option>
-			<option value="new">Newest</option>
-			<option value="name">A → Z</option>
-			<option value="featured">Featured first</option>
+			<option value="updated">{m.plugins_list_sort_updated()}</option>
+			<option value="new">{m.plugins_list_sort_new()}</option>
+			<option value="name">{m.plugins_list_sort_name()}</option>
+			<option value="featured">{m.plugins_list_sort_featured()}</option>
 		</Select>
 		<label class="flex items-center gap-2 text-sm cursor-pointer">
 			<input type="checkbox" bind:checked={onlyFeatured} class="h-4 w-4 rounded border-input" />
-			<span>Featured only</span>
+			<span>{m.plugins_list_featured_only()}</span>
 		</label>
 		{#if hasActiveFilters}
 			<Button variant="ghost" size="sm" onclick={clearFilters}>
 				<X class="h-3.5 w-3.5" />
-				Clear
+				{m.common_clear()}
 			</Button>
 		{/if}
 	</div>
 
 	{#if categories.length > 0}
 		<div class="flex flex-wrap items-center gap-2">
-			<span class="text-xs text-muted-foreground uppercase tracking-wider mr-1">Categories</span>
+			<span class="text-xs text-muted-foreground uppercase tracking-wider mr-1">{m.plugins_list_categories()}</span>
 			{#each categories as cat (cat.value)}
 				<button
 					type="button"
@@ -166,7 +167,7 @@
 		<div class="text-sm">
 			<Badge variant="default" class="gap-1">
 				#{tag}
-				<button type="button" onclick={() => (tag = '')} aria-label="Clear tag" class="-mr-1 ml-1">
+				<button type="button" onclick={() => (tag = '')} aria-label={m.plugins_list_clear_tag()} class="-mr-1 ml-1">
 					<X class="h-3 w-3" />
 				</button>
 			</Badge>
@@ -188,12 +189,12 @@
 	{:else}
 		<div class="rounded-lg border border-dashed border-border p-12 text-center space-y-3">
 			<p class="text-muted-foreground">
-				{hasActiveFilters ? 'No plugins match these filters.' : 'No plugins yet on this instance.'}
+				{hasActiveFilters ? m.plugins_list_no_filter_match() : m.plugins_list_empty()}
 			</p>
 			{#if hasActiveFilters}
-				<Button variant="outline" size="sm" onclick={clearFilters}>Clear filters</Button>
+				<Button variant="outline" size="sm" onclick={clearFilters}>{m.plugins_list_clear_filters()}</Button>
 			{:else}
-				<Button size="sm" href="/submit">Submit the first one</Button>
+				<Button size="sm" href="/submit">{m.plugins_list_submit_first()}</Button>
 			{/if}
 		</div>
 	{/if}

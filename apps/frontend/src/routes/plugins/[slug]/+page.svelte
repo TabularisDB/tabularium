@@ -18,6 +18,7 @@
 	import { auth } from '$lib/stores/auth.svelte'
 	import { toast } from 'svelte-sonner'
 	import type { Plugin } from '$lib/types'
+	import { m } from '$lib/paraglide/messages'
 
 	const slug = $derived(page.params.slug)
 
@@ -64,43 +65,41 @@
 	async function copyInstall() {
 		try {
 			await navigator.clipboard.writeText(installCommand)
-			toast.success('Copied')
+			toast.success(m.plugin_detail_copied())
 		} catch {
-			toast.error('Clipboard unavailable')
+			toast.error(m.plugin_detail_clipboard_unavailable())
 		}
 	}
 
 	async function deletePlugin() {
 		if (!plugin) return
-		if (!confirm(`Delete plugin '${plugin.id}' and all releases?`)) return
+		if (!confirm(m.plugin_detail_confirm_delete({ id: plugin.id }))) return
 		deleting = true
 		try {
 			const { error } = await eden.api.plugins({ slug: plugin.id }).delete()
 			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
-			toast.success('Plugin deleted')
+			toast.success(m.plugin_detail_deleted_toast())
 			goto('/plugins')
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Delete failed')
+			toast.error(e instanceof Error ? e.message : m.plugin_detail_delete_failed())
 			deleting = false
 		}
 	}
 
 	async function transferOwnership() {
 		if (!plugin) return
-		const newOwnerId = prompt(
-			'Offer this plugin to which user?\n\nEnter the recipient\'s ULID (visible in their /settings page).\nThey have 7 days to accept — ownership only changes once they confirm.',
-		)
+		const newOwnerId = prompt(m.plugin_detail_transfer_prompt())
 		if (!newOwnerId?.trim()) return
-		const message = prompt('Optional message for the recipient:') ?? undefined
+		const message = prompt(m.plugin_detail_transfer_message_prompt()) ?? undefined
 		try {
 			const { error } = await eden.api.plugins({ slug: plugin.id }).transfer.post({
 				newOwnerId: newOwnerId.trim(),
 				message: message?.trim() || undefined,
 			})
 			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
-			toast.success('Transfer offered — recipient must accept within 7 days')
+			toast.success(m.plugin_detail_transfer_offered())
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Transfer failed')
+			toast.error(e instanceof Error ? e.message : m.plugin_detail_transfer_failed())
 		}
 	}
 
@@ -118,8 +117,8 @@
 		<Skeleton class="h-32 w-full rounded-md" />
 	{:else if notFound}
 		<div class="rounded-lg border border-dashed border-border p-12 text-center space-y-3">
-			<p class="text-muted-foreground">Plugin not found.</p>
-			<Button size="sm" variant="outline" href="/plugins">Back to catalog</Button>
+			<p class="text-muted-foreground">{m.plugin_detail_not_found()}</p>
+			<Button size="sm" variant="outline" href="/plugins">{m.plugin_detail_back_to_catalog()}</Button>
 		</div>
 	{:else if plugin}
 		<header class="space-y-4">
@@ -138,7 +137,7 @@
 							<Badge variant="secondary" class="font-mono">v{plugin.latestVersion}</Badge>
 						{/if}
 						{#if plugin.featured}
-							<Badge variant="default">Featured</Badge>
+							<Badge variant="default">{m.plugin_detail_featured()}</Badge>
 						{/if}
 					</div>
 					<p class="text-base text-foreground/90">{plugin.description}</p>
@@ -147,17 +146,17 @@
 					<div class="flex flex-col gap-2 flex-shrink-0">
 						<Button variant="outline" size="sm" onclick={transferOwnership} disabled={deleting}>
 							<UserRoundCog class="h-3.5 w-3.5" />
-							Transfer
+							{m.plugin_detail_transfer()}
 						</Button>
 						<Button variant="destructive" size="sm" onclick={deletePlugin} disabled={deleting}>
 							<Trash2 class="h-3.5 w-3.5" />
-							{deleting ? 'Deleting…' : 'Delete'}
+							{deleting ? m.plugin_detail_deleting() : m.plugin_detail_delete()}
 						</Button>
 					</div>
 				{/if}
 			</div>
 			<div class="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-				<span>By <span class="text-foreground">{plugin.author.split('<')[0].trim()}</span></span>
+				<span>{m.plugin_detail_by()} <span class="text-foreground">{plugin.author.split('<')[0].trim()}</span></span>
 				{#if plugin.license}
 					<span class="inline-flex items-center gap-1">
 						<Shield class="h-3 w-3" />
@@ -177,25 +176,25 @@
 				{#if plugin.homepage}
 					<Button variant="outline" size="sm" href={plugin.homepage} target="_blank" rel="noreferrer">
 						<ExternalLink class="h-3 w-3" />
-						Repository
+						{m.plugin_detail_repository()}
 					</Button>
 				{/if}
 				{#if plugin.documentationUrl}
 					<Button variant="outline" size="sm" href={plugin.documentationUrl} target="_blank" rel="noreferrer">
 						<BookOpen class="h-3 w-3" />
-						Docs
+						{m.plugin_detail_docs()}
 					</Button>
 				{/if}
 				{#if plugin.issuesUrl}
 					<Button variant="outline" size="sm" href={plugin.issuesUrl} target="_blank" rel="noreferrer">
 						<Bug class="h-3 w-3" />
-						Report issue
+						{m.plugin_detail_report_issue()}
 					</Button>
 				{/if}
 				{#if plugin.supportEmail}
 					<Button variant="outline" size="sm" href={`mailto:${plugin.supportEmail}`}>
 						<Mail class="h-3 w-3" />
-						Email support
+						{m.plugin_detail_email_support()}
 					</Button>
 				{/if}
 			</div>
@@ -203,8 +202,8 @@
 
 		<section class="space-y-3">
 			<div>
-				<h2 class="text-xl font-semibold tracking-tight">Install</h2>
-				<p class="text-sm text-muted-foreground">Resolve the latest platform-matching asset URL via the catalog API:</p>
+				<h2 class="text-xl font-semibold tracking-tight">{m.plugin_detail_install_title()}</h2>
+				<p class="text-sm text-muted-foreground">{m.plugin_detail_install_subtitle()}</p>
 			</div>
 			<div class="relative rounded-lg border border-border bg-card font-mono text-xs">
 				<pre class="overflow-x-auto px-4 py-3 leading-relaxed">{installCommand}</pre>
@@ -214,14 +213,14 @@
 					onclick={copyInstall}
 				>
 					<Copy class="h-3 w-3" />
-					Copy
+					{m.plugin_detail_copy()}
 				</button>
 			</div>
 		</section>
 
 		{#if plugin.screenshots.length > 0}
 			<section class="space-y-3">
-				<h2 class="text-xl font-semibold tracking-tight">Screenshots</h2>
+				<h2 class="text-xl font-semibold tracking-tight">{m.plugin_detail_screenshots()}</h2>
 				<div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
 					{#each plugin.screenshots as shot, i (shot.url)}
 						<button
@@ -238,7 +237,7 @@
 
 		{#if plugin.readmeHtml}
 			<section class="space-y-3">
-				<h2 class="text-xl font-semibold tracking-tight">README</h2>
+				<h2 class="text-xl font-semibold tracking-tight">{m.plugin_detail_readme()}</h2>
 				<article class="prose prose-sm dark:prose-invert max-w-none rounded-lg border border-border bg-card p-6">
 					{@html plugin.readmeHtml}
 				</article>
@@ -248,18 +247,18 @@
 		{#if sortedReleases.length > 0}
 			<section class="space-y-3">
 				<div>
-					<h2 class="text-xl font-semibold tracking-tight">Releases</h2>
-					<p class="text-sm text-muted-foreground">Latest version is highlighted in the badge above. SHA256 column shows when integrity has been hashed.</p>
+					<h2 class="text-xl font-semibold tracking-tight">{m.plugin_detail_releases()}</h2>
+					<p class="text-sm text-muted-foreground">{m.plugin_detail_releases_subtitle()}</p>
 				</div>
 				<div class="rounded-lg border border-border overflow-hidden">
 					<table class="w-full text-sm">
 						<thead class="border-b border-border bg-card/50">
 							<tr class="text-left">
-								<th class="font-medium text-foreground px-4 py-2.5">Version</th>
-								<th class="font-medium text-foreground px-4 py-2.5">Min runtime</th>
-								<th class="font-medium text-foreground px-4 py-2.5">Platforms</th>
-								<th class="font-medium text-foreground px-4 py-2.5">Size</th>
-								<th class="font-medium text-foreground px-4 py-2.5">Released</th>
+								<th class="font-medium text-foreground px-4 py-2.5">{m.plugin_detail_col_version()}</th>
+								<th class="font-medium text-foreground px-4 py-2.5">{m.plugin_detail_col_min_runtime()}</th>
+								<th class="font-medium text-foreground px-4 py-2.5">{m.plugin_detail_col_platforms()}</th>
+								<th class="font-medium text-foreground px-4 py-2.5">{m.plugin_detail_col_size()}</th>
+								<th class="font-medium text-foreground px-4 py-2.5">{m.plugin_detail_col_released()}</th>
 							</tr>
 						</thead>
 						<tbody>
@@ -291,7 +290,7 @@
 		type="button"
 		class="fixed inset-0 z-50 bg-background/90 backdrop-blur-sm flex items-center justify-center p-8"
 		onclick={() => (activeScreenshot = null)}
-		aria-label="Close"
+		aria-label={m.plugin_detail_close_screenshot()}
 	>
 		<img
 			src={plugin.screenshots[activeScreenshot].url}

@@ -6,6 +6,7 @@
 	import CardContent from '$components/ui/CardContent.svelte'
 	import { eden } from '$lib/eden'
 	import type { PluginListResponse } from '$lib/types'
+	import { m } from '$lib/paraglide/messages'
 
 	let { heading = '' }: { heading?: string } = $props()
 
@@ -35,7 +36,7 @@
 		<Card>
 			<CardContent class="p-5 space-y-2">
 				<div class="flex items-center justify-between">
-					<span class="text-sm text-muted-foreground">Plugins</span>
+					<span class="text-sm text-muted-foreground">{m.widget_stats_plugins()}</span>
 					<Boxes class="h-4 w-4 text-muted-foreground" />
 				</div>
 				<div class="text-3xl font-semibold tracking-tight">{pluginsTotal ?? '—'}</div>
@@ -44,7 +45,7 @@
 		<Card>
 			<CardContent class="p-5 space-y-2">
 				<div class="flex items-center justify-between">
-					<span class="text-sm text-muted-foreground">Open requests</span>
+					<span class="text-sm text-muted-foreground">{m.widget_stats_open_requests()}</span>
 					<MessageSquare class="h-4 w-4 text-muted-foreground" />
 				</div>
 				<div class="text-3xl font-semibold tracking-tight">{requestsTotal ?? '—'}</div>

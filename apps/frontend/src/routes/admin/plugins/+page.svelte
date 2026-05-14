@@ -20,6 +20,7 @@
 	import TabsList from '$components/ui/TabsList.svelte'
 	import TabsTrigger from '$components/ui/TabsTrigger.svelte'
 	import { eden } from '$lib/eden'
+	import { m } from '$lib/paraglide/messages'
 
 	type AdminPlugin = {
 		id: string
@@ -52,7 +53,7 @@
 			plugins = (data as { plugins: AdminPlugin[] }).plugins
 			selected = new Set([...selected].filter((id) => plugins.some((p) => p.id === id)))
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Failed to load plugins')
+			toast.error(e instanceof Error ? e.message : m.admin_plugins_load_failed())
 		} finally {
 			loading = false
 		}
@@ -77,11 +78,11 @@
 		if (selected.size === 0) return
 		let rejectionReason: string | undefined
 		if (action === 'reject') {
-			const r = prompt(`Reject ${selected.size} plugin(s) — optional reason:`)
+			const r = prompt(m.admin_plugins_bulk_reject_prompt({ count: selected.size }))
 			if (r === null) return
 			rejectionReason = r || undefined
 		} else if (action === 'delete') {
-			if (!confirm(`Delete ${selected.size} plugin(s) and their releases? This is permanent.`)) return
+			if (!confirm(m.admin_plugins_bulk_delete_confirm({ count: selected.size }))) return
 		}
 		bulkBusy = true
 		try {
@@ -90,11 +91,13 @@
 			)
 			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
 			const res = data as { ok: boolean; action: string; affected: number; missing: string[] }
-			toast.success(`${res.action}: ${res.affected} affected${res.missing.length > 0 ? `, ${res.missing.length} missing` : ''}`)
+			const base = m.admin_plugins_bulk_result({ action: res.action, affected: res.affected })
+			const extra = res.missing.length > 0 ? m.admin_plugins_bulk_result_missing({ count: res.missing.length }) : ''
+			toast.success(base + extra)
 			selected = new Set()
 			await load()
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Bulk action failed')
+			toast.error(e instanceof Error ? e.message : m.admin_plugins_bulk_failed())
 		} finally {
 			bulkBusy = false
 		}
@@ -108,16 +111,16 @@
 	})
 
 	async function setStatus(p: AdminPlugin, status: 'approved' | 'pending' | 'rejected') {
-		const reason = status === 'rejected' ? prompt('Reason for rejection (shown to owner via webhook):') : undefined
+		const reason = status === 'rejected' ? prompt(m.admin_plugins_rejection_prompt()) : undefined
 		if (status === 'rejected' && reason === null) return
 		busy = { ...busy, [p.id]: true }
 		try {
 			const { error } = await eden.api.admin.plugins({ id: p.id }).patch({ status, rejectionReason: reason ?? undefined })
 			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
-			toast.success(`${p.name} → ${status}`)
+			toast.success(m.admin_plugins_status_change({ name: p.name, status }))
 			await load()
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Failed to update')
+			toast.error(e instanceof Error ? e.message : m.admin_plugins_update_failed())
 		} finally {
 			busy = { ...busy, [p.id]: false }
 		}
@@ -128,10 +131,10 @@
 		try {
 			const { error } = await eden.api.admin.plugins({ id: p.id }).patch({ featured: !p.featured })
 			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
-			toast.success(p.featured ? 'Unpinned' : 'Pinned to featured')
+			toast.success(p.featured ? m.admin_plugins_unpinned() : m.admin_plugins_pinned())
 			await load()
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Failed')
+			toast.error(e instanceof Error ? e.message : m.admin_plugins_update_failed())
 		} finally {
 			busy = { ...busy, [p.id]: false }
 		}
@@ -142,10 +145,10 @@
 		try {
 			const { error } = await eden.api.admin.plugins({ id: p.id })['refresh-manifest'].post({})
 			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
-			toast.success(`Manifest refreshed for ${p.name}`)
+			toast.success(m.admin_plugins_manifest_refreshed({ name: p.name }))
 			await load()
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Refresh failed')
+			toast.error(e instanceof Error ? e.message : m.admin_plugins_refresh_failed())
 		} finally {
 			busy = { ...busy, [p.id]: false }
 		}
@@ -157,26 +160,26 @@
 			const { data, error } = await eden.api.admin.plugins({ id: p.id })['replay-webhook'].post({})
 			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
 			const res = data as { ok: boolean; version?: string; assets?: string[]; skipped?: boolean; reason?: string }
-			if (res.skipped) toast(`Skipped: ${res.reason}`)
-			else toast.success(`Replayed v${res.version} (${res.assets?.length ?? 0} assets)`)
+			if (res.skipped) toast(m.admin_plugins_replay_skipped({ reason: res.reason ?? '' }))
+			else toast.success(m.admin_plugins_replayed({ version: res.version ?? '', count: res.assets?.length ?? 0 }))
 			await load()
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Replay failed')
+			toast.error(e instanceof Error ? e.message : m.admin_plugins_replay_failed())
 		} finally {
 			busy = { ...busy, [p.id]: false }
 		}
 	}
 
 	async function remove(p: AdminPlugin) {
-		if (!confirm(`Delete ${p.name}? This wipes releases too.`)) return
+		if (!confirm(m.admin_plugins_confirm_delete({ name: p.name }))) return
 		busy = { ...busy, [p.id]: true }
 		try {
 			const { error } = await eden.api.admin.plugins({ id: p.id }).delete()
 			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
-			toast.success(`${p.name} deleted`)
+			toast.success(m.admin_plugins_deleted({ name: p.name }))
 			await load()
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Failed to delete')
+			toast.error(e instanceof Error ? e.message : m.admin_plugins_delete_failed())
 		} finally {
 			busy = { ...busy, [p.id]: false }
 		}
@@ -184,39 +187,39 @@
 </script>
 
 <header class="space-y-1">
-	<h1 class="text-2xl font-semibold tracking-tight">Plugins</h1>
-	<p class="text-sm text-muted-foreground">Browse, approve, reject, or delete plugins.</p>
+	<h1 class="text-2xl font-semibold tracking-tight">{m.admin_plugins_title()}</h1>
+	<p class="text-sm text-muted-foreground">{m.admin_plugins_subtitle()}</p>
 </header>
 
 <Tabs bind:value={filter}>
 	<TabsList>
-		<TabsTrigger value="all">All</TabsTrigger>
-		<TabsTrigger value="pending">Pending</TabsTrigger>
-		<TabsTrigger value="approved">Approved</TabsTrigger>
-		<TabsTrigger value="rejected">Rejected</TabsTrigger>
+		<TabsTrigger value="all">{m.admin_plugins_tab_all()}</TabsTrigger>
+		<TabsTrigger value="pending">{m.admin_plugins_tab_pending()}</TabsTrigger>
+		<TabsTrigger value="approved">{m.admin_plugins_tab_approved()}</TabsTrigger>
+		<TabsTrigger value="rejected">{m.admin_plugins_tab_rejected()}</TabsTrigger>
 	</TabsList>
 </Tabs>
 
 {#if selected.size > 0}
 	<div class="flex items-center justify-between gap-3 rounded-md border border-primary/30 bg-primary/5 px-4 py-2">
 		<span class="text-sm">
-			<strong class="text-foreground">{selected.size}</strong> selected
+			<strong class="text-foreground">{selected.size}</strong> {m.admin_plugins_selected()}
 		</span>
 		<div class="flex items-center gap-1.5">
 			<Button size="sm" variant="default" onclick={() => bulk('approve')} disabled={bulkBusy}>
 				<Check class="h-3.5 w-3.5" />
-				Approve
+				{m.admin_plugins_approve()}
 			</Button>
 			<Button size="sm" variant="outline" onclick={() => bulk('reject')} disabled={bulkBusy}>
 				<X class="h-3.5 w-3.5" />
-				Reject
+				{m.admin_plugins_reject()}
 			</Button>
 			<Button size="sm" variant="destructive" onclick={() => bulk('delete')} disabled={bulkBusy}>
 				<Trash2 class="h-3.5 w-3.5" />
-				Delete
+				{m.admin_plugins_delete()}
 			</Button>
 			<Button size="sm" variant="ghost" onclick={() => (selected = new Set())} disabled={bulkBusy}>
-				Clear
+				{m.admin_plugins_clear()}
 			</Button>
 		</div>
 	</div>
@@ -224,17 +227,17 @@
 
 <Card>
 	<CardHeader>
-		<CardTitle class="text-base">{plugins.length} plugin{plugins.length === 1 ? '' : 's'}</CardTitle>
+		<CardTitle class="text-base">{plugins.length === 1 ? m.admin_plugins_count_one({ count: plugins.length }) : m.admin_plugins_count_other({ count: plugins.length })}</CardTitle>
 		<CardDescription>
-			Pending plugins return <code class="font-mono">423</code> from the webhook ingest until approved. Toggle approval mode in
-			<a href="/admin/instance" class="text-primary hover:underline">Instance settings</a>.
+			{m.admin_plugins_card_subtitle_prefix()} <code class="font-mono">423</code> {m.admin_plugins_card_subtitle_middle()}
+			<a href="/admin/instance" class="text-primary hover:underline">{m.admin_plugins_instance_settings()}</a>.
 		</CardDescription>
 	</CardHeader>
 	<CardContent class="space-y-2">
 		{#if loading}
-			<p class="text-sm text-muted-foreground">Loading…</p>
+			<p class="text-sm text-muted-foreground">{m.common_loading()}</p>
 		{:else if plugins.length === 0}
-			<p class="text-sm text-muted-foreground">No plugins in this state.</p>
+			<p class="text-sm text-muted-foreground">{m.admin_plugins_empty()}</p>
 		{:else}
 			<label class="flex items-center gap-2 px-2 py-1 text-xs text-muted-foreground">
 				<input
@@ -244,7 +247,7 @@
 					onchange={(e) => toggleAll(e.currentTarget.checked)}
 					class="h-3.5 w-3.5 rounded border-input"
 				/>
-				<span>Select all on this page</span>
+				<span>{m.admin_plugins_select_all()}</span>
 			</label>
 			{#each plugins as p (p.id)}
 				<div class="flex items-center justify-between gap-3 rounded-md border border-border bg-card/50 px-4 py-3">
@@ -253,7 +256,7 @@
 						checked={selected.has(p.id)}
 						onchange={(e) => toggleSelected(p.id, e.currentTarget.checked)}
 						class="h-4 w-4 rounded border-input flex-shrink-0"
-						aria-label={`Select ${p.name}`}
+						aria-label={m.admin_plugins_select_aria({ name: p.name })}
 					/>
 					<div class="space-y-0.5 min-w-0 flex-1">
 						<div class="flex items-center gap-2 flex-wrap">
@@ -265,7 +268,7 @@
 								{p.status}
 							</Badge>
 							{#if p.featured}
-								<Badge variant="default" class="text-[10px] gap-1"><Pin class="h-2.5 w-2.5" />featured</Badge>
+								<Badge variant="default" class="text-[10px] gap-1"><Pin class="h-2.5 w-2.5" />{m.admin_plugins_featured()}</Badge>
 							{/if}
 							{#if p.category}
 								<Badge variant="outline" class="text-[10px]">{p.category}</Badge>
@@ -276,30 +279,30 @@
 						</div>
 						<div class="text-xs text-muted-foreground truncate">{p.id} · {p.repoUrl}</div>
 						{#if p.rejectionReason}
-							<div class="text-xs text-destructive">Reason: {p.rejectionReason}</div>
+							<div class="text-xs text-destructive">{m.admin_plugins_reason({ reason: p.rejectionReason })}</div>
 						{/if}
 					</div>
 					<div class="flex items-center gap-1">
-						<Button variant="ghost" size="sm" onclick={() => toggleFeatured(p)} disabled={busy[p.id]} aria-label={p.featured ? 'Unpin' : 'Pin to featured'} title={p.featured ? 'Unpin' : 'Pin to featured'}>
+						<Button variant="ghost" size="sm" onclick={() => toggleFeatured(p)} disabled={busy[p.id]} aria-label={p.featured ? m.admin_plugins_unpin() : m.admin_plugins_pin()} title={p.featured ? m.admin_plugins_unpin() : m.admin_plugins_pin()}>
 							{#if p.featured}<StarOff class="h-3.5 w-3.5" />{:else}<Star class="h-3.5 w-3.5" />{/if}
 						</Button>
-						<Button variant="ghost" size="sm" onclick={() => refreshManifest(p)} disabled={busy[p.id]} aria-label="Refresh manifest" title="Refresh .tabularium manifest">
+						<Button variant="ghost" size="sm" onclick={() => refreshManifest(p)} disabled={busy[p.id]} aria-label={m.admin_plugins_refresh_manifest()} title={m.admin_plugins_refresh_manifest_title()}>
 							<RefreshCw class="h-3.5 w-3.5" />
 						</Button>
-						<Button variant="ghost" size="sm" onclick={() => replayWebhook(p)} disabled={busy[p.id]} aria-label="Replay webhook" title="Re-ingest latest upstream release">
+						<Button variant="ghost" size="sm" onclick={() => replayWebhook(p)} disabled={busy[p.id]} aria-label={m.admin_plugins_replay_webhook()} title={m.admin_plugins_replay_webhook_title()}>
 							<Webhook class="h-3.5 w-3.5" />
 						</Button>
 						{#if p.status !== 'approved'}
-							<Button variant="ghost" size="sm" onclick={() => setStatus(p, 'approved')} disabled={busy[p.id]} aria-label="Approve" title="Approve">
+							<Button variant="ghost" size="sm" onclick={() => setStatus(p, 'approved')} disabled={busy[p.id]} aria-label={m.admin_plugins_approve()} title={m.admin_plugins_approve()}>
 								<Check class="h-3.5 w-3.5" />
 							</Button>
 						{/if}
 						{#if p.status !== 'rejected'}
-							<Button variant="ghost" size="sm" onclick={() => setStatus(p, 'rejected')} disabled={busy[p.id]} aria-label="Reject" title="Reject">
+							<Button variant="ghost" size="sm" onclick={() => setStatus(p, 'rejected')} disabled={busy[p.id]} aria-label={m.admin_plugins_reject()} title={m.admin_plugins_reject()}>
 								<X class="h-3.5 w-3.5" />
 							</Button>
 						{/if}
-						<Button variant="ghost" size="sm" onclick={() => remove(p)} disabled={busy[p.id]} aria-label="Delete" title="Delete">
+						<Button variant="ghost" size="sm" onclick={() => remove(p)} disabled={busy[p.id]} aria-label={m.admin_plugins_delete()} title={m.admin_plugins_delete()}>
 							<Trash2 class="h-3.5 w-3.5" />
 						</Button>
 					</div>

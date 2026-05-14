@@ -7,6 +7,7 @@
 	import { eden } from '$lib/eden'
 	import { i18n } from '$lib/stores/i18n.svelte'
 	import type { PageRendered } from '$lib/types'
+	import { m } from '$lib/paraglide/messages'
 
 	const path = $derived('/' + page.params.path)
 	let pageData = $state<PageRendered | null>(null)
@@ -44,8 +45,8 @@
 		<Skeleton class="h-64 w-full rounded-md" />
 	{:else if notFound}
 		<div class="rounded-lg border border-dashed border-border p-12 text-center space-y-3">
-			<p class="text-muted-foreground">404 — no page at <code class="font-mono">{path}</code>.</p>
-			<Button size="sm" variant="outline" href="/">Back home</Button>
+			<p class="text-muted-foreground">{m.cms_404_message()} <code class="font-mono">{path}</code>.</p>
+			<Button size="sm" variant="outline" href="/">{m.cms_404_back_home()}</Button>
 		</div>
 	{:else if pageData}
 		<header class="space-y-2">

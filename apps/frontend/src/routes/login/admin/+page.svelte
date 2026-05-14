@@ -13,6 +13,7 @@
 	import { eden } from '$lib/eden'
 	import { auth } from '$lib/stores/auth.svelte'
 	import type { InitStatus } from '$lib/types'
+	import { m } from '$lib/paraglide/messages'
 
 	let checking = $state(true)
 	let recoveryAvailable = $state(false)
@@ -46,7 +47,7 @@
 			await auth.refresh()
 			await goto('/admin')
 		} catch (e) {
-			formError = e instanceof Error ? e.message : 'Login failed'
+			formError = e instanceof Error ? e.message : m.login_admin_login_failed()
 			submitting = false
 		}
 	}
@@ -54,18 +55,17 @@
 
 <div class="mx-auto max-w-md px-6 py-16 space-y-8">
 	{#if checking}
-		<p class="text-center text-sm text-muted-foreground">Checking…</p>
+		<p class="text-center text-sm text-muted-foreground">{m.login_admin_checking()}</p>
 	{:else if !recoveryAvailable}
 		<Card>
 			<CardHeader>
-				<CardTitle class="text-base">Recovery sign-in is closed</CardTitle>
+				<CardTitle class="text-base">{m.login_admin_closed_title()}</CardTitle>
 				<CardDescription>
-					The bootstrap admin has linked an OAuth account, so email + password recovery is no longer accepted. Sign in via
-					your OAuth provider on the main login page.
+					{m.login_admin_closed_body()}
 				</CardDescription>
 			</CardHeader>
 			<CardContent>
-				<Button href="/login" class="w-full">Back to sign-in</Button>
+				<Button href="/login" class="w-full">{m.login_admin_back_to_signin()}</Button>
 			</CardContent>
 		</Card>
 	{:else}
@@ -73,26 +73,25 @@
 			<div class="inline-flex h-12 w-12 items-center justify-center rounded-full bg-warning/10 text-warning">
 				<KeyRound class="h-6 w-6" />
 			</div>
-			<h1 class="text-3xl font-semibold tracking-tight">Bootstrap recovery</h1>
+			<h1 class="text-3xl font-semibold tracking-tight">{m.login_admin_bootstrap_title()}</h1>
 			<p class="text-sm text-muted-foreground">
-				Only the initial admin account can sign in here, and only until they link any OAuth identity. Once linked, this
-				path closes permanently and the admin uses OAuth like everyone else.
+				{m.login_admin_bootstrap_subtitle()}
 			</p>
 		</div>
 
 		<Card>
 			<CardHeader>
-				<CardTitle class="text-base">Admin recovery sign-in</CardTitle>
-				<CardDescription>Email + password set during first-time setup.</CardDescription>
+				<CardTitle class="text-base">{m.login_admin_card_title()}</CardTitle>
+				<CardDescription>{m.login_admin_card_subtitle()}</CardDescription>
 			</CardHeader>
 			<CardContent>
 				<form onsubmit={submit} class="space-y-4">
 					<div class="space-y-2">
-						<Label for="email">Email</Label>
+						<Label for="email">{m.login_admin_email()}</Label>
 						<Input id="email" type="email" bind:value={email} autocomplete="email" required disabled={submitting} />
 					</div>
 					<div class="space-y-2">
-						<Label for="password">Password</Label>
+						<Label for="password">{m.login_admin_password()}</Label>
 						<Input
 							id="password"
 							type="password"
@@ -108,15 +107,15 @@
 						</div>
 					{/if}
 					<Button type="submit" disabled={submitting} class="w-full">
-						{submitting ? 'Signing in…' : 'Sign in'}
+						{submitting ? m.login_admin_signing_in() : m.login_admin_sign_in()}
 					</Button>
 				</form>
 			</CardContent>
 		</Card>
 
 		<p class="text-center text-xs text-muted-foreground">
-			Want to disable this? Link an OAuth account from <a href="/settings" class="text-primary hover:underline">settings</a>
-			after signing in.
+			{m.login_admin_disable_hint_prefix()} <a href="/settings" class="text-primary hover:underline">{m.login_admin_disable_hint_link()}</a>
+			{m.login_admin_disable_hint_suffix()}
 		</p>
 	{/if}
 </div>

@@ -12,6 +12,7 @@
 	import Label from '$components/ui/Label.svelte'
 	import Badge from '$components/ui/Badge.svelte'
 	import { eden } from '$lib/eden'
+	import { m } from '$lib/paraglide/messages'
 
 	type RateLimitBucket = {
 		id: string
@@ -39,7 +40,7 @@
 			requireApproval = res.requireApproval
 			rateLimits = res.rateLimits
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Failed to load')
+			toast.error(e instanceof Error ? e.message : m.admin_instance_load_failed())
 		} finally {
 			loading = false
 		}
@@ -55,10 +56,10 @@
 				rateLimits: rateLimits.map((r) => ({ id: r.id, limit: r.limit, windowSeconds: r.windowSeconds })),
 			})
 			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
-			toast.success('Saved')
+			toast.success(m.admin_instance_saved())
 			await load()
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Failed to save')
+			toast.error(e instanceof Error ? e.message : m.admin_instance_save_failed())
 		} finally {
 			saving = false
 		}
@@ -70,10 +71,10 @@
 				rateLimits: [{ id: bucket.id, limit: bucket.defaultLimit, windowSeconds: bucket.defaultWindowSeconds, reset: true }],
 			})
 			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
-			toast.success(`${bucket.id} reset to default`)
+			toast.success(m.admin_instance_reset_to_default({ id: bucket.id }))
 			await load()
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Failed to reset')
+			toast.error(e instanceof Error ? e.message : m.admin_instance_reset_failed())
 		}
 	}
 
@@ -83,28 +84,28 @@
 </script>
 
 <header class="space-y-1">
-	<h1 class="text-2xl font-semibold tracking-tight">Instance settings</h1>
-	<p class="text-sm text-muted-foreground">Approval mode and rate-limit overrides.</p>
+	<h1 class="text-2xl font-semibold tracking-tight">{m.admin_instance_title()}</h1>
+	<p class="text-sm text-muted-foreground">{m.admin_instance_subtitle()}</p>
 </header>
 
 <Card>
 	<CardHeader>
 		<CardTitle class="text-base flex items-center gap-2">
-			Plugin approval
-			<Badge variant={requireApproval ? 'default' : 'secondary'}>{requireApproval ? 'on' : 'off'}</Badge>
+			{m.admin_instance_approval_title()}
+			<Badge variant={requireApproval ? 'default' : 'secondary'}>{requireApproval ? m.admin_instance_approval_on() : m.admin_instance_approval_off()}</Badge>
 		</CardTitle>
 		<CardDescription>
-			When on, new submissions land in <code class="font-mono">pending</code> and webhook ingest returns
-			<code class="font-mono">423</code> until you approve in <a href="/admin/plugins" class="text-primary hover:underline">Plugins</a>.
+			{m.admin_instance_approval_subtitle_prefix()} <code class="font-mono">pending</code> {m.admin_instance_approval_subtitle_middle()}
+			<code class="font-mono">423</code> {m.admin_instance_approval_subtitle_suffix()} <a href="/admin/plugins" class="text-primary hover:underline">{m.admin_instance_plugins_link()}</a>.
 		</CardDescription>
 	</CardHeader>
 	<CardContent class="space-y-4">
 		{#if loading}
-			<p class="text-sm text-muted-foreground">Loading…</p>
+			<p class="text-sm text-muted-foreground">{m.common_loading()}</p>
 		{:else}
 			<label class="flex items-center gap-3 cursor-pointer select-none">
 				<input type="checkbox" bind:checked={requireApproval} class="h-4 w-4 rounded border-input" />
-				<span class="text-sm">Require admin approval for new plugins</span>
+				<span class="text-sm">{m.admin_instance_require_approval()}</span>
 			</label>
 		{/if}
 	</CardContent>
@@ -112,24 +113,24 @@
 
 <Card>
 	<CardHeader>
-		<CardTitle class="text-base">Rate limits</CardTitle>
-		<CardDescription>Per-bucket limit (max requests) within the window (seconds). Subject = authenticated user when present, otherwise client IP.</CardDescription>
+		<CardTitle class="text-base">{m.admin_instance_rate_limits()}</CardTitle>
+		<CardDescription>{m.admin_instance_rate_limits_subtitle()}</CardDescription>
 	</CardHeader>
 	<CardContent class="space-y-3">
 		{#if loading}
-			<p class="text-sm text-muted-foreground">Loading…</p>
+			<p class="text-sm text-muted-foreground">{m.common_loading()}</p>
 		{:else}
 			{#each rateLimits as bucket (bucket.id)}
 				<div class="rounded-md border border-border bg-card/50 px-4 py-3 space-y-2">
 					<div class="flex items-center gap-2">
 						<span class="font-mono text-sm">{bucket.id}</span>
 						{#if isOverridden(bucket)}
-							<Badge variant="secondary" class="text-[10px]">overridden</Badge>
+							<Badge variant="secondary" class="text-[10px]">{m.admin_instance_overridden()}</Badge>
 						{/if}
 					</div>
 					<div class="grid grid-cols-[1fr_1fr_auto] gap-2 items-end">
 						<div class="grid gap-1">
-							<Label for={`${bucket.id}-limit`} class="text-xs">Limit (default {bucket.defaultLimit})</Label>
+							<Label for={`${bucket.id}-limit`} class="text-xs">{m.admin_instance_limit_label({ value: bucket.defaultLimit })}</Label>
 							<input
 								id={`${bucket.id}-limit`}
 								type="number"
@@ -139,7 +140,7 @@
 							/>
 						</div>
 						<div class="grid gap-1">
-							<Label for={`${bucket.id}-window`} class="text-xs">Window seconds (default {bucket.defaultWindowSeconds})</Label>
+							<Label for={`${bucket.id}-window`} class="text-xs">{m.admin_instance_window_label({ value: bucket.defaultWindowSeconds })}</Label>
 							<input
 								id={`${bucket.id}-window`}
 								type="number"
@@ -148,7 +149,7 @@
 								bind:value={bucket.windowSeconds}
 							/>
 						</div>
-						<Button variant="ghost" size="sm" onclick={() => resetBucket(bucket)} aria-label="Reset" title="Reset to default">
+						<Button variant="ghost" size="sm" onclick={() => resetBucket(bucket)} aria-label={m.common_reset()} title={m.common_reset()}>
 							<RotateCcw class="h-3.5 w-3.5" />
 						</Button>
 					</div>
@@ -161,6 +162,6 @@
 <div class="flex justify-end">
 	<Button size="sm" onclick={save} disabled={saving || loading}>
 		<Save class="h-3.5 w-3.5" />
-		{saving ? 'Saving…' : 'Save'}
+		{saving ? m.common_saving() : m.common_save()}
 	</Button>
 </div>

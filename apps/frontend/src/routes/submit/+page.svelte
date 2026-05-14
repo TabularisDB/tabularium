@@ -116,7 +116,7 @@
 						: ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`),
 				)
 			success = data as SubmitSuccess
-			toast.success('Plugin registered')
+			toast.success(m.submit_success_title())
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : 'Submit failed')
 		} finally {

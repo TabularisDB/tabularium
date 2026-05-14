@@ -19,6 +19,7 @@
 	import X from '@lucide/svelte/icons/x'
 	import { auth } from '$lib/stores/auth.svelte'
 	import { cn } from '$lib/utils'
+	import { m } from '$lib/paraglide/messages'
 
 	let { children } = $props()
 	let gated = $state(true)
@@ -53,17 +54,17 @@
 	})
 
 	const sections = $derived([
-		{ href: '/admin', label: 'Overview', icon: LayoutDashboard, badge: 0 },
-		{ href: '/admin/providers', label: 'Providers', icon: Plug, badge: 0 },
-		{ href: '/admin/plugins', label: 'Plugins', icon: Boxes, badge: pendingCount },
-		{ href: '/admin/users', label: 'Users', icon: UsersRound, badge: 0 },
-		{ href: '/admin/pages', label: 'Pages', icon: FileText, badge: 0 },
-		{ href: '/admin/infra', label: 'Infrastructure', icon: ServerCog, badge: 0 },
-		{ href: '/admin/branding', label: 'Branding', icon: Palette, badge: 0 },
-		{ href: '/admin/instance', label: 'Instance', icon: SlidersHorizontal, badge: 0 },
-		{ href: '/admin/features', label: 'Features', icon: ToggleRight, badge: 0 },
-		{ href: '/admin/i18n', label: 'Languages', icon: Languages, badge: 0 },
-		{ href: '/admin/audit', label: 'Audit log', icon: ListChecks, badge: 0 },
+		{ href: '/admin', label: m.admin_nav_overview(), icon: LayoutDashboard, badge: 0 },
+		{ href: '/admin/providers', label: m.admin_nav_providers(), icon: Plug, badge: 0 },
+		{ href: '/admin/plugins', label: m.admin_nav_plugins(), icon: Boxes, badge: pendingCount },
+		{ href: '/admin/users', label: m.admin_nav_users(), icon: UsersRound, badge: 0 },
+		{ href: '/admin/pages', label: m.admin_nav_pages(), icon: FileText, badge: 0 },
+		{ href: '/admin/infra', label: m.admin_nav_infrastructure(), icon: ServerCog, badge: 0 },
+		{ href: '/admin/branding', label: m.admin_nav_branding(), icon: Palette, badge: 0 },
+		{ href: '/admin/instance', label: m.admin_nav_instance(), icon: SlidersHorizontal, badge: 0 },
+		{ href: '/admin/features', label: m.admin_nav_features(), icon: ToggleRight, badge: 0 },
+		{ href: '/admin/i18n', label: m.admin_nav_languages(), icon: Languages, badge: 0 },
+		{ href: '/admin/audit', label: m.admin_nav_audit(), icon: ListChecks, badge: 0 },
 	])
 
 	function isActive(href: string) {
@@ -71,7 +72,7 @@
 		return page.url.pathname === href || page.url.pathname.startsWith(href + '/')
 	}
 
-	const activeLabel = $derived(sections.find((s) => isActive(s.href))?.label ?? 'Admin')
+	const activeLabel = $derived(sections.find((s) => isActive(s.href))?.label ?? m.admin_nav_default_label())
 
 	$effect(() => {
 		// Close drawer on route change.
@@ -82,7 +83,7 @@
 
 {#if gated}
 	<div class="mx-auto max-w-md px-6 py-20 text-center text-sm text-muted-foreground">
-		Checking admin access…
+		{m.admin_nav_checking()}
 	</div>
 {:else}
 	<!-- Mobile top-bar -->
@@ -91,11 +92,11 @@
 			<div class="flex items-center gap-2 text-sm font-semibold">
 				<ShieldAlert class="h-4 w-4 text-primary" />
 				<span>{activeLabel}</span>
-				{#if pendingCount > 0 && activeLabel !== 'Plugins'}
+				{#if pendingCount > 0 && activeLabel !== m.admin_nav_plugins()}
 					<span class="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-warning/20 text-warning text-[10px] font-semibold px-1.5">{pendingCount}</span>
 				{/if}
 			</div>
-			<button type="button" onclick={() => (drawerOpen = !drawerOpen)} class="inline-flex h-9 w-9 items-center justify-center rounded-md hover:bg-accent" aria-label="Toggle admin menu">
+			<button type="button" onclick={() => (drawerOpen = !drawerOpen)} class="inline-flex h-9 w-9 items-center justify-center rounded-md hover:bg-accent" aria-label={m.admin_nav_toggle_menu()}>
 				{#if drawerOpen}<X class="h-4 w-4" />{:else}<Menu class="h-4 w-4" />{/if}
 			</button>
 		</div>
@@ -107,9 +108,9 @@
 			<div class="space-y-1">
 				<div class="flex items-center gap-2 text-sm font-semibold tracking-tight">
 					<ShieldAlert class="h-4 w-4 text-primary" />
-					Admin panel
+					{m.admin_nav_panel_title()}
 				</div>
-				<p class="text-xs text-muted-foreground">Operator-only controls.</p>
+				<p class="text-xs text-muted-foreground">{m.admin_nav_panel_subtitle()}</p>
 			</div>
 			<nav class="space-y-0.5">
 				{#each sections as s (s.href)}
@@ -143,14 +144,14 @@
 	<!-- Mobile drawer -->
 	{#if drawerOpen}
 		<div class="lg:hidden fixed inset-0 z-40 bg-background/80 backdrop-blur-sm" role="dialog" aria-modal="true">
-			<button type="button" class="absolute inset-0" onclick={() => (drawerOpen = false)} aria-label="Close menu"></button>
+			<button type="button" class="absolute inset-0" onclick={() => (drawerOpen = false)} aria-label={m.admin_nav_close_menu()}></button>
 			<aside class="relative ml-auto h-full w-72 max-w-[80vw] border-l border-border bg-background p-6 space-y-6 overflow-y-auto">
 				<div class="flex items-center justify-between">
 					<div class="flex items-center gap-2 text-sm font-semibold">
 						<ShieldAlert class="h-4 w-4 text-primary" />
-						Admin panel
+						{m.admin_nav_panel_title()}
 					</div>
-					<button type="button" onclick={() => (drawerOpen = false)} class="inline-flex h-8 w-8 items-center justify-center rounded-md hover:bg-accent" aria-label="Close">
+					<button type="button" onclick={() => (drawerOpen = false)} class="inline-flex h-8 w-8 items-center justify-center rounded-md hover:bg-accent" aria-label={m.common_close()}>
 						<X class="h-4 w-4" />
 					</button>
 				</div>

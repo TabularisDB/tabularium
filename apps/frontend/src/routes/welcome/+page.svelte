@@ -20,6 +20,7 @@
 	import { auth } from '$lib/stores/auth.svelte'
 	import { branding, type Branding } from '$lib/stores/branding.svelte'
 	import type { ProviderKind } from '$lib/types'
+	import { m } from '$lib/paraglide/messages'
 
 	let step = $state<1 | 2 | 3>(1)
 	let busy = $state(false)
@@ -75,7 +76,7 @@
 			branding.set(res.branding)
 			step = 2
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Failed to save branding')
+			toast.error(e instanceof Error ? e.message : m.welcome_branding_failed())
 		} finally {
 			busy = false
 		}
@@ -97,7 +98,7 @@
 			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
 			step = 3
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Failed to add provider')
+			toast.error(e instanceof Error ? e.message : m.welcome_provider_failed())
 		} finally {
 			busy = false
 		}
@@ -113,25 +114,25 @@
 		try {
 			const { error } = await eden.api.admin.setup.complete.post({})
 			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
-			toast.success('Setup complete!')
+			toast.success(m.welcome_setup_complete())
 			goto('/admin')
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Failed to finalize setup')
+			toast.error(e instanceof Error ? e.message : m.welcome_finalize_failed())
 			busy = false
 		}
 	}
 </script>
 
 {#if gated}
-	<div class="mx-auto max-w-md px-6 py-20 text-center text-sm text-muted-foreground">Loading…</div>
+	<div class="mx-auto max-w-md px-6 py-20 text-center text-sm text-muted-foreground">{m.welcome_loading()}</div>
 {:else}
 	<div class="mx-auto max-w-2xl px-6 py-12 space-y-8">
 		<div class="text-center space-y-2">
 			<div class="inline-flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary mx-auto">
 				<Sparkles class="h-6 w-6" />
 			</div>
-			<h1 class="text-3xl font-semibold tracking-tight">Welcome, {auth.user?.displayName}</h1>
-			<p class="text-muted-foreground">Let's get your registry set up. You can change everything later in <a href="/admin" class="text-primary hover:underline">Admin</a>.</p>
+			<h1 class="text-3xl font-semibold tracking-tight">{m.welcome_greeting({ name: auth.user?.displayName ?? '' })}</h1>
+			<p class="text-muted-foreground">{m.welcome_intro_prefix()} <a href="/admin" class="text-primary hover:underline">{m.welcome_intro_link()}</a>{m.welcome_intro_suffix()}</p>
 		</div>
 
 		<div class="flex items-center justify-center gap-2 text-sm">
@@ -150,20 +151,20 @@
 		{#if step === 1}
 			<Card>
 				<CardHeader>
-					<CardTitle class="text-base">Brand your instance</CardTitle>
-					<CardDescription>Give your registry a name and an accent color. Settings apply instantly.</CardDescription>
+					<CardTitle class="text-base">{m.welcome_step1_title()}</CardTitle>
+					<CardDescription>{m.welcome_step1_subtitle()}</CardDescription>
 				</CardHeader>
 				<CardContent class="space-y-4">
 					<div class="grid gap-2">
-						<Label for="brand-name">Name</Label>
+						<Label for="brand-name">{m.welcome_field_name()}</Label>
 						<Input id="brand-name" bind:value={brandName} maxlength={60} />
 					</div>
 					<div class="grid gap-2">
-						<Label for="brand-tagline">Tagline</Label>
+						<Label for="brand-tagline">{m.welcome_field_tagline()}</Label>
 						<Input id="brand-tagline" bind:value={brandTagline} maxlength={200} />
 					</div>
 					<div class="grid gap-2 max-w-xs">
-						<Label for="brand-primary">Primary color</Label>
+						<Label for="brand-primary">{m.welcome_field_primary()}</Label>
 						<div class="flex gap-2 items-center">
 							<input id="brand-primary" type="color" bind:value={brandPrimary} class="h-9 w-12 rounded-md border border-input bg-card cursor-pointer" />
 							<Input bind:value={brandPrimary} placeholder="#3b82f6" />
@@ -171,7 +172,7 @@
 					</div>
 					<div class="flex justify-end">
 						<Button onclick={saveBranding} disabled={busy || !brandName.trim()}>
-							Continue
+							{m.welcome_continue()}
 							<ChevronRight class="h-3.5 w-3.5" />
 						</Button>
 					</div>
@@ -180,18 +181,18 @@
 		{:else if step === 2}
 			<Card>
 				<CardHeader>
-					<CardTitle class="text-base">Add your first OAuth provider</CardTitle>
-					<CardDescription>Users need at least one provider to sign in. You can add more later. Skip to do it after — but submitting plugins will be disabled until at least one is configured.</CardDescription>
+					<CardTitle class="text-base">{m.welcome_step2_title()}</CardTitle>
+					<CardDescription>{m.welcome_step2_subtitle()}</CardDescription>
 				</CardHeader>
 				<CardContent>
 					<form onsubmit={saveProvider} class="space-y-4">
 						<div class="grid grid-cols-2 gap-3">
 							<div class="grid gap-2">
-								<Label for="prov-id">Internal ID</Label>
+								<Label for="prov-id">{m.welcome_internal_id()}</Label>
 								<Input id="prov-id" bind:value={provId} placeholder="github" required pattern="[a-z0-9-]+" />
 							</div>
 							<div class="grid gap-2">
-								<Label for="prov-kind">Kind</Label>
+								<Label for="prov-kind">{m.welcome_kind()}</Label>
 								<Select id="prov-kind" bind:value={provKind}>
 									<option value="github">GitHub</option>
 									<option value="gitlab">GitLab</option>
@@ -200,28 +201,28 @@
 							</div>
 						</div>
 						<div class="grid gap-2">
-							<Label for="prov-display">Display name</Label>
+							<Label for="prov-display">{m.welcome_display_name()}</Label>
 							<Input id="prov-display" bind:value={provDisplayName} required />
 						</div>
 						<div class="grid gap-2">
-							<Label for="prov-base">Base URL</Label>
+							<Label for="prov-base">{m.welcome_base_url()}</Label>
 							<Input id="prov-base" bind:value={provBaseUrl} required />
 						</div>
 						<div class="grid grid-cols-2 gap-3">
 							<div class="grid gap-2">
-								<Label for="prov-cid">Client ID</Label>
+								<Label for="prov-cid">{m.welcome_client_id()}</Label>
 								<Input id="prov-cid" bind:value={provClientId} required />
 							</div>
 							<div class="grid gap-2">
-								<Label for="prov-secret">Client secret</Label>
+								<Label for="prov-secret">{m.welcome_client_secret()}</Label>
 								<Input id="prov-secret" type="password" bind:value={provClientSecret} required />
 							</div>
 						</div>
 						<div class="flex justify-between pt-2">
-							<Button type="button" variant="ghost" onclick={skipProvider} disabled={busy}>Skip for now</Button>
+							<Button type="button" variant="ghost" onclick={skipProvider} disabled={busy}>{m.welcome_skip_for_now()}</Button>
 							<Button type="submit" disabled={busy}>
 								<Plus class="h-3.5 w-3.5" />
-								{busy ? 'Adding…' : 'Add provider'}
+								{busy ? m.welcome_adding() : m.welcome_add_provider()}
 							</Button>
 						</div>
 					</form>
@@ -230,12 +231,12 @@
 		{:else}
 			<Card>
 				<CardHeader>
-					<CardTitle class="text-base">Ready to go</CardTitle>
+					<CardTitle class="text-base">{m.welcome_step3_title()}</CardTitle>
 					<CardDescription>
 						{#if providerSkipped}
-							You skipped provider setup — head to <a href="/admin/providers" class="text-primary hover:underline">Admin → Providers</a> to add one before submitting plugins.
+							{m.welcome_step3_skipped_prefix()} <a href="/admin/providers" class="text-primary hover:underline">{m.welcome_step3_skipped_link()}</a> {m.welcome_step3_skipped_suffix()}
 						{:else}
-							Provider added. Users can now sign in and submit plugins.
+							{m.welcome_step3_done()}
 						{/if}
 					</CardDescription>
 				</CardHeader>
@@ -243,20 +244,20 @@
 					<ul class="space-y-2">
 						<li class="flex items-center gap-2">
 							<Check class="h-4 w-4 text-primary" />
-							Branding set to <Badge variant="secondary">{branding.name}</Badge>
+							{m.welcome_branding_set_to()} <Badge variant="secondary">{branding.name}</Badge>
 						</li>
 						<li class="flex items-center gap-2">
 							<Check class="h-4 w-4 text-primary" />
-							{providerSkipped ? 'Provider skipped' : `Provider added: ${provDisplayName}`}
+							{providerSkipped ? m.welcome_provider_skipped_summary() : m.welcome_provider_added_summary({ name: provDisplayName })}
 						</li>
 					</ul>
 					<p class="text-xs text-muted-foreground pt-2">
-						Next steps: visit <a href="/admin/infra" class="text-primary hover:underline">Infrastructure</a> to wire Redis if you plan to scale, and
-						<a href="/admin/branding" class="text-primary hover:underline">Branding</a> for the logo upload.
+						{m.welcome_next_steps_prefix()} <a href="/admin/infra" class="text-primary hover:underline">{m.welcome_next_steps_infra_link()}</a> {m.welcome_next_steps_middle()}
+						<a href="/admin/branding" class="text-primary hover:underline">{m.welcome_next_steps_branding_link()}</a> {m.welcome_next_steps_suffix()}
 					</p>
 					<div class="flex justify-end pt-2">
 						<Button onclick={finish} disabled={busy}>
-							{busy ? 'Finalizing…' : 'Open admin panel'}
+							{busy ? m.welcome_finalizing() : m.welcome_open_admin()}
 							<ChevronRight class="h-3.5 w-3.5" />
 						</Button>
 					</div>

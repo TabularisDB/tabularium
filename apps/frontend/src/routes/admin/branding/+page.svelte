@@ -16,6 +16,7 @@
 	import { eden } from '$lib/eden'
 	import { branding, type Branding } from '$lib/stores/branding.svelte'
 	import { i18n, LOCALE_LABELS, type Locale } from '$lib/stores/i18n.svelte'
+	import { m } from '$lib/paraglide/messages'
 
 	type LocalizedBranding = Branding & {
 		taglineTranslations: Partial<Record<Locale, string>>
@@ -89,7 +90,7 @@
 			defaults = res.defaults
 			activeLocale = i18n.defaultLocale
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Failed to load branding')
+			toast.error(e instanceof Error ? e.message : m.admin_branding_load_failed())
 		} finally {
 			loading = false
 		}
@@ -126,9 +127,9 @@
 			const res = data as { ok: boolean; branding: LocalizedBranding }
 			branding.set(res.branding)
 			form = toForm(res.branding)
-			toast.success('Branding saved')
+			toast.success(m.admin_branding_saved())
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Failed to save')
+			toast.error(e instanceof Error ? e.message : m.admin_branding_save_failed())
 		} finally {
 			saving = false
 		}
@@ -162,25 +163,25 @@
 </script>
 
 <header class="space-y-1">
-	<h1 class="text-2xl font-semibold tracking-tight">Branding</h1>
-	<p class="text-sm text-muted-foreground">Whitelabel name, tagline, colors, logo, footer, analytics. Changes apply instantly.</p>
+	<h1 class="text-2xl font-semibold tracking-tight">{m.admin_branding_title()}</h1>
+	<p class="text-sm text-muted-foreground">{m.admin_branding_subtitle()}</p>
 </header>
 
 {#if loading}
-	<p class="text-sm text-muted-foreground">Loading…</p>
+	<p class="text-sm text-muted-foreground">{m.common_loading()}</p>
 {:else}
 	<Card>
 		<CardHeader>
-			<CardTitle class="text-base">Identity</CardTitle>
+			<CardTitle class="text-base">{m.admin_branding_identity()}</CardTitle>
 		</CardHeader>
 		<CardContent class="space-y-4">
 			<div class="grid gap-2 max-w-md">
-				<Label for="name">Instance name</Label>
+				<Label for="name">{m.admin_branding_instance_name()}</Label>
 				<div class="flex gap-2">
 					<Input id="name" bind:value={form.name} maxlength={60} />
-					<Button variant="ghost" size="sm" onclick={() => resetField('name')} aria-label="Reset"><RotateCcw class="h-3.5 w-3.5" /></Button>
+					<Button variant="ghost" size="sm" onclick={() => resetField('name')} aria-label={m.common_reset()}><RotateCcw class="h-3.5 w-3.5" /></Button>
 				</div>
-				<p class="text-xs text-muted-foreground">Not translated — your brand name stays consistent across languages.</p>
+				<p class="text-xs text-muted-foreground">{m.admin_branding_name_note()}</p>
 			</div>
 		</CardContent>
 	</Card>
@@ -189,9 +190,9 @@
 		<CardHeader>
 			<CardTitle class="text-base flex items-center gap-2">
 				<Languages class="h-4 w-4" />
-				Tagline
+				{m.admin_branding_tagline()}
 			</CardTitle>
-			<CardDescription>Shown in the hero of the default home page. Per-language — empty languages fall back to the default locale.</CardDescription>
+			<CardDescription>{m.admin_branding_tagline_subtitle()}</CardDescription>
 		</CardHeader>
 		<CardContent class="space-y-3">
 			<div class="flex flex-wrap gap-1">
@@ -204,7 +205,7 @@
 					>
 						{LOCALE_LABELS[l] ?? l}
 						{#if l === i18n.defaultLocale}
-							<span class="ml-1 text-[10px] uppercase tracking-wider text-primary">default</span>
+							<span class="ml-1 text-[10px] uppercase tracking-wider text-primary">{m.admin_branding_default()}</span>
 						{:else if isFilled(form.taglines, l)}
 							<span class="ml-1 text-[10px] uppercase tracking-wider text-success">·</span>
 						{/if}
@@ -212,40 +213,40 @@
 				{/each}
 			</div>
 			<div class="flex gap-2">
-				<Input bind:value={form.taglines[activeLocale]} maxlength={200} placeholder={activeLocale === i18n.defaultLocale ? defaults?.tagline : `Falls back to ${LOCALE_LABELS[i18n.defaultLocale]} if left empty`} />
-				<Button variant="ghost" size="sm" onclick={() => resetTagline(activeLocale)} aria-label="Reset"><RotateCcw class="h-3.5 w-3.5" /></Button>
+				<Input bind:value={form.taglines[activeLocale]} maxlength={200} placeholder={activeLocale === i18n.defaultLocale ? defaults?.tagline : m.admin_branding_fallback_placeholder({ locale: LOCALE_LABELS[i18n.defaultLocale] ?? i18n.defaultLocale })} />
+				<Button variant="ghost" size="sm" onclick={() => resetTagline(activeLocale)} aria-label={m.common_reset()}><RotateCcw class="h-3.5 w-3.5" /></Button>
 			</div>
 		</CardContent>
 	</Card>
 
 	<Card>
 		<CardHeader>
-			<CardTitle class="text-base">Colors</CardTitle>
+			<CardTitle class="text-base">{m.admin_branding_colors()}</CardTitle>
 			<CardDescription>Applied as CSS custom properties (<code class="font-mono">--brand-primary</code>, <code class="font-mono">--brand-accent</code>, <code class="font-mono">--brand-success</code>).</CardDescription>
 		</CardHeader>
 		<CardContent class="space-y-4">
 			<div class="grid gap-2 max-w-xs">
-				<Label for="primaryHex">Primary</Label>
+				<Label for="primaryHex">{m.admin_branding_primary()}</Label>
 				<div class="flex gap-2 items-center">
 					<input id="primaryHex" type="color" bind:value={form.primaryHex} class="h-9 w-12 rounded-md border border-input bg-card cursor-pointer" />
 					<Input bind:value={form.primaryHex} placeholder="#3b82f6" />
-					<Button variant="ghost" size="sm" onclick={() => resetField('primaryHex')} aria-label="Reset"><RotateCcw class="h-3.5 w-3.5" /></Button>
+					<Button variant="ghost" size="sm" onclick={() => resetField('primaryHex')} aria-label={m.common_reset()}><RotateCcw class="h-3.5 w-3.5" /></Button>
 				</div>
 			</div>
 			<div class="grid gap-2 max-w-xs">
-				<Label for="accentHex">Accent</Label>
+				<Label for="accentHex">{m.admin_branding_accent()}</Label>
 				<div class="flex gap-2 items-center">
 					<input id="accentHex" type="color" bind:value={form.accentHex} class="h-9 w-12 rounded-md border border-input bg-card cursor-pointer" />
 					<Input bind:value={form.accentHex} placeholder="#8b5cf6" />
-					<Button variant="ghost" size="sm" onclick={() => resetField('accentHex')} aria-label="Reset"><RotateCcw class="h-3.5 w-3.5" /></Button>
+					<Button variant="ghost" size="sm" onclick={() => resetField('accentHex')} aria-label={m.common_reset()}><RotateCcw class="h-3.5 w-3.5" /></Button>
 				</div>
 			</div>
 			<div class="grid gap-2 max-w-xs">
-				<Label for="successHex">Success</Label>
+				<Label for="successHex">{m.admin_branding_success()}</Label>
 				<div class="flex gap-2 items-center">
 					<input id="successHex" type="color" bind:value={form.successHex} class="h-9 w-12 rounded-md border border-input bg-card cursor-pointer" />
 					<Input bind:value={form.successHex} placeholder="#10b981" />
-					<Button variant="ghost" size="sm" onclick={() => resetField('successHex')} aria-label="Reset"><RotateCcw class="h-3.5 w-3.5" /></Button>
+					<Button variant="ghost" size="sm" onclick={() => resetField('successHex')} aria-label={m.common_reset()}><RotateCcw class="h-3.5 w-3.5" /></Button>
 				</div>
 			</div>
 		</CardContent>
@@ -253,22 +254,22 @@
 
 	<Card>
 		<CardHeader>
-			<CardTitle class="text-base">Images</CardTitle>
+			<CardTitle class="text-base">{m.admin_branding_images()}</CardTitle>
 		</CardHeader>
 		<CardContent class="space-y-4">
 			<div class="grid gap-2 max-w-md">
-				<Label for="logo">Logo URL</Label>
+				<Label for="logo">{m.admin_branding_logo_url()}</Label>
 				<div class="flex gap-2">
 					<Input id="logo" bind:value={form.logoUrl} placeholder="https://example.com/logo.svg" />
-					<Button variant="ghost" size="sm" onclick={() => resetField('logoUrl')} aria-label="Reset"><RotateCcw class="h-3.5 w-3.5" /></Button>
+					<Button variant="ghost" size="sm" onclick={() => resetField('logoUrl')} aria-label={m.common_reset()}><RotateCcw class="h-3.5 w-3.5" /></Button>
 				</div>
-				<p class="text-xs text-muted-foreground">SVG or PNG. Renders next to the header name.</p>
+				<p class="text-xs text-muted-foreground">{m.admin_branding_logo_note()}</p>
 			</div>
 			<div class="grid gap-2 max-w-md">
-				<Label for="favicon">Favicon URL</Label>
+				<Label for="favicon">{m.admin_branding_favicon_url()}</Label>
 				<div class="flex gap-2">
 					<Input id="favicon" bind:value={form.faviconUrl} placeholder="https://example.com/favicon.ico" />
-					<Button variant="ghost" size="sm" onclick={() => resetField('faviconUrl')} aria-label="Reset"><RotateCcw class="h-3.5 w-3.5" /></Button>
+					<Button variant="ghost" size="sm" onclick={() => resetField('faviconUrl')} aria-label={m.common_reset()}><RotateCcw class="h-3.5 w-3.5" /></Button>
 				</div>
 			</div>
 		</CardContent>
@@ -278,9 +279,9 @@
 		<CardHeader>
 			<CardTitle class="text-base flex items-center gap-2">
 				<Languages class="h-4 w-4" />
-				Footer text + SEO
+				{m.admin_branding_footer_seo()}
 			</CardTitle>
-			<CardDescription>Footer text is per-language; empty languages fall back to the default locale.</CardDescription>
+			<CardDescription>{m.admin_branding_footer_subtitle()}</CardDescription>
 		</CardHeader>
 		<CardContent class="space-y-4">
 			<div class="space-y-3">
@@ -294,7 +295,7 @@
 						>
 							{LOCALE_LABELS[l] ?? l}
 							{#if l === i18n.defaultLocale}
-								<span class="ml-1 text-[10px] uppercase tracking-wider text-primary">default</span>
+								<span class="ml-1 text-[10px] uppercase tracking-wider text-primary">{m.admin_branding_default()}</span>
 							{:else if isFilled(form.footers, l)}
 								<span class="ml-1 text-[10px] uppercase tracking-wider text-success">·</span>
 							{/if}
@@ -302,28 +303,28 @@
 					{/each}
 				</div>
 				<div class="flex gap-2">
-					<Input bind:value={form.footers[activeLocale]} maxlength={1000} placeholder={activeLocale === i18n.defaultLocale ? '© 2026 Example Inc.' : `Falls back to ${LOCALE_LABELS[i18n.defaultLocale]} if left empty`} />
-					<Button variant="ghost" size="sm" onclick={() => resetFooter(activeLocale)} aria-label="Reset"><RotateCcw class="h-3.5 w-3.5" /></Button>
+					<Input bind:value={form.footers[activeLocale]} maxlength={1000} placeholder={activeLocale === i18n.defaultLocale ? '© 2026 Example Inc.' : m.admin_branding_fallback_placeholder({ locale: LOCALE_LABELS[i18n.defaultLocale] ?? i18n.defaultLocale })} />
+					<Button variant="ghost" size="sm" onclick={() => resetFooter(activeLocale)} aria-label={m.common_reset()}><RotateCcw class="h-3.5 w-3.5" /></Button>
 				</div>
 			</div>
 
 			<div class="grid gap-2">
-				<Label for="analytics">Analytics snippet (HTML)</Label>
+				<Label for="analytics">{m.admin_branding_analytics()}</Label>
 				<Textarea id="analytics" bind:value={form.analyticsScript} rows={4} placeholder={'<script defer data-domain="example.com" src="https://plausible.io/js/script.js"></script>'} />
-				<p class="text-xs text-muted-foreground">Injected verbatim into &lt;head&gt;. Only paste trusted snippets (Plausible / Umami).</p>
+				<p class="text-xs text-muted-foreground">{m.admin_branding_analytics_note()}</p>
 			</div>
 			<label class="flex items-center gap-3 cursor-pointer select-none">
 				<input type="checkbox" bind:checked={form.allowIndexing} class="h-4 w-4 rounded border-input" />
-				<span class="text-sm">Allow search-engine indexing</span>
+				<span class="text-sm">{m.admin_branding_allow_indexing()}</span>
 			</label>
-			<p class="text-xs text-muted-foreground -mt-2">When off: robots.txt returns Disallow and pages get noindex meta.</p>
+			<p class="text-xs text-muted-foreground -mt-2">{m.admin_branding_indexing_note()}</p>
 		</CardContent>
 	</Card>
 
 	<div class="flex justify-end">
 		<Button size="sm" onclick={save} disabled={saving}>
 			<Save class="h-3.5 w-3.5" />
-			{saving ? 'Saving…' : 'Save all'}
+			{saving ? m.common_saving() : m.admin_branding_save_all()}
 		</Button>
 	</div>
 {/if}

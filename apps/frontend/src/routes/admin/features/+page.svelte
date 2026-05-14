@@ -9,6 +9,7 @@
 	import CardTitle from '$components/ui/CardTitle.svelte'
 	import Button from '$components/ui/Button.svelte'
 	import { eden } from '$lib/eden'
+	import { m } from '$lib/paraglide/messages'
 
 	type Features = { submissionsEnabled: boolean; requestsEnabled: boolean }
 
@@ -25,7 +26,7 @@
 			submissionsEnabled = f.submissionsEnabled
 			requestsEnabled = f.requestsEnabled
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Failed to load features')
+			toast.error(e instanceof Error ? e.message : m.admin_features_load_failed())
 		} finally {
 			loading = false
 		}
@@ -36,9 +37,9 @@
 		try {
 			const { error } = await eden.api.admin.features.patch({ submissionsEnabled, requestsEnabled })
 			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
-			toast.success('Features updated')
+			toast.success(m.admin_features_updated())
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Failed to save')
+			toast.error(e instanceof Error ? e.message : m.admin_branding_save_failed())
 		} finally {
 			saving = false
 		}
@@ -46,39 +47,39 @@
 </script>
 
 <header class="space-y-1">
-	<h1 class="text-2xl font-semibold tracking-tight">Features</h1>
-	<p class="text-sm text-muted-foreground">Toggle public-facing capabilities. Disabled features hide their UI and return 403 from the API.</p>
+	<h1 class="text-2xl font-semibold tracking-tight">{m.admin_features_title()}</h1>
+	<p class="text-sm text-muted-foreground">{m.admin_features_subtitle()}</p>
 </header>
 
 {#if loading}
-	<p class="text-sm text-muted-foreground">Loading…</p>
+	<p class="text-sm text-muted-foreground">{m.common_loading()}</p>
 {:else}
 	<Card>
 		<CardHeader>
-			<CardTitle class="text-base">Plugin submissions</CardTitle>
+			<CardTitle class="text-base">{m.admin_features_submissions()}</CardTitle>
 			<CardDescription>
-				When off, the <code class="font-mono">/submit</code> page hides the form and <code class="font-mono">POST /api/submit/oauth</code> returns 403. Existing plugins keep working — only new submissions are blocked.
+				{m.admin_features_submissions_subtitle_prefix()} <code class="font-mono">/submit</code> {m.admin_features_submissions_subtitle_middle()} <code class="font-mono">POST /api/submit/oauth</code> {m.admin_features_submissions_subtitle_suffix()}
 			</CardDescription>
 		</CardHeader>
 		<CardContent>
 			<label class="flex items-center gap-2 cursor-pointer text-sm">
 				<input type="checkbox" bind:checked={submissionsEnabled} class="h-4 w-4 rounded border-input" />
-				<span>Allow new plugin submissions</span>
+				<span>{m.admin_features_allow_submissions()}</span>
 			</label>
 		</CardContent>
 	</Card>
 
 	<Card>
 		<CardHeader>
-			<CardTitle class="text-base">Plugin requests</CardTitle>
+			<CardTitle class="text-base">{m.admin_features_requests()}</CardTitle>
 			<CardDescription>
-				When off, the <code class="font-mono">/requests</code> page hides the create form and <code class="font-mono">POST /api/requests</code> returns 403. Existing requests stay listed and upvoting still works.
+				{m.admin_features_requests_subtitle_prefix()} <code class="font-mono">/requests</code> {m.admin_features_requests_subtitle_middle()} <code class="font-mono">POST /api/requests</code> {m.admin_features_requests_subtitle_suffix()}
 			</CardDescription>
 		</CardHeader>
 		<CardContent>
 			<label class="flex items-center gap-2 cursor-pointer text-sm">
 				<input type="checkbox" bind:checked={requestsEnabled} class="h-4 w-4 rounded border-input" />
-				<span>Allow new plugin requests</span>
+				<span>{m.admin_features_allow_requests()}</span>
 			</label>
 		</CardContent>
 	</Card>
@@ -86,7 +87,7 @@
 	<div class="flex justify-end">
 		<Button size="sm" onclick={save} disabled={saving}>
 			<Save class="h-3.5 w-3.5" />
-			{saving ? 'Saving…' : 'Apply'}
+			{saving ? m.common_saving() : m.common_apply()}
 		</Button>
 	</div>
 {/if}

@@ -10,6 +10,7 @@
 	import ProviderIcon from '$components/brand/ProviderIcon.svelte'
 	import { eden } from '$lib/eden'
 	import type { InitStatus, ProviderInfo } from '$lib/types'
+	import { m } from '$lib/paraglide/messages'
 
 	let providers = $state<ProviderInfo[] | null>(null)
 
@@ -28,20 +29,20 @@
 
 <div class="mx-auto max-w-md px-6 py-20 space-y-8">
 	<div class="text-center space-y-2">
-		<h1 class="text-3xl font-semibold tracking-tight">Sign in</h1>
-		<p class="text-sm text-muted-foreground">Sign in to submit plugins and upvote requests.</p>
+		<h1 class="text-3xl font-semibold tracking-tight">{m.login_title()}</h1>
+		<p class="text-sm text-muted-foreground">{m.login_subtitle()}</p>
 	</div>
 
 	<Card>
 		<CardHeader>
-			<CardTitle class="text-base">Choose a provider</CardTitle>
-			<CardDescription>Configured on this instance:</CardDescription>
+			<CardTitle class="text-base">{m.login_choose_provider()}</CardTitle>
+			<CardDescription>{m.login_choose_provider_subtitle()}</CardDescription>
 		</CardHeader>
 		<CardContent class="space-y-3">
 			{#if providers === null}
-				<p class="text-sm text-muted-foreground">Loading…</p>
+				<p class="text-sm text-muted-foreground">{m.common_loading()}</p>
 			{:else if providers.length === 0}
-				<p class="text-sm text-muted-foreground">No sign-in providers are configured on this instance yet.</p>
+				<p class="text-sm text-muted-foreground">{m.login_no_providers()}</p>
 			{:else}
 				{#each providers as p (p.id)}
 					<Button
@@ -50,7 +51,7 @@
 						onclick={() => (window.location.href = `/auth/${p.id}`)}
 					>
 						<ProviderIcon kind={p.kind} baseUrl={p.baseUrl} logoUrl={p.logoUrl} class="h-4 w-4" />
-						Continue with {p.displayName}
+						{m.login_continue_with({ name: p.displayName })}
 					</Button>
 				{/each}
 			{/if}
@@ -58,7 +59,6 @@
 	</Card>
 
 	<p class="text-xs text-muted-foreground text-center">
-		Tokens are encrypted at rest. We only see your username and an access token used to verify repository ownership when you
-		submit a plugin.
+		{m.login_token_note()}
 	</p>
 </div>

@@ -4,6 +4,7 @@
 	import Skeleton from '$components/ui/Skeleton.svelte'
 	import { eden } from '$lib/eden'
 	import type { Plugin, PluginListResponse } from '$lib/types'
+	import { m } from '$lib/paraglide/messages'
 
 	type Props = {
 		limit?: number
@@ -45,7 +46,7 @@
 			{#each Array(limit) as _}<Skeleton class="h-32 rounded-lg" />{/each}
 		</div>
 	{:else if plugins.length === 0}
-		<p class="text-sm text-muted-foreground">No matching plugins.</p>
+		<p class="text-sm text-muted-foreground">{m.widget_grid_empty()}</p>
 	{:else}
 		<div class={`grid gap-4 ${gridClass}`}>
 			{#each plugins as p (p.id)}<PluginCard plugin={p} />{/each}

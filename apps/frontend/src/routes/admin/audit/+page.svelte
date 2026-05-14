@@ -6,6 +6,7 @@
 	import CardTitle from '$components/ui/CardTitle.svelte'
 	import CardDescription from '$components/ui/CardDescription.svelte'
 	import { eden } from '$lib/eden'
+	import { m } from '$lib/paraglide/messages'
 
 	type AuditEntry = {
 		id: string
@@ -36,30 +37,30 @@
 </script>
 
 <header class="space-y-1">
-	<h1 class="text-2xl font-semibold tracking-tight">Audit log</h1>
-	<p class="text-sm text-muted-foreground">Last 200 admin actions on this instance.</p>
+	<h1 class="text-2xl font-semibold tracking-tight">{m.admin_audit_title()}</h1>
+	<p class="text-sm text-muted-foreground">{m.admin_audit_subtitle()}</p>
 </header>
 
 <Card>
 	<CardHeader>
-		<CardTitle class="text-base">{total} total entries</CardTitle>
-		<CardDescription>Older entries are retained until manually pruned via SQL.</CardDescription>
+		<CardTitle class="text-base">{m.admin_audit_total_entries({ count: total })}</CardTitle>
+		<CardDescription>{m.admin_audit_total_subtitle()}</CardDescription>
 	</CardHeader>
 	<CardContent>
 		{#if loading}
-			<p class="text-sm text-muted-foreground">Loading…</p>
+			<p class="text-sm text-muted-foreground">{m.common_loading()}</p>
 		{:else if entries.length === 0}
-			<p class="text-sm text-muted-foreground">No actions recorded yet.</p>
+			<p class="text-sm text-muted-foreground">{m.admin_audit_empty()}</p>
 		{:else}
 			<div class="rounded-md border border-border overflow-x-auto">
 				<table class="w-full text-sm">
 					<thead class="border-b border-border bg-card/50">
 						<tr class="text-left">
-							<th class="font-medium px-3 py-2">When</th>
-							<th class="font-medium px-3 py-2">Actor</th>
-							<th class="font-medium px-3 py-2">Action</th>
-							<th class="font-medium px-3 py-2">Target</th>
-							<th class="font-medium px-3 py-2">IP</th>
+							<th class="font-medium px-3 py-2">{m.admin_audit_col_when()}</th>
+							<th class="font-medium px-3 py-2">{m.admin_audit_col_actor()}</th>
+							<th class="font-medium px-3 py-2">{m.admin_audit_col_action()}</th>
+							<th class="font-medium px-3 py-2">{m.admin_audit_col_target()}</th>
+							<th class="font-medium px-3 py-2">{m.admin_audit_col_ip()}</th>
 						</tr>
 					</thead>
 					<tbody>

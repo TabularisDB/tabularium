@@ -2,6 +2,7 @@
 	import { page } from '$app/state'
 	import Button from '$components/ui/Button.svelte'
 	import Frown from '@lucide/svelte/icons/frown'
+	import { m } from '$lib/paraglide/messages'
 </script>
 
 <div class="mx-auto max-w-md px-6 py-24 text-center space-y-6">
@@ -10,18 +11,18 @@
 	</div>
 	<div class="space-y-2">
 		<h1 class="text-3xl font-semibold tracking-tight">
-			{page.status} — {page.error?.message ?? 'Something broke'}
+			{page.status} — {page.error?.message ?? m.error_default_message()}
 		</h1>
 		<p class="text-muted-foreground">
 			{#if page.status === 404}
-				That page doesn't exist or has been removed.
+				{m.error_404_body()}
 			{:else}
-				An unexpected error occurred. Try again in a moment.
+				{m.error_generic_body()}
 			{/if}
 		</p>
 	</div>
 	<div class="flex justify-center gap-2">
-		<Button href="/">Back home</Button>
-		<Button variant="outline" href="/plugins">Browse plugins</Button>
+		<Button href="/">{m.error_back_home()}</Button>
+		<Button variant="outline" href="/plugins">{m.error_browse_plugins()}</Button>
 	</div>
 </div>

@@ -14,6 +14,7 @@
 	import Label from '$components/ui/Label.svelte'
 	import { eden } from '$lib/eden'
 	import type { InitStatus, InitDefaults } from '$lib/types'
+	import { m } from '$lib/paraglide/messages'
 
 	type Phase = 'checking' | 'login' | 'wizard' | 'submitting' | 'done'
 
@@ -51,7 +52,7 @@
 			dbUrl = defaults.database.url
 			phase = 'wizard'
 		} catch (e) {
-			formError = e instanceof Error ? e.message : 'Login failed'
+			formError = e instanceof Error ? e.message : m.init_login_failed()
 		}
 	}
 
@@ -62,7 +63,7 @@
 		const { error } = await eden.api.init.complete.post({ database: { url: dbUrl } })
 		if (error) {
 			const v = error.value as { error?: string; detail?: string } | string | null
-			formError = (typeof v === 'object' && v?.detail) ? v.detail : (typeof v === 'string' ? v : (v?.error ?? `Setup failed (${error.status})`))
+			formError = (typeof v === 'object' && v?.detail) ? v.detail : (typeof v === 'string' ? v : (v?.error ?? m.init_setup_failed()))
 			phase = 'wizard'
 			return
 		}
@@ -72,29 +73,29 @@
 
 <div class="mx-auto max-w-md px-6 py-16 space-y-8">
 	{#if phase === 'checking'}
-		<p class="text-center text-sm text-muted-foreground">Checking instance state…</p>
+		<p class="text-center text-sm text-muted-foreground">{m.init_checking()}</p>
 	{:else if phase === 'login'}
 		<div class="text-center space-y-3">
 			<div class="inline-flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
 				<LogIn class="h-6 w-6" />
 			</div>
-			<h1 class="text-3xl font-semibold tracking-tight">Install wizard</h1>
-			<p class="text-sm text-muted-foreground">Sign in with the temporary credentials printed in the server logs.</p>
+			<h1 class="text-3xl font-semibold tracking-tight">{m.init_login_title()}</h1>
+			<p class="text-sm text-muted-foreground">{m.init_login_subtitle()}</p>
 		</div>
 
 		<Card>
 			<CardHeader>
-				<CardTitle class="text-base">Bootstrap sign-in</CardTitle>
-				<CardDescription>These credentials work only until setup is complete.</CardDescription>
+				<CardTitle class="text-base">{m.init_bootstrap_card_title()}</CardTitle>
+				<CardDescription>{m.init_bootstrap_card_subtitle()}</CardDescription>
 			</CardHeader>
 			<CardContent>
 				<form onsubmit={submitBootstrapLogin} class="space-y-4">
 					<div class="space-y-2">
-						<Label for="bootEmail">Email</Label>
+						<Label for="bootEmail">{m.init_email()}</Label>
 						<Input id="bootEmail" type="email" bind:value={bootEmail} required />
 					</div>
 					<div class="space-y-2">
-						<Label for="bootPassword">Password</Label>
+						<Label for="bootPassword">{m.init_password()}</Label>
 						<Input id="bootPassword" type="password" bind:value={bootPassword} autocomplete="off" required />
 					</div>
 					{#if formError}
@@ -102,7 +103,7 @@
 							{formError}
 						</div>
 					{/if}
-					<Button type="submit" class="w-full">Continue</Button>
+					<Button type="submit" class="w-full">{m.init_continue()}</Button>
 				</form>
 			</CardContent>
 		</Card>
@@ -111,21 +112,21 @@
 			<div class="inline-flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
 				<ShieldCheck class="h-6 w-6" />
 			</div>
-			<h1 class="text-3xl font-semibold tracking-tight">Set up your registry</h1>
+			<h1 class="text-3xl font-semibold tracking-tight">{m.init_wizard_title()}</h1>
 			<p class="text-sm text-muted-foreground">
-				Configure the database. Your bootstrap account becomes the permanent admin. The server restarts when you submit.
+				{m.init_wizard_subtitle()}
 			</p>
 		</div>
 
 		<Card>
 			<CardHeader>
-				<CardTitle class="text-base flex items-center gap-2"><Database class="h-4 w-4" />Database</CardTitle>
-				<CardDescription>Postgres, MySQL, or SQLite. URL prefilled from env if set.</CardDescription>
+				<CardTitle class="text-base flex items-center gap-2"><Database class="h-4 w-4" />{m.init_database()}</CardTitle>
+				<CardDescription>{m.init_database_subtitle()}</CardDescription>
 			</CardHeader>
 			<CardContent>
 				<form onsubmit={submitWizard} class="space-y-4">
 					<div class="space-y-2">
-						<Label for="dbUrl">Connection URL</Label>
+						<Label for="dbUrl">{m.init_connection_url()}</Label>
 						<Input
 							id="dbUrl"
 							bind:value={dbUrl}
@@ -140,7 +141,7 @@
 						</div>
 					{/if}
 					<Button type="submit" disabled={phase === 'submitting'} class="w-full">
-						{phase === 'submitting' ? 'Setting up…' : 'Complete setup'}
+						{phase === 'submitting' ? m.init_setting_up() : m.init_complete_setup()}
 					</Button>
 				</form>
 			</CardContent>
@@ -150,9 +151,9 @@
 			<div class="inline-flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">
 				<ShieldCheck class="h-6 w-6" />
 			</div>
-			<h1 class="text-3xl font-semibold tracking-tight">Setup complete</h1>
+			<h1 class="text-3xl font-semibold tracking-tight">{m.init_done_title()}</h1>
 			<p class="text-sm text-muted-foreground">
-				The server is restarting. Sign in at <a href="/login/admin" class="text-primary hover:underline">/login/admin</a> with <code class="text-foreground">admin@example.com</code> and the password you just used.
+				{m.init_done_body_prefix()} <a href="/login/admin" class="text-primary hover:underline">/login/admin</a> {m.init_done_body_middle()} <code class="text-foreground">admin@example.com</code> {m.init_done_body_suffix()}
 			</p>
 		</div>
 	{/if}

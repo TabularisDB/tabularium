@@ -13,6 +13,7 @@
 	import Label from '$components/ui/Label.svelte'
 	import { eden } from '$lib/eden'
 	import { i18n as i18nStore, LOCALE_LABELS, type Locale } from '$lib/stores/i18n.svelte'
+	import { m } from '$lib/paraglide/messages'
 
 	type I18nConfig = {
 		defaultLocale: Locale
@@ -38,7 +39,7 @@
 				return acc
 			}, {} as Record<Locale, boolean>)
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Failed to load i18n config')
+			toast.error(e instanceof Error ? e.message : m.admin_i18n_load_failed())
 		} finally {
 			loading = false
 		}
@@ -48,11 +49,11 @@
 
 	async function save() {
 		if (enabledList.length === 0) {
-			toast.error('At least one locale must be enabled')
+			toast.error(m.admin_i18n_at_least_one())
 			return
 		}
 		if (!enabledList.includes(defaultLocale)) {
-			toast.error('Default locale must be one of the enabled locales')
+			toast.error(m.admin_i18n_default_must_be_enabled())
 			return
 		}
 		saving = true
@@ -69,9 +70,9 @@
 				)
 			}
 			await i18nStore.refresh()
-			toast.success('Languages updated')
+			toast.success(m.admin_i18n_updated())
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Failed to save')
+			toast.error(e instanceof Error ? e.message : m.admin_branding_save_failed())
 		} finally {
 			saving = false
 		}
@@ -79,27 +80,27 @@
 </script>
 
 <header class="space-y-1">
-	<h1 class="text-2xl font-semibold tracking-tight">Languages</h1>
-	<p class="text-sm text-muted-foreground">Pick the default language and toggle which languages users can choose. Disabled languages hide from the public switcher and fall back to the default.</p>
+	<h1 class="text-2xl font-semibold tracking-tight">{m.admin_i18n_title()}</h1>
+	<p class="text-sm text-muted-foreground">{m.admin_i18n_subtitle()}</p>
 </header>
 
 {#if loading}
-	<p class="text-sm text-muted-foreground">Loading…</p>
+	<p class="text-sm text-muted-foreground">{m.common_loading()}</p>
 {:else}
 	<Card>
 		<CardHeader>
 			<CardTitle class="text-base flex items-center gap-2">
 				<Languages class="h-4 w-4" />
-				Default language
+				{m.admin_i18n_default()}
 			</CardTitle>
-			<CardDescription>Used for visitors with no saved choice and as a fallback for missing translations.</CardDescription>
+			<CardDescription>{m.admin_i18n_default_subtitle()}</CardDescription>
 		</CardHeader>
 		<CardContent>
 			<div class="space-y-2 max-w-xs">
-				<Label for="default-locale">Default</Label>
+				<Label for="default-locale">{m.admin_i18n_default_label()}</Label>
 				<Select id="default-locale" bind:value={defaultLocale}>
 					{#each available as l (l)}
-						<option value={l} disabled={!enabled[l]}>{LOCALE_LABELS[l] ?? l}{enabled[l] ? '' : ' (disabled)'}</option>
+						<option value={l} disabled={!enabled[l]}>{LOCALE_LABELS[l] ?? l}{enabled[l] ? '' : m.admin_i18n_disabled_suffix()}</option>
 					{/each}
 				</Select>
 			</div>
@@ -108,8 +109,8 @@
 
 	<Card>
 		<CardHeader>
-			<CardTitle class="text-base">Enabled languages</CardTitle>
-			<CardDescription>Visitors only see languages that are enabled here. Existing translated CMS pages stay in the database — disabling just hides them.</CardDescription>
+			<CardTitle class="text-base">{m.admin_i18n_enabled_title()}</CardTitle>
+			<CardDescription>{m.admin_i18n_enabled_subtitle()}</CardDescription>
 		</CardHeader>
 		<CardContent>
 			<ul class="divide-y divide-border">
@@ -125,15 +126,15 @@
 								class="h-4 w-4 rounded border-input"
 								bind:checked={enabled[l]}
 								disabled={l === defaultLocale}
-								aria-label={`Enable ${LOCALE_LABELS[l] ?? l}`}
+								aria-label={m.admin_i18n_enable_aria({ name: LOCALE_LABELS[l] ?? l })}
 							/>
-							<span class="text-muted-foreground">{enabled[l] ? 'Enabled' : 'Disabled'}</span>
+							<span class="text-muted-foreground">{enabled[l] ? m.admin_i18n_enabled_state() : m.admin_i18n_disabled_state()}</span>
 						</label>
 					</li>
 				{/each}
 			</ul>
 			<p class="mt-3 text-xs text-muted-foreground">
-				The default language can't be disabled — change it above first.
+				{m.admin_i18n_default_locked()}
 			</p>
 		</CardContent>
 	</Card>
@@ -141,7 +142,7 @@
 	<div class="flex justify-end">
 		<Button size="sm" onclick={save} disabled={saving}>
 			<Save class="h-3.5 w-3.5" />
-			{saving ? 'Saving…' : 'Apply'}
+			{saving ? m.common_saving() : m.common_apply()}
 		</Button>
 	</div>
 {/if}

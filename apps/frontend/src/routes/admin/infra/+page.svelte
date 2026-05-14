@@ -14,6 +14,7 @@
 	import Select from '$components/ui/Select.svelte'
 	import Badge from '$components/ui/Badge.svelte'
 	import { eden } from '$lib/eden'
+	import { m } from '$lib/paraglide/messages'
 
 	type CacheState = {
 		driver: 'off' | 'memory' | 'redis'
@@ -60,7 +61,7 @@
 			cacheState = data as CacheState
 			driver = cacheState.driver
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Failed to load cache state')
+			toast.error(e instanceof Error ? e.message : m.admin_infra_cache_load_failed())
 		} finally {
 			loading = false
 		}
@@ -73,7 +74,7 @@
 			storageState = data as StorageState
 			storageDriver = storageState.driver
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Failed to load storage state')
+			toast.error(e instanceof Error ? e.message : m.admin_infra_storage_load_failed())
 		} finally {
 			storageLoading = false
 		}
@@ -95,12 +96,12 @@
 			}
 			const { error } = await eden.api.admin.infra.storage.put(body)
 			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
-			toast.success(`Storage reconfigured to ${storageDriver}`)
+			toast.success(m.admin_infra_storage_reconfigured({ driver: storageDriver }))
 			s3AccessKey = ''
 			s3SecretKey = ''
 			await loadStorage()
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Failed to update storage')
+			toast.error(e instanceof Error ? e.message : m.admin_infra_storage_failed())
 		} finally {
 			storageSaving = false
 		}
@@ -118,11 +119,11 @@
 			if (driver === 'redis' && redisUrl.trim()) body.redisUrl = redisUrl.trim()
 			const { error } = await eden.api.admin.infra.cache.put(body)
 			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
-			toast.success(`Cache reconfigured to ${driver}`)
+			toast.success(m.admin_infra_cache_reconfigured({ driver }))
 			redisUrl = ''
 			await load()
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Failed to update cache')
+			toast.error(e instanceof Error ? e.message : m.admin_infra_cache_failed())
 		} finally {
 			saving = false
 		}
@@ -130,43 +131,41 @@
 </script>
 
 <header class="space-y-1">
-	<h1 class="text-2xl font-semibold tracking-tight">Infrastructure</h1>
-	<p class="text-sm text-muted-foreground">Hot-swap cache, queue, storage and mail backends without a restart.</p>
+	<h1 class="text-2xl font-semibold tracking-tight">{m.admin_infra_title()}</h1>
+	<p class="text-sm text-muted-foreground">{m.admin_infra_subtitle()}</p>
 </header>
 
 <Card>
 	<CardHeader>
-		<CardTitle class="text-base">Cache</CardTitle>
+		<CardTitle class="text-base">{m.admin_infra_cache()}</CardTitle>
 		<CardDescription>
-			Used for the <code class="font-mono">/api/plugins/:slug/latest</code> read cache, rate-limit counters, and short-lived
-			OAuth cacheState. <b>off</b> disables read-caching and breaks rate-limits — only safe in tests. <b>memory</b> is the right
-			default for single-node deploys. <b>redis</b> is required for multi-node.
+			{@html m.admin_infra_cache_subtitle_html()}
 		</CardDescription>
 	</CardHeader>
 	<CardContent class="space-y-4">
 		{#if loading}
-			<p class="text-sm text-muted-foreground">Loading…</p>
+			<p class="text-sm text-muted-foreground">{m.common_loading()}</p>
 		{:else if cacheState}
 			<div class="flex items-center gap-3 text-sm">
-				<span class="text-muted-foreground">Active:</span>
+				<span class="text-muted-foreground">{m.admin_infra_active()}</span>
 				<Badge variant={cacheState.driver === 'redis' ? 'default' : 'secondary'}>{cacheState.driver}</Badge>
 				{#if cacheState.configuredDriver === null}
-					<span class="text-xs text-muted-foreground">(from <code class="font-mono">.env</code> default)</span>
+					<span class="text-xs text-muted-foreground">{m.admin_infra_from_env()}</span>
 				{/if}
 			</div>
 
 			<div class="grid gap-2 max-w-xs">
-				<Label for="driver">Driver</Label>
+				<Label for="driver">{m.admin_infra_driver()}</Label>
 				<Select id="driver" bind:value={driver}>
-					<option value="off">off — no cache, no rate limit</option>
-					<option value="memory">memory — single-node (default)</option>
-					<option value="redis">redis — multi-node / persistent</option>
+					<option value="off">{m.admin_infra_cache_off()}</option>
+					<option value="memory">{m.admin_infra_cache_memory()}</option>
+					<option value="redis">{m.admin_infra_cache_redis()}</option>
 				</Select>
 			</div>
 
 			{#if driver === 'redis'}
 				<div class="grid gap-2 max-w-md">
-					<Label for="redis-url">Redis URL</Label>
+					<Label for="redis-url">{m.admin_infra_redis_url()}</Label>
 					<Input
 						id="redis-url"
 						type="password"
@@ -176,7 +175,7 @@
 						bind:value={redisUrl}
 					/>
 					<p class="text-xs text-muted-foreground">
-						Stored encrypted. Leave blank to reuse the currently configured URL. Works with Dragonfly too — same protocol.
+						{m.admin_infra_redis_url_note()}
 					</p>
 				</div>
 			{/if}
@@ -184,7 +183,7 @@
 			<div class="flex justify-end">
 				<Button size="sm" onclick={save} disabled={saving}>
 					<Save class="h-3.5 w-3.5" />
-					{saving ? 'Saving…' : 'Apply'}
+					{saving ? m.common_saving() : m.common_apply()}
 				</Button>
 			</div>
 		{/if}
@@ -195,58 +194,56 @@
 	<CardHeader>
 		<CardTitle class="text-base flex items-center gap-2">
 			<HardDrive class="h-4 w-4" />
-			Object storage
+			{m.admin_infra_storage()}
 		</CardTitle>
 		<CardDescription>
-			Where uploaded files live (provider logos today; asset mirroring later). <b>disk</b> writes under
-			<code class="font-mono">data/uploads/</code> and serves via <code class="font-mono">/uploads/</code>. <b>s3</b> via
-			<code class="font-mono">Bun.S3Client</code> — works with AWS, MinIO, R2.
+			{@html m.admin_infra_storage_subtitle_html()}
 		</CardDescription>
 	</CardHeader>
 	<CardContent class="space-y-4">
 		{#if storageLoading}
-			<p class="text-sm text-muted-foreground">Loading…</p>
+			<p class="text-sm text-muted-foreground">{m.common_loading()}</p>
 		{:else if storageState}
 			<div class="flex items-center gap-3 text-sm">
-				<span class="text-muted-foreground">Active:</span>
+				<span class="text-muted-foreground">{m.admin_infra_active()}</span>
 				<Badge variant={storageState.driver === 's3' ? 'default' : 'secondary'}>{storageState.driver}</Badge>
 			</div>
 
 			<div class="grid gap-2 max-w-xs">
-				<Label for="storage-driver">Driver</Label>
+				<Label for="storage-driver">{m.admin_infra_driver()}</Label>
 				<Select id="storage-driver" bind:value={storageDriver}>
-					<option value="off">off — uploads disabled</option>
-					<option value="disk">disk — local data/uploads</option>
-					<option value="s3">s3 — AWS / MinIO / R2</option>
+					<option value="off">{m.admin_infra_storage_off()}</option>
+					<option value="disk">{m.admin_infra_storage_disk()}</option>
+					<option value="s3">{m.admin_infra_storage_s3()}</option>
 				</Select>
 			</div>
 
 			{#if storageDriver === 's3'}
 				<div class="grid gap-2 max-w-md">
-					<Label for="s3-bucket">Bucket</Label>
+					<Label for="s3-bucket">{m.admin_infra_s3_bucket()}</Label>
 					<Input id="s3-bucket" bind:value={s3Bucket} placeholder={storageState.s3.bucket ?? 'my-bucket'} />
 				</div>
 				<div class="grid grid-cols-2 gap-3 max-w-md">
 					<div class="grid gap-2">
-						<Label for="s3-region">Region</Label>
+						<Label for="s3-region">{m.admin_infra_s3_region()}</Label>
 						<Input id="s3-region" bind:value={s3Region} placeholder={storageState.s3.region ?? 'us-east-1'} />
 					</div>
 					<div class="grid gap-2">
-						<Label for="s3-endpoint">Endpoint (optional)</Label>
+						<Label for="s3-endpoint">{m.admin_infra_s3_endpoint()}</Label>
 						<Input id="s3-endpoint" bind:value={s3Endpoint} placeholder={storageState.s3.endpoint ?? 'auto'} />
 					</div>
 				</div>
 				<div class="grid gap-2 max-w-md">
-					<Label for="s3-base">Public base URL (optional)</Label>
+					<Label for="s3-base">{m.admin_infra_s3_public_base()}</Label>
 					<Input id="s3-base" bind:value={s3PublicBase} placeholder={storageState.s3.publicBaseUrl ?? 'https://cdn.example.com'} />
 				</div>
 				<div class="grid grid-cols-2 gap-3 max-w-md">
 					<div class="grid gap-2">
-						<Label for="s3-ak">Access key</Label>
+						<Label for="s3-ak">{m.admin_infra_s3_access_key()}</Label>
 						<Input id="s3-ak" type="password" bind:value={s3AccessKey} placeholder={storageState.s3.accessKeyConfigured ? '••••' : 'AKIA…'} />
 					</div>
 					<div class="grid gap-2">
-						<Label for="s3-sk">Secret key</Label>
+						<Label for="s3-sk">{m.admin_infra_s3_secret_key()}</Label>
 						<Input id="s3-sk" type="password" bind:value={s3SecretKey} placeholder={storageState.s3.secretKeyConfigured ? '••••' : ''} />
 					</div>
 				</div>
@@ -255,7 +252,7 @@
 			<div class="flex justify-end">
 				<Button size="sm" onclick={saveStorage} disabled={storageSaving}>
 					<Save class="h-3.5 w-3.5" />
-					{storageSaving ? 'Saving…' : 'Apply'}
+					{storageSaving ? m.common_saving() : m.common_apply()}
 				</Button>
 			</div>
 		{/if}

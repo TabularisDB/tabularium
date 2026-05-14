@@ -16,6 +16,7 @@
 	import Label from '$components/ui/Label.svelte'
 	import Badge from '$components/ui/Badge.svelte'
 	import { eden } from '$lib/eden'
+	import { m } from '$lib/paraglide/messages'
 
 	type AdminPage = {
 		slug: string
@@ -62,13 +63,13 @@
 				published: false,
 			})
 			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
-			toast.success('Page created')
+			toast.success(m.admin_pages_created())
 			newSlug = ''
 			newTitle = ''
 			newPath = ''
 			await load()
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Failed to create')
+			toast.error(e instanceof Error ? e.message : m.admin_pages_create_failed())
 		} finally {
 			busy = false
 		}
@@ -80,47 +81,47 @@
 			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
 			await load()
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Failed')
+			toast.error(e instanceof Error ? e.message : m.admin_pages_action_failed())
 		}
 	}
 
 	async function remove(p: AdminPage) {
-		if (!confirm(`Delete page '${p.slug}'?`)) return
+		if (!confirm(m.admin_pages_confirm_delete({ slug: p.slug }))) return
 		try {
 			const { error } = await eden.api.admin.pages({ slug: p.slug }).delete()
 			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
-			toast.success('Deleted')
+			toast.success(m.admin_pages_deleted())
 			await load()
 		} catch (e) {
-			toast.error(e instanceof Error ? e.message : 'Failed')
+			toast.error(e instanceof Error ? e.message : m.admin_pages_action_failed())
 		}
 	}
 </script>
 
 <header class="space-y-1">
-	<h1 class="text-2xl font-semibold tracking-tight">Pages</h1>
-	<p class="text-sm text-muted-foreground">Markdown-driven content. Rendered server-side with sanitization. Reachable at <code class="font-mono">/pages/:slug</code>.</p>
+	<h1 class="text-2xl font-semibold tracking-tight">{m.admin_pages_title()}</h1>
+	<p class="text-sm text-muted-foreground">{m.admin_pages_subtitle_prefix()} <code class="font-mono">/pages/:slug</code>.</p>
 </header>
 
 <Card>
 	<CardHeader>
-		<CardTitle class="text-base">All pages</CardTitle>
-		<CardDescription>{pages.length} total · {pages.filter((p) => p.published).length} published</CardDescription>
+		<CardTitle class="text-base">{m.admin_pages_all()}</CardTitle>
+		<CardDescription>{m.admin_pages_count({ total: pages.length, published: pages.filter((p) => p.published).length })}</CardDescription>
 	</CardHeader>
 	<CardContent class="space-y-2">
 		{#if loading}
-			<p class="text-sm text-muted-foreground">Loading…</p>
+			<p class="text-sm text-muted-foreground">{m.common_loading()}</p>
 		{:else if pages.length === 0}
-			<p class="text-sm text-muted-foreground">No pages yet. Create your first below.</p>
+			<p class="text-sm text-muted-foreground">{m.admin_pages_empty()}</p>
 		{:else}
 			{#each pages as p (p.slug)}
 				<div class="flex items-center justify-between gap-3 rounded-md border border-border bg-card/50 px-4 py-3">
 					<div class="min-w-0 space-y-0.5 flex-1">
 						<div class="flex items-center gap-2 flex-wrap">
 							<span class="font-medium truncate">{p.title}</span>
-							<Badge variant={p.published ? 'default' : 'secondary'} class="text-[10px]">{p.published ? 'published' : 'draft'}</Badge>
-							{#if p.showInFooter}<Badge variant="outline" class="text-[10px]">footer</Badge>{/if}
-							{#if p.path === '/'}<Badge variant="default" class="text-[10px]">homepage</Badge>{/if}
+							<Badge variant={p.published ? 'default' : 'secondary'} class="text-[10px]">{p.published ? m.admin_pages_published() : m.admin_pages_draft()}</Badge>
+							{#if p.showInFooter}<Badge variant="outline" class="text-[10px]">{m.admin_pages_footer()}</Badge>{/if}
+							{#if p.path === '/'}<Badge variant="default" class="text-[10px]">{m.admin_pages_homepage()}</Badge>{/if}
 						</div>
 						<div class="text-xs text-muted-foreground font-mono truncate">
 							<span class="text-foreground">{p.path}</span>
@@ -128,13 +129,13 @@
 						</div>
 					</div>
 					<div class="flex items-center gap-1 flex-shrink-0">
-						<Button variant="ghost" size="sm" onclick={() => togglePublish(p)} aria-label={p.published ? 'Unpublish' : 'Publish'}>
+						<Button variant="ghost" size="sm" onclick={() => togglePublish(p)} aria-label={p.published ? m.admin_pages_unpublish() : m.admin_pages_publish()}>
 							{#if p.published}<EyeOff class="h-3.5 w-3.5" />{:else}<Eye class="h-3.5 w-3.5" />{/if}
 						</Button>
-						<Button variant="ghost" size="sm" href={`/admin/pages/${p.slug}`} aria-label="Edit">
+						<Button variant="ghost" size="sm" href={`/admin/pages/${p.slug}`} aria-label={m.admin_pages_edit()}>
 							<Edit class="h-3.5 w-3.5" />
 						</Button>
-						<Button variant="ghost" size="sm" onclick={() => remove(p)} aria-label="Delete">
+						<Button variant="ghost" size="sm" onclick={() => remove(p)} aria-label={m.admin_pages_delete()}>
 							<Trash2 class="h-3.5 w-3.5" />
 						</Button>
 					</div>
@@ -146,30 +147,30 @@
 
 <Card>
 	<CardHeader>
-		<CardTitle class="text-base">New page</CardTitle>
-		<CardDescription>Page is created as a draft. Edit it after creation to set content + publish.</CardDescription>
+		<CardTitle class="text-base">{m.admin_pages_new()}</CardTitle>
+		<CardDescription>{m.admin_pages_new_subtitle()}</CardDescription>
 	</CardHeader>
 	<CardContent>
 		<form onsubmit={create} class="space-y-4 max-w-md">
 			<div class="grid gap-2">
-				<Label for="new-slug">Internal slug</Label>
+				<Label for="new-slug">{m.admin_pages_internal_slug()}</Label>
 				<Input id="new-slug" bind:value={newSlug} placeholder="terms" pattern="[a-z0-9][a-z0-9-]*" required />
-				<p class="text-xs text-muted-foreground">Used as the row identifier. Lowercase letters, digits, hyphens.</p>
+				<p class="text-xs text-muted-foreground">{m.admin_pages_internal_slug_note()}</p>
 			</div>
 			<div class="grid gap-2">
-				<Label for="new-title">Title</Label>
+				<Label for="new-title">{m.admin_pages_title_field()}</Label>
 				<Input id="new-title" bind:value={newTitle} required maxlength={120} />
 			</div>
 			<div class="grid gap-2">
-				<Label for="new-path">Public path (optional)</Label>
+				<Label for="new-path">{m.admin_pages_public_path()}</Label>
 				<Input id="new-path" bind:value={newPath} placeholder="/about" />
 				<p class="text-xs text-muted-foreground">
-					Default <code class="font-mono">/pages/&lt;slug&gt;</code>. Use <code class="font-mono">/</code> for the homepage override.
+					{m.admin_pages_public_path_note_prefix()} <code class="font-mono">/pages/&lt;slug&gt;</code>{m.admin_pages_public_path_note_middle()} <code class="font-mono">/</code> {m.admin_pages_public_path_note_suffix()}
 				</p>
 			</div>
 			<Button type="submit" disabled={busy} size="sm">
 				<Plus class="h-3.5 w-3.5" />
-				{busy ? 'Creating…' : 'Create page'}
+				{busy ? m.admin_pages_creating() : m.admin_pages_create_button()}
 			</Button>
 		</form>
 	</CardContent>

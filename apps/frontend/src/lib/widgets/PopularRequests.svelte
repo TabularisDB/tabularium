@@ -5,8 +5,9 @@
 	import Badge from '$components/ui/Badge.svelte'
 	import { eden } from '$lib/eden'
 	import type { PluginRequest } from '$lib/types'
+	import { m } from '$lib/paraglide/messages'
 
-	let { limit = 5, heading = 'Top community requests' }: { limit?: number; heading?: string } = $props()
+	let { limit = 5, heading = m.widget_popular_requests_heading() }: { limit?: number; heading?: string } = $props()
 
 	let requests = $state<PluginRequest[] | null>(null)
 
@@ -28,7 +29,7 @@
 			{#each Array(limit) as _}<Skeleton class="h-12 rounded-md" />{/each}
 		</div>
 	{:else if requests.length === 0}
-		<p class="text-sm text-muted-foreground">No requests yet.</p>
+		<p class="text-sm text-muted-foreground">{m.widget_popular_requests_empty()}</p>
 	{:else}
 		<ul class="space-y-2">
 			{#each requests as r (r.id)}
