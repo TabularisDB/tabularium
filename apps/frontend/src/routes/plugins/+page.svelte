@@ -21,6 +21,7 @@
 	let search = $state('')
 	let category = $state('')
 	let tag = $state('')
+	let kind = $state('')
 	let sort = $state<'updated' | 'new' | 'name' | 'featured'>('updated')
 	let onlyFeatured = $state(false)
 
@@ -28,6 +29,7 @@
 	let total = $state(0)
 	let plugins = $state<Plugin[] | null>(null)
 	let categories = $state<Array<{ value: string; count: number }>>([])
+	let kindFacet = $state<Array<{ key: string; label: string; count: number }>>([])
 	let loading = $state(true)
 	let debounce: ReturnType<typeof setTimeout> | null = null
 
@@ -46,6 +48,7 @@
 		search = url.searchParams.get('search') ?? ''
 		category = url.searchParams.get('category') ?? ''
 		tag = url.searchParams.get('tag') ?? ''
+		kind = url.searchParams.get('kind') ?? ''
 		const s = url.searchParams.get('sort')
 		if (s === 'updated' || s === 'new' || s === 'name' || s === 'featured') sort = s
 		onlyFeatured = url.searchParams.get('featured') === '1'
@@ -59,6 +62,7 @@
 			if (search.trim()) query.search = search.trim()
 			if (category) query.category = category
 			if (tag) query.tag = tag
+			if (kind) query.kind = kind
 			if (onlyFeatured) query.featured = '1'
 			const { data, error } = await eden.api.plugins.get({ query })
 			if (error) throw error
@@ -66,6 +70,7 @@
 			plugins = payload.plugins
 			total = payload.total
 			categories = payload.facets.categories
+			kindFacet = payload.facets.kinds
 		} catch {
 			plugins = []
 			total = 0
@@ -86,18 +91,20 @@
 	$effect(() => {
 		void category
 		void tag
+		void kind
 		void sort
 		void onlyFeatured
 		void pageNum
 		fetchPlugins()
 	})
 
-	const hasActiveFilters = $derived(Boolean(category || tag || onlyFeatured || search))
+	const hasActiveFilters = $derived(Boolean(category || tag || kind || onlyFeatured || search))
 
 	function clearFilters() {
 		search = ''
 		category = ''
 		tag = ''
+		kind = ''
 		onlyFeatured = false
 		sort = 'updated'
 		pageNum = 1
@@ -144,6 +151,24 @@
 			</Button>
 		{/if}
 	</div>
+
+	{#if kindFacet.length > 0}
+		<div class="flex flex-wrap gap-2 items-center">
+			<span class="text-xs text-muted-foreground uppercase tracking-wider mr-1">{m.plugins_list_filter_kinds_label()}</span>
+			{#each kindFacet as k (k.key)}
+				<button
+					type="button"
+					onclick={() => (kind = kind === k.key ? '' : k.key)}
+					aria-pressed={kind === k.key}
+				>
+					<Badge variant={kind === k.key ? 'default' : 'outline'} class="cursor-pointer">
+						{k.label}
+						<span class="ml-1 text-[10px] opacity-70">{k.count}</span>
+					</Badge>
+				</button>
+			{/each}
+		</div>
+	{/if}
 
 	{#if categories.length > 0}
 		<div class="flex flex-wrap items-center gap-2">
