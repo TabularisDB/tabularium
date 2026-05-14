@@ -21,7 +21,7 @@ env:
 
 jobs:
   build:
-    runs-on: codeberg-small
+    runs-on: codeberg-medium
     container:
       image: node:24-bookworm-slim
     steps:
@@ -44,7 +44,8 @@ jobs:
       - name: Build image
         run: |
           set -eu
-          IMAGE="codeberg.org/${{ github.repository_owner }}/tabularium"
+          OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          IMAGE="codeberg.org/$OWNER/tabularium"
           VERSION="${{ github.event.release.tag_name }}"
           VERSION="${VERSION#v}"
           buildah build \
@@ -56,7 +57,8 @@ jobs:
 
       - name: Push image
         run: |
-          IMAGE="codeberg.org/${{ github.repository_owner }}/tabularium"
+          OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          IMAGE="codeberg.org/$OWNER/tabularium"
           VERSION="${{ github.event.release.tag_name }}"
           VERSION="${VERSION#v}"
           buildah push "$IMAGE:$VERSION"
