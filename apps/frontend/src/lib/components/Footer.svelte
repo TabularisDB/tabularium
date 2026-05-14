@@ -37,15 +37,15 @@
 	].filter((l) => l.show))
 </script>
 
-<footer class="border-t border-border mt-24 bg-card/20">
-	<div class="mx-auto max-w-6xl px-6 py-12 grid gap-10 md:grid-cols-12 text-sm">
-		<div class="md:col-span-5 space-y-3">
-			<a href="/" class="inline-flex items-center gap-2.5 font-semibold tracking-tight">
+<footer class="border-t border-border mt-32 bg-card/20">
+	<div class="mx-auto max-w-6xl px-6 pt-16 pb-10 grid gap-16 lg:grid-cols-2 text-sm">
+		<div class="space-y-4 max-w-md">
+			<a href="/" class="inline-flex items-center gap-3 font-semibold tracking-tight">
 				{#if branding.logoUrl}
-					<img src={branding.logoUrl} alt={branding.name} class="h-9 w-9 rounded-md object-contain" />
+					<img src={branding.logoUrl} alt={branding.name} class="h-10 w-10 rounded-md object-contain" />
 				{:else}
-					<span class="inline-flex h-9 w-9 items-center justify-center rounded-md bg-primary/10 text-primary">
-						<svg viewBox="0 0 24 24" class="h-4 w-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+					<span class="inline-flex h-10 w-10 items-center justify-center rounded-md bg-primary/10 text-primary">
+						<svg viewBox="0 0 24 24" class="h-5 w-5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
 							<rect x="4" y="4" width="14" height="3" rx="0.5" />
 							<rect x="5" y="10.5" width="14" height="3" rx="0.5" />
 							<rect x="6" y="17" width="14" height="3" rx="0.5" />
@@ -54,45 +54,47 @@
 				{/if}
 				<span class="text-base">{branding.name}</span>
 			</a>
-			<p class="text-muted-foreground max-w-md leading-relaxed">
+			<p class="text-muted-foreground leading-relaxed">
 				{branding.footerText ?? branding.tagline}
 			</p>
 		</div>
 
-		<div class="md:col-span-3 space-y-3">
-			<div class="font-medium text-foreground text-xs uppercase tracking-wider">{m.footer_resources()}</div>
-			<div class="flex flex-col gap-2 text-muted-foreground">
-				{#each resourceLinks as link (link.href)}
-					<a href={link.href} class="hover:text-foreground transition-colors">{link.label}</a>
-				{/each}
-				{#each footerPages as p (p.slug)}
-					<a href={p.path} class="hover:text-foreground transition-colors">{p.title}</a>
-				{/each}
+		<div class="grid grid-cols-2 gap-12">
+			<div class="space-y-4">
+				<div class="font-medium text-foreground text-xs uppercase tracking-wider">{m.footer_resources()}</div>
+				<div class="flex flex-col gap-2.5 text-muted-foreground">
+					{#each resourceLinks as link (link.href)}
+						<a href={link.href} class="hover:text-foreground transition-colors w-fit">{link.label}</a>
+					{/each}
+					{#each footerPages as p (p.slug)}
+						<a href={p.path} class="hover:text-foreground transition-colors w-fit">{p.title}</a>
+					{/each}
+				</div>
 			</div>
-		</div>
 
-		<div class="md:col-span-4 space-y-3">
-			<div class="font-medium text-foreground text-xs uppercase tracking-wider">{m.footer_developers()}</div>
-			<div class="flex flex-col gap-2 text-muted-foreground">
-				<a href="/openapi" class="hover:text-foreground inline-flex items-center gap-1.5 transition-colors">
-					{m.footer_openapi()} <ExternalLink class="h-3 w-3" />
-				</a>
-				<a href="/api/manifest" class="hover:text-foreground inline-flex items-center gap-1.5 transition-colors">
-					{m.footer_spec()} <ExternalLink class="h-3 w-3" />
-				</a>
-				<a href="/openapi/json" class="hover:text-foreground inline-flex items-center gap-1.5 transition-colors">
-					{m.footer_spec_json()} <ExternalLink class="h-3 w-3" />
-				</a>
+			<div class="space-y-4">
+				<div class="font-medium text-foreground text-xs uppercase tracking-wider">{m.footer_developers()}</div>
+				<div class="flex flex-col gap-2.5 text-muted-foreground">
+					<a href="/openapi" class="hover:text-foreground inline-flex items-center gap-1.5 transition-colors w-fit">
+						{m.footer_openapi()} <ExternalLink class="h-3 w-3" />
+					</a>
+					<a href="/api/manifest" class="hover:text-foreground inline-flex items-center gap-1.5 transition-colors w-fit">
+						{m.footer_spec()} <ExternalLink class="h-3 w-3" />
+					</a>
+					<a href="/openapi/json" class="hover:text-foreground inline-flex items-center gap-1.5 transition-colors w-fit">
+						{m.footer_spec_json()} <ExternalLink class="h-3 w-3" />
+					</a>
+				</div>
 			</div>
 		</div>
 	</div>
 
 	<div class="border-t border-border/60">
-		<div class="mx-auto max-w-6xl px-6 py-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground/80">
+		<div class="mx-auto max-w-6xl px-6 py-5 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground/70">
 			<span>© {year} {branding.name}</span>
 			<a href="https://tabularium.wiki" target="_blank" rel="noopener noreferrer" class="inline-flex items-center gap-1.5 hover:text-foreground transition-colors">
-				<span class="opacity-70">Powered by</span>
-				<svg viewBox="0 0 24 24" class="h-3.5 w-3.5 opacity-70" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+				<span>Powered by</span>
+				<svg viewBox="0 0 24 24" class="h-3.5 w-3.5" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
 					<rect x="4" y="4" width="14" height="3" rx="0.5" />
 					<rect x="5" y="10.5" width="14" height="3" rx="0.5" />
 					<rect x="6" y="17" width="14" height="3" rx="0.5" />
