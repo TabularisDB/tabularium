@@ -35,11 +35,17 @@
 		{ href: '/requests', label: m.nav_requests(), show: features.requestsEnabled },
 		{ href: '/submit', label: m.nav_submit(), show: features.submissionsEnabled },
 	].filter((l) => l.show))
+
+	const allResourceItems = $derived([
+		...resourceLinks.map((l) => ({ key: `r:${l.href}`, href: l.href, label: l.label })),
+		...footerPages.map((p) => ({ key: `p:${p.slug}`, href: p.path, label: p.title })),
+	])
+	const resourceCols = $derived(allResourceItems.length > 4 ? 'grid grid-cols-2 gap-x-8 gap-y-2.5' : 'flex flex-col gap-2.5')
 </script>
 
 <footer class="border-t border-border mt-32 bg-card/20">
-	<div class="mx-auto max-w-6xl px-6 pt-16 pb-10 grid gap-16 lg:grid-cols-2 text-sm">
-		<div class="space-y-4 max-w-md">
+	<div class="mx-auto max-w-6xl px-6 pt-16 pb-10 grid gap-12 lg:grid-cols-12 text-sm">
+		<div class="lg:col-span-5 space-y-4 max-w-md">
 			<a href="/" class="inline-flex items-center gap-3 font-semibold tracking-tight">
 				{#if branding.logoUrl}
 					<img src={branding.logoUrl} alt={branding.name} class="h-10 w-10 rounded-md object-contain" />
@@ -59,32 +65,27 @@
 			</p>
 		</div>
 
-		<div class="grid grid-cols-2 gap-12">
-			<div class="space-y-4">
-				<div class="font-medium text-foreground text-xs uppercase tracking-wider">{m.footer_resources()}</div>
-				<div class="flex flex-col gap-2.5 text-muted-foreground">
-					{#each resourceLinks as link (link.href)}
-						<a href={link.href} class="hover:text-foreground transition-colors w-fit">{link.label}</a>
-					{/each}
-					{#each footerPages as p (p.slug)}
-						<a href={p.path} class="hover:text-foreground transition-colors w-fit">{p.title}</a>
-					{/each}
-				</div>
+		<div class="lg:col-span-4 space-y-4">
+			<div class="font-medium text-foreground text-xs uppercase tracking-wider">{m.footer_resources()}</div>
+			<div class="{resourceCols} text-muted-foreground">
+				{#each allResourceItems as item (item.key)}
+					<a href={item.href} class="hover:text-foreground transition-colors w-fit">{item.label}</a>
+				{/each}
 			</div>
+		</div>
 
-			<div class="space-y-4">
-				<div class="font-medium text-foreground text-xs uppercase tracking-wider">{m.footer_developers()}</div>
-				<div class="flex flex-col gap-2.5 text-muted-foreground">
-					<a href="/openapi" class="hover:text-foreground inline-flex items-center gap-1.5 transition-colors w-fit">
-						{m.footer_openapi()} <ExternalLink class="h-3 w-3" />
-					</a>
-					<a href="/api/manifest" class="hover:text-foreground inline-flex items-center gap-1.5 transition-colors w-fit">
-						{m.footer_spec()} <ExternalLink class="h-3 w-3" />
-					</a>
-					<a href="/openapi/json" class="hover:text-foreground inline-flex items-center gap-1.5 transition-colors w-fit">
-						{m.footer_spec_json()} <ExternalLink class="h-3 w-3" />
-					</a>
-				</div>
+		<div class="lg:col-span-3 space-y-4">
+			<div class="font-medium text-foreground text-xs uppercase tracking-wider">{m.footer_developers()}</div>
+			<div class="flex flex-col gap-2.5 text-muted-foreground">
+				<a href="/openapi" class="hover:text-foreground inline-flex items-center gap-1.5 transition-colors w-fit">
+					{m.footer_openapi()} <ExternalLink class="h-3 w-3" />
+				</a>
+				<a href="/api/manifest" class="hover:text-foreground inline-flex items-center gap-1.5 transition-colors w-fit">
+					{m.footer_spec()} <ExternalLink class="h-3 w-3" />
+				</a>
+				<a href="/openapi/json" class="hover:text-foreground inline-flex items-center gap-1.5 transition-colors w-fit">
+					{m.footer_spec_json()} <ExternalLink class="h-3 w-3" />
+				</a>
 			</div>
 		</div>
 	</div>
