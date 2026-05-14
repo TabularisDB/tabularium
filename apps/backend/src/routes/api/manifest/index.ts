@@ -1,10 +1,11 @@
 import { Elysia, t } from 'elysia'
 import { ManifestSchema } from '$lib/manifest'
+import { getKinds } from '$lib/kinds'
 
 const EXAMPLE = `name: My Plugin
 description: A short tagline shown on the catalog card.
 category: databases
-tags: [postgres, sql, analytics]
+tags: [theme, dark]
 license: MIT
 icon: ./assets/icon.svg
 screenshots:
@@ -25,15 +26,17 @@ export default new Elysia()
   .get('/', () => ({
     description:
       'Plugin authors drop a `.tabularium` (YAML), `.tabularium.yaml`, `.tabularium.yml`, or `.tabularium.json` file in their repo root. ' +
-      'The registry fetches it on submission and on every release webhook. Relative `icon`/`screenshots` paths are resolved against the repo at the matching ref.',
+      'The registry fetches it on submission and on every release webhook. Relative `icon`/`screenshots` paths are resolved against the repo at the matching ref. ' +
+      'Tag your plugin with one of the registry\'s active kind keys (see `kinds`) so it appears in kind-filtered views.',
     paths: ['.tabularium', '.tabularium.yaml', '.tabularium.yml', '.tabularium.json'],
     schema: ManifestSchema,
     example: EXAMPLE,
+    kinds: getKinds().map((k) => k.key),
   }), {
     detail: {
       tags: ['Plugins'],
       summary: 'Discoverable .tabularium manifest spec',
-      description: 'Public reference for plugin authors. Returns the TypeBox JSON Schema + an example.',
+      description: 'Public reference for plugin authors. Returns the TypeBox JSON Schema, an example, and the registry\'s active kind keys.',
       operationId: 'getManifestSpec',
     },
     response: {
@@ -42,6 +45,7 @@ export default new Elysia()
         paths: t.Array(t.String()),
         schema: t.Any(),
         example: t.String(),
+        kinds: t.Array(t.String()),
       }),
     },
   })
