@@ -14,6 +14,7 @@
 	import FileText from '@lucide/svelte/icons/file-text'
 	import ListChecks from '@lucide/svelte/icons/list-checks'
 	import ToggleRight from '@lucide/svelte/icons/toggle-right'
+	import Tags from '@lucide/svelte/icons/tags'
 	import Languages from '@lucide/svelte/icons/languages'
 	import Menu from '@lucide/svelte/icons/menu'
 	import X from '@lucide/svelte/icons/x'
@@ -63,6 +64,7 @@
 		{ href: '/admin/branding', label: m.admin_nav_branding(), icon: Palette, badge: 0 },
 		{ href: '/admin/instance', label: m.admin_nav_instance(), icon: SlidersHorizontal, badge: 0 },
 		{ href: '/admin/features', label: m.admin_nav_features(), icon: ToggleRight, badge: 0 },
+		{ href: '/admin/kinds', label: m.admin_nav_kinds(), icon: Tags, badge: 0 },
 		{ href: '/admin/i18n', label: m.admin_nav_languages(), icon: Languages, badge: 0 },
 		{ href: '/admin/audit', label: m.admin_nav_audit(), icon: ListChecks, badge: 0 },
 	])
