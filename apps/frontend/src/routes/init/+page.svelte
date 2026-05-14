@@ -17,6 +17,7 @@
 	import Label from '$components/ui/Label.svelte'
 	import Select from '$components/ui/Select.svelte'
 	import { eden } from '$lib/eden'
+	import { auth } from '$lib/stores/auth.svelte'
 	import type { InitStatus, InitDefaults } from '$lib/types'
 	import { m } from '$lib/paraglide/messages'
 
@@ -163,6 +164,7 @@
 				if (res.ok) {
 					const status = await res.json() as { setupCompleted: boolean; mode?: 'setup' | 'normal' }
 					if (status.setupCompleted && status.mode === 'normal') {
+						await auth.refresh()
 						goto('/admin')
 						return
 					}

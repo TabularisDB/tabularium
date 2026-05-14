@@ -94,7 +94,7 @@ export default new Elysia()
         path: '/',
       })
 
-      log.info({ adminId: userId, email: boot.email }, 'install complete — exiting for restart')
+      log.info({ adminId: userId, email: boot.email }, 'install complete — admin cookie set, exiting for restart')
       setTimeout(() => process.exit(0), 500)
       return { ok: true }
     },
