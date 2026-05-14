@@ -48,5 +48,22 @@
 	"common_loading": "Laden …",
 	"common_save": "Speichern",
 	"common_saving": "Wird gespeichert …",
-	"common_cancel": "Abbrechen"
+	"common_cancel": "Abbrechen",
+	"home_eyebrow": "Offene Registry · self-hostbar · Provider-agnostisch",
+	"home_browse_plugins": "Plugins ansehen",
+	"home_submit_plugin": "Plugin einreichen",
+	"home_plugins_indexed": "{count} Plugins indexiert",
+	"home_featured_eyebrow": "Empfohlen",
+	"home_featured_title": "Auswahl vom Team",
+	"home_see_all": "Alle ansehen",
+	"home_feature_dropin_title": "Drop-in für jede App",
+	"home_feature_dropin_body": "Richte deinen Client auf die Registry und hol den Plugin-Index direkt ab.",
+	"home_feature_providers_title": "GitHub · GitLab · Codeberg · Forgejo",
+	"home_feature_providers_body": "Der Admin konfiguriert beliebig viele Provider-Instanzen. Nutzer:innen reichen via OAuth auf jeder davon ein.",
+	"home_feature_release_title": "Release-getrieben",
+	"home_feature_release_body": "Einmal Webhook einrichten — neue Tags aktualisieren die Versionsliste automatisch, keine PRs nötig.",
+	"home_latest_title": "Neueste Releases",
+	"home_latest_subtitle": "Zuletzt aktualisiert auf dieser Instanz.",
+	"home_no_plugins": "Noch keine Plugins.",
+	"home_submit_first": "Reiche das erste ein"
 }

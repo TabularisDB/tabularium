@@ -12,6 +12,7 @@
 	import { eden } from '$lib/eden'
 	import { branding } from '$lib/stores/branding.svelte'
 	import { i18n } from '$lib/stores/i18n.svelte'
+	import { m } from '$lib/paraglide/messages'
 	import type { Plugin, PluginListResponse, PageRendered } from '$lib/types'
 
 	let customHomepage = $state<PageRendered | null>(null)
@@ -75,7 +76,7 @@
 		<div class="mx-auto max-w-6xl px-6 py-24 sm:py-32 text-center">
 			<div class="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-xs text-muted-foreground mb-8">
 				<Sparkles class="h-3 w-3 text-primary" />
-				Open registry · self-hostable · provider-agnostic
+				{m.home_eyebrow()}
 			</div>
 			<h1 class="text-4xl sm:text-6xl font-semibold tracking-tight text-foreground">
 				{branding.name}<span class="text-primary">.</span>
@@ -85,14 +86,14 @@
 			</p>
 			<div class="mt-10 flex items-center justify-center gap-3 flex-wrap">
 				<Button size="lg" href="/plugins">
-					Browse plugins
+					{m.home_browse_plugins()}
 					<ArrowRight class="h-4 w-4" />
 				</Button>
-				<Button size="lg" variant="outline" href="/submit">Submit a plugin</Button>
+				<Button size="lg" variant="outline" href="/submit">{m.home_submit_plugin()}</Button>
 			</div>
 			{#if total > 0}
 				<p class="mt-6 text-xs text-muted-foreground">
-					{total} {total === 1 ? 'plugin' : 'plugins'} indexed
+					{m.home_plugins_indexed({ count: total })}
 				</p>
 			{/if}
 		</div>
@@ -105,11 +106,11 @@
 					<div class="space-y-1">
 						<div class="inline-flex items-center gap-2 text-xs text-primary uppercase tracking-wider">
 							<Star class="h-3 w-3 fill-current" />
-							Featured
+							{m.home_featured_eyebrow()}
 						</div>
-						<h2 class="text-2xl font-semibold tracking-tight">Picks from the team</h2>
+						<h2 class="text-2xl font-semibold tracking-tight">{m.home_featured_title()}</h2>
 					</div>
-					<a href="/plugins?featured=1" class="text-sm text-primary hover:underline">See all →</a>
+					<a href="/plugins?featured=1" class="text-sm text-primary hover:underline">{m.home_see_all()} →</a>
 				</div>
 				<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
 					{#each featured as p (p.id)}
@@ -124,18 +125,18 @@
 		<div class="mx-auto max-w-6xl px-6 py-12 grid gap-8 md:grid-cols-3">
 			<div class="space-y-2">
 				<Cable class="h-5 w-5 text-primary" />
-				<h3 class="font-semibold tracking-tight">Drop-in for any app</h3>
-				<p class="text-sm text-muted-foreground">Point your client at the registry and fetch the plugin index directly.</p>
+				<h3 class="font-semibold tracking-tight">{m.home_feature_dropin_title()}</h3>
+				<p class="text-sm text-muted-foreground">{m.home_feature_dropin_body()}</p>
 			</div>
 			<div class="space-y-2">
 				<Boxes class="h-5 w-5 text-primary" />
-				<h3 class="font-semibold tracking-tight">GitHub · GitLab · Codeberg · Forgejo</h3>
-				<p class="text-sm text-muted-foreground">Admin configures any number of provider instances. Users submit via OAuth on any of them.</p>
+				<h3 class="font-semibold tracking-tight">{m.home_feature_providers_title()}</h3>
+				<p class="text-sm text-muted-foreground">{m.home_feature_providers_body()}</p>
 			</div>
 			<div class="space-y-2">
 				<Sparkles class="h-5 w-5 text-primary" />
-				<h3 class="font-semibold tracking-tight">Release-driven</h3>
-				<p class="text-sm text-muted-foreground">Wire a webhook once. New tags automatically refresh the version table, no PRs required.</p>
+				<h3 class="font-semibold tracking-tight">{m.home_feature_release_title()}</h3>
+				<p class="text-sm text-muted-foreground">{m.home_feature_release_body()}</p>
 			</div>
 		</div>
 	</section>
@@ -144,10 +145,10 @@
 		<div class="mx-auto max-w-6xl px-6 py-16 space-y-6">
 			<div class="flex items-baseline justify-between">
 				<div>
-					<h2 class="text-2xl font-semibold tracking-tight">Latest releases</h2>
-					<p class="text-sm text-muted-foreground mt-1">Most recently updated on this instance.</p>
+					<h2 class="text-2xl font-semibold tracking-tight">{m.home_latest_title()}</h2>
+					<p class="text-sm text-muted-foreground mt-1">{m.home_latest_subtitle()}</p>
 				</div>
-				<a href="/plugins" class="text-sm text-primary hover:underline">See all →</a>
+				<a href="/plugins" class="text-sm text-primary hover:underline">{m.home_see_all()} →</a>
 			</div>
 
 			{#if loading}
@@ -164,9 +165,9 @@
 				</div>
 			{:else}
 				<div class="rounded-lg border border-dashed border-border p-8 text-center space-y-3">
-					<p class="text-muted-foreground">No plugins yet.</p>
+					<p class="text-muted-foreground">{m.home_no_plugins()}</p>
 					<Button size="sm" href="/submit">
-						Submit the first one
+						{m.home_submit_first()}
 						<ArrowRight class="h-3.5 w-3.5" />
 					</Button>
 				</div>

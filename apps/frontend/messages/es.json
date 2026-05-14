@@ -48,5 +48,22 @@
 	"common_loading": "Cargando…",
 	"common_save": "Guardar",
 	"common_saving": "Guardando…",
-	"common_cancel": "Cancelar"
+	"common_cancel": "Cancelar",
+	"home_eyebrow": "Registro abierto · auto-hospedable · agnóstico de proveedor",
+	"home_browse_plugins": "Ver plugins",
+	"home_submit_plugin": "Enviar un plugin",
+	"home_plugins_indexed": "{count} plugins indexados",
+	"home_featured_eyebrow": "Destacado",
+	"home_featured_title": "Selección del equipo",
+	"home_see_all": "Ver todo",
+	"home_feature_dropin_title": "Listo para cualquier app",
+	"home_feature_dropin_body": "Apunta tu cliente al registro y consulta el índice de plugins directamente.",
+	"home_feature_providers_title": "GitHub · GitLab · Codeberg · Forgejo",
+	"home_feature_providers_body": "El admin configura cualquier cantidad de instancias. Los usuarios envían vía OAuth en cualquiera.",
+	"home_feature_release_title": "Por releases",
+	"home_feature_release_body": "Configura el webhook una vez. Los nuevos tags actualizan la lista de versiones — sin PRs.",
+	"home_latest_title": "Últimas releases",
+	"home_latest_subtitle": "Actualizadas más recientemente en esta instancia.",
+	"home_no_plugins": "Todavía no hay plugins.",
+	"home_submit_first": "Envía el primero"
 }

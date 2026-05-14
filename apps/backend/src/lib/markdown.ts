@@ -25,16 +25,16 @@ const ALLOWED_ATTR = [
   'data-heading', 'data-show-counts', 'data-variant',
 ]
 
+const WIDGET_ATTRS = new Set(['name', 'limit', 'cols', 'category', 'tag', 'sort', 'heading', 'show-counts', 'variant'])
+
 DOMPurify.addHook('uponSanitizeElement', (node, data) => {
-  if (data.tagName === 'tabularium-widget' && node instanceof Element) {
-    // Normalize `name="…"` / `limit="…"` etc. into `data-*` so the frontend mounter can read them.
-    for (const attr of Array.from(node.attributes)) {
-      if (attr.name.startsWith('data-')) continue
-      if (attr.name === 'name' || attr.name === 'limit' || attr.name === 'cols' || attr.name === 'category' || attr.name === 'tag' || attr.name === 'sort' || attr.name === 'heading' || attr.name === 'show-counts' || attr.name === 'variant') {
-        node.setAttribute(`data-${attr.name === 'show-counts' ? 'show-counts' : attr.name}`, attr.value)
-        node.removeAttribute(attr.name)
-      }
-    }
+  if (data.tagName !== 'tabularium-widget') return
+  const el = node as { nodeType?: number; attributes?: ArrayLike<{ name: string; value: string }>; setAttribute?: (k: string, v: string) => void; removeAttribute?: (k: string) => void }
+  if (el.nodeType !== 1 || !el.attributes || !el.setAttribute || !el.removeAttribute) return
+  for (const attr of Array.from(el.attributes)) {
+    if (attr.name.startsWith('data-') || !WIDGET_ATTRS.has(attr.name)) continue
+    el.setAttribute(`data-${attr.name}`, attr.value)
+    el.removeAttribute(attr.name)
   }
 })
 

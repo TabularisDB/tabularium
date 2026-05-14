@@ -48,5 +48,22 @@
 	"common_loading": "Loading…",
 	"common_save": "Save",
 	"common_saving": "Saving…",
-	"common_cancel": "Cancel"
+	"common_cancel": "Cancel",
+	"home_eyebrow": "Open registry · self-hostable · provider-agnostic",
+	"home_browse_plugins": "Browse plugins",
+	"home_submit_plugin": "Submit a plugin",
+	"home_plugins_indexed": "{count} plugins indexed",
+	"home_featured_eyebrow": "Featured",
+	"home_featured_title": "Picks from the team",
+	"home_see_all": "See all",
+	"home_feature_dropin_title": "Drop-in for any app",
+	"home_feature_dropin_body": "Point your client at the registry and fetch the plugin index directly.",
+	"home_feature_providers_title": "GitHub · GitLab · Codeberg · Forgejo",
+	"home_feature_providers_body": "Admin configures any number of provider instances. Users submit via OAuth on any of them.",
+	"home_feature_release_title": "Release-driven",
+	"home_feature_release_body": "Wire a webhook once. New tags automatically refresh the version table, no PRs required.",
+	"home_latest_title": "Latest releases",
+	"home_latest_subtitle": "Most recently updated on this instance.",
+	"home_no_plugins": "No plugins yet.",
+	"home_submit_first": "Submit the first one"
 }

@@ -48,5 +48,22 @@
 	"common_loading": "加载中…",
 	"common_save": "保存",
 	"common_saving": "保存中…",
-	"common_cancel": "取消"
+	"common_cancel": "取消",
+	"home_eyebrow": "开放注册中心 · 可自托管 · Provider 无关",
+	"home_browse_plugins": "浏览插件",
+	"home_submit_plugin": "提交插件",
+	"home_plugins_indexed": "已索引 {count} 个插件",
+	"home_featured_eyebrow": "精选",
+	"home_featured_title": "团队推荐",
+	"home_see_all": "查看全部",
+	"home_feature_dropin_title": "为任意应用即插即用",
+	"home_feature_dropin_body": "把你的客户端指向注册中心,直接获取插件索引。",
+	"home_feature_providers_title": "GitHub · GitLab · Codeberg · Forgejo",
+	"home_feature_providers_body": "管理员可配置任意数量的 Provider 实例,用户通过任一实例的 OAuth 提交。",
+	"home_feature_release_title": "以 Release 驱动",
+	"home_feature_release_body": "Webhook 配置一次。新 tag 自动刷新版本列表 — 无需 PR。",
+	"home_latest_title": "最新 Release",
+	"home_latest_subtitle": "本实例最近更新的插件。",
+	"home_no_plugins": "暂无插件。",
+	"home_submit_first": "提交第一个"
 }
