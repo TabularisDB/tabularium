@@ -27,10 +27,10 @@ function createI18nStore() {
 		return (locales as readonly string[]).includes(v) ? (v as Locale) : null
 	}
 
-	function persist(locale: Locale) {
+	function applyLocale(locale: Locale, opts: { reload: boolean }) {
 		current = locale
-		setLocale(locale, { reload: false })
 		if (typeof localStorage !== 'undefined') localStorage.setItem(localStorageKey, locale)
+		setLocale(locale, { reload: opts.reload })
 	}
 
 	async function refresh() {
@@ -43,14 +43,15 @@ function createI18nStore() {
 		} finally {
 			const stored = readStored()
 			const initial = stored && state.enabledLocales.includes(stored) ? stored : state.defaultLocale
-			persist(initial)
+			applyLocale(initial, { reload: false })
 			loaded = true
 		}
 	}
 
 	function set(locale: Locale) {
 		if (!state.enabledLocales.includes(locale)) return
-		persist(locale)
+		if (locale === current) return
+		applyLocale(locale, { reload: true })
 	}
 
 	return {

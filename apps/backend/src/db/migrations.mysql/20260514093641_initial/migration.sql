@@ -23,6 +23,7 @@ CREATE TABLE `identities` (
 CREATE TABLE `markdown_pages` (
 	`slug` varchar(80) NOT NULL,
 	`locale` varchar(16) NOT NULL DEFAULT 'en',
+	`format` varchar(16) NOT NULL DEFAULT 'markdown',
 	`title` varchar(120) NOT NULL,
 	`content` text NOT NULL,
 	`published` tinyint NOT NULL DEFAULT 1,

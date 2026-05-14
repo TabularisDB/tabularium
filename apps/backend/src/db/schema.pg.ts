@@ -119,6 +119,7 @@ export const settings = pgTable('settings', {
 export const markdownPages = pgTable('markdown_pages', {
   slug: text('slug').notNull(),
   locale: text('locale').notNull().default('en'),
+  format: text('format', { enum: ['markdown', 'html'] }).notNull().default('markdown'),
   title: text('title').notNull(),
   content: text('content').notNull(),
   published: smallint('published').notNull().default(1),

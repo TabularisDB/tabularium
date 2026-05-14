@@ -18,9 +18,12 @@ const localeSchema = t.Union([
   t.Literal('zh-CN'),
 ])
 
+const formatSchema = t.Union([t.Literal('markdown'), t.Literal('html')])
+
 const pageSchema = t.Object({
   slug: t.String(),
   locale: localeSchema,
+  format: formatSchema,
   path: t.String(),
   title: t.String(),
   content: t.String(),
@@ -49,6 +52,7 @@ export default new Elysia()
       return {
         slug: canonical.slug,
         locale: canonical.locale as Locale,
+        format: (canonical.format ?? 'markdown') as 'markdown' | 'html',
         path: canonical.path,
         title: canonical.title,
         content: canonical.content,
@@ -85,6 +89,7 @@ export default new Elysia()
       await db.insert(markdownPages).values({
         slug: body.slug,
         locale,
+        format: body.format ?? 'markdown',
         path: pathCheck.path,
         title: body.title,
         content: body.content,
@@ -114,6 +119,7 @@ export default new Elysia()
     body: t.Object({
       slug: t.String(),
       locale: t.Optional(localeSchema),
+      format: t.Optional(formatSchema),
       path: t.Optional(t.String()),
       title: t.String({ minLength: 1, maxLength: 120 }),
       content: t.String({ maxLength: 200_000 }),

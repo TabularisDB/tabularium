@@ -20,6 +20,7 @@
 
 	type AdminPage = {
 		slug: string
+		format: 'markdown' | 'html'
 		path: string
 		title: string
 		content: string
@@ -33,6 +34,7 @@
 	let title = $state('')
 	let path = $state('')
 	let content = $state('')
+	let format = $state<'markdown' | 'html'>('markdown')
 	let published = $state(false)
 	let showInFooter = $state(false)
 	let navOrder = $state<number | null>(null)
@@ -63,6 +65,7 @@
 			title = res.title
 			path = res.path
 			content = res.content
+			format = res.format ?? 'markdown'
 			published = res.published
 			showInFooter = res.showInFooter
 			navOrder = res.navOrder
@@ -82,6 +85,7 @@
 				title,
 				path,
 				content,
+				format,
 				published,
 				showInFooter,
 				navOrder,
@@ -131,6 +135,13 @@
 			</div>
 
 			<div class="flex items-center gap-4 flex-wrap">
+				<div class="flex items-center gap-2 text-sm">
+					<Label for="format" class="text-xs text-muted-foreground">Format</Label>
+					<select id="format" bind:value={format} class="h-9 rounded-md border border-input bg-card px-2 text-sm">
+						<option value="markdown">Markdown</option>
+						<option value="html">HTML</option>
+					</select>
+				</div>
 				<label class="flex items-center gap-2 cursor-pointer text-sm">
 					<input type="checkbox" bind:checked={published} class="h-4 w-4 rounded border-input" />
 					<span>Published</span>
@@ -151,7 +162,7 @@
 			</div>
 
 			<div class="grid gap-2">
-				<Label>Content (Markdown)</Label>
+				<Label>Content ({format === 'html' ? 'HTML' : 'Markdown'})</Label>
 				<div class="flex flex-wrap items-center gap-1.5">
 					<span class="text-xs text-muted-foreground mr-1">Insert widget:</span>
 					{#each WIDGET_SNIPPETS as w (w.label)}
@@ -160,12 +171,23 @@
 						</Button>
 					{/each}
 				</div>
-				<div class="rounded-md border border-input overflow-hidden">
-					<MarkdownEditor {carta} bind:value={content} mode="split" />
-				</div>
-				<p class="text-xs text-muted-foreground">
-					GFM supported. Inline HTML allowed for <code class="font-mono">&lt;tabularium-widget /&gt;</code>. Output is sanitized server-side.
-				</p>
+				{#if format === 'html'}
+					<textarea
+						bind:value={content}
+						class="min-h-[480px] w-full rounded-md border border-input bg-card p-3 font-mono text-sm leading-relaxed"
+						spellcheck="false"
+					></textarea>
+					<p class="text-xs text-muted-foreground">
+						Raw HTML — sanitized server-side (whitelist of structural tags + <code class="font-mono">&lt;tabularium-widget /&gt;</code>). Use Tailwind utility classes for layout.
+					</p>
+				{:else}
+					<div class="rounded-md border border-input overflow-hidden">
+						<MarkdownEditor {carta} bind:value={content} mode="split" />
+					</div>
+					<p class="text-xs text-muted-foreground">
+						GFM supported. Inline HTML allowed (sanitized server-side). Switch to HTML mode for full structural control.
+					</p>
+				{/if}
 			</div>
 		</CardContent>
 	</Card>

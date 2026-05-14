@@ -15,12 +15,14 @@ const ALLOWED_TAGS = [
   'a', 'abbr', 'b', 'blockquote', 'br', 'code', 'em', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6',
   'hr', 'i', 'img', 'kbd', 'li', 'ol', 'p', 'pre', 's', 'strong', 'sub', 'sup', 'table',
   'tbody', 'td', 'th', 'thead', 'tr', 'ul', 'span', 'del', 'div', 'figure', 'figcaption',
-  'tabularium-widget',
+  'section', 'article', 'header', 'footer', 'nav', 'aside', 'main', 'details', 'summary',
+  'small', 'mark', 'time', 'picture', 'source', 'video', 'audio', 'tabularium-widget',
 ]
 
 const ALLOWED_ATTR = [
-  'href', 'title', 'alt', 'src', 'class', 'id', 'rel', 'target', 'loading', 'width', 'height',
-  // Widget attributes — all values are coerced to strings and rendered as `data-*`.
+  'href', 'title', 'alt', 'src', 'srcset', 'sizes', 'class', 'id', 'rel', 'target',
+  'loading', 'decoding', 'width', 'height', 'role', 'open', 'datetime', 'poster',
+  'controls', 'autoplay', 'loop', 'muted', 'playsinline',
   'name', 'data-name', 'data-limit', 'data-cols', 'data-category', 'data-tag', 'data-sort',
   'data-heading', 'data-show-counts', 'data-variant',
 ]
@@ -38,9 +40,11 @@ DOMPurify.addHook('uponSanitizeElement', (node, data) => {
   }
 })
 
-export function renderMarkdown(raw: string): string {
+export type PageFormat = 'markdown' | 'html'
+
+export function renderMarkdown(raw: string, format: PageFormat = 'markdown'): string {
   if (!raw) return ''
-  const html = marked.parse(raw) as string
+  const html = format === 'html' ? raw : (marked.parse(raw) as string)
   return DOMPurify.sanitize(html, {
     ALLOWED_TAGS,
     ALLOWED_ATTR,

@@ -25,6 +25,7 @@ CREATE TABLE `identities` (
 CREATE TABLE `markdown_pages` (
 	`slug` text NOT NULL,
 	`locale` text DEFAULT 'en' NOT NULL,
+	`format` text DEFAULT 'markdown' NOT NULL,
 	`title` text NOT NULL,
 	`content` text NOT NULL,
 	`published` integer DEFAULT 1 NOT NULL,

@@ -16,9 +16,12 @@ const localeSchema = t.Union([
   t.Literal('zh-CN'),
 ])
 
+const formatSchema = t.Union([t.Literal('markdown'), t.Literal('html')])
+
 const pageSchema = t.Object({
   slug: t.String(),
   locale: localeSchema,
+  format: formatSchema,
   path: t.String(),
   title: t.String(),
   content: t.String(),
@@ -56,6 +59,7 @@ export default new Elysia()
     return {
       slug: row.slug,
       locale: row.locale as Locale,
+      format: (row.format ?? 'markdown') as 'markdown' | 'html',
       path: row.path,
       title: row.title,
       content: row.content,
@@ -107,6 +111,7 @@ export default new Elysia()
         await db.insert(markdownPages).values({
           slug: params.slug,
           locale,
+          format: body.format ?? (canonical.format as 'markdown' | 'html') ?? 'markdown',
           path: path.path,
           title: body.title ?? canonical.title,
           content: body.content ?? canonical.content,
@@ -129,6 +134,7 @@ export default new Elysia()
     const patch: Partial<typeof markdownPages.$inferInsert> = { updatedAt: Date.now() }
     if (body.title !== undefined) patch.title = body.title
     if (body.content !== undefined) patch.content = body.content
+    if (body.format !== undefined) patch.format = body.format
     if (body.published !== undefined) patch.published = body.published ? 1 : 0
     if (body.navOrder !== undefined) patch.navOrder = body.navOrder
     if (body.showInFooter !== undefined) patch.showInFooter = body.showInFooter ? 1 : 0
@@ -162,6 +168,7 @@ export default new Elysia()
     body: t.Object({
       title: t.Optional(t.String({ minLength: 1, maxLength: 120 })),
       content: t.Optional(t.String({ maxLength: 200_000 })),
+      format: t.Optional(formatSchema),
       published: t.Optional(t.Boolean()),
       path: t.Optional(t.String()),
       navOrder: t.Optional(t.Nullable(t.Number())),

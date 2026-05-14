@@ -43,10 +43,10 @@ export default new Elysia()
       set.status = 404
       return { error: 'Page not found' }
     }
-    const cacheKey = `page:html:${row.slug}:${row.locale}:${row.updatedAt}`
+    const cacheKey = `page:html:${row.slug}:${row.locale}:${row.format}:${row.updatedAt}`
     let html = await cache().get<string>(cacheKey)
     if (!html) {
-      html = renderMarkdown(row.content)
+      html = renderMarkdown(row.content, row.format as 'markdown' | 'html')
       await cache().set(cacheKey, html, RENDER_TTL)
     }
     return {
