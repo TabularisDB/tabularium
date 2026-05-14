@@ -29,7 +29,6 @@ function createI18nStore() {
 
 	function applyLocale(locale: Locale, opts: { reload: boolean }) {
 		current = locale
-		if (typeof localStorage !== 'undefined') localStorage.setItem(localStorageKey, locale)
 		setLocale(locale, { reload: opts.reload })
 	}
 
