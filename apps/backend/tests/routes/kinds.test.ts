@@ -106,3 +106,93 @@ describe('POST /api/admin/kinds', () => {
     expect(res.status).toBe(409)
   })
 })
+
+describe('GET /api/admin/kinds/:key', () => {
+  beforeEach(clearDb)
+
+  it('200 with the kind', async () => {
+    const token = await adminToken()
+    await createKind({ key: 'theme', label: 'Themes', description: null })
+    const app = await buildApp()
+    const res = await app.handle(new Request('http://localhost/api/admin/kinds/theme', {
+      headers: { Authorization: `Bearer ${token}` },
+    }))
+    expect(res.status).toBe(200)
+    const data = await res.json() as { kind: { key: string } }
+    expect(data.kind.key).toBe('theme')
+  })
+
+  it('404 for unknown key', async () => {
+    const token = await adminToken()
+    const app = await buildApp()
+    const res = await app.handle(new Request('http://localhost/api/admin/kinds/nope', {
+      headers: { Authorization: `Bearer ${token}` },
+    }))
+    expect(res.status).toBe(404)
+  })
+})
+
+describe('PUT /api/admin/kinds/:key', () => {
+  beforeEach(clearDb)
+
+  it('replaces label, writes audit', async () => {
+    const token = await adminToken()
+    await createKind({ key: 'theme', label: 'Themes', description: null })
+    const app = await buildApp()
+    const res = await app.handle(new Request('http://localhost/api/admin/kinds/theme', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ key: 'theme', label: 'Visual Themes', description: 'd' }),
+    }))
+    expect(res.status).toBe(200)
+    const data = await res.json() as { kind: { label: string } }
+    expect(data.kind.label).toBe('Visual Themes')
+    const audits = await db.select().from(auditLog).where(eq(auditLog.action, 'kind.update'))
+    expect(audits).toHaveLength(1)
+  })
+
+  it('409 when body key mismatches path', async () => {
+    const token = await adminToken()
+    await createKind({ key: 'theme', label: 'Themes', description: null })
+    const app = await buildApp()
+    const res = await app.handle(new Request('http://localhost/api/admin/kinds/theme', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ key: 'snippet', label: 'X', description: null }),
+    }))
+    expect(res.status).toBe(409)
+  })
+
+  it('404 for unknown key', async () => {
+    const token = await adminToken()
+    const app = await buildApp()
+    const res = await app.handle(new Request('http://localhost/api/admin/kinds/nope', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ key: 'nope', label: 'X', description: null }),
+    }))
+    expect(res.status).toBe(404)
+  })
+})
+
+describe('DELETE /api/admin/kinds/:key', () => {
+  beforeEach(clearDb)
+
+  it('204 + audit, second call 404', async () => {
+    const token = await adminToken()
+    await createKind({ key: 'theme', label: 'Themes', description: null })
+    const app = await buildApp()
+    const res1 = await app.handle(new Request('http://localhost/api/admin/kinds/theme', {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    }))
+    expect(res1.status).toBe(204)
+    const audits = await db.select().from(auditLog).where(eq(auditLog.action, 'kind.delete'))
+    expect(audits).toHaveLength(1)
+    const res2 = await app.handle(new Request('http://localhost/api/admin/kinds/theme', {
+      method: 'DELETE',
+      headers: { Authorization: `Bearer ${token}` },
+    }))
+    expect(res2.status).toBe(404)
+  })
+})
