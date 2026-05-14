@@ -6,17 +6,16 @@ export default new Elysia()
   .use(adminMiddleware)
   .post(
     '/',
-    ({ body }) => ({ html: renderMarkdown(body.content, body.format ?? 'markdown') }),
+    ({ body }) => ({ html: renderMarkdown(body.content) }),
     {
       detail: {
         tags: ['Admin'],
-        summary: 'Render markdown/HTML to sanitized HTML (admin live preview)',
+        summary: 'Render markdown to sanitized HTML (admin live preview)',
         operationId: 'previewPage',
         security: [{ bearerAuth: [] }, { cookieAuth: [] }],
       },
       body: t.Object({
         content: t.String({ maxLength: 200_000 }),
-        format: t.Optional(t.Union([t.Literal('markdown'), t.Literal('html')])),
       }),
       response: { 200: t.Object({ html: t.String() }) },
     },

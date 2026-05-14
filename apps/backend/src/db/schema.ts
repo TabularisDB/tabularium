@@ -114,7 +114,6 @@ export const settings = sqliteTable('settings', {
 export const markdownPages = sqliteTable('markdown_pages', {
   slug: text('slug').notNull(),
   locale: text('locale').notNull().default('en'),
-  format: text('format', { enum: ['markdown', 'html'] }).notNull().default('markdown'),
   title: text('title').notNull(),
   content: text('content').notNull(),
   published: integer('published').notNull().default(1),

@@ -113,10 +113,10 @@ export default new Elysia()
       set.status = 404
       return { error: 'No page at that path' }
     }
-    const cacheKey = `page:html:${row.slug}:${row.locale}:${row.format}:${row.updatedAt}`
+    const cacheKey = `page:html:${row.slug}:${row.locale}:${row.updatedAt}`
     let html = await cache().get<string>(cacheKey)
     if (!html) {
-      html = renderMarkdown(row.content, row.format as 'markdown' | 'html')
+      html = renderMarkdown(row.content)
       await cache().set(cacheKey, html, RENDER_TTL)
     }
     return {

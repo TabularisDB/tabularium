@@ -119,7 +119,6 @@ export const settings = mysqlTable('settings', {
 export const markdownPages = mysqlTable('markdown_pages', {
   slug: varchar('slug', { length: 80 }).notNull(),
   locale: varchar('locale', { length: 16 }).notNull().default('en'),
-  format: varchar('format', { length: 16, enum: ['markdown', 'html'] }).notNull().default('markdown'),
   title: varchar('title', { length: 120 }).notNull(),
   content: text('content').notNull(),
   published: tinyint('published').notNull().default(1),
