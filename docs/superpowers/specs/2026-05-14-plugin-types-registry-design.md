@@ -45,32 +45,64 @@ On a fresh install: setting does not exist → public catalog returns `[]`, face
 
 ### New module: `apps/backend/src/lib/plugin-types.ts`
 
-Single helper, no caching of its own (rides on the existing settings cache):
+Single helper module backing the strict-REST routes. No caching of its own — rides on the existing settings cache.
 
 ```ts
 export type PluginTypeDef = { key: string; label: string; description: string | null }
 
+export class PluginTypeError extends Error {
+  constructor(public code: 'invalid' | 'duplicate' | 'not_found', message: string)
+}
+
+// Reads `plugin_types` from settings cache. Returns [] if unset or invalid.
 export function getPluginTypes(): PluginTypeDef[]
-// reads `plugin_types` from settings cache, returns [] if unset or invalid
 
-export async function setPluginTypes(next: PluginTypeDef[]): Promise<void>
-// validates shape + uniqueness, persists via setSetting
+// Returns the single type or null. Pure read.
+export function getPluginType(key: string): PluginTypeDef | null
 
+// Quick membership check used by `?type=…` validation on the public list.
 export function isPluginTypeKey(key: string): boolean
-// quick membership check used by ?type=... validation
+
+// Validates one definition (shape, key slug, length limits). Throws PluginTypeError('invalid').
+export function validatePluginTypeDef(input: unknown): PluginTypeDef
+
+// Append. Throws 'duplicate' if key exists, 'invalid' on shape errors.
+export async function createPluginType(def: PluginTypeDef): Promise<PluginTypeDef>
+
+// Replace one (key in def must match `key` argument). Throws 'not_found' or 'invalid'.
+export async function updatePluginType(key: string, def: PluginTypeDef): Promise<PluginTypeDef>
+
+// Remove one. Throws 'not_found' if missing.
+export async function deletePluginType(key: string): Promise<void>
 ```
 
-Validation errors throw `Error` with a message safe to bubble up to a 400 response.
+Each mutating helper does a *read-validate-write* on the JSON-encoded settings array via `getSetting` / `setSetting`. Concurrent admin writes are not a real concern (single admin, low frequency); the settings cache write is awaited so a follow-up read sees the change. The route layer maps `PluginTypeError.code` to HTTP status (`invalid → 400`, `duplicate → 409`, `not_found → 404`).
 
-### Admin endpoints
+### Admin endpoints (strict REST)
 
-**File:** `apps/backend/src/routes/api/admin/plugin-types/index.ts`
+The registry is one collection of plugin-type resources, each identified by its `key`. Storage is still a single JSON array in `settings.plugin_types`; the route layer serializes individual mutations on top of `setPluginTypes` (read array → mutate → write array). All endpoints gated by `adminMiddleware`, OpenAPI tag `Admin`.
 
-- `GET /api/admin/plugin-types`
-  Returns `{ types: PluginTypeDef[] }`. Same shape regardless of whether the setting is unset.
-- `PUT /api/admin/plugin-types`
-  Body: `{ types: PluginTypeDef[] }`. Atomic replace — the array fully overwrites whatever was there. Validates with `setPluginTypes`. On success: audit log entry `plugin_types.update` with meta `{ count: N }`.
-- Both gated by `adminMiddleware`. OpenAPI tag: `Admin`.
+**Files:**
+- `apps/backend/src/routes/api/admin/plugin-types/index.ts` — collection
+- `apps/backend/src/routes/api/admin/plugin-types/[key].ts` — item
+
+| Verb | Path | Purpose | Body | Success | Errors |
+|------|------|---------|------|---------|--------|
+| `GET` | `/api/admin/plugin-types` | List all | — | `200 { types: PluginTypeDef[] }` | — |
+| `POST` | `/api/admin/plugin-types` | Create one | `PluginTypeDef` | `201 { type: PluginTypeDef }` + `Location: /api/admin/plugin-types/{key}` | `400` invalid shape · `409` key already exists |
+| `GET` | `/api/admin/plugin-types/:key` | Read one | — | `200 { type: PluginTypeDef }` | `404` unknown key |
+| `PUT` | `/api/admin/plugin-types/:key` | Replace one (full) | `PluginTypeDef` minus `key` (or with matching `key`) | `200 { type: PluginTypeDef }` | `400` invalid shape · `404` unknown key · `409` body `key` mismatches path |
+| `DELETE` | `/api/admin/plugin-types/:key` | Remove one | — | `204` | `404` unknown key |
+
+Rules:
+- `key` is **immutable**. `PUT` does not rename; if the body carries a `key`, it must match the path. Renaming = `DELETE` + `POST` (the admin owns the tag-migration consequences for existing plugins).
+- `POST` rejects duplicate `key` with `409`; clients can pre-flight with `GET /:key` if they care.
+- Body validation lives in `validatePluginTypeDef` (one shared helper).
+
+Audit-log actions:
+- `plugin_types.create` — meta: `{ key }`
+- `plugin_types.update` — meta: `{ key }`
+- `plugin_types.delete` — meta: `{ key }`
 
 ### Public catalog endpoint
 
@@ -107,10 +139,21 @@ One new action key:
 
 ### Tests
 
-- `bun:test` for `lib/plugin-types.ts`: validation rejects bad shapes, duplicates, oversized arrays; round-trip via the settings cache.
-- Route-level tests for `GET /api/plugin-types` (returns [] on fresh install; returns admin-set list).
-- Route-level test for list endpoint: `?type=theme` returns plugins tagged `theme`; unknown type returns empty; facet counts are correct against a seeded fixture.
-- Admin route test: `PUT /api/admin/plugin-types` writes audit log, replaces atomically.
+- `bun:test` for `lib/plugin-types.ts`:
+  - `validatePluginTypeDef` rejects bad shapes, non-slug keys, oversized fields.
+  - `createPluginType` appends; rejects duplicate `key` with `PluginTypeError('duplicate')`; enforces the 64-entry cap.
+  - `updatePluginType` rejects mismatched key and missing key; round-trip via the settings cache.
+  - `deletePluginType` removes; second delete throws `not_found`.
+- Route-level tests for public `GET /api/plugin-types` (empty on fresh install; populated after admin writes).
+- Route-level tests for `GET /api/plugins`:
+  - `?type=theme` returns plugins tagged `theme`; unknown type returns empty.
+  - `facets.types` counts are correct against a seeded fixture, including a plugin tagged with two type keys.
+- Admin route tests:
+  - `POST /api/admin/plugin-types` → 201 + `Location` header; duplicate POST → 409.
+  - `GET /:key` → 200 / 404.
+  - `PUT /:key` → 200; body-key mismatch → 409; unknown key → 404.
+  - `DELETE /:key` → 204; second call → 404.
+  - All mutations write an audit-log row with the right `action` + `meta.key`.
 
 ## What plugin authors do
 
