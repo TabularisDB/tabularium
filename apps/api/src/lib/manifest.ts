@@ -3,6 +3,7 @@ import { Value } from '@sinclair/typebox/value'
 import { parse as parseYaml } from 'yaml'
 import type { RepoRef } from './providers'
 import { logger } from './logger'
+import { getManifestConfig } from './manifest-config'
 
 const log = logger.child({ module: 'manifest' })
 
@@ -108,12 +109,12 @@ function fetcherFor(accessToken: string, ref: RepoRef, branch?: string): FileFet
   return makeGitlabFetcher(instance.baseUrl, accessToken, ref, branch)
 }
 
-const MANIFEST_PATHS: Array<{ path: string; source: ResolvedManifest['source'] }> = [
-  { path: '.tabularium', source: 'tabularium.yaml' },
-  { path: '.tabularium.yaml', source: 'tabularium.yaml' },
-  { path: '.tabularium.yml', source: 'tabularium.yaml' },
-  { path: '.tabularium.json', source: 'tabularium.json' },
-]
+function manifestCandidates(): Array<{ path: string; source: ResolvedManifest['source'] }> {
+  return getManifestConfig().paths.map((path) => ({
+    path,
+    source: path.endsWith('.json') ? 'tabularium.json' : 'tabularium.yaml',
+  }))
+}
 
 export function rawContentBase(ref: RepoRef, branch: string): string {
   const { instance, owner, repo } = ref
@@ -127,7 +128,7 @@ export function rawContentBase(ref: RepoRef, branch: string): string {
 
 export async function resolveManifest(accessToken: string, ref: RepoRef, options: { ref?: string } = {}): Promise<ResolvedManifest | null> {
   const fetch = fetcherFor(accessToken, ref, options.ref)
-  for (const candidate of MANIFEST_PATHS) {
+  for (const candidate of manifestCandidates()) {
     try {
       const got = await fetch(candidate.path)
       if (!got) continue
