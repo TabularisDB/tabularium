@@ -3,9 +3,10 @@ import { ulid } from 'ulid'
 import { authMiddleware } from '../../../middleware/auth'
 import { rateLimit } from '../../../middleware/rate-limit'
 import { db } from '../../../db'
-import { pluginRequests } from '../../../db/schema'
-import { desc, count, eq } from 'drizzle-orm'
+import { pluginRequests, pluginRequestClaims } from '../../../db/schema'
+import { desc, count, eq, and, inArray } from 'drizzle-orm'
 import { getFeatures } from '../../../lib/features'
+import { verifyJwt } from '../../../lib/jwt'
 
 const requestSchema = t.Object({
   id: t.String(),
@@ -15,6 +16,8 @@ const requestSchema = t.Object({
   requesterId: t.String(),
   upvotes: t.Number(),
   createdAt: t.Number(),
+  claims: t.Number(),
+  claimedByMe: t.Boolean(),
 })
 
 const requestListResponseSchema = t.Object({
@@ -40,8 +43,22 @@ function clampInt(raw: unknown, def: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, Math.trunc(n)))
 }
 
+async function resolveOptionalViewer(
+  headers: Record<string, string | undefined>,
+  cookie: Record<string, { value?: unknown } | undefined>,
+): Promise<{ sub: string } | null> {
+  const authHeader = headers.authorization
+  const bearerToken = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined
+  const raw = cookie.auth?.value
+  const cookieToken = typeof raw === 'string' ? raw : undefined
+  const token = bearerToken ?? cookieToken
+  if (!token) return null
+  const payload = await verifyJwt(token)
+  return payload ? { sub: payload.sub } : null
+}
+
 export default new Elysia()
-  .get('/', async ({ query }) => {
+  .get('/', async ({ query, headers, cookie }) => {
     const page = clampInt(query.page, 1, 1, 10_000)
     const limit = clampInt(query.limit, 20, 1, 100)
     const offset = (page - 1) * limit
@@ -56,7 +73,43 @@ export default new Elysia()
       .limit(limit)
       .offset(offset)
 
-    return { total, page, limit, requests: rows }
+    const viewer = await resolveOptionalViewer(headers, cookie)
+    const ids = rows.map((r: { id: string }) => r.id)
+    const claimRows = ids.length === 0
+      ? []
+      : await db
+          .select({ requestId: pluginRequestClaims.requestId, n: count() })
+          .from(pluginRequestClaims)
+          .where(inArray(pluginRequestClaims.requestId, ids))
+          .groupBy(pluginRequestClaims.requestId)
+    const claimsByRequest = new Map<string, number>(
+      claimRows.map((r: { requestId: string; n: number }) => [r.requestId, r.n]),
+    )
+
+    let myClaimSet = new Set<string>()
+    if (viewer && ids.length > 0) {
+      const mine = await db
+        .select({ requestId: pluginRequestClaims.requestId })
+        .from(pluginRequestClaims)
+        .where(
+          and(
+            eq(pluginRequestClaims.userId, viewer.sub),
+            inArray(pluginRequestClaims.requestId, ids),
+          ),
+        )
+      myClaimSet = new Set(mine.map((r: { requestId: string }) => r.requestId))
+    }
+
+    return {
+      total,
+      page,
+      limit,
+      requests: rows.map((r: { id: string }) => ({
+        ...r,
+        claims: claimsByRequest.get(r.id) ?? 0,
+        claimedByMe: myClaimSet.has(r.id),
+      })),
+    }
   }, {
     detail: {
       tags: ['Requests'],
