@@ -1309,9 +1309,659 @@ If steps 1–3 surfaced nothing, this task closes without a commit.
 
 ---
 
+## Task 10: Frontend types
+
+**Files:**
+- Modify: `apps/frontend/src/lib/types.ts`
+
+- [ ] **Step 1: Add `Kind` type and extend `PluginListResponse.facets`**
+
+Open `apps/frontend/src/lib/types.ts`. Find the `PluginListResponse` block and add the new type just above it:
+
+```ts
+export type Kind = {
+  key: string
+  label: string
+  description: string | null
+}
+```
+
+Replace the existing `PluginListResponse` definition with:
+
+```ts
+export type PluginListResponse = {
+  total: number
+  page: number
+  limit: number
+  plugins: Plugin[]
+  facets: {
+    categories: Array<{ value: string; count: number }>
+    kinds: Array<{ key: string; label: string; count: number }>
+  }
+}
+```
+
+- [ ] **Step 2: Type-check**
+
+```bash
+cd apps/frontend && bunx svelte-check --tsconfig ./tsconfig.json --no-tsconfig 2>&1 | head -40
+```
+(If `svelte-check` is not installed, fall back to `bunx tsc --noEmit -p tsconfig.json`.)
+Expected: no new errors related to `Kind` or `PluginListResponse`.
+
+- [ ] **Step 3: Commit**
+
+```bash
+git add apps/frontend/src/lib/types.ts
+git commit -m "feat(frontend): types — Kind + facets.kinds on PluginListResponse"
+```
+
+---
+
+## Task 11: i18n — add new keys to 5 of 6 locales (zh-CN is in Task 16)
+
+**Files:**
+- Modify: `apps/frontend/messages/en.json`
+- Modify: `apps/frontend/messages/de.json`
+- Modify: `apps/frontend/messages/es.json`
+- Modify: `apps/frontend/messages/fr.json`
+- Modify: `apps/frontend/messages/it.json`
+
+**Important:** the parallel zh-CN translation agent has uncommitted edits in `apps/frontend/messages/zh-CN.json` (visible via `git status` at plan time). Touching it would either drag those edits into our commit or trigger conflicts. Skip zh-CN entirely in this task; it's handled by Task 16 after the parallel agent's work lands. The five remaining locales are all committed and safe to edit.
+
+Each file is a flat JSON object; `paraglide-js` does not care about key order — only **append** the new keys, never reorder or rewrite existing ones.
+
+- [ ] **Step 1: Add the 19 new keys to `en.json`**
+
+In `apps/frontend/messages/en.json`, add the following lines anywhere inside the top-level object (keep the existing trailing-comma discipline — match how the file currently looks at the insertion point):
+
+```json
+"admin_nav_kinds": "Kinds",
+"admin_kinds_title": "Plugin kinds",
+"admin_kinds_subtitle": "Define the categories your end-user app uses to filter plugins. Plugin authors mark their plugin by adding the matching tag.",
+"admin_kinds_add_heading": "Add a kind",
+"admin_kinds_field_key": "Key",
+"admin_kinds_field_key_hint": "Lowercase, digits, dashes (e.g. \"theme\", \"sql-template\"). Immutable after creation.",
+"admin_kinds_field_label": "Label",
+"admin_kinds_field_description": "Description (optional)",
+"admin_kinds_add_button": "Add kind",
+"admin_kinds_delete_button": "Delete",
+"admin_kinds_delete_confirm": "Delete this kind? Existing plugins keep the tag but stop appearing in the kind facet.",
+"admin_kinds_empty": "No kinds defined yet. Add one above.",
+"admin_kinds_save_failed": "Failed to save kind",
+"admin_kinds_load_failed": "Failed to load kinds",
+"admin_kinds_created": "Kind created",
+"admin_kinds_updated": "Kind updated",
+"admin_kinds_deleted": "Kind deleted",
+"admin_kinds_duplicate": "A kind with this key already exists",
+"plugins_list_filter_kinds_label": "Kind",
+```
+
+- [ ] **Step 2: Add the same 19 keys to `de.json`** with these German values:
+
+```json
+"admin_nav_kinds": "Arten",
+"admin_kinds_title": "Plugin-Arten",
+"admin_kinds_subtitle": "Definiere die Kategorien, mit denen deine Endnutzer-App Plugins filtert. Plugin-Autoren markieren ihr Plugin durch das passende Tag.",
+"admin_kinds_add_heading": "Art hinzufügen",
+"admin_kinds_field_key": "Schlüssel",
+"admin_kinds_field_key_hint": "Kleinbuchstaben, Ziffern, Bindestriche (z. B. „theme", „sql-template"). Nach Anlegen unveränderbar.",
+"admin_kinds_field_label": "Bezeichnung",
+"admin_kinds_field_description": "Beschreibung (optional)",
+"admin_kinds_add_button": "Art hinzufügen",
+"admin_kinds_delete_button": "Löschen",
+"admin_kinds_delete_confirm": "Diese Art löschen? Bestehende Plugins behalten das Tag, erscheinen aber nicht mehr in der Art-Facette.",
+"admin_kinds_empty": "Noch keine Arten definiert. Lege oben eine an.",
+"admin_kinds_save_failed": "Art konnte nicht gespeichert werden",
+"admin_kinds_load_failed": "Arten konnten nicht geladen werden",
+"admin_kinds_created": "Art angelegt",
+"admin_kinds_updated": "Art aktualisiert",
+"admin_kinds_deleted": "Art gelöscht",
+"admin_kinds_duplicate": "Eine Art mit diesem Schlüssel existiert bereits",
+"plugins_list_filter_kinds_label": "Art",
+```
+
+- [ ] **Step 3: Add the same 19 keys to `es.json`**:
+
+```json
+"admin_nav_kinds": "Tipos",
+"admin_kinds_title": "Tipos de plugin",
+"admin_kinds_subtitle": "Define las categorías que tu aplicación de usuario final usa para filtrar plugins. Los autores marcan su plugin añadiendo la etiqueta correspondiente.",
+"admin_kinds_add_heading": "Añadir un tipo",
+"admin_kinds_field_key": "Clave",
+"admin_kinds_field_key_hint": "Minúsculas, dígitos, guiones (p. ej. «theme», «sql-template»). Inmutable tras la creación.",
+"admin_kinds_field_label": "Etiqueta",
+"admin_kinds_field_description": "Descripción (opcional)",
+"admin_kinds_add_button": "Añadir tipo",
+"admin_kinds_delete_button": "Eliminar",
+"admin_kinds_delete_confirm": "¿Eliminar este tipo? Los plugins existentes conservan la etiqueta pero dejan de aparecer en la faceta de tipo.",
+"admin_kinds_empty": "Aún no hay tipos. Añade uno arriba.",
+"admin_kinds_save_failed": "No se pudo guardar el tipo",
+"admin_kinds_load_failed": "No se pudieron cargar los tipos",
+"admin_kinds_created": "Tipo creado",
+"admin_kinds_updated": "Tipo actualizado",
+"admin_kinds_deleted": "Tipo eliminado",
+"admin_kinds_duplicate": "Ya existe un tipo con esa clave",
+"plugins_list_filter_kinds_label": "Tipo",
+```
+
+- [ ] **Step 4: Add the same 19 keys to `fr.json`**:
+
+```json
+"admin_nav_kinds": "Types",
+"admin_kinds_title": "Types de plugin",
+"admin_kinds_subtitle": "Définissez les catégories utilisées par votre application pour filtrer les plugins. Les auteurs marquent leur plugin en ajoutant le tag correspondant.",
+"admin_kinds_add_heading": "Ajouter un type",
+"admin_kinds_field_key": "Clé",
+"admin_kinds_field_key_hint": "Minuscules, chiffres, tirets (ex. « theme », « sql-template »). Non modifiable après création.",
+"admin_kinds_field_label": "Libellé",
+"admin_kinds_field_description": "Description (facultatif)",
+"admin_kinds_add_button": "Ajouter le type",
+"admin_kinds_delete_button": "Supprimer",
+"admin_kinds_delete_confirm": "Supprimer ce type ? Les plugins existants conservent le tag mais disparaissent de la facette type.",
+"admin_kinds_empty": "Aucun type défini. Ajoutez-en un ci-dessus.",
+"admin_kinds_save_failed": "Échec de l'enregistrement du type",
+"admin_kinds_load_failed": "Échec du chargement des types",
+"admin_kinds_created": "Type créé",
+"admin_kinds_updated": "Type mis à jour",
+"admin_kinds_deleted": "Type supprimé",
+"admin_kinds_duplicate": "Un type avec cette clé existe déjà",
+"plugins_list_filter_kinds_label": "Type",
+```
+
+- [ ] **Step 5: Add the same 19 keys to `it.json`**:
+
+```json
+"admin_nav_kinds": "Tipi",
+"admin_kinds_title": "Tipi di plugin",
+"admin_kinds_subtitle": "Definisci le categorie con cui la tua app utente filtra i plugin. Gli autori contrassegnano il proprio plugin aggiungendo il tag corrispondente.",
+"admin_kinds_add_heading": "Aggiungi un tipo",
+"admin_kinds_field_key": "Chiave",
+"admin_kinds_field_key_hint": "Minuscolo, cifre, trattini (es. «theme», «sql-template»). Non modificabile dopo la creazione.",
+"admin_kinds_field_label": "Etichetta",
+"admin_kinds_field_description": "Descrizione (opzionale)",
+"admin_kinds_add_button": "Aggiungi tipo",
+"admin_kinds_delete_button": "Elimina",
+"admin_kinds_delete_confirm": "Eliminare questo tipo? I plugin esistenti mantengono il tag ma non appaiono più nella faccetta tipo.",
+"admin_kinds_empty": "Nessun tipo definito. Aggiungine uno sopra.",
+"admin_kinds_save_failed": "Impossibile salvare il tipo",
+"admin_kinds_load_failed": "Impossibile caricare i tipi",
+"admin_kinds_created": "Tipo creato",
+"admin_kinds_updated": "Tipo aggiornato",
+"admin_kinds_deleted": "Tipo eliminato",
+"admin_kinds_duplicate": "Esiste già un tipo con questa chiave",
+"plugins_list_filter_kinds_label": "Tipo",
+```
+
+- [ ] **Step 6: Run the paraglide compile**
+
+```bash
+cd apps/frontend && bunx paraglide-js compile --project ./project.inlang
+```
+Expected: regenerates `apps/frontend/src/lib/paraglide/messages.js` (or equivalent) with the new functions `m.admin_nav_kinds`, `m.admin_kinds_title`, etc. (Path to the project may differ — try `bun run dev` first if the compile step is part of dev.)
+
+If paraglide compile is not a manual step in this repo and is wired into the dev/build script: skip the explicit compile and let the dev server / build pick it up.
+
+- [ ] **Step 7: Commit (5 locales only — zh-CN waits for Task 16)**
+
+```bash
+git add apps/frontend/messages/en.json apps/frontend/messages/de.json apps/frontend/messages/es.json apps/frontend/messages/fr.json apps/frontend/messages/it.json
+git add apps/frontend/src/lib/paraglide/
+git commit -m "i18n(frontend): translation keys for plugin-kinds admin + filter (5 locales)"
+```
+
+Do NOT `git add apps/frontend/messages/zh-CN.json` here — it carries unrelated uncommitted work from the parallel translation agent. Task 16 picks it up once that work is committed.
+
+---
+
+## Task 12: Admin page `/admin/kinds`
+
+**Files:**
+- Create: `apps/frontend/src/routes/admin/kinds/+page.svelte`
+
+- [ ] **Step 1: Write the admin page**
+
+Create `apps/frontend/src/routes/admin/kinds/+page.svelte`:
+
+```svelte
+<script lang="ts">
+	import { onMount } from 'svelte'
+	import { toast } from 'svelte-sonner'
+	import Plus from '@lucide/svelte/icons/plus'
+	import Save from '@lucide/svelte/icons/save'
+	import Trash2 from '@lucide/svelte/icons/trash-2'
+	import Card from '$components/ui/Card.svelte'
+	import CardContent from '$components/ui/CardContent.svelte'
+	import CardDescription from '$components/ui/CardDescription.svelte'
+	import CardHeader from '$components/ui/CardHeader.svelte'
+	import CardTitle from '$components/ui/CardTitle.svelte'
+	import Button from '$components/ui/Button.svelte'
+	import Input from '$components/ui/Input.svelte'
+	import { eden } from '$lib/eden'
+	import type { Kind } from '$lib/types'
+	import { m } from '$lib/paraglide/messages'
+
+	let kinds = $state<Kind[]>([])
+	let loading = $state(true)
+	let newKey = $state('')
+	let newLabel = $state('')
+	let newDescription = $state('')
+	let creating = $state(false)
+	let savingKey = $state<string | null>(null)
+
+	onMount(loadKinds)
+
+	async function loadKinds() {
+		loading = true
+		try {
+			const { data, error } = await eden.api.admin.kinds.get()
+			if (error) throw error
+			kinds = (data as { kinds: Kind[] }).kinds
+		} catch (e) {
+			toast.error(e instanceof Error ? e.message : m.admin_kinds_load_failed())
+		} finally {
+			loading = false
+		}
+	}
+
+	async function addKind() {
+		if (!newKey.trim() || !newLabel.trim()) return
+		creating = true
+		try {
+			const { error } = await eden.api.admin.kinds.post({
+				key: newKey.trim(),
+				label: newLabel.trim(),
+				description: newDescription.trim() || null,
+			})
+			if (error) {
+				if (error.status === 409) {
+					toast.error(m.admin_kinds_duplicate())
+				} else {
+					const msg = typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? m.admin_kinds_save_failed())
+					toast.error(msg)
+				}
+				return
+			}
+			toast.success(m.admin_kinds_created())
+			newKey = ''
+			newLabel = ''
+			newDescription = ''
+			await loadKinds()
+		} finally {
+			creating = false
+		}
+	}
+
+	async function saveKind(k: Kind) {
+		savingKey = k.key
+		try {
+			const { error } = await eden.api.admin.kinds({ key: k.key }).put({
+				key: k.key,
+				label: k.label,
+				description: k.description,
+			})
+			if (error) {
+				const msg = typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? m.admin_kinds_save_failed())
+				toast.error(msg)
+				return
+			}
+			toast.success(m.admin_kinds_updated())
+		} finally {
+			savingKey = null
+		}
+	}
+
+	async function deleteKind(k: Kind) {
+		if (!confirm(m.admin_kinds_delete_confirm())) return
+		try {
+			const { error } = await eden.api.admin.kinds({ key: k.key }).delete()
+			if (error) {
+				const msg = typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? m.admin_kinds_save_failed())
+				toast.error(msg)
+				return
+			}
+			toast.success(m.admin_kinds_deleted())
+			await loadKinds()
+		} catch (e) {
+			toast.error(e instanceof Error ? e.message : m.admin_kinds_save_failed())
+		}
+	}
+</script>
+
+<header class="space-y-1">
+	<h1 class="text-2xl font-semibold tracking-tight">{m.admin_kinds_title()}</h1>
+	<p class="text-sm text-muted-foreground">{m.admin_kinds_subtitle()}</p>
+</header>
+
+{#if loading}
+	<p class="text-sm text-muted-foreground">{m.common_loading()}</p>
+{:else}
+	{#if kinds.length === 0}
+		<p class="text-sm text-muted-foreground italic">{m.admin_kinds_empty()}</p>
+	{:else}
+		<div class="space-y-3">
+			{#each kinds as k (k.key)}
+				<Card>
+					<CardHeader>
+						<CardTitle class="text-base font-mono">{k.key}</CardTitle>
+					</CardHeader>
+					<CardContent class="space-y-3">
+						<label class="block space-y-1">
+							<span class="text-xs font-medium text-muted-foreground">{m.admin_kinds_field_label()}</span>
+							<Input bind:value={k.label} />
+						</label>
+						<label class="block space-y-1">
+							<span class="text-xs font-medium text-muted-foreground">{m.admin_kinds_field_description()}</span>
+							<Input bind:value={k.description} />
+						</label>
+						<div class="flex gap-2 justify-end">
+							<Button size="sm" variant="outline" onclick={() => deleteKind(k)}>
+								<Trash2 class="h-3.5 w-3.5" />
+								{m.admin_kinds_delete_button()}
+							</Button>
+							<Button size="sm" onclick={() => saveKind(k)} disabled={savingKey === k.key}>
+								<Save class="h-3.5 w-3.5" />
+								{savingKey === k.key ? m.common_saving() : m.common_apply()}
+							</Button>
+						</div>
+					</CardContent>
+				</Card>
+			{/each}
+		</div>
+	{/if}
+
+	<Card>
+		<CardHeader>
+			<CardTitle class="text-base">{m.admin_kinds_add_heading()}</CardTitle>
+			<CardDescription>{m.admin_kinds_field_key_hint()}</CardDescription>
+		</CardHeader>
+		<CardContent class="space-y-3">
+			<label class="block space-y-1">
+				<span class="text-xs font-medium text-muted-foreground">{m.admin_kinds_field_key()}</span>
+				<Input bind:value={newKey} placeholder="theme" />
+			</label>
+			<label class="block space-y-1">
+				<span class="text-xs font-medium text-muted-foreground">{m.admin_kinds_field_label()}</span>
+				<Input bind:value={newLabel} placeholder="Themes" />
+			</label>
+			<label class="block space-y-1">
+				<span class="text-xs font-medium text-muted-foreground">{m.admin_kinds_field_description()}</span>
+				<Input bind:value={newDescription} />
+			</label>
+			<div class="flex justify-end">
+				<Button size="sm" onclick={addKind} disabled={creating || !newKey.trim() || !newLabel.trim()}>
+					<Plus class="h-3.5 w-3.5" />
+					{m.admin_kinds_add_button()}
+				</Button>
+			</div>
+		</CardContent>
+	</Card>
+{/if}
+```
+
+- [ ] **Step 2: Type-check**
+
+```bash
+cd apps/frontend && bunx svelte-check --tsconfig ./tsconfig.json 2>&1 | tail -30
+```
+Expected: no new errors. The Eden type for `.admin.kinds({ key }).put(...)` shape relies on the backend routes existing — if the Eden client is generated from the live backend, ensure the dev server has been (re)started since Task 5 landed.
+
+- [ ] **Step 3: Manual smoke (recommended)**
+
+Start `bun run dev` for both backend and frontend. Visit `http://localhost:5173/admin/kinds`. Verify:
+- Empty state renders the i18n empty string.
+- Adding a kind shows it in the list.
+- Editing label/description and clicking Save shows the updated toast.
+- Deleting (with confirm) removes the row.
+- Duplicate-key add shows the duplicate toast.
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add apps/frontend/src/routes/admin/kinds/+page.svelte
+git commit -m "feat(frontend): /admin/kinds — CRUD UI for the kinds registry"
+```
+
+---
+
+## Task 13: Admin sidebar — add "Kinds" entry
+
+**Files:**
+- Modify: `apps/frontend/src/routes/admin/+layout.svelte`
+
+- [ ] **Step 1: Add the import**
+
+Open `apps/frontend/src/routes/admin/+layout.svelte`. Add this import alongside the other lucide imports near the top of the `<script>` block:
+
+```ts
+import Tags from '@lucide/svelte/icons/tags'
+```
+
+- [ ] **Step 2: Insert the nav entry**
+
+Find the `sections` array. Add a new entry between `features` and `i18n`:
+
+```ts
+{ href: '/admin/features', label: m.admin_nav_features(), icon: ToggleRight, badge: 0 },
+{ href: '/admin/kinds', label: m.admin_nav_kinds(), icon: Tags, badge: 0 },
+{ href: '/admin/i18n', label: m.admin_nav_languages(), icon: Languages, badge: 0 },
+```
+
+- [ ] **Step 3: Verify in the browser**
+
+Restart the frontend dev server. Open `/admin`. The sidebar should show a new "Kinds" link with the Tags icon, between Features and Languages.
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add apps/frontend/src/routes/admin/+layout.svelte
+git commit -m "feat(frontend): admin sidebar — add Kinds nav entry"
+```
+
+---
+
+## Task 14: Public `/plugins` page — kind filter chips
+
+**Files:**
+- Modify: `apps/frontend/src/routes/plugins/+page.svelte`
+
+- [ ] **Step 1: Wire the state + URL sync + fetch param**
+
+Open `apps/frontend/src/routes/plugins/+page.svelte`.
+
+After `let tag = $state('')` add:
+
+```ts
+let kind = $state('')
+```
+
+After the existing `let categories = …` add:
+
+```ts
+let kindFacet = $state<Array<{ key: string; label: string; count: number }>>([])
+```
+
+In `onMount` (where the URL params are read), after `tag = url.searchParams.get('tag') ?? ''` add:
+
+```ts
+kind = url.searchParams.get('kind') ?? ''
+```
+
+In `fetchPlugins()`, after `if (tag) query.tag = tag` add:
+
+```ts
+if (kind) query.kind = kind
+```
+
+In `fetchPlugins()`, where `categories = payload.facets.categories` is set, add:
+
+```ts
+kindFacet = payload.facets.kinds
+```
+
+In the `$effect` that re-fetches on filter change, add `void kind` alongside the others:
+
+```ts
+$effect(() => {
+  void category
+  void tag
+  void kind
+  void sort
+  void onlyFeatured
+  void pageNum
+  fetchPlugins()
+})
+```
+
+Update `hasActiveFilters` and `clearFilters`:
+
+```ts
+const hasActiveFilters = $derived(Boolean(category || tag || kind || onlyFeatured || search))
+
+function clearFilters() {
+  search = ''
+  category = ''
+  tag = ''
+  kind = ''
+  onlyFeatured = false
+  sort = 'updated'
+  pageNum = 1
+}
+```
+
+- [ ] **Step 2: Render the chip row**
+
+In the markup, find the categories chip row (the `<span class="text-xs text-muted-foreground uppercase tracking-wider mr-1">` with `{m.plugins_list_categories_label()}` text — search for `category === cat.value`). Add the new kind chip row just above the categories row:
+
+```svelte
+{#if kindFacet.length > 0}
+	<div class="flex flex-wrap gap-2 items-center">
+		<span class="text-xs text-muted-foreground uppercase tracking-wider mr-1">{m.plugins_list_filter_kinds_label()}</span>
+		{#each kindFacet as k (k.key)}
+			<button
+				type="button"
+				onclick={() => (kind = kind === k.key ? '' : k.key)}
+				aria-pressed={kind === k.key}
+			>
+				<Badge variant={kind === k.key ? 'default' : 'outline'} class="cursor-pointer">
+					{k.label}
+					<span class="ml-1 text-[10px] opacity-70">{k.count}</span>
+				</Badge>
+			</button>
+		{/each}
+	</div>
+{/if}
+```
+
+- [ ] **Step 3: Type-check**
+
+```bash
+cd apps/frontend && bunx svelte-check --tsconfig ./tsconfig.json 2>&1 | tail -30
+```
+Expected: clean.
+
+- [ ] **Step 4: Manual smoke**
+
+With at least one kind defined and one plugin tagged with that kind: visit `/plugins`. The kind chip row should render with `<label> <count>`. Clicking toggles `?kind=<key>` in the URL and refetches. "Clear filters" resets the chip. If no kinds are defined, the row is hidden.
+
+- [ ] **Step 5: Commit**
+
+```bash
+git add apps/frontend/src/routes/plugins/+page.svelte
+git commit -m "feat(frontend): /plugins — kind filter chips wired to facets.kinds"
+```
+
+---
+
+## Task 15: Frontend type-check + dev smoke
+
+**Files:** none — verification only.
+
+- [ ] **Step 1: Full svelte-check**
+
+```bash
+cd apps/frontend && bunx svelte-check --tsconfig ./tsconfig.json
+```
+Expected: 0 errors, warnings allowed.
+
+- [ ] **Step 2: Dev-server smoke**
+
+Run backend + frontend dev servers. Walk through:
+1. Login as admin → `/admin/kinds` → add `theme`.
+2. Public `/plugins` → kind chip "Theme" appears (count 0 until a plugin is tagged).
+3. Submit/seed a plugin with `tags: [theme]` (or insert via DB for the smoke).
+4. `/plugins` → chip count flips to 1; click → URL syncs `?kind=theme` → list filters.
+5. Admin → edit the kind's label → public page reflects new label after refresh.
+6. Admin → delete the kind → public chip row hides; URL `?kind=theme` returns empty list (still — backend treats unknown key as empty).
+
+- [ ] **Step 3: Final no-op task closes the plan**
+
+---
+
+## Task 16: i18n — zh-CN (deferred until parallel agent commits)
+
+**Pre-flight check before executing this task:**
+
+```bash
+git status apps/frontend/messages/zh-CN.json
+```
+
+If the file shows as modified or contains uncommitted work, **stop and surface to the user**. The parallel translation agent's edits must be committed first; only then is it safe to add our keys without dragging their diff into our commit.
+
+**Files:**
+- Modify: `apps/frontend/messages/zh-CN.json`
+
+- [ ] **Step 1: Confirm clean working tree for `zh-CN.json`**
+
+```bash
+git status apps/frontend/messages/zh-CN.json
+```
+Expected: empty output (file unchanged) or absent. If the file appears in `M` state, abort this task and notify the user.
+
+- [ ] **Step 2: Append the 19 new keys**
+
+In `apps/frontend/messages/zh-CN.json`, append these entries inside the top-level object (matching the file's existing trailing-comma style):
+
+```json
+"admin_nav_kinds": "类型",
+"admin_kinds_title": "插件类型",
+"admin_kinds_subtitle": "定义终端应用用于筛选插件的分类。插件作者通过添加匹配的标签来标记其插件。",
+"admin_kinds_add_heading": "添加类型",
+"admin_kinds_field_key": "键",
+"admin_kinds_field_key_hint": "小写字母、数字、短横线（如 \"theme\"、\"sql-template\"）。创建后不可更改。",
+"admin_kinds_field_label": "名称",
+"admin_kinds_field_description": "描述（可选）",
+"admin_kinds_add_button": "添加类型",
+"admin_kinds_delete_button": "删除",
+"admin_kinds_delete_confirm": "删除此类型？现有插件保留标签，但不再出现在类型筛选中。",
+"admin_kinds_empty": "尚未定义任何类型。请在上方添加。",
+"admin_kinds_save_failed": "类型保存失败",
+"admin_kinds_load_failed": "类型加载失败",
+"admin_kinds_created": "类型已创建",
+"admin_kinds_updated": "类型已更新",
+"admin_kinds_deleted": "类型已删除",
+"admin_kinds_duplicate": "已存在使用此键的类型",
+"plugins_list_filter_kinds_label": "类型",
+```
+
+- [ ] **Step 3: Compile paraglide (if not handled by dev/build)**
+
+```bash
+cd apps/frontend && bunx paraglide-js compile --project ./project.inlang
+```
+
+- [ ] **Step 4: Commit**
+
+```bash
+git add apps/frontend/messages/zh-CN.json apps/frontend/src/lib/paraglide/
+git commit -m "i18n(frontend): zh-CN translation keys for plugin-kinds"
+```
+
+---
+
 ## Out of scope (explicitly)
 
-- Frontend admin UI and public filter chips — separate spec/plan after the i18n agent finishes.
 - Strict "max one kind tag per plugin" validation at submit.
-- Per-kind icons or localized labels.
+- Per-kind icons or localized labels (per-locale label map).
 - Promoting `kind` to a first-class `plugins` column.
+- Drag-to-reorder kinds (alphabetical / creation-order is fine for now).

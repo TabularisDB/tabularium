@@ -1,7 +1,7 @@
 # Plugin Kinds Registry — Design
 
 **Date:** 2026-05-14
-**Status:** Draft — backend only. Frontend deferred (parallel translation work in flight).
+**Status:** Draft — backend + frontend + i18n. Parallel zh-CN translation work is in flight; this design only *adds* new keys, never modifies existing ones, so changes are concatenative and won't collide with the other agent's diff.
 
 ## Summary
 
@@ -18,8 +18,8 @@ Tabularis hosts several structurally identical things under one umbrella: regula
 - **No** new column on `plugins`. Kinds live in `tags`.
 - **No** seed data — registry starts empty on a fresh install; admin opts in.
 - **No** manifest schema change. Authors keep using `tags: [theme, dark]`.
-- **No** frontend changes in this spec. A follow-up spec will wire admin UI + public filter chips after the i18n agent finishes.
 - **No** strict "at most one kind-tag per plugin" rule. Multiple kind tags are tolerated; the plugin appears in each matching kind's facet.
+- **No** rich UX (icons per kind, drag-to-reorder, localized labels). Plain list of `{key, label, description}`, English labels only for now.
 
 ## Data model
 
@@ -150,6 +150,76 @@ Edit `apps/backend/src/routes/api/manifest/index.ts`:
   - `DELETE /:key` → 204; second call → 404.
   - All mutations write an audit-log row with the right `action` + `meta.key`.
 
+## Frontend changes
+
+### Type definitions
+
+Edit `apps/frontend/src/lib/types.ts`:
+
+- Add `export type Kind = { key: string; label: string; description: string | null }`.
+- Extend `PluginListResponse.facets` to include `kinds: Array<{ key: string; label: string; count: number }>`.
+
+These are the only public-API-shape touches; the rest of the FE work consumes them.
+
+### Admin page `/admin/kinds`
+
+New route file `apps/frontend/src/routes/admin/kinds/+page.svelte`. Follows the look and structure of `/admin/features`:
+
+- Top header with title + subtitle.
+- A "list + inline-add row" Card showing the active kinds. Each row: `key` (read-only chip), `label` (input), `description` (textarea), and a delete button. An "Add kind" form at the bottom (key + label + description fields, primary button).
+- On mount, fetch `GET /api/admin/kinds`; render rows.
+- Add submits `POST /api/admin/kinds`; on 409, show a toast "key already exists".
+- Edit fires `PUT /api/admin/kinds/:key` on save; on 400/404 show the server's `error` text.
+- Delete fires `DELETE /api/admin/kinds/:key` after a `confirm()` dialog.
+- All toasts use `svelte-sonner` (same as `/admin/features`).
+- Loading and saving states use the same `m.common_loading()` / `m.common_saving()` keys.
+
+### Admin sidebar
+
+Edit `apps/frontend/src/routes/admin/+layout.svelte`:
+
+- Add a `{ href: '/admin/kinds', label: m.admin_nav_kinds(), icon: Tags, badge: 0 }` entry to the `sections` array, between `features` and `i18n` (alphabetical doesn't apply — group with other configuration items).
+- Import: `import Tags from '@lucide/svelte/icons/tags'`.
+
+### Public `/plugins` page — kind filter chips
+
+Edit `apps/frontend/src/routes/plugins/+page.svelte`:
+
+- New reactive state: `let kind = $state('')`.
+- URL sync (in `onMount` after the CMS check): `kind = url.searchParams.get('kind') ?? ''`.
+- `fetchPlugins()` adds `if (kind) query.kind = kind` to the request.
+- Render a `kinds` chip row right above the existing `categories` row, using the same `Badge` styling. Each chip is `<button onclick={() => (kind = kind === k.key ? '' : k.key)} aria-pressed={kind === k.key}>{k.label} <span>{k.count}</span></button>`.
+- Hide the entire chip row when `kindFacet.length === 0` (so admins who haven't defined any kinds don't see an empty bar).
+- `hasActiveFilters` and `clearFilters()` include `kind`.
+
+### i18n
+
+Add the following keys to `apps/frontend/messages/{en,de,es,fr,it,zh-CN}.json`. These are *new* keys — they don't replace anything, so the diff is concatenative and safe alongside the parallel zh-CN agent's in-flight changes.
+
+```
+admin_nav_kinds                       — Kinds / Arten / …
+admin_kinds_title                     — Plugin kinds
+admin_kinds_subtitle                  — Define the categories your end-user app uses to filter plugins. Plugin authors mark their plugin by adding the matching tag.
+admin_kinds_add_heading               — Add a kind
+admin_kinds_field_key                 — Key
+admin_kinds_field_key_hint            — Lowercase, digits, dashes (e.g. "theme", "sql-template"). Immutable after creation.
+admin_kinds_field_label               — Label
+admin_kinds_field_description         — Description (optional)
+admin_kinds_add_button                — Add kind
+admin_kinds_delete_button             — Delete
+admin_kinds_delete_confirm            — Delete this kind? Existing plugins keep the tag but stop appearing in the kind facet.
+admin_kinds_empty                     — No kinds defined yet. Add one above.
+admin_kinds_save_failed               — Failed to save kind
+admin_kinds_load_failed               — Failed to load kinds
+admin_kinds_created                   — Kind created
+admin_kinds_updated                   — Kind updated
+admin_kinds_deleted                   — Kind deleted
+admin_kinds_duplicate                 — A kind with this key already exists
+plugins_list_filter_kinds_label       — Kind
+```
+
+All values are translated for each locale; English values appear above as the source. Per-locale wording lives in the relevant JSON file. The 7-key zh-CN set is added at the end of the file in alphabetical-key order — same as the existing convention.
+
 ## What plugin authors do
 
 Nothing new in `.tabularium`. Author writes:
@@ -173,7 +243,7 @@ A consumer app (Tabularis itself, or any other client) builds a kind filter UI b
 - **Multiple kind-tags allowed.** A plugin tagged `[theme, snippet]` shows up in both facets. Future strict-mode flag is possible; not in this spec.
 - **No referential integrity.** Removing a kind from the registry leaves orphaned tags. We accept this — tags are freeform.
 - **Facet cost.** Computing per-kind counts re-scans approved plugins' tags. Fine until ~10k plugins; revisit with a cache or materialized count when measurements say so.
-- **No frontend in scope.** Admin UI for managing the list and public filter chips ship separately, behind whatever the parallel i18n work is doing.
+- **Frontend additive only.** Public filter chip row hides itself when no kinds exist. Admin sidebar gains one new nav entry, nothing else moves.
 
 ## Out of scope / future
 
