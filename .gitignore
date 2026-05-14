@@ -3,3 +3,7 @@ node_modules/
 dist/
 .env
 .env.local
+
+# Internal working files — not part of the public repo
+docs/
+TODO.md
