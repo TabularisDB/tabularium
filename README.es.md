@@ -87,7 +87,7 @@ Docs completos en **[tabularium.wiki](https://tabularium.wiki)**.
 
 ## Licencia
 
-MIT — ver [LICENSE](LICENSE).
+Apache 2.0 — ver [LICENSE](LICENSE).
 
 ## Contribuir
 

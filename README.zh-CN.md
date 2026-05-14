@@ -87,7 +87,7 @@ packages/
 
 ## 许可证
 
-MIT — 见 [LICENSE](LICENSE)。
+Apache 2.0 — 见 [LICENSE](LICENSE)。
 
 ## 参与贡献
 
