@@ -258,6 +258,8 @@
 	"init_done_body_suffix": "e la password che hai appena usato.",
 	"init_login_failed": "Accesso fallito",
 	"init_setup_failed": "Configurazione fallita",
+	"init_waiting_title": "Riavvio in corso…",
+	"init_waiting_subtitle": "In attesa del ritorno del server. Ti collegheremo e apriremo il pannello admin automaticamente.",
 	"widget_featured_empty": "Ancora nessun plugin in evidenza.",
 	"widget_grid_empty": "Nessun plugin corrispondente.",
 	"widget_popular_empty": "Ancora nessun plugin.",

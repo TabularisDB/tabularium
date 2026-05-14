@@ -258,6 +258,8 @@
 	"init_done_body_suffix": "and the password you just used.",
 	"init_login_failed": "Login failed",
 	"init_setup_failed": "Setup failed",
+	"init_waiting_title": "Restarting…",
+	"init_waiting_subtitle": "Waiting for the server to come back. We'll log you in and open the admin panel automatically.",
 	"widget_featured_empty": "No featured plugins yet.",
 	"widget_grid_empty": "No matching plugins.",
 	"widget_popular_empty": "No plugins yet.",

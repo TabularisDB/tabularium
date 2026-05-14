@@ -258,6 +258,8 @@
 	"init_done_body_suffix": "和你刚才设置的密码。",
 	"init_login_failed": "登录失败",
 	"init_setup_failed": "配置失败",
+	"init_waiting_title": "正在重启…",
+	"init_waiting_subtitle": "等待服务器恢复。我们将自动登录并打开管理面板。",
 	"widget_featured_empty": "尚无精选插件。",
 	"widget_grid_empty": "没有匹配的插件。",
 	"widget_popular_empty": "暂无插件。",

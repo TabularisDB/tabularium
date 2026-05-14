@@ -258,6 +258,8 @@
 	"init_done_body_suffix": "y la contraseña que acabas de usar.",
 	"init_login_failed": "Fallo en el inicio de sesión",
 	"init_setup_failed": "Fallo en la configuración",
+	"init_waiting_title": "Reiniciando…",
+	"init_waiting_subtitle": "Esperando a que el servidor vuelva. Te identificaremos y abriremos el panel de admin automáticamente.",
 	"widget_featured_empty": "Aún no hay plugins destacados.",
 	"widget_grid_empty": "Ningún plugin coincide.",
 	"widget_popular_empty": "Aún no hay plugins.",

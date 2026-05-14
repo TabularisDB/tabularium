@@ -16,7 +16,7 @@
 	import type { InitStatus, InitDefaults } from '$lib/types'
 	import { m } from '$lib/paraglide/messages'
 
-	type Phase = 'checking' | 'login' | 'wizard' | 'submitting' | 'done'
+	type Phase = 'checking' | 'login' | 'wizard' | 'submitting' | 'waiting' | 'done'
 
 	let phase = $state<Phase>('checking')
 	let formError = $state<string | null>(null)
@@ -66,6 +66,29 @@
 			formError = (typeof v === 'object' && v?.detail) ? v.detail : (typeof v === 'string' ? v : (v?.error ?? m.init_setup_failed()))
 			phase = 'wizard'
 			return
+		}
+		phase = 'waiting'
+		void waitForRestart()
+	}
+
+	async function waitForRestart() {
+		const TIMEOUT_MS = 30_000
+		const INTERVAL_MS = 500
+		const start = Date.now()
+		while (Date.now() - start < TIMEOUT_MS) {
+			try {
+				const res = await fetch('/api/init/status', { cache: 'no-store' })
+				if (res.ok) {
+					const status = await res.json() as { setupCompleted: boolean }
+					if (status.setupCompleted) {
+						goto('/admin')
+						return
+					}
+				}
+			} catch {
+				// expected during the restart gap; keep polling
+			}
+			await new Promise((r) => setTimeout(r, INTERVAL_MS))
 		}
 		phase = 'done'
 	}
@@ -146,6 +169,14 @@
 				</form>
 			</CardContent>
 		</Card>
+	{:else if phase === 'waiting'}
+		<div class="text-center space-y-4">
+			<div class="inline-flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary animate-pulse">
+				<ShieldCheck class="h-6 w-6" />
+			</div>
+			<h1 class="text-3xl font-semibold tracking-tight">{m.init_waiting_title()}</h1>
+			<p class="text-sm text-muted-foreground">{m.init_waiting_subtitle()}</p>
+		</div>
 	{:else if phase === 'done'}
 		<div class="text-center space-y-4">
 			<div class="inline-flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary">

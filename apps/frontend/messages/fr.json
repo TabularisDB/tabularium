@@ -258,6 +258,8 @@
 	"init_done_body_suffix": "et le mot de passe que tu viens d'utiliser.",
 	"init_login_failed": "Échec de la connexion",
 	"init_setup_failed": "Échec de la configuration",
+	"init_waiting_title": "Redémarrage…",
+	"init_waiting_subtitle": "En attente du retour du serveur. Nous vous connecterons et ouvrirons l'interface d'administration automatiquement.",
 	"widget_featured_empty": "Aucun plugin mis en avant pour le moment.",
 	"widget_grid_empty": "Aucun plugin correspondant.",
 	"widget_popular_empty": "Pas encore de plugin.",

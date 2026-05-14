@@ -7,6 +7,8 @@ import { saveConfig } from '$lib/config-file'
 import { getBootstrap, clearBootstrap } from '$lib/bootstrap'
 import { seedDefaultPages } from '$lib/seed-pages'
 import { bootstrapAuthMiddleware } from '$middleware/bootstrap-auth'
+import { signJwt } from '$lib/jwt'
+import { isProd } from '$lib/env'
 import { logger } from '$lib/logger'
 
 const log = logger.child({ module: 'init-complete' })
@@ -15,7 +17,7 @@ export default new Elysia()
   .use(bootstrapAuthMiddleware)
   .post(
     '/',
-    async ({ body, set }) => {
+    async ({ body, set, cookie }) => {
       const boot = getBootstrap()
       if (!boot) {
         set.status = 410
@@ -76,6 +78,21 @@ export default new Elysia()
 
       await saveConfig({ installed: true, database: { url: body.database.url } })
       clearBootstrap()
+
+      const jwt = await signJwt({
+        sub: userId,
+        identityId: null,
+        username: 'Admin',
+        providerInstanceId: null,
+      })
+      cookie.auth.set({
+        value: jwt,
+        httpOnly: true,
+        secure: isProd(),
+        maxAge: 3600,
+        sameSite: 'lax',
+        path: '/',
+      })
 
       log.info({ adminId: userId, email: boot.email }, 'install complete — exiting for restart')
       setTimeout(() => process.exit(0), 500)
