@@ -2,29 +2,89 @@
 import { Elysia } from 'elysia'
 import { fileRouter } from 'elysia-file-router'
 import { resolve } from 'node:path'
+import { ulid } from 'ulid'
 import { db } from '../src/db'
 import * as schema from '../src/db/schema'
+import { encryptToken } from '../src/lib/crypto'
+import { initProviderInstances } from '../src/lib/provider-instance'
+import { initSettings } from '../src/lib/settings'
+import { initCache } from '../src/lib/cache'
+import { initStorage } from '../src/lib/storage'
+
+const DEFAULT_INSTANCE_ID = 'github'
+
+async function ensureDefaultInstance() {
+  const existing = await db.query.providerInstances.findFirst({
+    where: { id: DEFAULT_INSTANCE_ID },
+  })
+  if (existing) return
+  await db.insert(schema.providerInstances).values({
+    id: DEFAULT_INSTANCE_ID,
+    kind: 'github',
+    displayName: 'GitHub',
+    baseUrl: 'https://github.com',
+    clientId: 'test-client-id',
+    clientSecret: encryptToken('test-client-secret'),
+    enabled: 1,
+  })
+}
 
 export async function clearDb() {
   await db.delete(schema.pluginRequestVotes)
   await db.delete(schema.pluginRequests)
-  await db.delete(schema.challenges)
   await db.delete(schema.releases)
   await db.delete(schema.plugins)
+  await db.delete(schema.identities)
   await db.delete(schema.users)
+  await db.delete(schema.providerInstances)
+  await db.delete(schema.settings)
+  await ensureDefaultInstance()
+  await initProviderInstances()
+  await initSettings()
+  initCache()
+  initStorage()
 }
 
-export async function makeUser(overrides: Partial<typeof schema.users.$inferInsert> = {}) {
-  const user = {
-    id: crypto.randomUUID(),
-    provider: 'github' as const,
-    providerInstanceUrl: null,
+export type TestUser = {
+  id: string
+  username: string
+  providerInstanceId: string
+  externalId: string
+  accessToken: string
+  identityId: string
+  role: 'user' | 'admin'
+}
+
+export async function makeUser(overrides: Partial<TestUser> = {}): Promise<TestUser> {
+  await ensureDefaultInstance()
+  const id = overrides.id ?? ulid()
+  const identityId = overrides.identityId ?? ulid()
+  const username = overrides.username ?? 'testuser'
+
+  const user: TestUser = {
+    id,
+    identityId,
+    username,
+    providerInstanceId: DEFAULT_INSTANCE_ID,
     externalId: String(Math.floor(Math.random() * 100000)),
-    username: 'testuser',
     accessToken: 'test-access-token',
+    role: 'user',
     ...overrides,
   }
-  await db.insert(schema.users).values(user)
+
+  await db.insert(schema.users).values({
+    id: user.id,
+    displayName: user.username,
+    role: user.role,
+  })
+  await db.insert(schema.identities).values({
+    id: user.identityId,
+    userId: user.id,
+    providerInstanceId: user.providerInstanceId,
+    externalId: user.externalId,
+    username: user.username,
+    accessToken: encryptToken(user.accessToken),
+  })
   return user
 }
 
@@ -35,9 +95,10 @@ export async function makePlugin(
   const plugin = {
     id: 'test-plugin',
     ownerId,
+    providerInstanceId: DEFAULT_INSTANCE_ID,
     name: 'Test Plugin',
     description: 'A test plugin',
-    author: 'testuser <https://github.com/testuser>',
+    author: 'testuser <https://github.com/testuser/test-plugin>',
     repoUrl: 'https://github.com/testuser/test-plugin',
     homepage: 'https://github.com/testuser/test-plugin',
     latestVersion: null,

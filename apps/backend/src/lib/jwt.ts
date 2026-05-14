@@ -1,13 +1,16 @@
 import { SignJWT, jwtVerify } from 'jose'
+import { env } from './env'
 
 export type JwtPayload = {
   sub: string
+  identityId: string | null
   username: string
-  provider: string
-  providerInstanceUrl: string | null
+  providerInstanceId: string | null
 }
 
-const getSecret = () => new TextEncoder().encode(Bun.env.JWT_SECRET!)
+function getSecret(): Uint8Array {
+  return new TextEncoder().encode(env.JWT_SECRET)
+}
 
 export async function signJwt(payload: JwtPayload): Promise<string> {
   return new SignJWT({ ...payload })
@@ -19,7 +22,7 @@ export async function signJwt(payload: JwtPayload): Promise<string> {
 
 export async function verifyJwt(token: string): Promise<JwtPayload | null> {
   try {
-    const { payload } = await jwtVerify(token, getSecret())
+    const { payload } = await jwtVerify(token, getSecret(), { algorithms: ['HS256'] })
     return payload as unknown as JwtPayload
   } catch {
     return null

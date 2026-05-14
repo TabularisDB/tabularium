@@ -1,5 +1,8 @@
 import { Elysia } from 'elysia'
 import { verifyJwt } from '../lib/jwt'
+import { logger } from '../lib/logger'
+
+const log = logger.child({ module: 'auth-middleware' })
 
 export const authMiddleware = new Elysia({ name: 'auth-middleware' })
   .derive({ as: 'scoped' }, async ({ headers, cookie, set }) => {
@@ -7,17 +10,20 @@ export const authMiddleware = new Elysia({ name: 'auth-middleware' })
     const bearerToken = authHeader?.startsWith('Bearer ')
       ? authHeader.slice(7)
       : undefined
-    const cookieToken = cookie.auth?.value
+    const rawCookieValue = cookie.auth?.value
+    const cookieToken = typeof rawCookieValue === 'string' ? rawCookieValue : undefined
 
     const token = bearerToken ?? cookieToken
 
     if (!token) {
+      log.debug({ hasCookieHeader: !!headers.cookie }, 'no token')
       set.status = 401
       throw new Error('Unauthorized')
     }
 
     const user = await verifyJwt(token)
     if (!user) {
+      log.warn('jwt verify failed')
       set.status = 401
       throw new Error('Unauthorized')
     }

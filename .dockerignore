@@ -1,0 +1,16 @@
+node_modules
+**/node_modules
+**/dist
+**/.turbo
+**/data
+.git
+.env
+.env.local
+**/.env
+**/.env.local
+**/*.log
+*.tar
+*.tar.gz
+Dockerfile
+.dockerignore
+deploy

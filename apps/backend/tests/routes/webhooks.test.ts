@@ -27,7 +27,7 @@ async function signPayload(secret: string, body: string) {
 describe('POST /api/webhooks/release', () => {
   beforeEach(clearDb)
 
-  it('returns 404 when plugin not found for repo URL', async () => {
+  it('returns 401 (not 404) when plugin not found, to avoid existence oracle', async () => {
     const body = JSON.stringify(makeGithubReleasePayload('https://github.com/nobody/repo', 'v1.0.0', 'plugin-linux-x64.zip'))
     const app = await buildApp()
     const res = await app.handle(
@@ -41,7 +41,7 @@ describe('POST /api/webhooks/release', () => {
         body,
       }),
     )
-    expect(res.status).toBe(404)
+    expect(res.status).toBe(401)
   })
 
   it('returns 401 when HMAC signature is wrong', async () => {
@@ -93,14 +93,14 @@ describe('POST /api/webhooks/release', () => {
     expect(res.status).toBe(200)
 
     const release = await db.query.releases.findFirst({
-      where: eq(releases.pluginId, plugin.id),
+      where: { pluginId: plugin.id },
     })
     expect(release?.version).toBe('1.2.0')
-    const assets = JSON.parse(release!.assets) as Record<string, string>
-    expect(assets['linux-x64']).toContain('my-plugin-linux-x64.zip')
+    const assets = JSON.parse(release!.assets) as Record<string, { url: string }>
+    expect(assets['linux-x64'].url).toContain('my-plugin-linux-x64.zip')
 
     const updatedPlugin = await db.query.plugins.findFirst({
-      where: eq(plugins.id, plugin.id),
+      where: { id: plugin.id },
     })
     expect(updatedPlugin?.latestVersion).toBe('1.2.0')
   })

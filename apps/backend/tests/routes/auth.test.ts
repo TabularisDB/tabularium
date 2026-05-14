@@ -32,9 +32,9 @@ describe('authMiddleware', () => {
     const { signJwt } = await import('../../src/lib/jwt')
     const token = await signJwt({
       sub: 'user-1',
+      identityId: 'identity-1',
       username: 'alice',
-      provider: 'github',
-      providerInstanceUrl: null,
+      providerInstanceId: 'github',
     })
 
     const app = new Elysia()
@@ -51,8 +51,10 @@ describe('authMiddleware', () => {
   })
 })
 
-describe('GET /auth/:provider', () => {
-  it('redirects to GitHub auth URL and sets state cookie', async () => {
+describe('GET /auth/:instance', () => {
+  beforeEach(clearDb)
+
+  it('redirects to instance auth URL and sets state cookie', async () => {
     const app = await buildApp()
 
     const res = await app.handle(new Request('http://localhost/auth/github'))
@@ -64,22 +66,11 @@ describe('GET /auth/:provider', () => {
     expect(setCookie).toContain('oauth_state=')
   })
 
-  it('redirects to Gitea auth URL for gitea provider with instance param', async () => {
-    const app = await buildApp()
-
-    const res = await app.handle(
-      new Request('http://localhost/auth/gitea?instance=https://codeberg.org'),
-    )
-    expect(res.status).toBe(302)
-    const location = res.headers.get('location') ?? ''
-    expect(location).toContain('codeberg.org')
-  })
-
-  it('returns 400 for unknown provider', async () => {
+  it('returns 404 for unknown instance', async () => {
     const app = await buildApp()
 
     const res = await app.handle(new Request('http://localhost/auth/twitter'))
-    expect(res.status).toBe(400)
+    expect(res.status).toBe(404)
   })
 })
 
@@ -91,9 +82,9 @@ describe('GET /auth/me', () => {
     const { signJwt } = await import('../../src/lib/jwt')
     const token = await signJwt({
       sub: user.id,
+      identityId: user.identityId,
       username: user.username,
       provider: user.provider,
-      providerInstanceUrl: user.providerInstanceUrl,
     })
 
     const app = await buildApp()
@@ -105,5 +96,29 @@ describe('GET /auth/me', () => {
     expect(res.status).toBe(200)
     const data = await res.json() as { username: string }
     expect(data.username).toBe(user.username)
+  })
+})
+
+describe('POST /auth/logout', () => {
+  beforeEach(clearDb)
+
+  it('returns ok and clears the auth cookie', async () => {
+    const app = await buildApp()
+    const res = await app.handle(
+      new Request('http://localhost/auth/logout', { method: 'POST' }),
+    )
+    expect(res.status).toBe(200)
+    expect(await res.json()).toEqual({ ok: true })
+    const setCookie = res.headers.get('set-cookie') ?? ''
+    expect(setCookie).toContain('auth=')
+    expect(setCookie.toLowerCase()).toMatch(/max-age=0|expires=/)
+  })
+
+  it('is idempotent when no cookie is present', async () => {
+    const app = await buildApp()
+    const a = await app.handle(new Request('http://localhost/auth/logout', { method: 'POST' }))
+    const b = await app.handle(new Request('http://localhost/auth/logout', { method: 'POST' }))
+    expect(a.status).toBe(200)
+    expect(b.status).toBe(200)
   })
 })

@@ -1,14 +1,22 @@
 // src/db/seed.ts
+import { ulid } from 'ulid'
 import { db } from './index'
-import { users, plugins, releases } from './schema'
+import { users, identities, plugins, releases } from './schema'
 import { migrate } from 'drizzle-orm/bun-sqlite/migrator'
 
 migrate(db, { migrationsFolder: './src/db/migrations' })
 
 const REGISTRY_OWNER_ID = 'seed-system-user'
+const REGISTRY_OWNER_IDENTITY_ID = 'seed-system-identity'
 
 await db.insert(users).values({
   id: REGISTRY_OWNER_ID,
+  displayName: 'tabularis-registry',
+}).onConflictDoNothing()
+
+await db.insert(identities).values({
+  id: REGISTRY_OWNER_IDENTITY_ID,
+  userId: REGISTRY_OWNER_ID,
   provider: 'github' as const,
   externalId: '0',
   username: 'tabularis-registry',
@@ -25,7 +33,7 @@ type RegistryJson = {
     latest_version: string
     releases: Array<{
       version: string
-      min_tabularis_version: string
+      min_runtime_version: string
       assets: Record<string, string>
     }>
   }>
@@ -47,16 +55,16 @@ for (const plugin of registry.plugins) {
     repoUrl: plugin.homepage,
     homepage: plugin.homepage,
     latestVersion: plugin.latest_version,
-    webhookSecret: crypto.randomUUID(),
+    webhookSecret: ulid(),
   }).onConflictDoNothing()
   pluginCount++
 
   for (const release of plugin.releases) {
     await db.insert(releases).values({
-      id: crypto.randomUUID(),
+      id: ulid(),
       pluginId: plugin.id,
       version: release.version,
-      minTabularisVersion: release.min_tabularis_version,
+      minRuntimeVersion: release.min_runtime_version,
       assets: JSON.stringify(release.assets),
     }).onConflictDoNothing()
     releaseCount++

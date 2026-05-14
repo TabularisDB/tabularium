@@ -1,0 +1,50 @@
+# Local dev stack: Postgres + Dragonfly (Redis-compatible).
+#
+# Usage:
+#   docker compose -f compose.dev.yml up -d
+#   docker compose -f compose.dev.yml down
+#   docker compose -f compose.dev.yml down -v   # wipe volumes
+#
+# Matching env for apps/backend/.env:
+#   DATABASE_URL=postgres://registry:registry@localhost:5432/registry
+#   CACHE_DRIVER=redis
+#   REDIS_URL=redis://localhost:6379
+
+services:
+  postgres:
+    image: postgres:17-alpine
+    container_name: registry-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: registry
+      POSTGRES_PASSWORD: registry
+      POSTGRES_DB: registry
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U registry -d registry"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  dragonfly:
+    image: docker.dragonflydb.io/dragonflydb/dragonfly:latest
+    container_name: registry-dragonfly
+    restart: unless-stopped
+    ulimits:
+      memlock: -1
+    ports:
+      - "6379:6379"
+    volumes:
+      - dragonflydata:/data
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  pgdata:
+  dragonflydata:

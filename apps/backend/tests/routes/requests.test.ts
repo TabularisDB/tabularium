@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach } from 'bun:test'
+import { ulid } from 'ulid'
 import { clearDb, makeUser, buildApp } from '../helpers'
 import { signJwt } from '../../src/lib/jwt'
 import { db } from '../../src/db'
@@ -18,8 +19,8 @@ describe('GET /api/requests', () => {
   it('sorts by upvotes by default', async () => {
     const user = await makeUser()
     await db.insert(pluginRequests).values([
-      { id: crypto.randomUUID(), slug: 'mongo', name: 'MongoDB', description: 'Mongo', requesterId: user.id, upvotes: 5 },
-      { id: crypto.randomUUID(), slug: 'mysql', name: 'MySQL', description: 'MySQL', requesterId: user.id, upvotes: 10 },
+      { id: ulid(), slug: 'mongo', name: 'MongoDB', description: 'Mongo', requesterId: user.id, upvotes: 5 },
+      { id: ulid(), slug: 'mysql', name: 'MySQL', description: 'MySQL', requesterId: user.id, upvotes: 10 },
     ])
 
     const app = await buildApp()
@@ -46,7 +47,7 @@ describe('POST /api/requests', () => {
 
   it('creates a request and returns 409 on duplicate slug', async () => {
     const user = await makeUser()
-    const token = await signJwt({ sub: user.id, username: user.username, provider: 'github', providerInstanceUrl: null })
+    const token = await signJwt({ sub: user.id, identityId: user.identityId, username: user.username, providerInstanceId: 'github' })
     const app = await buildApp()
 
     const res1 = await app.handle(
@@ -74,8 +75,8 @@ describe('POST /api/requests/:id/upvote', () => {
 
   it('toggles upvote and updates count', async () => {
     const user = await makeUser()
-    const token = await signJwt({ sub: user.id, username: user.username, provider: 'github', providerInstanceUrl: null })
-    const requestId = crypto.randomUUID()
+    const token = await signJwt({ sub: user.id, identityId: user.identityId, username: user.username, providerInstanceId: 'github' })
+    const requestId = ulid()
     await db.insert(pluginRequests).values({
       id: requestId, slug: 'elastic', name: 'Elasticsearch', description: 'Search engine', requesterId: user.id, upvotes: 0,
     })

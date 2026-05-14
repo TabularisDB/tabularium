@@ -3,9 +3,9 @@ import { signJwt, verifyJwt, type JwtPayload } from '../../src/lib/jwt'
 
 const payload: JwtPayload = {
   sub: 'user-123',
+  identityId: 'identity-123',
   username: 'testuser',
-  provider: 'github',
-  providerInstanceUrl: null,
+  providerInstanceId: 'github',
 }
 
 describe('jwt', () => {

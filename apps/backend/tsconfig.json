@@ -1,9 +1,21 @@
 {
-  "extends": "@tabularis/tsconfig/base.json",
+  "extends": "@pluggr/tsconfig/base.json",
   "compilerOptions": {
     "outDir": "dist",
     "baseUrl": ".",
-    "paths": { "@/*": ["src/*"] }
+    "paths": {
+      "@/*": ["src/*"],
+      "$": ["src/index"],
+      "$/*": ["src/*"],
+      "$lib": ["src/lib/index"],
+      "$lib/*": ["src/lib/*"],
+      "$db": ["src/db/index"],
+      "$db/*": ["src/db/*"],
+      "$routes": ["src/routes/index"],
+      "$routes/*": ["src/routes/*"],
+      "$middleware": ["src/middleware/index"],
+      "$middleware/*": ["src/middleware/*"]
+    }
   },
   "include": ["src", "tests"]
 }

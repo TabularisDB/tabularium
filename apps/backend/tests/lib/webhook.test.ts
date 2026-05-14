@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'bun:test'
-import { verifyWebhookSignature, inferPlatformKey } from '../../src/lib/webhook'
+import { verifyGithubSignature, inferPlatformKey } from '../../src/lib/webhook'
 
 describe('inferPlatformKey', () => {
   it.each([
@@ -22,27 +22,27 @@ describe('inferPlatformKey', () => {
   })
 })
 
-describe('verifyWebhookSignature', () => {
+describe('verifyGithubSignature', () => {
   it('returns true for a valid HMAC', async () => {
     const secret = 'my-secret'
     const body = Buffer.from('{"action":"published"}')
     const hasher = new Bun.CryptoHasher('sha256', secret)
     hasher.update(body)
     const sig = 'sha256=' + hasher.digest('hex')
-    expect(await verifyWebhookSignature(secret, body, sig)).toBe(true)
+    expect(await verifyGithubSignature(secret, body, sig)).toBe(true)
   })
   it('returns false for wrong secret', async () => {
     const body = Buffer.from('{"action":"published"}')
     const hasher = new Bun.CryptoHasher('sha256', 'correct-secret')
     hasher.update(body)
     const sig = 'sha256=' + hasher.digest('hex')
-    expect(await verifyWebhookSignature('wrong-secret', body, sig)).toBe(false)
+    expect(await verifyGithubSignature('wrong-secret', body, sig)).toBe(false)
   })
   it('returns false for tampered body', async () => {
     const secret = 'my-secret'
     const hasher = new Bun.CryptoHasher('sha256', secret)
     hasher.update(Buffer.from('original'))
     const sig = 'sha256=' + hasher.digest('hex')
-    expect(await verifyWebhookSignature(secret, Buffer.from('tampered'), sig)).toBe(false)
+    expect(await verifyGithubSignature(secret, Buffer.from('tampered'), sig)).toBe(false)
   })
 })

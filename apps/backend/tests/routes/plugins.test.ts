@@ -1,4 +1,5 @@
 import { describe, it, expect, beforeEach } from 'bun:test'
+import { ulid } from 'ulid'
 import { db } from '../../src/db'
 import { releases } from '../../src/db/schema'
 import { clearDb, makeUser, makePlugin, buildApp } from '../helpers'
@@ -51,7 +52,7 @@ describe('GET /api/plugins/:slug', () => {
     const user = await makeUser()
     const plugin = await makePlugin(user.id)
     await db.insert(releases).values({
-      id: crypto.randomUUID(),
+      id: ulid(),
       pluginId: plugin.id,
       version: '1.0.0',
       assets: JSON.stringify({ 'linux-x64': 'https://example.com/linux.zip' }),
@@ -62,10 +63,10 @@ describe('GET /api/plugins/:slug', () => {
     expect(res.status).toBe(200)
     const data = await res.json() as {
       id: string
-      releases: Array<{ version: string; assets: Record<string, string> }>
+      releases: Array<{ version: string; assets: Record<string, { url: string }> }>
     }
     expect(data.id).toBe(plugin.id)
-    expect(data.releases[0].assets['linux-x64']).toBe('https://example.com/linux.zip')
+    expect(data.releases[0].assets['linux-x64'].url).toBe('https://example.com/linux.zip')
   })
 })
 
@@ -84,7 +85,7 @@ describe('GET /api/plugins/:slug/latest', () => {
     const user = await makeUser()
     const plugin = await makePlugin(user.id, { latestVersion: '1.0.0' })
     await db.insert(releases).values({
-      id: crypto.randomUUID(),
+      id: ulid(),
       pluginId: plugin.id,
       version: '1.0.0',
       assets: JSON.stringify({ 'linux-x64': 'https://example.com/linux.zip' }),
@@ -104,7 +105,7 @@ describe('GET /api/plugins/:slug/latest', () => {
     const user = await makeUser()
     const plugin = await makePlugin(user.id, { latestVersion: '1.0.0' })
     await db.insert(releases).values({
-      id: crypto.randomUUID(),
+      id: ulid(),
       pluginId: plugin.id,
       version: '1.0.0',
       assets: JSON.stringify({ 'linux-x64': 'https://example.com/linux.zip' }),

@@ -1,58 +1,90 @@
 import { Elysia, t } from 'elysia'
 import { db } from '../../../../db'
-import { plugins, releases } from '../../../../db/schema'
-import { eq, and } from 'drizzle-orm'
+import { cache } from '../../../../lib/cache'
+import { parseAssets, type AssetMap } from '../../../../lib/asset'
 
 const latestSuccessSchema = t.Object({
   version: t.String(),
-  min_tabularis_version: t.Nullable(t.String()),
+  min_runtime_version: t.Nullable(t.String()),
   download_url: t.String(),
+  size: t.Optional(t.Number()),
+  sha256: t.Optional(t.String()),
 })
 
 const errorSchema = t.Object({ error: t.String() })
 
+type LatestResolved = {
+  version: string
+  minRuntimeVersion: string | null
+  assets: AssetMap
+}
+
+export function latestCacheKey(slug: string): string {
+  return `plugin:latest:${slug}`
+}
+
+const TTL_SECONDS = 60
+
 export default new Elysia()
   .get('/', async ({ params, query, set }) => {
-    const plugin = await db.query.plugins.findFirst({
-      where: eq(plugins.id, params.slug),
-    })
+    const key = latestCacheKey(params.slug)
+    let resolved = await cache().get<LatestResolved>(key)
 
-    if (!plugin || !plugin.latestVersion) {
-      set.status = 404
-      return { error: 'Plugin not found or has no releases' }
-    }
+    if (!resolved) {
+      const plugin = await db.query.plugins.findFirst({
+        where: { id: params.slug },
+      })
 
-    const release = await db.query.releases.findFirst({
-      where: and(
-        eq(releases.pluginId, plugin.id),
-        eq(releases.version, plugin.latestVersion),
-      ),
-    })
+      if (!plugin || plugin.status !== 'approved' || !plugin.latestVersion) {
+        set.status = 404
+        return { error: 'Plugin not found or has no releases' }
+      }
 
-    if (!release) {
-      set.status = 404
-      return { error: 'Latest release not found' }
+      const release = await db.query.releases.findFirst({
+        where: { pluginId: plugin.id, version: plugin.latestVersion },
+      })
+
+      if (!release) {
+        set.status = 404
+        return { error: 'Latest release not found' }
+      }
+
+      resolved = {
+        version: release.version,
+        minRuntimeVersion: release.minRuntimeVersion,
+        assets: parseAssets(release.assets),
+      }
+      await cache().set(key, resolved, TTL_SECONDS)
     }
 
     const platformKey = `${query.os}-${query.arch}`
-    const assets = JSON.parse(release.assets) as Record<string, string>
-    const downloadUrl = assets[platformKey] ?? assets.universal
+    const entry = resolved.assets[platformKey] ?? resolved.assets.universal
 
-    if (!downloadUrl) {
+    if (!entry) {
       set.status = 422
       return { error: `Platform ${platformKey} not supported by this plugin` }
     }
 
     return {
-      version: release.version,
-      min_tabularis_version: release.minTabularisVersion,
-      download_url: downloadUrl,
+      version: resolved.version,
+      min_runtime_version: resolved.minRuntimeVersion,
+      download_url: entry.url,
+      size: entry.size,
+      sha256: entry.sha256,
     }
   }, {
-    detail: { tags: ['Plugins'] },
+    detail: {
+      tags: ['Plugins'],
+      summary: 'Resolve latest release for a platform',
+      description:
+        'CLI-friendly endpoint that returns the download URL of the latest plugin release for a specific platform. ' +
+        'If the platform-specific asset is missing, falls back to the `universal` asset. Returns 422 when neither is available. ' +
+        'Response is cached server-side for 60s; cache is invalidated on every release webhook.',
+      operationId: 'getLatestAsset',
+    },
     query: t.Object({
-      os: t.String(),
-      arch: t.String(),
+      os: t.String({ description: 'Operating system: `linux`, `darwin`, or `win`.' }),
+      arch: t.String({ description: 'CPU architecture: `x64` or `arm64`.' }),
     }),
     response: {
       200: latestSuccessSchema,
