@@ -11,6 +11,7 @@
 	import CmsPage from '$components/CmsPage.svelte'
 	import { eden } from '$lib/eden'
 	import { branding } from '$lib/stores/branding.svelte'
+	import { homeCopy } from '$lib/stores/home-copy.svelte'
 	import { i18n } from '$lib/stores/i18n.svelte'
 	import { m } from '$lib/paraglide/messages'
 	import type { Plugin, PluginListResponse, PageRendered } from '$lib/types'
@@ -74,10 +75,12 @@
 {:else}
 	<section class="hero-grid border-b border-border">
 		<div class="mx-auto max-w-6xl px-6 py-24 sm:py-32 text-center">
-			<div class="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-xs text-muted-foreground mb-8">
-				<Sparkles class="h-3 w-3 text-primary" />
-				{m.home_eyebrow()}
-			</div>
+			{#if homeCopy.eyebrow.enabled}
+				<div class="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-xs text-muted-foreground mb-8">
+					<Sparkles class="h-3 w-3 text-primary" />
+					{homeCopy.pick(homeCopy.eyebrow.text, i18n.current) ?? m.home_eyebrow()}
+				</div>
+			{/if}
 			<h1 class="text-4xl sm:text-6xl font-semibold tracking-tight text-foreground">
 				{branding.name}<span class="text-primary">.</span>
 			</h1>
@@ -121,25 +124,27 @@
 		</section>
 	{/if}
 
-	<section class="border-b border-border">
-		<div class="mx-auto max-w-6xl px-6 py-12 grid gap-8 md:grid-cols-3">
-			<div class="space-y-2">
-				<Cable class="h-5 w-5 text-primary" />
-				<h3 class="font-semibold tracking-tight">{m.home_feature_dropin_title()}</h3>
-				<p class="text-sm text-muted-foreground">{m.home_feature_dropin_body()}</p>
+	{#if homeCopy.features.enabled}
+		<section class="border-b border-border">
+			<div class="mx-auto max-w-6xl px-6 py-12 grid gap-8 md:grid-cols-3">
+				<div class="space-y-2">
+					<Cable class="h-5 w-5 text-primary" />
+					<h3 class="font-semibold tracking-tight">{homeCopy.pick(homeCopy.features.dropin.title, i18n.current) ?? m.home_feature_dropin_title()}</h3>
+					<p class="text-sm text-muted-foreground">{homeCopy.pick(homeCopy.features.dropin.body, i18n.current) ?? m.home_feature_dropin_body()}</p>
+				</div>
+				<div class="space-y-2">
+					<Boxes class="h-5 w-5 text-primary" />
+					<h3 class="font-semibold tracking-tight">{homeCopy.pick(homeCopy.features.providers.title, i18n.current) ?? m.home_feature_providers_title()}</h3>
+					<p class="text-sm text-muted-foreground">{homeCopy.pick(homeCopy.features.providers.body, i18n.current) ?? m.home_feature_providers_body()}</p>
+				</div>
+				<div class="space-y-2">
+					<Sparkles class="h-5 w-5 text-primary" />
+					<h3 class="font-semibold tracking-tight">{homeCopy.pick(homeCopy.features.release.title, i18n.current) ?? m.home_feature_release_title()}</h3>
+					<p class="text-sm text-muted-foreground">{homeCopy.pick(homeCopy.features.release.body, i18n.current) ?? m.home_feature_release_body()}</p>
+				</div>
 			</div>
-			<div class="space-y-2">
-				<Boxes class="h-5 w-5 text-primary" />
-				<h3 class="font-semibold tracking-tight">{m.home_feature_providers_title()}</h3>
-				<p class="text-sm text-muted-foreground">{m.home_feature_providers_body()}</p>
-			</div>
-			<div class="space-y-2">
-				<Sparkles class="h-5 w-5 text-primary" />
-				<h3 class="font-semibold tracking-tight">{m.home_feature_release_title()}</h3>
-				<p class="text-sm text-muted-foreground">{m.home_feature_release_body()}</p>
-			</div>
-		</div>
-	</section>
+		</section>
+	{/if}
 
 	<section>
 		<div class="mx-auto max-w-6xl px-6 py-16 space-y-6">

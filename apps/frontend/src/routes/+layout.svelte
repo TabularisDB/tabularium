@@ -8,6 +8,7 @@
 	import { auth } from '$lib/stores/auth.svelte'
 	import { branding } from '$lib/stores/branding.svelte'
 	import { features } from '$lib/stores/features.svelte'
+	import { homeCopy } from '$lib/stores/home-copy.svelte'
 	import { i18n } from '$lib/stores/i18n.svelte'
 
 	let { children } = $props()
@@ -17,6 +18,7 @@
 		auth.refresh()
 		branding.refresh()
 		features.refresh()
+		homeCopy.refresh()
 	})
 </script>
 
