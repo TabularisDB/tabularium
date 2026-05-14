@@ -103,6 +103,8 @@ if (!config.installed) {
 
 async function bootSetupMode() {
   const { initBootstrap } = await import('$lib/bootstrap')
+  const { setServerMode } = await import('$lib/server-mode')
+  setServerMode('setup')
   await initBootstrap()
   const app = (await createApp()).listen(port)
   logger.info({ module: 'boot', mode: 'setup', port: app.server?.port }, 'setup-mode ready')
@@ -140,6 +142,9 @@ async function bootNormalMode() {
   initStorage()
   await mkdir(diskUploadsRoot(), { recursive: true })
   await initProviderInstances()
+
+  const { setServerMode } = await import('$lib/server-mode')
+  setServerMode('normal')
 
   if (listEnabledInstances().length === 0) {
     logger.warn('No provider instances configured — admin should add at least one via /admin')

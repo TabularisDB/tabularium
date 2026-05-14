@@ -161,8 +161,8 @@
 			try {
 				const res = await fetch('/api/init/status', { cache: 'no-store' })
 				if (res.ok) {
-					const status = await res.json() as { setupCompleted: boolean }
-					if (status.setupCompleted) {
+					const status = await res.json() as { setupCompleted: boolean; mode?: 'setup' | 'normal' }
+					if (status.setupCompleted && status.mode === 'normal') {
 						goto('/admin')
 						return
 					}
