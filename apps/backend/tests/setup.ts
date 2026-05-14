@@ -14,5 +14,6 @@ process.env.CODEBERG_CLIENT_ID = 'test-codeberg-client-id'
 process.env.CODEBERG_CLIENT_SECRET = 'test-codeberg-secret'
 
 // Run migrations on the in-memory DB
-const { db } = await import('../src/db')
+const { db, connectDB } = await import('../src/db')
+await connectDB(':memory:')
 migrate(db, { migrationsFolder: './src/db/migrations' })
