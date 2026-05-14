@@ -22,12 +22,12 @@ describe('POST /api/submit/oauth', () => {
     const user = await makeUser({ username: 'alice' })
     const token = await signJwt({ sub: user.id, identityId: user.identityId, username: 'alice', providerInstanceId: 'github' })
 
-    const fetchSpy = spyOn(global, 'fetch').mockImplementation(async (url: string | URL | Request) => {
+    const fetchSpy = spyOn(global, 'fetch').mockImplementation((async (url: string | URL | Request) => {
       if (String(url).includes('api.github.com/repos')) {
         return new Response(JSON.stringify({ owner: { login: 'alice' } }), { status: 200 })
       }
       return new Response('Not found', { status: 404 })
-    })
+    }) as unknown as typeof fetch)
 
     const app = await buildApp()
     const res = await app.handle(
@@ -57,9 +57,9 @@ describe('POST /api/submit/oauth', () => {
     const user = await makeUser({ username: 'alice' })
     const token = await signJwt({ sub: user.id, identityId: user.identityId, username: 'alice', providerInstanceId: 'github' })
 
-    const fetchSpy = spyOn(global, 'fetch').mockImplementation(async () =>
-      new Response(JSON.stringify({ owner: { login: 'bob' } }), { status: 200 }),
-    )
+    const fetchSpy = spyOn(global, 'fetch').mockImplementation((async () =>
+      new Response(JSON.stringify({ owner: { login: 'bob' } }), { status: 200 })
+    ) as unknown as typeof fetch)
 
     const app = await buildApp()
     const res = await app.handle(

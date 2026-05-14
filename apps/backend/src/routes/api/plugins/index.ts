@@ -128,9 +128,9 @@ export default new Elysia()
       .where(eq(plugins.status, 'approved'))
       .groupBy(plugins.category)
     const categories = categoryRows
-      .filter((c) => c.value !== null)
-      .map((c) => ({ value: c.value as string, count: c.count }))
-      .sort((a, b) => b.count - a.count)
+      .filter((c: { value: string | null; count: number }) => c.value !== null)
+      .map((c: { value: string | null; count: number }) => ({ value: c.value as string, count: c.count }))
+      .sort((a: { count: number }, b: { count: number }) => b.count - a.count)
 
     const kinds = getKinds()
     let kindFacet: Array<{ key: string; label: string; count: number }> = []
@@ -160,7 +160,7 @@ export default new Elysia()
       total,
       page,
       limit,
-      plugins: rows.map((p) => projectPlugin(p)),
+      plugins: rows.map((p: typeof rows[number]) => projectPlugin(p)),
       facets: { categories, kinds: kindFacet },
     }
   }, {

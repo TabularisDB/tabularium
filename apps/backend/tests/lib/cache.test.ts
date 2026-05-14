@@ -13,12 +13,12 @@ describe('memory cache', () => {
 
   it('round-trips an object', async () => {
     await cache().set('k', { a: 1, b: 'two' })
-    expect(await cache().get('k')).toEqual({ a: 1, b: 'two' })
+    expect(await cache().get<{ a: number; b: string }>('k')).toEqual({ a: 1, b: 'two' })
   })
 
   it('expires entries after ttl', async () => {
     await cache().set('k', 'v', 0.05)
-    expect(await cache().get('k')).toBe('v')
+    expect(await cache().get<string>('k')).toBe('v')
     await new Promise((r) => setTimeout(r, 80))
     expect(await cache().get('k')).toBeNull()
   })

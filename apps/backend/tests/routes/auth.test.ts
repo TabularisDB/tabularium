@@ -84,7 +84,7 @@ describe('GET /auth/me', () => {
       sub: user.id,
       identityId: user.identityId,
       username: user.username,
-      provider: user.provider,
+      providerInstanceId: user.providerInstanceId,
     })
 
     const app = await buildApp()

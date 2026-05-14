@@ -14,7 +14,7 @@ describe('jwt', () => {
     const result = await verifyJwt(token)
     expect(result?.sub).toBe(payload.sub)
     expect(result?.username).toBe(payload.username)
-    expect(result?.provider).toBe(payload.provider)
+    expect(result?.providerInstanceId).toBe(payload.providerInstanceId)
   })
   it('verifyJwt returns null for garbage token', async () => {
     expect(await verifyJwt('not.a.token')).toBeNull()

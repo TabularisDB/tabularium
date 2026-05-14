@@ -58,11 +58,11 @@ export default new Elysia()
     const userRows = userIds.length === 0
       ? []
       : await db.query.users.findMany({ where: { id: { in: userIds } } })
-    const pluginNames = new Map(pluginRows.map((p) => [p.id, p.name]))
-    const userNames = new Map(userRows.map((u) => [u.id, u.displayName]))
+    const pluginNames = new Map(pluginRows.map((p: { id: string; name: string }) => [p.id, p.name]))
+    const userNames = new Map(userRows.map((u: { id: string; displayName: string }) => [u.id, u.displayName]))
 
     return {
-      transfers: rows.map((r) => ({
+      transfers: rows.map((r: typeof rows[number]) => ({
         id: r.id,
         pluginId: r.pluginId,
         pluginName: pluginNames.get(r.pluginId) ?? r.pluginId,
