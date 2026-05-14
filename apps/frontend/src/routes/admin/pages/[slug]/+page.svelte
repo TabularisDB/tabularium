@@ -4,6 +4,8 @@
 	import { goto } from '$app/navigation'
 	import { toast } from 'svelte-sonner'
 	import Save from '@lucide/svelte/icons/save'
+	import Eye from '@lucide/svelte/icons/eye'
+	import EyeOff from '@lucide/svelte/icons/eye-off'
 	import ArrowLeft from '@lucide/svelte/icons/arrow-left'
 	import Card from '$components/ui/Card.svelte'
 	import CardContent from '$components/ui/CardContent.svelte'
@@ -12,8 +14,7 @@
 	import Button from '$components/ui/Button.svelte'
 	import Input from '$components/ui/Input.svelte'
 	import Label from '$components/ui/Label.svelte'
-	import { Carta, MarkdownEditor } from 'carta-md'
-	import 'carta-md/default.css'
+	import CmsPage from '$components/CmsPage.svelte'
 	import { eden } from '$lib/eden'
 
 	const slug = $derived(page.params.slug)
@@ -40,6 +41,10 @@
 	let navOrder = $state<number | null>(null)
 	let loading = $state(true)
 	let saving = $state(false)
+	let preview = $state(true)
+	let previewHtml = $state('')
+	let previewLoading = $state(false)
+	let previewTimer: ReturnType<typeof setTimeout> | null = null
 
 	const WIDGET_SNIPPETS: Array<{ label: string; snippet: string }> = [
 		{ label: 'Featured plugins', snippet: '<tabularium-widget name="featured-plugins" limit="6" cols="3" />' },
@@ -53,8 +58,6 @@
 	function insertWidget(snippet: string) {
 		content = `${content.replace(/\s*$/, '')}\n\n${snippet}\n`
 	}
-
-	const carta = new Carta({ sanitizer: false })
 
 	async function load() {
 		loading = true
@@ -76,7 +79,28 @@
 		}
 	}
 
+	async function refreshPreview() {
+		previewLoading = true
+		try {
+			const { data, error } = await eden.api.admin.pages.preview.post({ content, format })
+			if (error) throw error
+			previewHtml = (data as { html: string }).html
+		} catch {
+			previewHtml = '<p class="text-destructive text-sm">Preview failed</p>'
+		} finally {
+			previewLoading = false
+		}
+	}
+
 	onMount(load)
+
+	$effect(() => {
+		if (loading || !preview) return
+		void content
+		void format
+		if (previewTimer) clearTimeout(previewTimer)
+		previewTimer = setTimeout(refreshPreview, 350)
+	})
 
 	async function save() {
 		saving = true
@@ -105,12 +129,17 @@
 		<ArrowLeft class="h-3.5 w-3.5" />
 		Back
 	</Button>
-	{#if !loading}
-		<Button size="sm" onclick={save} disabled={saving}>
-			<Save class="h-3.5 w-3.5" />
-			{saving ? 'Saving…' : 'Save'}
-		</Button>
-	{/if}
+	<div class="flex gap-2">
+		{#if !loading}
+			<Button variant="ghost" size="sm" onclick={() => (preview = !preview)}>
+				{#if preview}<EyeOff class="h-3.5 w-3.5" />Hide preview{:else}<Eye class="h-3.5 w-3.5" />Show preview{/if}
+			</Button>
+			<Button size="sm" onclick={save} disabled={saving}>
+				<Save class="h-3.5 w-3.5" />
+				{saving ? 'Saving…' : 'Save'}
+			</Button>
+		{/if}
+	</div>
 </div>
 
 {#if loading}
@@ -171,23 +200,29 @@
 						</Button>
 					{/each}
 				</div>
-				{#if format === 'html'}
+				<div class={preview ? 'grid gap-3 lg:grid-cols-2' : 'grid gap-3'}>
 					<textarea
 						bind:value={content}
 						class="min-h-[480px] w-full rounded-md border border-input bg-card p-3 font-mono text-sm leading-relaxed"
 						spellcheck="false"
 					></textarea>
-					<p class="text-xs text-muted-foreground">
+					{#if preview}
+						<div class="rounded-md border border-input bg-background p-4 overflow-auto min-h-[480px]">
+							{#if previewLoading && !previewHtml}
+								<p class="text-xs text-muted-foreground">Rendering…</p>
+							{:else}
+								<CmsPage html={previewHtml} />
+							{/if}
+						</div>
+					{/if}
+				</div>
+				<p class="text-xs text-muted-foreground">
+					{#if format === 'html'}
 						Raw HTML — sanitized server-side (whitelist of structural tags + <code class="font-mono">&lt;tabularium-widget /&gt;</code>). Use Tailwind utility classes for layout.
-					</p>
-				{:else}
-					<div class="rounded-md border border-input overflow-hidden">
-						<MarkdownEditor {carta} bind:value={content} mode="split" />
-					</div>
-					<p class="text-xs text-muted-foreground">
+					{:else}
 						GFM supported. Inline HTML allowed (sanitized server-side). Switch to HTML mode for full structural control.
-					</p>
-				{/if}
+					{/if}
+				</p>
 			</div>
 		</CardContent>
 	</Card>

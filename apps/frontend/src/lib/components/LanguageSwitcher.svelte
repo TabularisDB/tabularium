@@ -2,9 +2,14 @@
 	import Languages from '@lucide/svelte/icons/languages'
 	import { i18n, LOCALE_LABELS, type Locale } from '$lib/stores/i18n.svelte'
 
-	function onChange(e: Event) {
-		const value = (e.target as HTMLSelectElement).value as Locale
-		i18n.set(value)
+	let selected = $state<Locale>(i18n.current)
+
+	$effect(() => {
+		selected = i18n.current
+	})
+
+	function commit() {
+		if (selected !== i18n.current) i18n.set(selected)
 	}
 </script>
 
@@ -13,8 +18,8 @@
 		<Languages class="h-3.5 w-3.5" />
 		<select
 			class="bg-transparent border-none focus:ring-0 cursor-pointer text-xs"
-			value={i18n.current}
-			onchange={onChange}
+			bind:value={selected}
+			onchange={commit}
 		>
 			{#each i18n.enabledLocales as l (l)}
 				<option value={l}>{LOCALE_LABELS[l] ?? l}</option>

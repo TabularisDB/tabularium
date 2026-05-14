@@ -32,7 +32,6 @@
 		"@tabularium/client": "workspace:*",
 		"@tanstack/svelte-query": "^5.62.0",
 		"bits-ui": "^2.4.1",
-		"carta-md": "^4.11.2",
 		"clsx": "^2.1.1",
 		"elysia": "^1.4.28",
 		"mode-watcher": "^1.0.7",
