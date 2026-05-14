@@ -1,8 +1,7 @@
 # Build and push the Tabularium container image to Codeberg's container registry.
 #
-# Uses Kaniko (rootless) so we don't need a docker socket on the runner.
-# Runs on Codeberg's own `codeberg-small` runner — bring-your-own-runner with
-# a `docker` label is no longer required.
+# Uses Buildah (rootless, daemonless) so we don't need a docker socket on the
+# runner. Runs on Codeberg's shared `codeberg-small` runner.
 #
 # Secrets:
 #   PACKAGE_TOKEN — a Codeberg access token with `write:package` scope.
@@ -14,32 +13,45 @@ on:
     types: [published]
   workflow_dispatch:
 
+env:
+  STORAGE_DRIVER: vfs
+  BUILDAH_FORMAT: docker
+  BUILDAH_ISOLATION: chroot
+
 jobs:
   build:
     runs-on: codeberg-small
     container:
-      image: gcr.io/kaniko-project/executor:debug
+      image: quay.io/buildah/stable:latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Configure registry auth
+      - name: Log in to Codeberg Container Registry
         run: |
-          mkdir -p /kaniko/.docker
-          AUTH=$(printf '%s:%s' "${{ github.repository_owner }}" "${{ secrets.PACKAGE_TOKEN }}" | base64 | tr -d '\n')
-          cat > /kaniko/.docker/config.json <<EOF
-          {"auths":{"codeberg.org":{"auth":"$AUTH"}}}
-          EOF
+          buildah login \
+            --username "${{ github.repository_owner }}" \
+            --password "${{ secrets.PACKAGE_TOKEN }}" \
+            codeberg.org
 
-      - name: Build and push image
+      - name: Build image
         run: |
           set -eu
           IMAGE="codeberg.org/${{ github.repository_owner }}/tabularium"
           VERSION="${{ github.event.release.tag_name }}"
           VERSION="${VERSION#v}"
-          /kaniko/executor \
-            --context "$GITHUB_WORKSPACE" \
-            --dockerfile Dockerfile \
-            --destination "$IMAGE:$VERSION" \
-            --destination "$IMAGE:latest" \
-            --destination "$IMAGE:${{ github.sha }}"
+          buildah build \
+            -f Dockerfile \
+            -t "$IMAGE:$VERSION" \
+            -t "$IMAGE:latest" \
+            -t "$IMAGE:${{ github.sha }}" \
+            .
+
+      - name: Push image
+        run: |
+          IMAGE="codeberg.org/${{ github.repository_owner }}/tabularium"
+          VERSION="${{ github.event.release.tag_name }}"
+          VERSION="${VERSION#v}"
+          buildah push "$IMAGE:$VERSION"
+          buildah push "$IMAGE:latest"
+          buildah push "$IMAGE:${{ github.sha }}"
