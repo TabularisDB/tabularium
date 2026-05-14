@@ -115,6 +115,8 @@ export type PluginRequest = {
 	requesterId: string
 	upvotes: number
 	createdAt: number
+	claims: number
+	claimedByMe: boolean
 }
 
 export type SubmittableRepo = {

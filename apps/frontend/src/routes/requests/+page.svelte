@@ -2,6 +2,8 @@
 	import { onMount } from 'svelte'
 	import ArrowUp from '@lucide/svelte/icons/arrow-up'
 	import Plus from '@lucide/svelte/icons/plus'
+	import Hammer from '@lucide/svelte/icons/hammer'
+	import Trash2 from '@lucide/svelte/icons/trash-2'
 	import Button from '$components/ui/Button.svelte'
 	import Card from '$components/ui/Card.svelte'
 	import CardContent from '$components/ui/CardContent.svelte'
@@ -68,6 +70,44 @@
 			requests = requests.map((r) => (r.id === req.id ? { ...r, upvotes: result.upvotes } : r))
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : 'Upvote failed')
+		}
+	}
+
+	async function claim(req: PluginRequest) {
+		if (!auth.user) {
+			toast.error(m.requests_sign_in_to_claim())
+			return
+		}
+		const prev = { claims: req.claims, claimedByMe: req.claimedByMe }
+		const optimisticClaimed = !req.claimedByMe
+		const optimisticCount = req.claims + (optimisticClaimed ? 1 : -1)
+		requests = requests.map((r) =>
+			r.id === req.id ? { ...r, claimedByMe: optimisticClaimed, claims: optimisticCount } : r,
+		)
+		try {
+			const { data, error } = await eden.api.requests({ id: req.id }).claim.post({})
+			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
+			const result = data as { claimed: boolean; claims: number }
+			requests = requests.map((r) =>
+				r.id === req.id ? { ...r, claimedByMe: result.claimed, claims: result.claims } : r,
+			)
+		} catch (e) {
+			requests = requests.map((r) =>
+				r.id === req.id ? { ...r, claims: prev.claims, claimedByMe: prev.claimedByMe } : r,
+			)
+			toast.error(e instanceof Error ? e.message : 'Claim failed')
+		}
+	}
+
+	async function deleteRequest(req: PluginRequest) {
+		if (!auth.isAdmin) return
+		if (!confirm(m.requests_admin_delete_confirm())) return
+		try {
+			const { error } = await eden.api.admin.requests({ id: req.id }).delete()
+			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
+			requests = requests.filter((r) => r.id !== req.id)
+		} catch (e) {
+			toast.error(e instanceof Error ? e.message : 'Delete failed')
 		}
 	}
 
@@ -171,6 +211,33 @@
 								<span class="font-mono text-xs text-muted-foreground">{r.slug}</span>
 							</div>
 							<p class="text-sm text-muted-foreground">{r.description}</p>
+							{#if r.claims > 0}
+								<p class="text-xs text-muted-foreground">{m.requests_claim_count({ count: r.claims })}</p>
+							{/if}
+						</div>
+						<div class="flex items-center gap-2">
+							<Button
+								type="button"
+								variant={r.claimedByMe ? 'default' : 'outline'}
+								size="sm"
+								onclick={() => claim(r)}
+								disabled={!auth.user}
+								title={auth.user ? undefined : m.requests_sign_in_to_claim()}
+							>
+								<Hammer class="h-4 w-4" />
+								{r.claimedByMe ? m.requests_claimed() : m.requests_claim()}
+							</Button>
+							{#if auth.isAdmin}
+								<Button
+									type="button"
+									variant="ghost"
+									size="icon"
+									onclick={() => deleteRequest(r)}
+									aria-label={m.requests_admin_delete_confirm()}
+								>
+									<Trash2 class="h-4 w-4" />
+								</Button>
+							{/if}
 						</div>
 					</CardContent>
 				</Card>
