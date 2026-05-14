@@ -1,7 +1,8 @@
 # Build and push the Tabularium container image to Codeberg's container registry.
 #
-# Uses Buildah (rootless, daemonless) so we don't need a docker socket on the
-# runner. Runs on Codeberg's shared `codeberg-small` runner.
+# Buildah (rootless, daemonless) on a Node-capable base — Forgejo's
+# actions/checkout requires Node inside the container. Runs on Codeberg's
+# shared `codeberg-small` runner.
 #
 # Secrets:
 #   PACKAGE_TOKEN — a Codeberg access token with `write:package` scope.
@@ -22,8 +23,14 @@ jobs:
   build:
     runs-on: codeberg-small
     container:
-      image: quay.io/buildah/stable:latest
+      image: node:20-bookworm-slim
     steps:
+      - name: Install buildah
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends buildah ca-certificates
+          rm -rf /var/lib/apt/lists/*
+
       - name: Checkout
         uses: actions/checkout@v4
 
