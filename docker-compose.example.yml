@@ -1,0 +1,46 @@
+# Minimal Tabularium deployment.
+#
+# Runs the registry against an embedded SQLite database — no extra services needed.
+# For Postgres / Dragonfly during development, see compose.dev.yml.
+#
+# Before `docker compose up`:
+#   1. Generate proper secrets and replace the placeholders below.
+#        openssl rand -hex 32   # → JWT_SECRET
+#        openssl rand -hex 32   # → TOKEN_ENC_KEY
+#   2. Point BASE_URL at the public URL you'll serve Tabularium on.
+#   3. (Optional) Swap DATABASE_URL to Postgres / MySQL — see comments below.
+#
+# The placeholders inline here are DEV DEFAULTS — they MUST be replaced for
+# any non-throwaway deployment. Do not commit a real .env / docker-compose.yml
+# with secrets to source control.
+
+services:
+  registry:
+    image: codeberg.org/tabularium/tabularium:latest
+    container_name: tabularium
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    environment:
+      # REPLACE THESE — see openssl commands above.
+      JWT_SECRET: "change-me-please-min-32-chars-1234567890ab"
+      TOKEN_ENC_KEY: "0000000000000000000000000000000000000000000000000000000000000000"
+
+      BASE_URL: "http://localhost:3000"
+
+      # SQLite (default). For other dialects, replace with one of:
+      #   DATABASE_URL: "postgres://user:pass@host:5432/db"
+      #   DATABASE_URL: "mysql://user:pass@host:3306/db"
+      DATABASE_URL: "sqlite:./data/registry.sqlite"
+
+      CACHE_DRIVER: "memory"
+    volumes:
+      - tabularium_data:/app/apps/api/data
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/healthz"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+
+volumes:
+  tabularium_data:
