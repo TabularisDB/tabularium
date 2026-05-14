@@ -1,4 +1,4 @@
-import { getSetting } from './settings'
+import { getSetting, isSettingsInitialized } from './settings'
 
 export const SUPPORTED_LOCALES = ['en', 'de', 'es', 'fr', 'it', 'zh-CN'] as const
 export type Locale = (typeof SUPPORTED_LOCALES)[number]
@@ -31,6 +31,13 @@ function parseDefault(raw: string | undefined, enabled: Locale[]): Locale {
 }
 
 export function getI18nConfig(): I18nConfig {
+  if (!isSettingsInitialized()) {
+    return {
+      defaultLocale: DEFAULT_LOCALE,
+      enabledLocales: [...SUPPORTED_LOCALES],
+      availableLocales: [...SUPPORTED_LOCALES],
+    }
+  }
   const enabledLocales = parseEnabled(getSetting('i18n.enabled_locales'))
   const defaultLocale = parseDefault(getSetting('i18n.default_locale'), enabledLocales)
   return {

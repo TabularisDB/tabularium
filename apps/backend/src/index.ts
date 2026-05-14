@@ -77,6 +77,7 @@ export async function createApp() {
       .onRequest(({ request, set }) => {
         const p = new URL(request.url).pathname
         if (p.startsWith('/api/init/')) return
+        if (p === '/api/i18n' || p.startsWith('/api/i18n/')) return
         if (p.startsWith('/api/') || p.startsWith('/auth/') || p.startsWith('/uploads/') || p.startsWith('/openapi')) {
           set.status = 503
           return { error: 'Setup required', code: 'setup_required' }
