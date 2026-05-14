@@ -135,7 +135,7 @@
 							</Button>
 							<Button size="sm" onclick={() => saveKind(k)} disabled={savingKey === k.key}>
 								<Save class="h-3.5 w-3.5" />
-								{savingKey === k.key ? m.common_saving() : m.common_apply()}
+								{savingKey === k.key ? m.common_saving() : m.common_save()}
 							</Button>
 						</div>
 					</CardContent>

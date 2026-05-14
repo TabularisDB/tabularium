@@ -232,8 +232,8 @@
 					{formError}
 				</div>
 			{/if}
-			<Button type="submit" disabled={creating}>
-				<Plus class="h-4 w-4" />
+			<Button type="submit" size="sm" disabled={creating}>
+				<Plus class="h-3.5 w-3.5" />
 				{creating ? m.admin_providers_adding() : m.admin_providers_add_instance()}
 			</Button>
 		</form>
