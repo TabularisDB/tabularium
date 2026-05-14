@@ -73,12 +73,21 @@ export type Plugin = {
 	readmeHtml?: string | null
 }
 
+export type Kind = {
+	key: string
+	label: string
+	description: string | null
+}
+
 export type PluginListResponse = {
 	total: number
 	page: number
 	limit: number
 	plugins: Plugin[]
-	facets: { categories: Array<{ value: string; count: number }> }
+	facets: {
+		categories: Array<{ value: string; count: number }>
+		kinds: Array<{ key: string; label: string; count: number }>
+	}
 }
 
 export type PageSummary = {
