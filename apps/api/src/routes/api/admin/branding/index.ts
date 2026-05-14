@@ -39,8 +39,8 @@ const brandingSchema = t.Object({
 const localizedBrandingSchema = t.Intersect([
   brandingSchema,
   t.Object({
-    taglineTranslations: t.Record(localeSchema, t.String()),
-    footerTextTranslations: t.Record(localeSchema, t.String()),
+    taglineTranslations: translationMapSchema,
+    footerTextTranslations: translationMapSchema,
   }),
 ])
 
