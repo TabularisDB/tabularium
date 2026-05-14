@@ -1,5 +1,7 @@
 # ![Tabularium](assets/wordmark.svg)
 
+[![REUSE status](https://api.reuse.software/badge/codeberg.org/Tabularium/Tabularium)](https://api.reuse.software/info/codeberg.org/Tabularium/Tabularium)
+
 > Self-hosted plugin registry. Built with [Bun](https://bun.sh), [Elysia](https://elysiajs.com), [SvelteKit](https://kit.svelte.dev) and [Drizzle ORM](https://orm.drizzle.team).
 
 🌐 **Read in your language:** [English](README.md) · [Deutsch](README.de.md) · [Español](README.es.md) · [Français](README.fr.md) · [Italiano](README.it.md) · [中文](README.zh-CN.md)
