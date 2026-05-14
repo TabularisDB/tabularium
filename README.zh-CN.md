@@ -81,9 +81,9 @@ packages/
 
 完整文档见 **[tabularium.wiki](https://tabularium.wiki)**。
 
-- 🚀 **[部署指南](https://tabularium.wiki/#/docs/deploy)** — Docker、环境变量、反向代理
-- 🛠 **[安装向导原理](https://tabularium.wiki/#/docs/install-wizard)**
-- 🔌 **[API 参考](https://tabularium.wiki/#/docs/api)** — OpenAPI spec 位于 `/openapi/json`
+- 🚀 **[部署指南](https://tabularium.wiki/docs/#/deploy)** — Docker、环境变量、反向代理
+- 🛠 **[安装向导原理](https://tabularium.wiki/docs/#/install-wizard)**
+- 🔌 **[API 参考](https://tabularium.wiki/docs/#/api)** — OpenAPI spec 位于 `/openapi/json`
 
 ## 许可证
 

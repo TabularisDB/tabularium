@@ -81,9 +81,9 @@ packages/
 
 Docs completos en **[tabularium.wiki](https://tabularium.wiki)**.
 
-- 🚀 **[Guía de despliegue](https://tabularium.wiki/#/docs/deploy)** — Docker, variables, reverse proxy
-- 🛠 **[Internals del wizard](https://tabularium.wiki/#/docs/install-wizard)**
-- 🔌 **[Referencia API](https://tabularium.wiki/#/docs/api)** — spec OpenAPI en `/openapi/json`
+- 🚀 **[Guía de despliegue](https://tabularium.wiki/docs/#/deploy)** — Docker, variables, reverse proxy
+- 🛠 **[Internals del wizard](https://tabularium.wiki/docs/#/install-wizard)**
+- 🔌 **[Referencia API](https://tabularium.wiki/docs/#/api)** — spec OpenAPI en `/openapi/json`
 
 ## Licencia
 
