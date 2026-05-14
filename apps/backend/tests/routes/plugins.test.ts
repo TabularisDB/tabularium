@@ -3,6 +3,7 @@ import { ulid } from 'ulid'
 import { db } from '../../src/db'
 import { releases } from '../../src/db/schema'
 import { clearDb, makeUser, makePlugin, buildApp } from '../helpers'
+import { createKind } from '../../src/lib/kinds'
 
 describe('GET /api/plugins', () => {
   beforeEach(clearDb)
@@ -116,5 +117,31 @@ describe('GET /api/plugins/:slug/latest', () => {
       new Request(`http://localhost/api/plugins/${plugin.id}/latest?os=darwin&arch=arm64`),
     )
     expect(res.status).toBe(422)
+  })
+})
+
+describe('GET /api/plugins ?kind filter', () => {
+  beforeEach(clearDb)
+
+  it('returns plugins tagged with the kind key', async () => {
+    await createKind({ key: 'theme', label: 'Themes', description: null })
+    const user = await makeUser()
+    await makePlugin(user.id, { id: 'dark', name: 'Dark', tags: JSON.stringify(['theme', 'dark']) })
+    await makePlugin(user.id, { id: 'ducks', name: 'Ducks', tags: JSON.stringify(['birds']) })
+
+    const app = await buildApp()
+    const res = await app.handle(new Request('http://localhost/api/plugins?kind=theme'))
+    const data = await res.json() as { total: number; plugins: Array<{ id: string }> }
+    expect(data.total).toBe(1)
+    expect(data.plugins[0].id).toBe('dark')
+  })
+
+  it('returns empty for an unknown kind key', async () => {
+    const user = await makeUser()
+    await makePlugin(user.id, { id: 'dark', tags: JSON.stringify(['theme']) })
+    const app = await buildApp()
+    const res = await app.handle(new Request('http://localhost/api/plugins?kind=theme'))
+    const data = await res.json() as { total: number }
+    expect(data.total).toBe(0)
   })
 })

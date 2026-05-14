@@ -3,6 +3,7 @@ import { db } from '../../../db'
 import { plugins } from '../../../db/schema'
 import { like, or, count, and, eq } from 'drizzle-orm'
 import { projectPlugin } from '../../../lib/plugin-projection'
+import { isKindKey } from '../../../lib/kinds'
 
 const screenshotSchema = t.Object({
   url: t.String(),
@@ -43,6 +44,7 @@ const pluginListResponseSchema = t.Object({
   plugins: t.Array(pluginSummarySchema),
   facets: t.Object({
     categories: t.Array(t.Object({ value: t.String(), count: t.Number() })),
+    kinds: t.Array(t.Object({ key: t.String(), label: t.String(), count: t.Number() })),
   }),
 })
 
@@ -66,6 +68,9 @@ export default new Elysia()
     const search = query.search?.trim()
     const category = query.category?.trim()
     const tag = query.tag?.trim()
+    const kindParam = query.kind?.trim()
+    const kindFilterActive = kindParam !== undefined && kindParam.length > 0
+    const kindValid = kindFilterActive && isKindKey(kindParam!)
     const orderBy: Record<string, 'asc' | 'desc'> = query.sort === 'new' ? { createdAt: 'desc' }
       : query.sort === 'name' ? { name: 'asc' }
       : query.sort === 'featured' ? { featuredOrder: 'asc' }
@@ -82,6 +87,18 @@ export default new Elysia()
     }
     if (category) where.category = category
     if (tag) where.tags = { like: `%"${escapeLike(tag)}"%` }
+    if (kindFilterActive) {
+      if (!kindValid) {
+        return {
+          total: 0,
+          page,
+          limit,
+          plugins: [],
+          facets: { categories: [], kinds: [] },
+        }
+      }
+      where.tags = { like: `%"${escapeLike(kindParam!)}"%` }
+    }
     if (query.featured === '1') where.featured = 1
 
     // Mirror the same filter as an SQL-expression for `db.select().count()`.
@@ -92,6 +109,7 @@ export default new Elysia()
     }
     if (category) builderConditions.push(eq(plugins.category, category))
     if (tag) builderConditions.push(like(plugins.tags, `%"${escapeLike(tag)}"%`))
+    if (kindFilterActive && kindValid) builderConditions.push(like(plugins.tags, `%"${escapeLike(kindParam!)}"%`))
     if (query.featured === '1') builderConditions.push(eq(plugins.featured, 1))
     const builderWhere = builderConditions.length === 1 ? builderConditions[0] : and(...builderConditions)
 
@@ -119,7 +137,7 @@ export default new Elysia()
       page,
       limit,
       plugins: rows.map((p) => projectPlugin(p)),
-      facets: { categories },
+      facets: { categories, kinds: [] },
     }
   }, {
     detail: {
@@ -134,6 +152,7 @@ export default new Elysia()
       search: t.Optional(t.String()),
       category: t.Optional(t.String()),
       tag: t.Optional(t.String()),
+      kind: t.Optional(t.String()),
       featured: t.Optional(t.String()),
       sort: t.Optional(t.Union([t.Literal('updated'), t.Literal('new'), t.Literal('name'), t.Literal('featured')])),
       page: t.Optional(t.String()),
