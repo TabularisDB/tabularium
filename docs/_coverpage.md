@@ -1,3 +1,5 @@
+![Tabularium](assets/wordmark.svg)
+
 # Tabularium
 
 > Self-hosted plugin registry for the TabularisDB ecosystem.

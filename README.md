@@ -1,4 +1,4 @@
-# Tabularium
+# ![Tabularium](docs/assets/wordmark.svg)
 
 > Self-hosted plugin registry for the **TabularisDB** ecosystem. Built with [Bun](https://bun.sh), [Elysia](https://elysiajs.com), [SvelteKit](https://kit.svelte.dev) and [Drizzle ORM](https://orm.drizzle.team).
 

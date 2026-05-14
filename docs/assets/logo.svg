@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-labelledby="logo-title" fill="currentColor" color="#6366f1">
+  <title id="logo-title">Tabularium</title>
+  <defs>
+    <linearGradient id="brand-fallback" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6366f1"/>
+      <stop offset="1" stop-color="#6366f1"/>
+    </linearGradient>
+  </defs>
+  <g>
+    <rect x="36" y="172" width="184" height="48" rx="10" fill="currentColor" fill-opacity="0.22"/>
+    <rect x="48" y="124" width="160" height="48" rx="10" fill="currentColor" fill-opacity="0.5"/>
+    <path d="M70 36 h116 a14 14 0 0 1 14 14 v10 h-46 a8 8 0 0 0 -8 8 v52 h-76 a14 14 0 0 1 -14 -14 v-56 a14 14 0 0 1 14 -14 z" fill="currentColor"/>
+    <rect x="160" y="68" width="40" height="52" rx="6" fill="currentColor"/>
+    <rect x="86" y="58" width="68" height="10" rx="3" fill="#ffffff" fill-opacity="0.95"/>
+    <rect x="86" y="76" width="44" height="6" rx="2" fill="#ffffff" fill-opacity="0.7"/>
+    <rect x="86" y="90" width="54" height="6" rx="2" fill="#ffffff" fill-opacity="0.7"/>
+  </g>
+</svg>
