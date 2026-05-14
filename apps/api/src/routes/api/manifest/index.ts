@@ -1,5 +1,6 @@
 import { Elysia, t } from 'elysia'
 import { ManifestSchema } from '$lib/manifest'
+import { getManifestConfig } from '$lib/manifest-config'
 import { getKinds } from '$lib/kinds'
 
 const EXAMPLE = `name: My Plugin
@@ -23,21 +24,29 @@ min_runtime_version: '2.4.0'
 readme: README.md
 `
 
+function buildDescription(filename: string): string {
+  return (
+    `Plugin authors drop a \`.${filename}\` (YAML), \`.${filename}.yaml\`, \`.${filename}.yml\`, or \`.${filename}.json\` file in their repo root. ` +
+    'The registry fetches it on submission and on every release webhook. Relative `icon`/`screenshots` paths are resolved against the repo at the matching ref. ' +
+    'Set `kind` to one of the values in `kinds` (the registry\'s active kind catalog) to surface your plugin in kind-filtered views. ' +
+    'The kind value is also folded into `tags` internally so generic tag filters keep working.'
+  )
+}
+
 export default new Elysia()
-  .get('/', () => ({
-    description:
-      'Plugin authors drop a `.tabularium` (YAML), `.tabularium.yaml`, `.tabularium.yml`, or `.tabularium.json` file in their repo root. ' +
-      'The registry fetches it on submission and on every release webhook. Relative `icon`/`screenshots` paths are resolved against the repo at the matching ref. ' +
-      'Set `kind` to one of the values in `kinds` (the registry\'s active kind catalog) to surface your plugin in kind-filtered views. ' +
-      'The kind value is also folded into `tags` internally so generic tag filters keep working.',
-    paths: ['.tabularium', '.tabularium.yaml', '.tabularium.yml', '.tabularium.json'],
-    schema: ManifestSchema,
-    example: EXAMPLE,
-    kinds: getKinds().map((k) => k.key),
-  }), {
+  .get('/', () => {
+    const cfg = getManifestConfig()
+    return {
+      description: buildDescription(cfg.filename),
+      paths: cfg.paths,
+      schema: { $id: cfg.schemaUrl, ...ManifestSchema },
+      example: EXAMPLE,
+      kinds: getKinds().map((k) => k.key),
+    }
+  }, {
     detail: {
       tags: ['Plugins'],
-      summary: 'Discoverable .tabularium manifest spec',
+      summary: 'Discoverable plugin manifest spec',
       description: 'Public reference for plugin authors. Returns the TypeBox JSON Schema, an example, and the registry\'s active kind keys.',
       operationId: 'getManifestSpec',
     },
