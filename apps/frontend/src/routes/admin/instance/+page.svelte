@@ -9,6 +9,7 @@
 	import CardHeader from '$components/ui/CardHeader.svelte'
 	import CardTitle from '$components/ui/CardTitle.svelte'
 	import Button from '$components/ui/Button.svelte'
+	import Input from '$components/ui/Input.svelte'
 	import Label from '$components/ui/Label.svelte'
 	import Badge from '$components/ui/Badge.svelte'
 	import { eden } from '$lib/eden'
@@ -22,15 +23,27 @@
 		defaultWindowSeconds: number
 	}
 
+	type ManifestState = {
+		filename: string
+		schemaUrl: string
+		filenameOverridden: boolean
+		schemaUrlOverridden: boolean
+	}
+
 	type InstanceState = {
 		requireApproval: boolean
 		rateLimits: RateLimitBucket[]
+		manifest: ManifestState
 	}
 
 	let requireApproval = $state(false)
 	let rateLimits = $state<RateLimitBucket[]>([])
+	let manifestFilename = $state('')
+	let manifestSchemaUrl = $state('')
+	let manifestDefaults = $state<{ filename: string; schemaUrl: string }>({ filename: 'tabularium', schemaUrl: '' })
 	let loading = $state(true)
 	let saving = $state(false)
+	let savingManifest = $state(false)
 
 	async function load() {
 		try {
@@ -39,6 +52,9 @@
 			const res = data as InstanceState
 			requireApproval = res.requireApproval
 			rateLimits = res.rateLimits
+			manifestFilename = res.manifest.filenameOverridden ? res.manifest.filename : ''
+			manifestSchemaUrl = res.manifest.schemaUrlOverridden ? res.manifest.schemaUrl : ''
+			manifestDefaults = { filename: res.manifest.filename, schemaUrl: res.manifest.schemaUrl }
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : m.admin_instance_load_failed())
 		} finally {
@@ -62,6 +78,23 @@
 			toast.error(e instanceof Error ? e.message : m.admin_instance_save_failed())
 		} finally {
 			saving = false
+		}
+	}
+
+	async function saveManifest() {
+		savingManifest = true
+		try {
+			const { error } = await eden.api.admin.instance.put({
+				manifestFilename: manifestFilename.trim() ? manifestFilename.trim() : null,
+				manifestSchemaUrl: manifestSchemaUrl.trim() ? manifestSchemaUrl.trim() : null,
+			})
+			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
+			toast.success(m.admin_manifest_saved())
+			await load()
+		} catch (e) {
+			toast.error(e instanceof Error ? e.message : m.admin_manifest_save_failed())
+		} finally {
+			savingManifest = false
 		}
 	}
 
@@ -165,3 +198,32 @@
 		{saving ? m.common_saving() : m.common_save()}
 	</Button>
 </div>
+
+<Card>
+	<CardHeader>
+		<CardTitle class="text-base">{m.admin_manifest_card_title()}</CardTitle>
+		<CardDescription>{m.admin_manifest_card_subtitle()}</CardDescription>
+	</CardHeader>
+	<CardContent class="space-y-4">
+		{#if loading}
+			<p class="text-sm text-muted-foreground">{m.common_loading()}</p>
+		{:else}
+			<div class="grid gap-2 max-w-md">
+				<Label for="manifestFilename">{m.admin_manifest_filename()}</Label>
+				<Input id="manifestFilename" bind:value={manifestFilename} maxlength={40} placeholder={manifestDefaults.filename} />
+				<p class="text-xs text-muted-foreground">{m.admin_manifest_filename_hint()}</p>
+			</div>
+			<div class="grid gap-2 max-w-md">
+				<Label for="manifestSchemaUrl">{m.admin_manifest_schema_url()}</Label>
+				<Input id="manifestSchemaUrl" bind:value={manifestSchemaUrl} maxlength={500} placeholder={manifestDefaults.schemaUrl} />
+				<p class="text-xs text-muted-foreground">{m.admin_manifest_schema_url_hint()}</p>
+			</div>
+			<div class="flex justify-end">
+				<Button size="sm" onclick={saveManifest} disabled={savingManifest}>
+					<Save class="h-3.5 w-3.5" />
+					{savingManifest ? m.common_saving() : m.common_save()}
+				</Button>
+			</div>
+		{/if}
+	</CardContent>
+</Card>

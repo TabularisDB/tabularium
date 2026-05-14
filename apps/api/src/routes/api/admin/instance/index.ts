@@ -2,6 +2,11 @@ import { Elysia, t } from 'elysia'
 import { adminMiddleware } from '$middleware/admin'
 import { getSetting, setSetting, deleteSetting, hasSetting } from '$lib/settings'
 import { recordAudit, actorFromAdmin } from '$lib/audit'
+import {
+  getManifestConfig,
+  validateManifestFilename,
+  validateSchemaUrl,
+} from '$lib/manifest-config'
 
 const BUCKETS = [
   { id: 'submit', defaultLimit: 10, defaultWindow: 3600 },
@@ -33,11 +38,22 @@ function bucketStates(): BucketState[] {
   })
 }
 
+function manifestState() {
+  const cfg = getManifestConfig()
+  return {
+    filename: cfg.filename,
+    schemaUrl: cfg.schemaUrl,
+    filenameOverridden: getSetting('manifest.filename') !== undefined,
+    schemaUrlOverridden: getSetting('manifest.schema_url') !== undefined,
+  }
+}
+
 export default new Elysia()
   .use(adminMiddleware)
   .get('/', () => ({
     requireApproval: getSetting('instance.require_approval') === '1',
     rateLimits: bucketStates(),
+    manifest: manifestState(),
   }), {
     detail: {
       tags: ['Admin'],
@@ -55,6 +71,12 @@ export default new Elysia()
           defaultLimit: t.Number(),
           defaultWindowSeconds: t.Number(),
         })),
+        manifest: t.Object({
+          filename: t.String(),
+          schemaUrl: t.String(),
+          filenameOverridden: t.Boolean(),
+          schemaUrlOverridden: t.Boolean(),
+        }),
       }),
     },
   })
@@ -82,19 +104,59 @@ export default new Elysia()
         await setSetting(`ratelimit.${r.id}.window`, String(r.windowSeconds))
       }
     }
+    let manifestTouched = false
+    if (body.manifestFilename !== undefined) {
+      if (body.manifestFilename === null || body.manifestFilename === '') {
+        if (hasSetting('manifest.filename')) await deleteSetting('manifest.filename')
+      } else {
+        try {
+          validateManifestFilename(body.manifestFilename)
+        } catch (err) {
+          set.status = 400
+          return { error: err instanceof Error ? err.message : 'invalid manifest filename' }
+        }
+        await setSetting('manifest.filename', body.manifestFilename)
+      }
+      manifestTouched = true
+    }
+    if (body.manifestSchemaUrl !== undefined) {
+      if (body.manifestSchemaUrl === null || body.manifestSchemaUrl === '') {
+        if (hasSetting('manifest.schema_url')) await deleteSetting('manifest.schema_url')
+      } else {
+        try {
+          validateSchemaUrl(body.manifestSchemaUrl)
+        } catch (err) {
+          set.status = 400
+          return { error: err instanceof Error ? err.message : 'invalid manifest schema URL' }
+        }
+        await setSetting('manifest.schema_url', body.manifestSchemaUrl)
+      }
+      manifestTouched = true
+    }
     await recordAudit({
       ...actorFromAdmin(admin, request),
       action: 'instance.update',
       target: 'instance',
       meta: body as Record<string, unknown>,
     })
+    if (manifestTouched) {
+      await recordAudit({
+        ...actorFromAdmin(admin, request),
+        action: 'manifest.update',
+        target: 'manifest',
+        meta: {
+          filename: body.manifestFilename ?? null,
+          schemaUrl: body.manifestSchemaUrl ?? null,
+        },
+      })
+    }
     return { ok: true }
   }, {
     detail: {
       tags: ['Admin'],
       summary: 'Update instance-wide settings',
       description:
-        'Toggle approval mode and adjust per-bucket rate limits. Pass `reset: true` to clear an override back to the compiled default.',
+        'Toggle approval mode, adjust per-bucket rate limits, and configure the manifest filename + schema URL. Pass `reset: true` to clear a rate-limit override; pass `null` or an empty string for the manifest fields to revert to defaults.',
       operationId: 'updateInstanceSettings',
       security: [{ bearerAuth: [] }, { cookieAuth: [] }],
     },
@@ -106,6 +168,8 @@ export default new Elysia()
         windowSeconds: t.Number(),
         reset: t.Optional(t.Boolean()),
       }))),
+      manifestFilename: t.Optional(t.Nullable(t.String({ maxLength: 40 }))),
+      manifestSchemaUrl: t.Optional(t.Nullable(t.String({ maxLength: 500 }))),
     }),
     response: {
       200: t.Object({ ok: t.Boolean() }),
