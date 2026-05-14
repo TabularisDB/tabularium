@@ -22,7 +22,6 @@
 
 	type AdminPage = {
 		slug: string
-		format: 'markdown' | 'html'
 		path: string
 		title: string
 		content: string
@@ -33,10 +32,11 @@
 		updatedAt: number
 	}
 
+	const SEEDED_PATHS = new Set(['/about', '/privacy', '/terms'])
+
 	let title = $state('')
 	let path = $state('')
 	let content = $state('')
-	let format = $state<'markdown' | 'html'>('markdown')
 	let published = $state(false)
 	let showInFooter = $state(false)
 	let navOrder = $state<number | null>(null)
@@ -47,18 +47,7 @@
 	let previewLoading = $state(false)
 	let previewTimer: ReturnType<typeof setTimeout> | null = null
 
-	const WIDGET_SNIPPETS: Array<{ label: string; snippet: string }> = [
-		{ label: m.admin_page_edit_widget_featured(), snippet: '<tabularium-widget name="featured-plugins" limit="6" cols="3" />' },
-		{ label: m.admin_page_edit_widget_recent(), snippet: '<tabularium-widget name="recent-plugins" limit="6" cols="3" />' },
-		{ label: m.admin_page_edit_widget_popular(), snippet: '<tabularium-widget name="popular-plugins" limit="6" cols="3" />' },
-		{ label: m.admin_page_edit_widget_grid(), snippet: '<tabularium-widget name="plugin-grid" category="databases" limit="6" cols="3" />' },
-		{ label: m.admin_page_edit_widget_requests(), snippet: '<tabularium-widget name="popular-requests" limit="5" />' },
-		{ label: m.admin_page_edit_widget_stats(), snippet: '<tabularium-widget name="stats" />' },
-	]
-
-	function insertWidget(snippet: string) {
-		content = `${content.replace(/\s*$/, '')}\n\n${snippet}\n`
-	}
+	const pathLocked = $derived(SEEDED_PATHS.has(path))
 
 	async function load() {
 		loading = true
@@ -69,7 +58,6 @@
 			title = res.title
 			path = res.path
 			content = res.content
-			format = res.format ?? 'markdown'
 			published = res.published
 			showInFooter = res.showInFooter
 			navOrder = res.navOrder
@@ -83,7 +71,7 @@
 	async function refreshPreview() {
 		previewLoading = true
 		try {
-			const { data, error } = await eden.api.admin.pages.preview.post({ content, format })
+			const { data, error } = await eden.api.admin.pages.preview.post({ content })
 			if (error) throw error
 			previewHtml = (data as { html: string }).html
 		} catch {
@@ -98,7 +86,6 @@
 	$effect(() => {
 		if (loading || !preview) return
 		void content
-		void format
 		if (previewTimer) clearTimeout(previewTimer)
 		previewTimer = setTimeout(refreshPreview, 350)
 	})
@@ -106,15 +93,15 @@
 	async function save() {
 		saving = true
 		try {
-			const { error } = await eden.api.admin.pages({ slug }).patch({
+			const body: Record<string, unknown> = {
 				title,
-				path,
 				content,
-				format,
 				published,
 				showInFooter,
 				navOrder,
-			})
+			}
+			if (!pathLocked) body.path = path
+			const { error } = await eden.api.admin.pages({ slug }).patch(body)
 			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
 			toast.success(m.admin_page_edit_saved())
 		} catch (e) {
@@ -158,20 +145,17 @@
 
 			<div class="grid gap-2">
 				<Label for="path">{m.admin_page_edit_path()}</Label>
-				<Input id="path" bind:value={path} placeholder="/about" />
+				<Input id="path" bind:value={path} placeholder="/pages/your-slug" readonly={pathLocked} />
 				<p class="text-xs text-muted-foreground">
-					<code class="font-mono">/</code> {m.admin_page_edit_path_note_prefix()} <code class="font-mono">/docs/welcome</code>{m.admin_page_edit_path_note_suffix()}
+					{#if pathLocked}
+						Built-in page — path is fixed.
+					{:else}
+						Admin-created pages live under <code class="font-mono">/pages/&lt;slug&gt;</code>.
+					{/if}
 				</p>
 			</div>
 
 			<div class="flex items-center gap-4 flex-wrap">
-				<div class="flex items-center gap-2 text-sm">
-					<Label for="format" class="text-xs text-muted-foreground">{m.admin_page_edit_format()}</Label>
-					<select id="format" bind:value={format} class="h-9 rounded-md border border-input bg-card px-2 text-sm">
-						<option value="markdown">{m.admin_page_edit_format_markdown()}</option>
-						<option value="html">{m.admin_page_edit_format_html()}</option>
-					</select>
-				</div>
 				<label class="flex items-center gap-2 cursor-pointer text-sm">
 					<input type="checkbox" bind:checked={published} class="h-4 w-4 rounded border-input" />
 					<span>{m.admin_page_edit_published()}</span>
@@ -192,15 +176,7 @@
 			</div>
 
 			<div class="grid gap-2">
-				<Label>{m.admin_page_edit_content_label({ format: format === 'html' ? 'HTML' : 'Markdown' })}</Label>
-				<div class="flex flex-wrap items-center gap-1.5">
-					<span class="text-xs text-muted-foreground mr-1">{m.admin_page_edit_insert_widget()}</span>
-					{#each WIDGET_SNIPPETS as w (w.label)}
-						<Button type="button" variant="ghost" size="sm" onclick={() => insertWidget(w.snippet)} class="text-xs">
-							{w.label}
-						</Button>
-					{/each}
-				</div>
+				<Label>{m.admin_page_edit_content_label({ format: 'Markdown' })}</Label>
 				<div class={preview ? 'grid gap-3 lg:grid-cols-2' : 'grid gap-3'}>
 					<textarea
 						bind:value={content}
@@ -218,11 +194,7 @@
 					{/if}
 				</div>
 				<p class="text-xs text-muted-foreground">
-					{#if format === 'html'}
-						{@html m.admin_page_edit_help_html()}
-					{:else}
-						{m.admin_page_edit_help_markdown()}
-					{/if}
+					{m.admin_page_edit_help_markdown()}
 				</p>
 			</div>
 		</CardContent>
