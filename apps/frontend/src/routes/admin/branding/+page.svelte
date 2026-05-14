@@ -160,6 +160,8 @@
 	function isFilled(map: Record<Locale, string>, locale: Locale) {
 		return Boolean(map[locale]?.trim())
 	}
+
+	const ANALYTICS_PLACEHOLDER = `<${'script'} defer data-domain="example.com" src="https://plausible.io/js/script.js"></${'script'}>`
 </script>
 
 <header class="space-y-1">
@@ -310,7 +312,7 @@
 
 			<div class="grid gap-2">
 				<Label for="analytics">{m.admin_branding_analytics()}</Label>
-				<Textarea id="analytics" bind:value={form.analyticsScript} rows={4} placeholder={'<script defer data-domain="example.com" src="https://plausible.io/js/script.js"></script>'} />
+				<Textarea id="analytics" bind:value={form.analyticsScript} rows={4} placeholder={ANALYTICS_PLACEHOLDER} />
 				<p class="text-xs text-muted-foreground">{m.admin_branding_analytics_note()}</p>
 			</div>
 			<label class="flex items-center gap-3 cursor-pointer select-none">

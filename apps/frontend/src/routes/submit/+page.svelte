@@ -134,31 +134,31 @@
 
 		<Card>
 			<CardHeader>
-				<CardTitle class="text-base">Slug</CardTitle>
-				<CardDescription>Your plugin is live at <code class="font-mono">/plugins/{success.slug}</code></CardDescription>
+				<CardTitle class="text-base">{m.submit_success_slug_label()}</CardTitle>
+				<CardDescription>{m.submit_success_slug_live_at()} <code class="font-mono">/plugins/{success.slug}</code></CardDescription>
 			</CardHeader>
 		</Card>
 
 		{#if success.webhookInstalled}
 			<Card>
 				<CardHeader>
-					<CardTitle class="text-base">Webhook installed automatically</CardTitle>
-					<CardDescription>Releases will appear here within seconds of being published.</CardDescription>
+					<CardTitle class="text-base">{m.submit_webhook_installed_title()}</CardTitle>
+					<CardDescription>{m.submit_webhook_installed_body()}</CardDescription>
 				</CardHeader>
 			</Card>
 		{:else}
 			<Card>
 				<CardHeader>
-					<CardTitle class="text-base">Webhook setup needed</CardTitle>
-					<CardDescription>We couldn't install the webhook automatically. Add it manually with this secret:</CardDescription>
+					<CardTitle class="text-base">{m.submit_webhook_needed_title()}</CardTitle>
+					<CardDescription>{m.submit_webhook_needed_body()}</CardDescription>
 				</CardHeader>
 				<CardContent class="space-y-3">
 					<div class="space-y-1">
-						<div class="text-xs uppercase tracking-wider text-muted-foreground">Webhook URL</div>
+						<div class="text-xs uppercase tracking-wider text-muted-foreground">{m.submit_webhook_url_label()}</div>
 						<CodeBlock value={success.webhookUrl} />
 					</div>
 					<div class="space-y-1">
-						<div class="text-xs uppercase tracking-wider text-muted-foreground">Secret</div>
+						<div class="text-xs uppercase tracking-wider text-muted-foreground">{m.submit_webhook_secret_label()}</div>
 						<CodeBlock value={success.webhookSecret} />
 					</div>
 				</CardContent>
