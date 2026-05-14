@@ -17,6 +17,7 @@
 - Reference
   - [API](api.md)
   - [Manifest spec](manifest.md)
+  - [Manifest JSON Schema](manifest.schema.json)
   - [Webhooks](webhooks.md)
 
 - Deploy

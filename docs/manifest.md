@@ -2,6 +2,8 @@
 
 Plugins ship a `.tabularium.json` (or `.tabularium.yaml`) in the repo root. Tabularium reads it on every release webhook and stores the parsed result in the `plugins` table.
 
+A static copy of the JSON Schema is hosted alongside these docs at [`manifest.schema.json`](manifest.schema.json) — drop the URL into a `$schema` reference from your `.tabularium.json` for IDE autocomplete. The live API endpoint at `GET /api/manifest` returns the same schema plus the registry's currently active `kinds`.
+
 ## Minimal example
 
 ```json

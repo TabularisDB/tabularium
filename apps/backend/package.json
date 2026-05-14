@@ -20,7 +20,8 @@
     "migrate": "bun src/db/migrate.ts",
     "generate": "bunx drizzle-kit generate",
     "generate:pg": "bunx drizzle-kit generate --config=drizzle.pg.config.ts",
-    "generate:mysql": "bunx drizzle-kit generate --config=drizzle.mysql.config.ts"
+    "generate:mysql": "bunx drizzle-kit generate --config=drizzle.mysql.config.ts",
+    "export:manifest-schema": "bun scripts/export-manifest-schema.ts"
   },
   "devDependencies": {
     "@tabularium/tsconfig": "workspace:*",
