@@ -5,7 +5,8 @@ import { getKinds } from '$lib/kinds'
 const EXAMPLE = `name: My Plugin
 description: A short tagline shown on the catalog card.
 category: databases
-tags: [theme, dark]
+kind: theme
+tags: [dark, minimal]
 license: MIT
 icon: ./assets/icon.svg
 screenshots:
@@ -27,7 +28,8 @@ export default new Elysia()
     description:
       'Plugin authors drop a `.tabularium` (YAML), `.tabularium.yaml`, `.tabularium.yml`, or `.tabularium.json` file in their repo root. ' +
       'The registry fetches it on submission and on every release webhook. Relative `icon`/`screenshots` paths are resolved against the repo at the matching ref. ' +
-      'Tag your plugin with one of the registry\'s active kind keys (see `kinds`) so it appears in kind-filtered views.',
+      'Set `kind` to one of the values in `kinds` (the registry\'s active kind catalog) to surface your plugin in kind-filtered views. ' +
+      'The kind value is also folded into `tags` internally so generic tag filters keep working.',
     paths: ['.tabularium', '.tabularium.yaml', '.tabularium.yml', '.tabularium.json'],
     schema: ManifestSchema,
     example: EXAMPLE,

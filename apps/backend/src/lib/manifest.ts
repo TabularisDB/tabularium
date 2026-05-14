@@ -15,6 +15,7 @@ export const ManifestSchema = Type.Object({
   name: Type.Optional(Type.String({ minLength: 1, maxLength: 60 })),
   description: Type.Optional(Type.String({ maxLength: 280 })),
   category: Type.Optional(Type.String({ maxLength: 40 })),
+  kind: Type.Optional(Type.String({ minLength: 1, maxLength: 40, pattern: '^[a-z0-9][a-z0-9-]*$' })),
   tags: Type.Optional(Type.Array(Type.String({ maxLength: 30 }), { maxItems: 16 })),
   license: Type.Optional(Type.String({ maxLength: 40 })),
   icon: Type.Optional(Type.String({ maxLength: 500 })),

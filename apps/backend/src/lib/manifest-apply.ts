@@ -44,9 +44,14 @@ export function manifestPatch(
     alt: s.alt ?? null,
   })) ?? []
 
+  const tagList = (parsed.tags ?? []).slice()
+  if (parsed.kind && !tagList.includes(parsed.kind)) {
+    tagList.unshift(parsed.kind)
+  }
+
   const patch: PluginManifestUpdate = {
     category: parsed.category ?? null,
-    tags: jsonArray(parsed.tags),
+    tags: jsonArray(tagList),
     license: parsed.license ?? null,
     iconUrl,
     screenshots: jsonArray(screenshots),
