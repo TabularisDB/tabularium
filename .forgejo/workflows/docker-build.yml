@@ -1,0 +1,49 @@
+# Build and push the Tabularium container image to Codeberg's container registry.
+#
+# Requires a Codeberg Actions runner with Docker available (the default
+# `docker` label on codeberg-ci.org runners satisfies this).
+#
+# Secrets:
+#   PACKAGE_TOKEN — a Codeberg access token with `write:package` scope.
+
+name: Build Docker image
+
+on:
+  push:
+    branches: [main]
+    tags: ['v*']
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: docker
+    container:
+      image: docker.io/library/docker:24-cli
+    steps:
+      - name: Install git
+        run: apk add --no-cache git
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Log in to Codeberg Container Registry
+        run: echo "${{ secrets.PACKAGE_TOKEN }}" | docker login codeberg.org -u "${{ github.actor }}" --password-stdin
+
+      - name: Build image
+        run: |
+          set -eu
+          IMAGE="codeberg.org/${{ github.repository_owner }}/tabularium"
+          docker build \
+            -t "$IMAGE:${{ github.sha }}" \
+            -t "$IMAGE:latest" \
+            .
+          REF="${GITHUB_REF#refs/tags/}"
+          if [ "$REF" != "$GITHUB_REF" ]; then
+            VERSION="${REF#v}"
+            docker tag "$IMAGE:${{ github.sha }}" "$IMAGE:$VERSION"
+          fi
+
+      - name: Push image
+        run: |
+          IMAGE="codeberg.org/${{ github.repository_owner }}/tabularium"
+          docker push --all-tags "$IMAGE"
