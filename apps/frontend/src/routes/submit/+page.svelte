@@ -22,7 +22,9 @@
 	import { cn } from '$lib/utils'
 	import { eden } from '$lib/eden'
 	import { auth } from '$lib/stores/auth.svelte'
+	import { branding } from '$lib/stores/branding.svelte'
 	import { toast } from 'svelte-sonner'
+	import { m } from '$lib/paraglide/messages'
 	import type { RepoGroup, SubmittableRepo, SubmitSuccess } from '$lib/types'
 
 	let groups = $state<RepoGroup[] | null>(null)
@@ -127,7 +129,7 @@
 	<div class="mx-auto max-w-2xl px-6 py-12 space-y-6">
 		<div class="flex items-center gap-3">
 			<CheckCircle2 class="h-8 w-8 text-success" />
-			<h1 class="text-3xl font-semibold tracking-tight">Plugin registered</h1>
+			<h1 class="text-3xl font-semibold tracking-tight">{m.submit_success_title()}</h1>
 		</div>
 
 		<Card>
@@ -164,39 +166,39 @@
 		{/if}
 
 		<div class="flex gap-2">
-			<Button href={`/plugins/${success.slug}`}>View plugin</Button>
-			<Button variant="outline" onclick={() => (success = null)}>Submit another</Button>
+			<Button href={`/plugins/${success.slug}`}>{m.submit_view_plugin()}</Button>
+			<Button variant="outline" onclick={() => (success = null)}>{m.submit_another()}</Button>
 		</div>
 	</div>
 {:else}
 	<div class="mx-auto max-w-2xl px-6 py-12 space-y-8">
 		<header class="space-y-2">
-			<h1 class="text-3xl font-semibold tracking-tight">Submit a plugin</h1>
-			<p class="text-muted-foreground">Pick a repo you own and Tabularium will install the release webhook for you.</p>
+			<h1 class="text-3xl font-semibold tracking-tight">{m.submit_title()}</h1>
+			<p class="text-muted-foreground">{m.submit_subtitle({ name: branding.name })}</p>
 		</header>
 
 		{#if !submissionsEnabled}
 			<div class="rounded-lg border border-dashed border-border p-8 text-center text-sm text-muted-foreground">
-				New plugin submissions are currently disabled on this instance.
+				{m.submit_disabled()}
 			</div>
 		{:else if loading}
-			<p class="text-sm text-muted-foreground">Loading your repos…</p>
+			<p class="text-sm text-muted-foreground">{m.submit_loading_repos()}</p>
 		{:else if !groups || groups.length === 0}
 			<Card>
 				<CardContent class="pt-6 text-sm text-muted-foreground">
-					No linked identities yet. <a href="/settings" class="text-primary hover:underline">Link one in settings</a>.
+					{m.submit_no_identities()}
 				</CardContent>
 			</Card>
 		{:else}
 			<Card>
 				<CardHeader>
-					<CardTitle class="text-base">Repository</CardTitle>
-					<CardDescription>Switch identity to see other repos.</CardDescription>
+					<CardTitle class="text-base">{m.submit_repository()}</CardTitle>
+					<CardDescription>{m.submit_switch_identity_hint()}</CardDescription>
 				</CardHeader>
 				<CardContent class="space-y-4">
 					<div class="grid gap-2 sm:grid-cols-[1fr_auto] sm:items-end">
 						<div class="space-y-2">
-							<Label for="identity">Identity</Label>
+							<Label for="identity">{m.submit_identity_label()}</Label>
 							<Select id="identity" bind:value={selectedIdentityId}>
 								{#each groups as g (g.identityId)}
 									<option value={g.identityId} disabled={Boolean(g.error) || g.repos.length === 0}>
@@ -212,7 +214,7 @@
 						{#if selectedGroup}
 							<Button variant="ghost" size="sm" href={selectedGroup.reauthUrl}>
 								<RefreshCw class="h-3 w-3" />
-								Re-authorize
+								{m.submit_reauthorize()}
 							</Button>
 						{/if}
 					</div>
@@ -223,10 +225,10 @@
 						<div class="space-y-2">
 							<div class="relative">
 								<Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-								<Input bind:value={search} placeholder="Filter repos by name or description…" class="pl-9" />
+								<Input bind:value={search} placeholder={m.submit_filter_placeholder()} class="pl-9" />
 							</div>
 							{#if filteredRepos.length === 0}
-								<p class="text-xs text-muted-foreground">No repos match your filter.</p>
+								<p class="text-xs text-muted-foreground">{m.submit_no_repos_match()}</p>
 							{:else}
 								<ul class="max-h-80 overflow-y-auto rounded-md border border-border divide-y divide-border">
 									{#each filteredRepos as r (r.url)}
@@ -265,7 +267,7 @@
 									{/each}
 								</ul>
 								<p class="text-xs text-muted-foreground">
-									{filteredRepos.length} of {selectedGroup.repos.length} repos shown.
+									{m.submit_repos_shown({ shown: filteredRepos.length, total: selectedGroup.repos.length })}
 								</p>
 							{/if}
 						</div>
@@ -276,9 +278,8 @@
 			{#if selectedRepo}
 				<Card>
 					<CardHeader>
-						<CardTitle class="text-base">Plugin metadata</CardTitle>
+						<CardTitle class="text-base">{m.submit_metadata_title()}</CardTitle>
 						<CardDescription>
-							Repo:
 							<a
 								href={selectedRepo.url}
 								target="_blank"
@@ -292,15 +293,15 @@
 					<CardContent>
 						<form onsubmit={submit} class="space-y-4">
 							<div class="space-y-2">
-								<Label for="name">Display name</Label>
+								<Label for="name">{m.submit_display_name()}</Label>
 								<Input id="name" bind:value={name} required maxlength={80} />
 							</div>
 							<div class="space-y-2">
-								<Label for="desc">Description</Label>
+								<Label for="desc">{m.submit_description()}</Label>
 								<Textarea id="desc" bind:value={description} required minlength={10} maxlength={300} rows={3} />
 							</div>
 							<Button type="submit" disabled={submitting}>
-								{submitting ? 'Submitting…' : 'Submit plugin'}
+								{submitting ? m.submit_submitting() : m.submit_button()}
 							</Button>
 						</form>
 					</CardContent>

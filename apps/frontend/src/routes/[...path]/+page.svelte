@@ -5,6 +5,7 @@
 	import Button from '$components/ui/Button.svelte'
 	import CmsPage from '$components/CmsPage.svelte'
 	import { eden } from '$lib/eden'
+	import { i18n } from '$lib/stores/i18n.svelte'
 	import type { PageRendered } from '$lib/types'
 
 	const path = $derived('/' + page.params.path)
@@ -16,7 +17,7 @@
 		loading = true
 		notFound = false
 		pageData = null
-		const { data, error } = await eden.api.pages['by-path'].get({ query: { path } })
+		const { data, error } = await eden.api.pages['by-path'].get({ query: { path, locale: i18n.current } })
 		if (error) {
 			if (error.status === 404) notFound = true
 		} else {
@@ -28,6 +29,7 @@
 	onMount(load)
 	$effect(() => {
 		void path
+		void i18n.current
 		load()
 	})
 </script>

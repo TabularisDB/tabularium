@@ -8,14 +8,16 @@
 	import ShieldCheck from '@lucide/svelte/icons/shield-check'
 	import Button from '$components/ui/Button.svelte'
 	import ThemeToggle from '$components/ThemeToggle.svelte'
+	import LanguageSwitcher from '$components/LanguageSwitcher.svelte'
 	import { auth } from '$lib/stores/auth.svelte'
 	import { branding } from '$lib/stores/branding.svelte'
+	import { m } from '$lib/paraglide/messages'
 
-	const navLinks = [
-		{ href: '/plugins', label: 'Plugins' },
-		{ href: '/requests', label: 'Requests' },
-		{ href: '/submit', label: 'Submit' },
-	]
+	const navLinks = $derived([
+		{ href: '/plugins', label: m.nav_plugins() },
+		{ href: '/requests', label: m.nav_requests() },
+		{ href: '/submit', label: m.nav_submit() },
+	])
 
 	function isActive(href: string) {
 		return page.url.pathname === href || page.url.pathname.startsWith(href + '/')
@@ -54,11 +56,12 @@
 		</nav>
 
 		<div class="ml-auto flex items-center gap-2">
+			<LanguageSwitcher />
 			<ThemeToggle />
 			{#if auth.isAdmin}
 				<Button variant="ghost" size="sm" href="/admin">
 					<ShieldCheck class="h-3.5 w-3.5" />
-					Admin
+					{m.nav_admin()}
 				</Button>
 			{/if}
 			{#if auth.user}
@@ -66,13 +69,13 @@
 					<span class="text-muted-foreground">@</span>
 					<span class="font-medium">{auth.user.displayName}</span>
 				</Button>
-				<Button variant="ghost" size="sm" onclick={signOut} aria-label="Sign out" title="Sign out">
+				<Button variant="ghost" size="sm" onclick={signOut} aria-label={m.nav_sign_out()} title={m.nav_sign_out()}>
 					<LogOut class="h-3.5 w-3.5" />
 				</Button>
 			{:else}
 				<Button variant="outline" size="sm" href="/login">
 					<LogIn class="h-3.5 w-3.5" />
-					Sign in
+					{m.nav_sign_in()}
 				</Button>
 			{/if}
 		</div>

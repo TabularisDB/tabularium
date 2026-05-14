@@ -20,15 +20,17 @@ CREATE TABLE "identities" (
 );
 --> statement-breakpoint
 CREATE TABLE "markdown_pages" (
-	"slug" text PRIMARY KEY,
+	"slug" text,
+	"locale" text DEFAULT 'en',
 	"title" text NOT NULL,
 	"content" text NOT NULL,
 	"published" smallint DEFAULT 1 NOT NULL,
-	"path" text NOT NULL UNIQUE,
+	"path" text NOT NULL,
 	"nav_order" integer,
 	"show_in_footer" smallint DEFAULT 0 NOT NULL,
 	"created_at" bigint NOT NULL,
-	"updated_at" bigint NOT NULL
+	"updated_at" bigint NOT NULL,
+	CONSTRAINT "markdown_pages_pkey" PRIMARY KEY("slug","locale")
 );
 --> statement-breakpoint
 CREATE TABLE "plugin_request_votes" (
@@ -132,6 +134,7 @@ CREATE TABLE "users" (
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX "identities_instance_external_unique" ON "identities" ("provider_instance_id","external_id");--> statement-breakpoint
+CREATE UNIQUE INDEX "markdown_pages_path_locale" ON "markdown_pages" ("path","locale");--> statement-breakpoint
 CREATE UNIQUE INDEX "releases_plugin_version" ON "releases" ("plugin_id","version");--> statement-breakpoint
 ALTER TABLE "audit_log" ADD CONSTRAINT "audit_log_actor_id_users_id_fkey" FOREIGN KEY ("actor_id") REFERENCES "users"("id") ON DELETE SET NULL;--> statement-breakpoint
 ALTER TABLE "identities" ADD CONSTRAINT "identities_user_id_users_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE;--> statement-breakpoint

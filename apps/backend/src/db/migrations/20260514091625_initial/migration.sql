@@ -23,15 +23,17 @@ CREATE TABLE `identities` (
 );
 --> statement-breakpoint
 CREATE TABLE `markdown_pages` (
-	`slug` text PRIMARY KEY,
+	`slug` text NOT NULL,
+	`locale` text DEFAULT 'en' NOT NULL,
 	`title` text NOT NULL,
 	`content` text NOT NULL,
 	`published` integer DEFAULT 1 NOT NULL,
-	`path` text NOT NULL UNIQUE,
+	`path` text NOT NULL,
 	`nav_order` integer,
 	`show_in_footer` integer DEFAULT 0 NOT NULL,
 	`created_at` integer NOT NULL,
-	`updated_at` integer NOT NULL
+	`updated_at` integer NOT NULL,
+	CONSTRAINT `markdown_pages_pk` PRIMARY KEY(`slug`, `locale`)
 );
 --> statement-breakpoint
 CREATE TABLE `plugin_request_votes` (
@@ -145,4 +147,5 @@ CREATE TABLE `users` (
 );
 --> statement-breakpoint
 CREATE UNIQUE INDEX `identities_instance_external_unique` ON `identities` (`provider_instance_id`,`external_id`);--> statement-breakpoint
+CREATE UNIQUE INDEX `markdown_pages_path_locale` ON `markdown_pages` (`path`,`locale`);--> statement-breakpoint
 CREATE UNIQUE INDEX `releases_plugin_version` ON `releases` (`plugin_id`,`version`);

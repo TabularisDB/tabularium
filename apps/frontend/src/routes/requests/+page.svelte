@@ -12,6 +12,8 @@
 	import CmsPage from '$components/CmsPage.svelte'
 	import { eden } from '$lib/eden'
 	import { auth } from '$lib/stores/auth.svelte'
+	import { i18n } from '$lib/stores/i18n.svelte'
+	import { m } from '$lib/paraglide/messages'
 	import { toast } from 'svelte-sonner'
 	import type { PluginRequest, PageRendered } from '$lib/types'
 
@@ -43,7 +45,7 @@
 		const featuresRes = await eden.api.features.get()
 		if (featuresRes.data) requestsEnabled = (featuresRes.data as { requestsEnabled: boolean }).requestsEnabled
 		try {
-			const { data, error } = await eden.api.pages['by-path'].get({ query: { path: '/requests' } })
+			const { data, error } = await eden.api.pages['by-path'].get({ query: { path: '/requests', locale: i18n.current } })
 			if (error) throw error
 			cmsOverride = data as PageRendered
 			cmsChecked = true
@@ -106,8 +108,8 @@
 {:else}
 <div class="mx-auto max-w-4xl px-6 py-12 space-y-10">
 	<header class="space-y-2">
-		<h1 class="text-3xl font-semibold tracking-tight">Plugin requests</h1>
-		<p class="text-muted-foreground">Community wishlist. Upvote to signal demand or add a new request.</p>
+		<h1 class="text-3xl font-semibold tracking-tight">{m.requests_title()}</h1>
+		<p class="text-muted-foreground">{m.requests_subtitle()}</p>
 	</header>
 
 	{#if requestsEnabled}
@@ -116,40 +118,40 @@
 				<form onsubmit={createRequest} class="space-y-4">
 					<div class="grid gap-4 sm:grid-cols-2">
 						<div class="space-y-2">
-							<Label for="slug">Slug</Label>
+							<Label for="slug">{m.requests_slug()}</Label>
 							<Input id="slug" bind:value={slug} placeholder="awesome-plugin" pattern="[a-z0-9-]+" required />
 						</div>
 						<div class="space-y-2">
-							<Label for="name">Display name</Label>
+							<Label for="name">{m.requests_name()}</Label>
 							<Input id="name" bind:value={name} placeholder="Awesome Plugin" required />
 						</div>
 					</div>
 					<div class="space-y-2">
-						<Label for="desc">Description</Label>
+						<Label for="desc">{m.requests_description()}</Label>
 						<Textarea id="desc" bind:value={description} placeholder="What should this plugin do?" rows={3} required />
 					</div>
 					<Button type="submit" disabled={creating || !auth.user}>
 						<Plus class="h-4 w-4" />
-						{creating ? 'Creating…' : auth.user ? 'Create request' : 'Sign in to create'}
+						{creating ? m.requests_creating() : auth.user ? m.requests_create() : m.requests_sign_in_to_create()}
 					</Button>
 				</form>
 			</CardContent>
 		</Card>
 	{:else}
 		<div class="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-			New requests are currently disabled. You can still upvote existing entries below.
+			{m.requests_disabled()}
 		</div>
 	{/if}
 
 	<section class="space-y-3">
-		<h2 class="text-xl font-semibold tracking-tight">Open requests</h2>
+		<h2 class="text-xl font-semibold tracking-tight">{m.requests_open()}</h2>
 		{#if loading}
 			{#each Array(4) as _}
 				<Skeleton class="h-20 rounded-md" />
 			{/each}
 		{:else if requests.length === 0}
 			<div class="rounded-lg border border-dashed border-border p-8 text-center text-muted-foreground">
-				No requests yet — be the first to add one.
+				{m.requests_empty()}
 			</div>
 		{:else}
 			{#each requests as r (r.id)}

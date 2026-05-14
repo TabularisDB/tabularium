@@ -7,10 +7,12 @@
 	import Footer from '$components/Footer.svelte'
 	import { auth } from '$lib/stores/auth.svelte'
 	import { branding } from '$lib/stores/branding.svelte'
+	import { i18n } from '$lib/stores/i18n.svelte'
 
 	let { children } = $props()
 
 	onMount(() => {
+		i18n.refresh()
 		auth.refresh()
 		branding.refresh()
 	})

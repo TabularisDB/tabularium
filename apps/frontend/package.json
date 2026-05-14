@@ -9,7 +9,8 @@
 		"preview": "vite preview",
 		"prepare": "svelte-kit sync || echo ''",
 		"check": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
-		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch"
+		"check:watch": "svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+		"machine-translate": "inlang machine translate --project project.inlang"
 	},
 	"devDependencies": {
 		"@tabularium/tsconfig": "workspace:*",
@@ -18,6 +19,8 @@
 		"@sveltejs/vite-plugin-svelte": "^7.0.0",
 		"@tailwindcss/typography": "^0.5.19",
 		"@tailwindcss/vite": "^4.2.2",
+		"@inlang/paraglide-js": "^2.18.0",
+		"@inlang/cli": "^3.0.0",
 		"svelte": "^5.55.2",
 		"svelte-check": "^4.4.6",
 		"tailwindcss": "^4.2.2",

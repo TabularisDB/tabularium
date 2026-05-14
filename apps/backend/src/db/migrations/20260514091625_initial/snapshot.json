@@ -1,7 +1,7 @@
 {
   "version": "7",
   "dialect": "sqlite",
-  "id": "40ae34f1-c6c6-4483-a3d0-44007276de47",
+  "id": "16e3de10-af52-4aa2-a671-d9f2fc267843",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -206,11 +206,21 @@
     },
     {
       "type": "text",
-      "notNull": false,
+      "notNull": true,
       "autoincrement": false,
       "default": null,
       "generated": null,
       "name": "slug",
+      "entityType": "columns",
+      "table": "markdown_pages"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": "'en'",
+      "generated": null,
+      "name": "locale",
       "entityType": "columns",
       "table": "markdown_pages"
     },
@@ -1211,6 +1221,16 @@
     },
     {
       "columns": [
+        "slug",
+        "locale"
+      ],
+      "nameExplicit": false,
+      "name": "markdown_pages_pk",
+      "entityType": "pks",
+      "table": "markdown_pages"
+    },
+    {
+      "columns": [
         "request_id",
         "user_id"
       ],
@@ -1235,15 +1255,6 @@
       "nameExplicit": false,
       "name": "identities_pk",
       "table": "identities",
-      "entityType": "pks"
-    },
-    {
-      "columns": [
-        "slug"
-      ],
-      "nameExplicit": false,
-      "name": "markdown_pages_pk",
-      "table": "markdown_pages",
       "entityType": "pks"
     },
     {
@@ -1339,6 +1350,24 @@
     {
       "columns": [
         {
+          "value": "path",
+          "isExpression": false
+        },
+        {
+          "value": "locale",
+          "isExpression": false
+        }
+      ],
+      "isUnique": true,
+      "where": null,
+      "origin": "manual",
+      "name": "markdown_pages_path_locale",
+      "entityType": "indexes",
+      "table": "markdown_pages"
+    },
+    {
+      "columns": [
+        {
           "value": "plugin_id",
           "isExpression": false
         },
@@ -1353,15 +1382,6 @@
       "name": "releases_plugin_version",
       "entityType": "indexes",
       "table": "releases"
-    },
-    {
-      "columns": [
-        "path"
-      ],
-      "nameExplicit": false,
-      "name": "markdown_pages_path_unique",
-      "entityType": "uniques",
-      "table": "markdown_pages"
     },
     {
       "columns": [

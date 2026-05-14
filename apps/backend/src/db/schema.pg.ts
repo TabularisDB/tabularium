@@ -117,16 +117,20 @@ export const settings = pgTable('settings', {
 })
 
 export const markdownPages = pgTable('markdown_pages', {
-  slug: text('slug').primaryKey(),
+  slug: text('slug').notNull(),
+  locale: text('locale').notNull().default('en'),
   title: text('title').notNull(),
   content: text('content').notNull(),
   published: smallint('published').notNull().default(1),
-  path: text('path').notNull().unique(),
+  path: text('path').notNull(),
   navOrder: integer('nav_order'),
   showInFooter: smallint('show_in_footer').notNull().default(0),
   createdAt: ts('created_at').notNull().$defaultFn(now),
   updatedAt: ts('updated_at').notNull().$defaultFn(now),
-})
+}, (t) => ({
+  pk: primaryKey({ columns: [t.slug, t.locale] }),
+  uniquePathLocale: uniqueIndex('markdown_pages_path_locale').on(t.path, t.locale),
+}))
 
 export const pluginTransfers = pgTable('plugin_transfers', {
   id: text('id').primaryKey(),

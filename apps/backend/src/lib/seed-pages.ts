@@ -52,6 +52,7 @@ export async function seedDefaultPages(): Promise<{ inserted: number; skipped: n
     try {
       await db.insert(markdownPages).values({
         slug: p.slug,
+        locale: 'en',
         path: p.path,
         title: p.title,
         content: p.content,

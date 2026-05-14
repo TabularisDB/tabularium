@@ -112,17 +112,20 @@ export const settings = sqliteTable('settings', {
 })
 
 export const markdownPages = sqliteTable('markdown_pages', {
-  slug: text('slug').primaryKey(),
+  slug: text('slug').notNull(),
+  locale: text('locale').notNull().default('en'),
   title: text('title').notNull(),
-  content: text('content').notNull(), // raw markdown (may include <tabularium-widget …/>)
+  content: text('content').notNull(),
   published: integer('published').notNull().default(1),
-  // Public route — must start with `/`. `/` is the homepage override.
-  path: text('path').notNull().unique(),
+  path: text('path').notNull(),
   navOrder: integer('nav_order'),
   showInFooter: integer('show_in_footer').notNull().default(0),
   createdAt: integer('created_at').notNull().$defaultFn(now),
   updatedAt: integer('updated_at').notNull().$defaultFn(now),
-})
+}, (t) => ({
+  pk: primaryKey({ columns: [t.slug, t.locale] }),
+  uniquePathLocale: uniqueIndex('markdown_pages_path_locale').on(t.path, t.locale),
+}))
 
 export const pluginTransfers = sqliteTable('plugin_transfers', {
   id: text('id').primaryKey(),

@@ -11,6 +11,7 @@
 	import PluginCard from '$components/PluginCard.svelte'
 	import CmsPage from '$components/CmsPage.svelte'
 	import { eden } from '$lib/eden'
+	import { i18n } from '$lib/stores/i18n.svelte'
 	import type { Plugin, PluginListResponse, PageRendered } from '$lib/types'
 
 	let cmsOverride = $state<PageRendered | null>(null)
@@ -32,7 +33,7 @@
 	// Sync from URL on first mount so deep-links work.
 	onMount(async () => {
 		try {
-			const { data, error } = await eden.api.pages['by-path'].get({ query: { path: '/plugins' } })
+			const { data, error } = await eden.api.pages['by-path'].get({ query: { path: '/plugins', locale: i18n.current } })
 			if (error) throw error
 			cmsOverride = data as PageRendered
 			cmsChecked = true

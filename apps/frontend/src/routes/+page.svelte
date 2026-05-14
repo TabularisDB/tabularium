@@ -11,6 +11,7 @@
 	import CmsPage from '$components/CmsPage.svelte'
 	import { eden } from '$lib/eden'
 	import { branding } from '$lib/stores/branding.svelte'
+	import { i18n } from '$lib/stores/i18n.svelte'
 	import type { Plugin, PluginListResponse, PageRendered } from '$lib/types'
 
 	let customHomepage = $state<PageRendered | null>(null)
@@ -23,7 +24,7 @@
 
 	onMount(async () => {
 		try {
-			const { data, error } = await eden.api.pages['by-path'].get({ query: { path: '/' } })
+			const { data, error } = await eden.api.pages['by-path'].get({ query: { path: '/', locale: i18n.current } })
 			if (error) throw error
 			customHomepage = data as PageRendered
 			homepageChecked = true

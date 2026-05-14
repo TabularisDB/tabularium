@@ -117,16 +117,20 @@ export const settings = mysqlTable('settings', {
 })
 
 export const markdownPages = mysqlTable('markdown_pages', {
-  slug: varchar('slug', { length: 80 }).primaryKey(),
+  slug: varchar('slug', { length: 80 }).notNull(),
+  locale: varchar('locale', { length: 16 }).notNull().default('en'),
   title: varchar('title', { length: 120 }).notNull(),
   content: text('content').notNull(),
   published: tinyint('published').notNull().default(1),
-  path: varchar('path', { length: 200 }).notNull().unique(),
+  path: varchar('path', { length: 200 }).notNull(),
   navOrder: int('nav_order'),
   showInFooter: tinyint('show_in_footer').notNull().default(0),
   createdAt: ts('created_at').notNull().$defaultFn(now),
   updatedAt: ts('updated_at').notNull().$defaultFn(now),
-})
+}, (t) => ({
+  pk: primaryKey({ columns: [t.slug, t.locale] }),
+  uniquePathLocale: uniqueIndex('markdown_pages_path_locale').on(t.path, t.locale),
+}))
 
 export const pluginTransfers = mysqlTable('plugin_transfers', {
   id: id('id').primaryKey(),

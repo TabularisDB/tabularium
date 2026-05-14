@@ -21,7 +21,8 @@ CREATE TABLE `identities` (
 );
 --> statement-breakpoint
 CREATE TABLE `markdown_pages` (
-	`slug` varchar(80) PRIMARY KEY,
+	`slug` varchar(80) NOT NULL,
+	`locale` varchar(16) NOT NULL DEFAULT 'en',
 	`title` varchar(120) NOT NULL,
 	`content` text NOT NULL,
 	`published` tinyint NOT NULL DEFAULT 1,
@@ -30,7 +31,8 @@ CREATE TABLE `markdown_pages` (
 	`show_in_footer` tinyint NOT NULL DEFAULT 0,
 	`created_at` bigint NOT NULL,
 	`updated_at` bigint NOT NULL,
-	CONSTRAINT `path_unique` UNIQUE INDEX(`path`)
+	CONSTRAINT PRIMARY KEY(`slug`,`locale`),
+	CONSTRAINT `markdown_pages_path_locale` UNIQUE INDEX(`path`,`locale`)
 );
 --> statement-breakpoint
 CREATE TABLE `plugin_request_votes` (
