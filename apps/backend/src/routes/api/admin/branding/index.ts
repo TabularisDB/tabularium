@@ -1,8 +1,27 @@
 import { Elysia, t } from 'elysia'
 import { adminMiddleware } from '$middleware/admin'
-import { getBranding, defaultBranding } from '$lib/branding'
+import { getLocalizedBranding, defaultBranding } from '$lib/branding'
 import { setSetting, deleteSetting, hasSetting } from '$lib/settings'
+import { SUPPORTED_LOCALES, type Locale } from '$lib/i18n'
 import { recordAudit, actorFromAdmin } from '$lib/audit'
+
+const localeSchema = t.Union([
+  t.Literal('en'),
+  t.Literal('de'),
+  t.Literal('es'),
+  t.Literal('fr'),
+  t.Literal('it'),
+  t.Literal('zh-CN'),
+])
+
+const translationMapSchema = t.Object({
+  en: t.Optional(t.Nullable(t.String())),
+  de: t.Optional(t.Nullable(t.String())),
+  es: t.Optional(t.Nullable(t.String())),
+  fr: t.Optional(t.Nullable(t.String())),
+  it: t.Optional(t.Nullable(t.String())),
+  'zh-CN': t.Optional(t.Nullable(t.String())),
+})
 
 const brandingSchema = t.Object({
   name: t.String(),
@@ -16,6 +35,14 @@ const brandingSchema = t.Object({
   analyticsScript: t.Nullable(t.String()),
   allowIndexing: t.Boolean(),
 })
+
+const localizedBrandingSchema = t.Intersect([
+  brandingSchema,
+  t.Object({
+    taglineTranslations: t.Record(localeSchema, t.String()),
+    footerTextTranslations: t.Record(localeSchema, t.String()),
+  }),
+])
 
 const HEX_RE = /^#[0-9a-fA-F]{6}$/
 
@@ -42,18 +69,28 @@ type BrandingPatch = {
   footerText?: string | null
   analyticsScript?: string | null
   allowIndexing?: boolean
+  taglineTranslations?: Partial<Record<Locale, string | null>>
+  footerTextTranslations?: Partial<Record<Locale, string | null>>
+}
+
+async function writeTranslations(baseKey: string, map: Partial<Record<Locale, string | null>>) {
+  for (const locale of SUPPORTED_LOCALES) {
+    if (!(locale in map)) continue
+    const key = `${baseKey}.${locale}`
+    const value = map[locale]
+    if (value === null || value === undefined || value === '') {
+      if (hasSetting(key)) await deleteSetting(key)
+    } else {
+      await setSetting(key, String(value))
+    }
+  }
 }
 
 export default new Elysia()
   .use(adminMiddleware)
-  .get('/', () => ({ current: getBranding(), defaults: defaultBranding() }), {
-    detail: {
-      tags: ['Admin'],
-      summary: 'Get current + default branding',
-      operationId: 'getAdminBranding',
-      security: [{ bearerAuth: [] }, { cookieAuth: [] }],
-    },
-    response: { 200: t.Object({ current: brandingSchema, defaults: brandingSchema }) },
+  .get('/', () => ({ current: getLocalizedBranding(), defaults: defaultBranding() }), {
+    detail: { tags: ['Admin'], summary: 'Get current + default branding (with translation maps)', operationId: 'getAdminBranding', security: [{ bearerAuth: [] }, { cookieAuth: [] }] },
+    response: { 200: t.Object({ current: localizedBrandingSchema, defaults: brandingSchema }) },
   })
   .put('/', async ({ body, set, admin, request }) => {
     for (const hex of ['primaryHex', 'accentHex', 'successHex'] as const) {
@@ -66,7 +103,7 @@ export default new Elysia()
     const patch = body as BrandingPatch
     for (const { input, setting } of STRING_FIELDS) {
       const value = patch[input as keyof BrandingPatch]
-      if (value === undefined) continue
+      if (value === undefined || typeof value === 'object') continue
       if (value === null || value === '') {
         if (hasSetting(setting)) await deleteSetting(setting)
         continue
@@ -76,20 +113,20 @@ export default new Elysia()
     if (body.allowIndexing !== undefined) {
       await setSetting('branding.allow_indexing', body.allowIndexing ? '1' : '0')
     }
+    if (patch.taglineTranslations) await writeTranslations('branding.tagline', patch.taglineTranslations)
+    if (patch.footerTextTranslations) await writeTranslations('branding.footer_text', patch.footerTextTranslations)
     await recordAudit({
       ...actorFromAdmin(admin, request),
       action: 'branding.update',
       target: 'branding',
       meta: { fields: Object.keys(body) },
     })
-    return { ok: true, branding: getBranding() }
+    return { ok: true, branding: getLocalizedBranding() }
   }, {
     detail: {
       tags: ['Admin'],
       summary: 'Update branding (whitelabel)',
-      description:
-        'Partial update. Pass `null` or empty string to reset a field to its default. ' +
-        '`*Hex` must be `#RRGGBB`. `analyticsScript` is HTML — only set this to trusted snippets (Plausible/Umami) since it is embedded verbatim.',
+      description: 'Partial update. `tagline` and `footerText` set the default-locale value; `taglineTranslations` / `footerTextTranslations` set per-locale overrides (pass null/empty to clear).',
       operationId: 'updateBranding',
       security: [{ bearerAuth: [] }, { cookieAuth: [] }],
     },
@@ -104,9 +141,11 @@ export default new Elysia()
       footerText: t.Optional(t.Nullable(t.String({ maxLength: 1000 }))),
       analyticsScript: t.Optional(t.Nullable(t.String({ maxLength: 4000 }))),
       allowIndexing: t.Optional(t.Boolean()),
+      taglineTranslations: t.Optional(translationMapSchema),
+      footerTextTranslations: t.Optional(translationMapSchema),
     }),
     response: {
-      200: t.Object({ ok: t.Boolean(), branding: brandingSchema }),
+      200: t.Object({ ok: t.Boolean(), branding: localizedBrandingSchema }),
       400: t.Object({ error: t.String() }),
     },
   })

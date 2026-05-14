@@ -1,5 +1,15 @@
 import { Elysia, t } from 'elysia'
 import { getBranding } from '$lib/branding'
+import { SUPPORTED_LOCALES, type Locale } from '$lib/i18n'
+
+const localeSchema = t.Union([
+  t.Literal('en'),
+  t.Literal('de'),
+  t.Literal('es'),
+  t.Literal('fr'),
+  t.Literal('it'),
+  t.Literal('zh-CN'),
+])
 
 const brandingSchema = t.Object({
   name: t.String(),
@@ -15,13 +25,18 @@ const brandingSchema = t.Object({
 })
 
 export default new Elysia()
-  .get('/', () => getBranding(), {
+  .get('/', ({ query }) => {
+    const locale = (typeof query.locale === 'string' && (SUPPORTED_LOCALES as readonly string[]).includes(query.locale))
+      ? (query.locale as Locale)
+      : undefined
+    return getBranding(locale)
+  }, {
     detail: {
       tags: ['Plugins'],
       summary: 'Get instance branding (whitelabel)',
-      description:
-        'Public read-only endpoint. Frontend reads this at boot to render the custom name, tagline, brand colors, logo, footer text, and any analytics snippet.',
+      description: 'Public read-only endpoint. Pass `?locale=` to fetch the tagline/footer in a specific language (falls back to default locale).',
       operationId: 'getBranding',
     },
+    query: t.Object({ locale: t.Optional(localeSchema) }),
     response: { 200: brandingSchema },
   })

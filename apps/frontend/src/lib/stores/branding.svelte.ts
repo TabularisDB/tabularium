@@ -1,4 +1,5 @@
 import { eden } from '$lib/eden'
+import { i18n } from '$lib/stores/i18n.svelte'
 
 export type Branding = {
 	name: string
@@ -73,7 +74,7 @@ function createBrandingStore() {
 
 	async function refresh() {
 		try {
-			const { data, error } = await eden.api.branding.get()
+			const { data, error } = await eden.api.branding.get({ query: { locale: i18n.current } })
 			if (error) throw error
 			const fresh = data as Branding
 			state = fresh
