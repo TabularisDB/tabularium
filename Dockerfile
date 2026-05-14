@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7
 
-FROM oven/bun:1.3-alpine AS build
+FROM docker.io/oven/bun:1.3-alpine AS build
 
 WORKDIR /repo
 
@@ -17,7 +17,7 @@ COPY . .
 
 RUN cd apps/frontend && bun run build
 
-FROM oven/bun:1.3-alpine AS prod-deps
+FROM docker.io/oven/bun:1.3-alpine AS prod-deps
 
 WORKDIR /repo
 
@@ -71,7 +71,7 @@ RUN printf '%s\n' \
             node_modules/.bun/prettier@*/node_modules/prettier/standalone.js \
             node_modules/.bun/prettier@*/node_modules/prettier/standalone.mjs
 
-FROM oven/bun:1.3-alpine AS runtime
+FROM docker.io/oven/bun:1.3-alpine AS runtime
 
 WORKDIR /app
 
