@@ -36,6 +36,7 @@
 
 	let newSlug = $state('')
 	let newTitle = $state('')
+	let newPath = $state('')
 
 	async function load() {
 		loading = true
@@ -56,7 +57,7 @@
 		try {
 			const { error } = await eden.api.admin.pages.post({
 				slug: newSlug,
-				path: `/pages/${newSlug}`,
+				path: newPath.trim() || undefined,
 				title: newTitle,
 				content: `# ${newTitle}\n\nWrite your page in Markdown.\n`,
 				published: false,
@@ -65,6 +66,7 @@
 			toast.success(m.admin_pages_created())
 			newSlug = ''
 			newTitle = ''
+			newPath = ''
 			await load()
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : m.admin_pages_create_failed())
@@ -151,23 +153,20 @@
 	<CardContent>
 		<form onsubmit={create} class="space-y-4 max-w-md">
 			<div class="grid gap-2">
-				<Label for="new-slug">Slug</Label>
-				<div class="flex items-stretch rounded-md border border-input bg-card overflow-hidden focus-within:ring-2 focus-within:ring-ring">
-					<span class="inline-flex items-center px-2 text-xs text-muted-foreground font-mono bg-muted/40 border-r border-input">/pages/</span>
-					<input
-						id="new-slug"
-						bind:value={newSlug}
-						placeholder="changelog"
-						pattern="[a-z0-9][a-z0-9-]*"
-						required
-						class="flex-1 bg-transparent px-2 text-sm outline-none"
-					/>
-				</div>
-				<p class="text-xs text-muted-foreground">Lowercase letters, digits, hyphens. Published at <code class="font-mono">/pages/{newSlug || '<slug>'}</code>.</p>
+				<Label for="new-slug">{m.admin_pages_internal_slug()}</Label>
+				<Input id="new-slug" bind:value={newSlug} placeholder="terms" pattern="[a-z0-9][a-z0-9-]*" required />
+				<p class="text-xs text-muted-foreground">{m.admin_pages_internal_slug_note()}</p>
 			</div>
 			<div class="grid gap-2">
 				<Label for="new-title">{m.admin_pages_title_field()}</Label>
 				<Input id="new-title" bind:value={newTitle} required maxlength={120} />
+			</div>
+			<div class="grid gap-2">
+				<Label for="new-path">{m.admin_pages_public_path()}</Label>
+				<Input id="new-path" bind:value={newPath} placeholder="/about" />
+				<p class="text-xs text-muted-foreground">
+					{m.admin_pages_public_path_note_prefix()} <code class="font-mono">/pages/&lt;slug&gt;</code>{m.admin_pages_public_path_note_middle()} <code class="font-mono">/</code> {m.admin_pages_public_path_note_suffix()}
+				</p>
 			</div>
 			<Button type="submit" disabled={busy} size="sm">
 				<Plus class="h-3.5 w-3.5" />

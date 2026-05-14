@@ -145,12 +145,12 @@
 
 			<div class="grid gap-2">
 				<Label for="path">{m.admin_page_edit_path()}</Label>
-				<Input id="path" bind:value={path} placeholder="/pages/your-slug" readonly={pathLocked} />
+				<Input id="path" bind:value={path} placeholder="/about" readonly={pathLocked} />
 				<p class="text-xs text-muted-foreground">
 					{#if pathLocked}
 						Built-in page — path is fixed.
 					{:else}
-						Admin-created pages live under <code class="font-mono">/pages/&lt;slug&gt;</code>.
+						Public URL where this page is served. Any non-reserved path is allowed.
 					{/if}
 				</p>
 			</div>

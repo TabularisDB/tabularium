@@ -4,7 +4,7 @@ import { adminMiddleware } from '$middleware/admin'
 import { db } from '$db'
 import { markdownPages } from '$db/schema'
 import { recordAudit, actorFromAdmin } from '$lib/audit'
-import { validateCustomPath } from '$lib/page-path'
+import { validatePath } from '$lib/page-path'
 import { getI18nConfig, SUPPORTED_LOCALES, type Locale } from '$lib/i18n'
 
 const SLUG_RE = /^[a-z0-9](?:[a-z0-9-]{0,38}[a-z0-9])?$/
@@ -76,7 +76,7 @@ export default new Elysia()
       return { error: `Unsupported locale '${locale}'` }
     }
     const pathInput = body.path ?? `/pages/${body.slug}`
-    const pathCheck = validateCustomPath(pathInput)
+    const pathCheck = validatePath(pathInput)
     if (!pathCheck.ok) {
       set.status = 400
       return { error: pathCheck.error }
@@ -107,7 +107,7 @@ export default new Elysia()
     detail: {
       tags: ['Admin'],
       summary: 'Create a markdown page',
-      description: 'Creates the default-locale row unless `locale` is given. Path must match `/pages/<slug>`.',
+      description: 'Creates the default-locale row unless `locale` is given. Pass `path` to mount at any non-reserved URL.',
       operationId: 'createPage',
       security: [{ bearerAuth: [] }, { cookieAuth: [] }],
     },

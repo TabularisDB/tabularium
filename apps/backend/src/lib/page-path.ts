@@ -5,7 +5,6 @@ const RESERVED_PATHS = new Set([
 ])
 
 const PATH_RE = /^\/[a-z0-9][a-z0-9/_-]*$|^\/$/i
-const CUSTOM_PATH_RE = /^\/pages\/[a-z0-9][a-z0-9-]*$/
 
 export function normalizePath(input: string): string {
   let p = input.trim()
@@ -26,15 +25,6 @@ export function validatePath(input: string): { ok: true; path: string } | { ok: 
   }
   if (p === '/') {
     return { ok: false, error: 'path `/` is reserved' }
-  }
-  return { ok: true, path: p }
-}
-
-export function validateCustomPath(input: string): { ok: true; path: string } | { ok: false; error: string } {
-  const p = normalizePath(input)
-  if (p.length > 200) return { ok: false, error: 'path too long (max 200 chars)' }
-  if (!CUSTOM_PATH_RE.test(p)) {
-    return { ok: false, error: 'admin-created pages must have a path matching `/pages/<slug>` (lowercase letters, digits, hyphens)' }
   }
   return { ok: true, path: p }
 }

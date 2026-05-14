@@ -4,7 +4,7 @@ import { adminMiddleware } from '$middleware/admin'
 import { db } from '$db'
 import { markdownPages } from '$db/schema'
 import { recordAudit, actorFromAdmin } from '$lib/audit'
-import { validateCustomPath, isSeededPath } from '$lib/page-path'
+import { validatePath, isSeededPath } from '$lib/page-path'
 import { getI18nConfig, SUPPORTED_LOCALES, type Locale } from '$lib/i18n'
 
 const localeSchema = t.Union([
@@ -136,7 +136,7 @@ export default new Elysia()
         set.status = 400
         return { error: 'cannot change the path of a built-in page (about/privacy/terms)' }
       }
-      const check = validateCustomPath(body.path)
+      const check = validatePath(body.path)
       if (!check.ok) {
         set.status = 400
         return { error: check.error }
