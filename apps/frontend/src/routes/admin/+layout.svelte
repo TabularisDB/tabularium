@@ -8,6 +8,7 @@
 	import UsersRound from '@lucide/svelte/icons/users-round'
 	import Boxes from '@lucide/svelte/icons/boxes'
 	import Palette from '@lucide/svelte/icons/palette'
+	import House from '@lucide/svelte/icons/house'
 	import SlidersHorizontal from '@lucide/svelte/icons/sliders-horizontal'
 	import ServerCog from '@lucide/svelte/icons/server-cog'
 	import ShieldAlert from '@lucide/svelte/icons/shield-alert'
@@ -62,6 +63,7 @@
 		{ href: '/admin/pages', label: m.admin_nav_pages(), icon: FileText, badge: 0 },
 		{ href: '/admin/infra', label: m.admin_nav_infrastructure(), icon: ServerCog, badge: 0 },
 		{ href: '/admin/branding', label: m.admin_nav_branding(), icon: Palette, badge: 0 },
+		{ href: '/admin/home', label: m.admin_nav_home(), icon: House, badge: 0 },
 		{ href: '/admin/instance', label: m.admin_nav_instance(), icon: SlidersHorizontal, badge: 0 },
 		{ href: '/admin/features', label: m.admin_nav_features(), icon: ToggleRight, badge: 0 },
 		{ href: '/admin/kinds', label: m.admin_nav_kinds(), icon: Tags, badge: 0 },
