@@ -15,8 +15,9 @@ Un directorio de plugins (o cualquier artefacto que se publique por releases) co
 ## Características
 
 - 🧩 **Envío multi-proveedor** — GitHub, GitLab, Gitea (cualquier instancia)
-- 🪄 **Asistente de instalación** — arranque en frío sin base de datos, contraseña bootstrap impresa en el log
+- 🪄 **Asistente de instalación** — formulario estructurado de BD (host/puerto/usuario/contraseña + probar conexión), contraseña bootstrap impresa en el log, autologin en `/admin` tras el reinicio
 - 📝 **CMS integrado** — páginas markdown con widgets y traducciones por idioma
+- 🏷 **Tipos de plugin** — taxonomía definida por el admin (temas, snippets, plantillas SQL, …) que las apps consumidoras usan como filtros
 - 🎨 **Branding** — nombre, colores, logo, favicon, analítica, política de indexado
 - 🌍 **6 idiomas** — English, Deutsch, Español, Français, Italiano, 中文 — configurable por admin
 - 🗄 **Multi-dialecto** — SQLite, Postgres o MySQL (auto-detectado vía `DATABASE_URL`)

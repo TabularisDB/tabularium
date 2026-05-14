@@ -15,8 +15,9 @@ A directory of plugins (or any release-shipping artefact) with a web UI, an OAut
 ## Features
 
 - 🧩 **Multi-provider submission** — GitHub, GitLab, Gitea (any instance)
-- 🪄 **Install wizard** — cold-start without a database, bootstrap admin password printed to logs
+- 🪄 **Install wizard** — structured DB form (host/port/user/pw + test-connection), bootstrap admin password printed to logs, auto-redirect into `/admin` already signed-in after restart
 - 📝 **Built-in CMS** — markdown pages with widgets, translations per locale
+- 🏷 **Plugin kinds** — admin-defined taxonomy (Themes, Snippets, SQL Templates, …) consumed by end-user apps as filter chips
 - 🎨 **Branding** — name, colours, logo, favicon, analytics, robots policy
 - 🌍 **6 UI languages** — English, Deutsch, Español, Français, Italiano, 中文 — admin-configurable
 - 🗄 **Multi-dialect** — SQLite, Postgres, or MySQL (auto-detected from `DATABASE_URL`)

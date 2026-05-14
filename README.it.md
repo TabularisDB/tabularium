@@ -15,8 +15,9 @@ Una directory di plugin (o di qualsiasi artefatto distribuito via release) con U
 ## Caratteristiche
 
 - 🧩 **Submission multi-provider** — GitHub, GitLab, Gitea (qualsiasi istanza)
-- 🪄 **Wizard di installazione** — avvio a freddo senza database, password bootstrap stampata nei log
+- 🪄 **Wizard di installazione** — form DB strutturato (host/porta/utente/password + test di connessione), password bootstrap nei log, login automatico in `/admin` dopo il riavvio
 - 📝 **CMS integrato** — pagine markdown con widget e traduzioni per lingua
+- 🏷 **Tipi di plugin** — tassonomia definita dall'admin (temi, snippet, template SQL, …) consumata dalle app utente come filtri
 - 🎨 **Branding** — nome, colori, logo, favicon, analytics, policy di indicizzazione
 - 🌍 **6 lingue** — English, Deutsch, Español, Français, Italiano, 中文 — configurabile dall'admin
 - 🗄 **Multi-dialetto** — SQLite, Postgres o MySQL (auto-rilevato da `DATABASE_URL`)

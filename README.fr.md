@@ -15,8 +15,9 @@ Un annuaire de plugins (ou tout artefact diffusé via releases) avec interface w
 ## Fonctionnalités
 
 - 🧩 **Soumission multi-fournisseurs** — GitHub, GitLab, Gitea (toute instance)
-- 🪄 **Assistant d'installation** — démarrage à froid sans base de données, mot de passe bootstrap dans les logs
+- 🪄 **Assistant d'installation** — formulaire de BDD structuré (hôte/port/utilisateur/mot de passe + test de connexion), mot de passe bootstrap dans les logs, connexion automatique à `/admin` après redémarrage
 - 📝 **CMS intégré** — pages markdown avec widgets et traductions par langue
+- 🏷 **Types de plugin** — taxonomie définie par l'admin (thèmes, snippets, modèles SQL, …) consommée par les apps clientes comme filtres
 - 🎨 **Branding** — nom, couleurs, logo, favicon, analytics, politique d'indexation
 - 🌍 **6 langues** — English, Deutsch, Español, Français, Italiano, 中文 — configurable par l'admin
 - 🗄 **Multi-dialecte** — SQLite, Postgres ou MySQL (auto-détecté via `DATABASE_URL`)

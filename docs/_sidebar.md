@@ -6,6 +6,7 @@
 - Admin
   - [Providers](admin/providers.md)
   - [Plugins](admin/plugins.md)
+  - [Kinds](admin/kinds.md)
   - [Users](admin/users.md)
   - [Pages (CMS)](admin/pages.md)
   - [Branding](admin/branding.md)

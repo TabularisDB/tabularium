@@ -22,3 +22,5 @@ The admin plugin table covers every plugin in the registry, regardless of status
 ## Webhooks
 
 If a webhook fails to install during submission, the admin Refresh button installs it again using the owner's current access token.
+
+Kinds (Themes, Snippets, SQL Templates, …) are managed separately under [Kinds](kinds.md). They surface as a tag on the plugin row and as a facet on the public catalog.

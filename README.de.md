@@ -15,8 +15,9 @@ Ein Verzeichnis für Plugins (oder beliebige Release-Artefakte) mit Web-UI, OAut
 ## Features
 
 - 🧩 **Multi-Provider-Submission** — GitHub, GitLab, Gitea (beliebige Instanzen)
-- 🪄 **Install-Wizard** — Kaltstart ohne Datenbank, Bootstrap-Admin-Passwort im Log
+- 🪄 **Install-Wizard** — strukturiertes DB-Formular (Host/Port/User/PW + Test-Connection), Bootstrap-Passwort im Log, nach dem Restart automatischer Login in `/admin`
 - 📝 **Integriertes CMS** — Markdown-Seiten mit Widgets, Übersetzungen pro Sprache
+- 🏷 **Plugin-Arten** — admin-definierte Taxonomie (Themes, Snippets, SQL-Templates, …), die Endnutzer-Apps als Filter-Chips konsumieren
 - 🎨 **Branding** — Name, Farben, Logo, Favicon, Analytics, Indexierungs-Policy
 - 🌍 **6 UI-Sprachen** — English, Deutsch, Español, Français, Italiano, 中文 — vom Admin konfigurierbar
 - 🗄 **Multi-Dialekt** — SQLite, Postgres oder MySQL (auto-erkannt aus `DATABASE_URL`)

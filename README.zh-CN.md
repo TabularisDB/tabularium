@@ -15,8 +15,9 @@
 ## 特性
 
 - 🧩 **多 Provider 提交** — GitHub、GitLab、Gitea(支持任意自建实例)
-- 🪄 **安装向导** — 冷启动无需数据库,bootstrap 管理员密码打印到日志
+- 🪄 **安装向导** — 冷启动无需数据库,结构化数据库表单 + 连接测试,完成后自动登录并跳转
 - 📝 **内建 CMS** — 支持 widget 的 Markdown 页面,按语言独立翻译
+- 🏷 **插件类型** — 管理员可维护的分类法(Themes、Snippets、SQL 模板),在公共目录上以 facet 形式呈现
 - 🎨 **品牌定制** — 名称、配色、Logo、favicon、统计脚本、索引策略
 - 🌍 **6 种语言** — English、Deutsch、Español、Français、Italiano、中文 — 管理员可配置
 - 🗄 **多方言支持** — SQLite、Postgres 或 MySQL(从 `DATABASE_URL` 自动识别)

@@ -39,11 +39,12 @@ First boot prints a banner:
 
 Open the URL, sign in with the bootstrap creds, walk through the wizard. The wizard:
 
-1. Asks for the database URL (writes it to `data/config.json`).
-2. Runs the migrations for the chosen dialect.
+1. Asks for the database — pick the dialect, fill in host/port/user/password/database (or a file path for SQLite). A "Test connection" button verifies the URL before submit.
+2. Writes `data/config.json` and runs the migrations for the chosen dialect.
 3. Seeds default CMS pages (home, plugins, requests, about, terms, privacy) as English.
 4. Promotes the bootstrap account to a real admin row in the database.
-5. Restarts the backend in "installed" mode.
+5. Issues an admin auth cookie, restarts the backend in "installed" mode.
+6. Polls `/api/init/status` until `mode === 'normal'`, then auto-redirects to `/admin` — you're already signed in.
 
 You can pre-set the bootstrap password via `BOOTSTRAP_PASSWORD=` in `.env`.
 
