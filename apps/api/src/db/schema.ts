@@ -104,6 +104,14 @@ export const pluginRequestVotes = sqliteTable('plugin_request_votes', {
   pk: primaryKey({ columns: [t.requestId, t.userId] }),
 }))
 
+export const pluginRequestClaims = sqliteTable('plugin_request_claims', {
+  requestId: text('request_id').notNull().references(() => pluginRequests.id, { onDelete: 'cascade' }),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  createdAt: integer('created_at').notNull().$defaultFn(now),
+}, (t) => ({
+  pk: primaryKey({ columns: [t.requestId, t.userId] }),
+}))
+
 export const settings = sqliteTable('settings', {
   key: text('key').primaryKey(),
   value: text('value').notNull(),

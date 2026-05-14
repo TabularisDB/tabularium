@@ -109,6 +109,14 @@ export const pluginRequestVotes = pgTable('plugin_request_votes', {
   pk: primaryKey({ columns: [t.requestId, t.userId] }),
 }))
 
+export const pluginRequestClaims = pgTable('plugin_request_claims', {
+  requestId: text('request_id').notNull().references(() => pluginRequests.id, { onDelete: 'cascade' }),
+  userId: text('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  createdAt: ts('created_at').notNull().$defaultFn(now),
+}, (t) => ({
+  pk: primaryKey({ columns: [t.requestId, t.userId] }),
+}))
+
 export const settings = pgTable('settings', {
   key: text('key').primaryKey(),
   value: text('value').notNull(),

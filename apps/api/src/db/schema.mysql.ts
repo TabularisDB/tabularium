@@ -109,6 +109,14 @@ export const pluginRequestVotes = mysqlTable('plugin_request_votes', {
   pk: primaryKey({ columns: [t.requestId, t.userId] }),
 }))
 
+export const pluginRequestClaims = mysqlTable('plugin_request_claims', {
+  requestId: id('request_id').notNull().references(() => pluginRequests.id, { onDelete: 'cascade' }),
+  userId: id('user_id').notNull().references(() => users.id, { onDelete: 'cascade' }),
+  createdAt: ts('created_at').notNull().$defaultFn(now),
+}, (t) => ({
+  pk: primaryKey({ columns: [t.requestId, t.userId] }),
+}))
+
 export const settings = mysqlTable('settings', {
   key: varchar('key', { length: 120 }).primaryKey(),
   value: text('value').notNull(),

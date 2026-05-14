@@ -21,10 +21,15 @@ export const relations = defineRelations(schema, (r) => ({
   },
   pluginRequests: {
     votes: r.many.pluginRequestVotes(),
+    claims: r.many.pluginRequestClaims(),
   },
   pluginRequestVotes: {
     request: r.one.pluginRequests({ from: r.pluginRequestVotes.requestId, to: r.pluginRequests.id }),
     user: r.one.users({ from: r.pluginRequestVotes.userId, to: r.users.id }),
+  },
+  pluginRequestClaims: {
+    request: r.one.pluginRequests({ from: r.pluginRequestClaims.requestId, to: r.pluginRequests.id }),
+    user: r.one.users({ from: r.pluginRequestClaims.userId, to: r.users.id }),
   },
   settings: {},
   markdownPages: {},
