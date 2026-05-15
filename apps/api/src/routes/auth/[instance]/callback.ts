@@ -159,13 +159,17 @@ export default new Elysia()
         })
 
         if (linkUserId) {
-          const remaining = await db.query.identities.findMany({
-            where: { userId: linkUserId },
-            columns: { id: true },
-          })
-          if (remaining.length === 1) {
-            const deleted = await db.delete(rootCredentials).where(eq(rootCredentials.userId, linkUserId))
-            if (deleted) log.info({ userId: linkUserId }, 'root_credentials revoked after first OAuth link')
+          const { getSetting } = await import('$lib/settings')
+          const persist = getSetting('auth.email_recovery_persist') === '1'
+          if (!persist) {
+            const remaining = await db.query.identities.findMany({
+              where: { userId: linkUserId },
+              columns: { id: true },
+            })
+            if (remaining.length === 1) {
+              const deleted = await db.delete(rootCredentials).where(eq(rootCredentials.userId, linkUserId))
+              if (deleted) log.info({ userId: linkUserId }, 'root_credentials revoked after first OAuth link')
+            }
           }
         }
       }

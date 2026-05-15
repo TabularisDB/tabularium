@@ -48,6 +48,13 @@
 	let saving = $state(false)
 	let savingManifest = $state(false)
 
+	let recoveryPersist = $state(false)
+	let recoveryHasCredentials = $state(false)
+	let recoveryEmail = $state<string | null>(null)
+	let newRecoveryEmail = $state('')
+	let newRecoveryPassword = $state('')
+	let savingRecovery = $state(false)
+
 	const FILE_RE = /^\.?[a-z][a-z0-9-]*(\.(yaml|yml|json))?$/
 
 	async function load() {
@@ -61,6 +68,12 @@
 			manifestSchemaUrl = res.manifest.schemaUrlOverridden ? res.manifest.schemaUrl : ''
 			manifestDefaults = { files: res.manifest.defaultFiles, schemaUrl: res.manifest.schemaUrl }
 			manifestFilesOverridden = res.manifest.filesOverridden
+			const recoveryRes = await eden.api.admin.auth['email-recovery'].get()
+			if (recoveryRes.error) throw new Error(extractError(recoveryRes.error))
+			const r = recoveryRes.data as { persist: boolean; hasCredentials: boolean; email: string | null }
+			recoveryPersist = r.persist
+			recoveryHasCredentials = r.hasCredentials
+			recoveryEmail = r.email
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : m.admin_instance_load_failed())
 		} finally {
@@ -141,6 +154,55 @@
 
 	function resetFilesToDefaults() {
 		manifestFiles = [...manifestDefaults.files]
+	}
+
+	function extractError(error: unknown): string {
+		const e = error as { value?: unknown; status?: number }
+		if (typeof e.value === 'string') return e.value
+		const v = e.value as { error?: string } | undefined
+		return v?.error ?? `Request failed (${e.status ?? '?'})`
+	}
+
+	async function saveRecovery(opts: { rotate?: boolean } = {}) {
+		savingRecovery = true
+		try {
+			const body: { persist?: boolean; email?: string; password?: string } = {
+				persist: recoveryPersist,
+			}
+			if (opts.rotate) {
+				if (!newRecoveryEmail.trim() || newRecoveryPassword.length < 8) {
+					toast.error(m.admin_recovery_field_validation())
+					return
+				}
+				body.email = newRecoveryEmail.trim()
+				body.password = newRecoveryPassword
+			}
+			const { error } = await eden.api.admin.auth['email-recovery'].put(body)
+			if (error) throw new Error(extractError(error))
+			toast.success(m.admin_recovery_saved())
+			newRecoveryEmail = ''
+			newRecoveryPassword = ''
+			await load()
+		} catch (e) {
+			toast.error(e instanceof Error ? e.message : m.admin_recovery_save_failed())
+		} finally {
+			savingRecovery = false
+		}
+	}
+
+	async function deleteRecovery() {
+		if (!confirm(m.admin_recovery_delete_confirm())) return
+		savingRecovery = true
+		try {
+			const { error } = await eden.api.admin.auth['email-recovery'].delete()
+			if (error) throw new Error(extractError(error))
+			toast.success(m.admin_recovery_deleted())
+			await load()
+		} catch (e) {
+			toast.error(e instanceof Error ? e.message : m.admin_recovery_save_failed())
+		} finally {
+			savingRecovery = false
+		}
 	}
 
 	async function resetBucket(bucket: RateLimitBucket) {
@@ -297,6 +359,67 @@
 				<Button size="sm" onclick={saveManifest} disabled={savingManifest}>
 					<Save class="h-3.5 w-3.5" />
 					{savingManifest ? m.common_saving() : m.common_save()}
+				</Button>
+			</div>
+		{/if}
+	</CardContent>
+</Card>
+
+<Card>
+	<CardHeader>
+		<CardTitle class="text-base flex items-center gap-2">
+			{m.admin_recovery_card_title()}
+			<Badge variant={recoveryPersist ? 'default' : 'secondary'}>
+				{recoveryPersist ? m.admin_recovery_persist_on() : m.admin_recovery_persist_off()}
+			</Badge>
+		</CardTitle>
+		<CardDescription>{m.admin_recovery_card_subtitle()}</CardDescription>
+	</CardHeader>
+	<CardContent class="space-y-4">
+		{#if loading}
+			<p class="text-sm text-muted-foreground">{m.common_loading()}</p>
+		{:else}
+			<label class="flex items-center gap-3 cursor-pointer select-none">
+				<input type="checkbox" bind:checked={recoveryPersist} class="h-4 w-4 rounded border-input" />
+				<span class="text-sm">{m.admin_recovery_persist_label()}</span>
+			</label>
+			<p class="text-xs text-muted-foreground">{m.admin_recovery_persist_hint()}</p>
+
+			<div class="rounded-md border border-border bg-card/50 p-3 space-y-3">
+				<div class="text-sm">
+					{#if recoveryHasCredentials}
+						<span class="text-muted-foreground">{m.admin_recovery_current_credential()}</span>
+						<code class="font-mono">{recoveryEmail}</code>
+					{:else}
+						<span class="text-muted-foreground">{m.admin_recovery_no_credential()}</span>
+					{/if}
+				</div>
+				<div class="grid gap-2 sm:grid-cols-2">
+					<div class="grid gap-1">
+						<Label for="recoveryEmail" class="text-xs">{m.admin_recovery_email_label()}</Label>
+						<Input id="recoveryEmail" type="email" bind:value={newRecoveryEmail} autocomplete="off" />
+					</div>
+					<div class="grid gap-1">
+						<Label for="recoveryPassword" class="text-xs">{m.admin_recovery_password_label()}</Label>
+						<Input id="recoveryPassword" type="password" bind:value={newRecoveryPassword} autocomplete="new-password" />
+					</div>
+				</div>
+				<div class="flex flex-wrap gap-2 justify-end">
+					{#if recoveryHasCredentials}
+						<Button variant="ghost" size="sm" onclick={deleteRecovery} disabled={savingRecovery}>
+							{m.admin_recovery_delete_button()}
+						</Button>
+					{/if}
+					<Button size="sm" variant="outline" onclick={() => saveRecovery({ rotate: true })} disabled={savingRecovery || !newRecoveryEmail.trim() || newRecoveryPassword.length < 8}>
+						{recoveryHasCredentials ? m.admin_recovery_rotate_button() : m.admin_recovery_set_button()}
+					</Button>
+				</div>
+			</div>
+
+			<div class="flex justify-end">
+				<Button size="sm" onclick={() => saveRecovery()} disabled={savingRecovery}>
+					<Save class="h-3.5 w-3.5" />
+					{savingRecovery ? m.common_saving() : m.common_save()}
 				</Button>
 			</div>
 		{/if}

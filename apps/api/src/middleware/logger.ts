@@ -14,7 +14,8 @@ export const loggerMiddleware = new Elysia({ name: 'logger-middleware' })
     return { log, _reqStart: performance.now() }
   })
   .onAfterResponse({ as: 'global' }, ({ log, _reqStart, set }) => {
-    const durationMs = Math.round(performance.now() - _reqStart)
+    if (!log) return
+    const durationMs = _reqStart ? Math.round(performance.now() - _reqStart) : 0
     const status = typeof set.status === 'number' ? set.status : 200
     const level = status >= 500 ? 'error' : status >= 400 ? 'warn' : 'info'
     log[level]({ status, durationMs }, 'request')
