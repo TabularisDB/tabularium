@@ -336,10 +336,8 @@
 			{/if}
 		</header>
 
-		<hr class="border-border opacity-60" />
-
 		<!-- TWO-COLUMN GRID -->
-		<div class="grid gap-10 lg:grid-cols-[1fr_320px] mt-10">
+		<div class="grid gap-10 lg:grid-cols-[1fr_320px] mt-4">
 			<div class="space-y-12 min-w-0">
 				<!-- DOWNLOAD -->
 				<section class="space-y-4">
@@ -442,7 +440,9 @@
 										<span class="font-mono text-sm">v{release.version}</span>
 										<span class="inline-flex gap-2 flex-wrap">
 											<span class="font-mono text-[10px] px-2 py-0.5 rounded-full bg-foreground/5 text-muted-foreground tracking-wide">{platformCount} {platformCount === 1 ? 'platform' : 'platforms'}</span>
-											<span class="font-mono text-[10px] px-2 py-0.5 rounded-full bg-foreground/5 text-muted-foreground tracking-wide">{formatBytes(totalSize)}</span>
+											{#if totalSize > 0}
+												<span class="font-mono text-[10px] px-2 py-0.5 rounded-full bg-foreground/5 text-muted-foreground tracking-wide">{formatBytes(totalSize)}</span>
+											{/if}
 											{#if release.minRuntimeVersion}
 												<span class="font-mono text-[10px] px-2 py-0.5 rounded-full bg-foreground/5 text-muted-foreground tracking-wide">runtime ≥ {release.minRuntimeVersion}</span>
 											{/if}
@@ -453,12 +453,13 @@
 										<table class="w-full border-collapse">
 											<tbody>
 												{#each Object.entries(release.assets) as [key, asset] (key)}
+													{@const [os, arch] = key.split('-')}
 													<tr class="border-t border-dashed border-border/70 first:border-t-0">
 														<td class="px-2.5 py-2 font-mono text-xs">{platformLabel(key)}</td>
-														<td class="px-2.5 py-2 font-mono text-xs text-muted-foreground">{formatBytes(asset.size)}</td>
-														<td class="px-2.5 py-2 font-mono text-[11px] text-muted-foreground truncate max-w-[280px]" title={asset.sha256 ?? ''}>{asset.sha256?.slice(0, 16) ?? '—'}{asset.sha256 ? '…' : ''}</td>
+														<td class="px-2.5 py-2 font-mono text-xs text-muted-foreground">{asset.size ? formatBytes(asset.size) : ''}</td>
+														<td class="px-2.5 py-2 font-mono text-[11px] text-muted-foreground truncate max-w-[280px]" title={asset.sha256 ?? ''}>{asset.sha256 ? asset.sha256.slice(0, 12) + '…' : ''}</td>
 														<td class="px-2.5 py-2 text-right">
-															<a href={asset.url} class="font-mono text-[11px] text-primary hover:underline">↓ {m.plugin_detail_download()}</a>
+															<a href={`/api/plugins/${plugin.id}/latest?os=${encodeURIComponent(os ?? '')}&arch=${encodeURIComponent(arch ?? '')}&redirect=1`} class="font-mono text-[11px] text-primary hover:underline">↓ {m.plugin_detail_download()}</a>
 														</td>
 													</tr>
 												{/each}
