@@ -13,6 +13,7 @@
 	import Label from '$components/ui/Label.svelte'
 	import Select from '$components/ui/Select.svelte'
 	import ProviderIcon from '$components/brand/ProviderIcon.svelte'
+	import AdminPageHeader from '$components/admin/AdminPageHeader.svelte'
 	import { eden } from '$lib/eden'
 	import { toast } from 'svelte-sonner'
 	import type { ProviderInstanceAdmin, ProviderKind } from '$lib/types'
@@ -129,10 +130,21 @@
 	}
 </script>
 
-<header class="space-y-1">
-	<h1 class="text-2xl font-semibold tracking-tight">{m.admin_providers_title()}</h1>
-	<p class="text-sm text-muted-foreground">{m.admin_providers_subtitle()}</p>
-</header>
+<AdminPageHeader title={m.admin_providers_title()} subtitle={m.admin_providers_subtitle()}>
+	{#snippet meta()}
+		{#if !loading}
+			<span class="inline-flex items-center gap-1.5">
+				<span class="h-1.5 w-1.5 rounded-full bg-emerald-500" aria-hidden="true"></span>
+				{instances.filter((i) => i.enabled).length} {m.admin_providers_enabled().toLowerCase()}
+			</span>
+			<span class="text-muted-foreground/60">·</span>
+			<span class="inline-flex items-center gap-1.5">
+				<span class="h-1.5 w-1.5 rounded-full bg-muted-foreground/40" aria-hidden="true"></span>
+				{instances.filter((i) => !i.enabled).length} {m.admin_providers_disabled().toLowerCase()}
+			</span>
+		{/if}
+	{/snippet}
+</AdminPageHeader>
 
 <Card>
 	<CardHeader>
@@ -146,14 +158,18 @@
 			<p class="text-sm text-muted-foreground">{m.admin_providers_empty()}</p>
 		{:else}
 			{#each instances as inst (inst.id)}
-				<div class="flex items-center justify-between gap-3 rounded-md border border-border bg-card/50 px-4 py-3">
+				<div class="flex items-center justify-between gap-3 rounded-md border border-border bg-card/50 px-4 py-3 transition-colors hover:border-border/80">
 					<div class="flex items-center gap-3 min-w-0">
+						<span
+							class="h-2 w-2 rounded-full shrink-0 {inst.enabled ? 'bg-emerald-500' : 'bg-muted-foreground/40'}"
+							aria-hidden="true"
+							title={inst.enabled ? m.admin_providers_enabled() : m.admin_providers_disabled()}
+						></span>
 						<ProviderIcon kind={inst.kind} baseUrl={inst.baseUrl} logoUrl={inst.logoUrl} class="h-5 w-5 flex-shrink-0" />
 						<div class="space-y-1 min-w-0">
 							<div class="flex items-center gap-2 flex-wrap">
 								<span class="font-medium">{inst.displayName}</span>
-								<Badge variant={inst.enabled ? 'default' : 'secondary'}>{inst.enabled ? m.admin_providers_enabled() : m.admin_providers_disabled()}</Badge>
-								<Badge variant="outline">{inst.kind}</Badge>
+								<Badge variant="outline" class="text-[10px]">{inst.kind}</Badge>
 							</div>
 							<div class="text-xs text-muted-foreground font-mono truncate">{inst.id} · {inst.baseUrl}</div>
 						</div>
@@ -171,7 +187,7 @@
 						<Button variant="ghost" size="sm" onclick={() => toggleInstance(inst)}>
 							{inst.enabled ? m.admin_providers_disable_btn() : m.admin_providers_enable()}
 						</Button>
-						<Button variant="ghost" size="sm" onclick={() => deleteInstance(inst)}>
+						<Button variant="ghost" size="sm" onclick={() => deleteInstance(inst)} aria-label={m.common_remove()}>
 							<Trash2 class="h-3.5 w-3.5" />
 						</Button>
 					</div>
