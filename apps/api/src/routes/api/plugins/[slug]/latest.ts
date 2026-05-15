@@ -117,6 +117,13 @@ export default new Elysia()
       }),
     ]).catch(() => {})
 
+    if (query.redirect === '1') {
+      set.status = 302
+      set.headers['location'] = entry.url
+      set.headers['cache-control'] = 'no-store'
+      return ''
+    }
+
     return {
       version: resolved.version,
       min_runtime_version: resolved.minRuntimeVersion,
@@ -138,9 +145,11 @@ export default new Elysia()
     query: t.Object({
       os: t.Optional(t.String({ description: '`linux`, `darwin`, or `win`.' })),
       arch: t.Optional(t.String({ description: '`x64` or `arm64`.' })),
+      redirect: t.Optional(t.String({ description: 'Pass `1` to 302-redirect to the download URL instead of returning JSON.' })),
     }),
     response: {
       200: latestSuccessSchema,
+      302: t.String(),
       404: errorSchema,
       422: errorSchema,
     },

@@ -352,8 +352,9 @@
 					{#if latestRelease && platformList.length > 0}
 						<div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
 							{#each platformList as p (p.key)}
+								{@const [os, arch] = p.key.split('-')}
 								<a
-									href={p.url}
+									href={`/api/plugins/${plugin.id}/latest?os=${encodeURIComponent(os ?? '')}&arch=${encodeURIComponent(arch ?? '')}&redirect=1`}
 									class="group flex items-center gap-3 px-4 py-3 rounded-lg border border-border bg-card hover:border-primary/40 hover:bg-foreground/[0.02] transition-colors"
 								>
 									<Download class="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />

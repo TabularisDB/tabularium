@@ -5,14 +5,19 @@ describe('inferPlatformKey', () => {
   it.each([
     ['duckdb-plugin-linux-x64.zip', 'linux-x64'],
     ['duckdb-plugin-linux-amd64.zip', 'linux-x64'],
+    ['plugin-linux-x86_64.tar.gz', 'linux-x64'],
     ['plugin-linux-arm64.zip', 'linux-arm64'],
+    ['plugin-linux-aarch64.tar.gz', 'linux-arm64'],
     ['plugin-darwin-arm64.zip', 'darwin-arm64'],
+    ['plugin-darwin-aarch64.tar.gz', 'darwin-arm64'],
     ['plugin-macos-arm64.zip', 'darwin-arm64'],
     ['plugin-darwin-x64.zip', 'darwin-x64'],
+    ['plugin-darwin-x86_64.tar.gz', 'darwin-x64'],
     ['plugin-macos-amd64.zip', 'darwin-x64'],
     ['plugin-win-x64.zip', 'win-x64'],
     ['plugin-windows-x64.zip', 'win-x64'],
     ['plugin-windows-amd64.zip', 'win-x64'],
+    ['plugin-windows-arm64.zip', 'win-arm64'],
     ['plugin-universal.zip', 'universal'],
   ])('%s → %s', (filename, expected) => {
     expect(inferPlatformKey(filename)).toBe(expected)
