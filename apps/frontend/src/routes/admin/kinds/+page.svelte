@@ -28,6 +28,8 @@
 	let extJson = $state<Record<string, string>>({})
 	let extErr = $state<Record<string, string | null>>({})
 
+	const extPlaceholder = '{ "x-theme-mode": { "type": "string", "enum": ["light", "dark"] } }'
+
 	onMount(loadKinds)
 
 	async function loadKinds() {
@@ -174,7 +176,7 @@
 								<textarea
 									bind:value={extJson[k.key]}
 									oninput={() => (extErr[k.key] = null)}
-									placeholder='{ "x-theme-mode": { "type": "string", "enum": ["light", "dark"] } }'
+									placeholder={extPlaceholder}
 									class="font-mono text-xs min-h-32 w-full rounded-md border border-input bg-card px-3 py-2 shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
 									spellcheck="false"
 								></textarea>
