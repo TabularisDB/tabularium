@@ -56,18 +56,25 @@ export default new Elysia()
         return { error: 'migration_failed', detail: String(e) }
       }
 
-      const userId = ulid()
-      try {
-        await db.insert(users).values({ id: userId, displayName: 'Admin', role: 'admin' })
-        await db.insert(rootCredentials).values({
-          userId,
-          email: boot.email.toLowerCase(),
-          passwordHash: boot.passwordHash,
-        })
-      } catch (e) {
-        log.error({ err: String(e) }, 'admin user creation failed')
-        set.status = 500
-        return { error: 'admin_create_failed', detail: String(e) }
+      const bootEmail = boot.email.toLowerCase()
+      const existing = await db.query.rootCredentials.findFirst({ where: { email: bootEmail } })
+      const userId = existing ? existing.userId : ulid()
+      if (existing) {
+        log.info({ userId }, 'admin already in DB from earlier partial install — resuming')
+      }
+      if (!existing) {
+        try {
+          await db.insert(users).values({ id: userId, displayName: 'Admin', role: 'admin' })
+          await db.insert(rootCredentials).values({
+            userId,
+            email: bootEmail,
+            passwordHash: boot.passwordHash,
+          })
+        } catch (e) {
+          log.error({ err: String(e) }, 'admin user creation failed')
+          set.status = 500
+          return { error: 'admin_create_failed', detail: String(e) }
+        }
       }
 
       try {
@@ -76,7 +83,13 @@ export default new Elysia()
         log.warn({ err: String(e) }, 'page seed failed — continuing')
       }
 
-      await saveConfig({ installed: true, database: { url: body.database.url } })
+      try {
+        await saveConfig({ installed: true, database: { url: body.database.url } })
+      } catch (e) {
+        log.error({ err: String(e) }, 'config save failed')
+        set.status = 500
+        return { error: 'config_save_failed', detail: String(e) }
+      }
       clearBootstrap()
 
       const jwt = await signJwt({
