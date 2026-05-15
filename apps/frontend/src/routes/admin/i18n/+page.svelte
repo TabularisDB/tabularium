@@ -14,6 +14,7 @@
 	import { eden } from '$lib/eden'
 	import { i18n as i18nStore, LOCALE_LABELS, type Locale } from '$lib/stores/i18n.svelte'
 	import { m } from '$lib/paraglide/messages'
+	import AdminPageHeader from '$components/admin/AdminPageHeader.svelte'
 
 	type I18nConfig = {
 		defaultLocale: Locale
@@ -79,10 +80,7 @@
 	}
 </script>
 
-<header class="space-y-1">
-	<h1 class="text-2xl font-semibold tracking-tight">{m.admin_i18n_title()}</h1>
-	<p class="text-sm text-muted-foreground">{m.admin_i18n_subtitle()}</p>
-</header>
+<AdminPageHeader title={m.admin_i18n_title()} subtitle={m.admin_i18n_subtitle()} />
 
 {#if loading}
 	<p class="text-sm text-muted-foreground">{m.common_loading()}</p>

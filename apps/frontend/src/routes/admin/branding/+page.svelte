@@ -17,6 +17,7 @@
 	import { branding, type Branding } from '$lib/stores/branding.svelte'
 	import { i18n, LOCALE_LABELS, type Locale } from '$lib/stores/i18n.svelte'
 	import { m } from '$lib/paraglide/messages'
+	import AdminPageHeader from '$components/admin/AdminPageHeader.svelte'
 
 	type LocalizedBranding = Branding & {
 		taglineTranslations: Partial<Record<Locale, string>>
@@ -164,10 +165,7 @@
 	const ANALYTICS_PLACEHOLDER = `<${'script'} defer data-domain="example.com" src="https://plausible.io/js/script.js"></${'script'}>`
 </script>
 
-<header class="space-y-1">
-	<h1 class="text-2xl font-semibold tracking-tight">{m.admin_branding_title()}</h1>
-	<p class="text-sm text-muted-foreground">{m.admin_branding_subtitle()}</p>
-</header>
+<AdminPageHeader title={m.admin_branding_title()} subtitle={m.admin_branding_subtitle()} />
 
 {#if loading}
 	<p class="text-sm text-muted-foreground">{m.common_loading()}</p>

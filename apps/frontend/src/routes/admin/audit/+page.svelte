@@ -5,6 +5,7 @@
 	import CardHeader from '$components/ui/CardHeader.svelte'
 	import CardTitle from '$components/ui/CardTitle.svelte'
 	import CardDescription from '$components/ui/CardDescription.svelte'
+	import AdminPageHeader from '$components/admin/AdminPageHeader.svelte'
 	import { eden } from '$lib/eden'
 	import { m } from '$lib/paraglide/messages'
 
@@ -15,7 +16,6 @@
 		action: string
 		target: string | null
 		meta: string | null
-		ip: string | null
 		createdAt: number
 	}
 
@@ -36,10 +36,7 @@
 	})
 </script>
 
-<header class="space-y-1">
-	<h1 class="text-2xl font-semibold tracking-tight">{m.admin_audit_title()}</h1>
-	<p class="text-sm text-muted-foreground">{m.admin_audit_subtitle()}</p>
-</header>
+<AdminPageHeader title={m.admin_audit_title()} subtitle={m.admin_audit_subtitle()} />
 
 <Card>
 	<CardHeader>
@@ -60,7 +57,6 @@
 							<th class="font-medium px-3 py-2">{m.admin_audit_col_actor()}</th>
 							<th class="font-medium px-3 py-2">{m.admin_audit_col_action()}</th>
 							<th class="font-medium px-3 py-2">{m.admin_audit_col_target()}</th>
-							<th class="font-medium px-3 py-2">{m.admin_audit_col_ip()}</th>
 						</tr>
 					</thead>
 					<tbody>
@@ -70,7 +66,6 @@
 								<td class="px-3 py-2 text-xs">{e.actorName ?? '—'}</td>
 								<td class="px-3 py-2 font-mono text-xs">{e.action}</td>
 								<td class="px-3 py-2 text-xs text-muted-foreground">{e.target ?? '—'}</td>
-								<td class="px-3 py-2 text-xs text-muted-foreground font-mono">{e.ip ?? '—'}</td>
 							</tr>
 						{/each}
 					</tbody>

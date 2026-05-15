@@ -15,6 +15,7 @@
 	import Badge from '$components/ui/Badge.svelte'
 	import { eden } from '$lib/eden'
 	import { m } from '$lib/paraglide/messages'
+	import AdminPageHeader from '$components/admin/AdminPageHeader.svelte'
 
 	type CacheState = {
 		driver: 'off' | 'memory' | 'redis'
@@ -130,10 +131,7 @@
 	}
 </script>
 
-<header class="space-y-1">
-	<h1 class="text-2xl font-semibold tracking-tight">{m.admin_infra_title()}</h1>
-	<p class="text-sm text-muted-foreground">{m.admin_infra_subtitle()}</p>
-</header>
+<AdminPageHeader title={m.admin_infra_title()} subtitle={m.admin_infra_subtitle()} />
 
 <Card>
 	<CardHeader>

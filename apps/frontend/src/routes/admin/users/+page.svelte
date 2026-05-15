@@ -16,6 +16,7 @@
 	import { toast } from 'svelte-sonner'
 	import type { AdminUser } from '$lib/types'
 	import { m } from '$lib/paraglide/messages'
+	import AdminPageHeader from '$components/admin/AdminPageHeader.svelte'
 
 	let users = $state<AdminUser[]>([])
 	let loading = $state(true)
@@ -82,10 +83,7 @@
 	}
 </script>
 
-<header class="space-y-1">
-	<h1 class="text-2xl font-semibold tracking-tight">{m.admin_users_title()}</h1>
-	<p class="text-sm text-muted-foreground">{m.admin_users_subtitle()}</p>
-</header>
+<AdminPageHeader title={m.admin_users_title()} subtitle={m.admin_users_subtitle()} />
 
 <Card>
 	<CardHeader>

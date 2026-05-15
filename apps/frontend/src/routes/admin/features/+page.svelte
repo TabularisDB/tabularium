@@ -10,6 +10,7 @@
 	import Button from '$components/ui/Button.svelte'
 	import { eden } from '$lib/eden'
 	import { m } from '$lib/paraglide/messages'
+	import AdminPageHeader from '$components/admin/AdminPageHeader.svelte'
 
 	type Features = { submissionsEnabled: boolean; requestsEnabled: boolean }
 
@@ -46,10 +47,7 @@
 	}
 </script>
 
-<header class="space-y-1">
-	<h1 class="text-2xl font-semibold tracking-tight">{m.admin_features_title()}</h1>
-	<p class="text-sm text-muted-foreground">{m.admin_features_subtitle()}</p>
-</header>
+<AdminPageHeader title={m.admin_features_title()} subtitle={m.admin_features_subtitle()} />
 
 {#if loading}
 	<p class="text-sm text-muted-foreground">{m.common_loading()}</p>

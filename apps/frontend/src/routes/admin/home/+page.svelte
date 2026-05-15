@@ -17,6 +17,7 @@
 	import { homeCopy, defaultHomeCopy, type HomeCopy } from '$lib/stores/home-copy.svelte'
 	import { i18n, LOCALE_LABELS, type Locale } from '$lib/stores/i18n.svelte'
 	import { m } from '$lib/paraglide/messages'
+	import AdminPageHeader from '$components/admin/AdminPageHeader.svelte'
 
 	type LocaleMap = Record<Locale, string>
 
@@ -157,13 +158,7 @@
 	}
 </script>
 
-<header class="space-y-1">
-	<h1 class="text-2xl font-semibold tracking-tight flex items-center gap-2">
-		<House class="h-5 w-5 text-primary" />
-		{m.admin_home_title()}
-	</h1>
-	<p class="text-sm text-muted-foreground">{m.admin_home_subtitle()}</p>
-</header>
+<AdminPageHeader title={m.admin_home_title()} subtitle={m.admin_home_subtitle()} icon={House} />
 
 {#if loading}
 	<p class="text-sm text-muted-foreground">{m.common_loading()}</p>
