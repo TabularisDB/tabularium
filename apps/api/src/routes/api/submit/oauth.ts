@@ -12,6 +12,7 @@ import { env } from '$lib/env'
 import { getSetting } from '$lib/settings'
 import { resolveManifest, rawContentBase } from '$lib/manifest'
 import { manifestPatch, applyManifestToPlugin } from '$lib/manifest-apply'
+import { fetchLatestRelease } from '$lib/release-fetch'
 import { getFeatures } from '$lib/features'
 import { logger } from '$lib/logger'
 
@@ -81,16 +82,27 @@ export default new Elysia()
     })
 
     try {
-      const manifest = await resolveManifest(accessToken, ref)
-      if (manifest) {
-        const patch = manifestPatch(manifest, {
-          repoBase: rawContentBase(ref, 'HEAD'),
-          version: null,
-        })
-        await applyManifestToPlugin(slug, patch)
-        log.info({ slug, source: manifest.source }, 'manifest applied at submit')
-      } else {
-        log.info({ slug }, 'no .tabularium manifest found at submit — using fallback metadata')
+      const latestRelease = await fetchLatestRelease(accessToken, ref).catch((err) => {
+        log.warn({ err, slug }, 'latest-release lookup failed at submit')
+        return null
+      })
+      if (!latestRelease) {
+        log.info({ slug }, 'no release yet — skipping manifest fetch, waiting for webhook')
+      }
+      if (latestRelease) {
+        const tag = latestRelease.tag
+        const manifest = await resolveManifest(accessToken, ref, { ref: tag })
+        if (manifest) {
+          const patch = manifestPatch(manifest, {
+            repoBase: rawContentBase(ref, tag),
+            version: tag,
+          })
+          await applyManifestToPlugin(slug, patch)
+          log.info({ slug, source: manifest.source, tag }, 'manifest applied at submit (from latest release)')
+        }
+        if (!manifest) {
+          log.info({ slug, tag }, 'no .tabularium manifest in latest release — using fallback metadata')
+        }
       }
     } catch (err) {
       log.warn({ err, slug }, 'manifest fetch failed at submit — continuing without it')

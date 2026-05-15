@@ -56,6 +56,20 @@ function makeGithubFlavoredFetcher(apiBase: string, accessToken: string, ref: Re
   }
 }
 
+function makeGiteaFetcher(apiBase: string, accessToken: string, ref: RepoRef, branch: string | undefined): FileFetcher {
+  return async (path) => {
+    const headers: Record<string, string> = { Authorization: `Bearer ${accessToken}` }
+    const url = `${apiBase}/repos/${ref.owner}/${ref.repo}/raw/${path.split('/').map(encodeURIComponent).join('/')}${branch ? `?ref=${encodeURIComponent(branch)}` : ''}`
+    const res = await fetch(url, { headers })
+    if (res.status === 404) return null
+    if (!res.ok) throw new Error(`Fetch ${path}: ${res.status}`)
+    const len = Number(res.headers.get('content-length') ?? 0)
+    if (len > MAX_README_BYTES) throw new Error(`${path} exceeds size cap`)
+    const text = await res.text()
+    return { content: text, bytes: new TextEncoder().encode(text).length }
+  }
+}
+
 function makeGitlabFetcher(baseUrl: string, accessToken: string, ref: RepoRef, branch: string | undefined): FileFetcher {
   return async (path) => {
     const projectId = encodeURIComponent(ref.fullName)
@@ -77,7 +91,7 @@ function fetcherFor(accessToken: string, ref: RepoRef, branch?: string): FileFet
     return makeGithubFlavoredFetcher(apiBase, accessToken, ref, branch, 'tabularium/1.0')
   }
   if (instance.kind === 'gitea') {
-    return makeGithubFlavoredFetcher(`${instance.baseUrl}/api/v1`, accessToken, ref, branch, null)
+    return makeGiteaFetcher(`${instance.baseUrl}/api/v1`, accessToken, ref, branch)
   }
   return makeGitlabFetcher(instance.baseUrl, accessToken, ref, branch)
 }
