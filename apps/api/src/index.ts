@@ -61,15 +61,15 @@ export async function createApp() {
       if (new URL(request.url).pathname !== '/openapi/json') return
       if (!response || typeof response !== 'object') return
       const spec = response as { paths?: Record<string, unknown>; tags?: Array<{ name: string }> }
-      if (spec.paths) {
-        for (const p of Object.keys(spec.paths)) {
-          if (p.includes('/admin/') || p.includes('/init/') || p.includes('/uploads/') || p === '/*') {
-            delete spec.paths[p]
-          }
-        }
+      const filteredPaths: Record<string, unknown> = {}
+      for (const [p, v] of Object.entries(spec.paths ?? {})) {
+        if (p.includes('/admin/') || p.includes('/init/') || p.includes('/uploads/') || p === '/*') continue
+        filteredPaths[p] = v
       }
-      if (Array.isArray(spec.tags)) {
-        spec.tags = spec.tags.filter((t) => t.name !== 'Admin')
+      return {
+        ...spec,
+        paths: filteredPaths,
+        tags: Array.isArray(spec.tags) ? spec.tags.filter((t) => t.name !== 'Admin') : spec.tags,
       }
     })
     .use(router)
