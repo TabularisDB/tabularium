@@ -11,7 +11,7 @@
 	"footer_resources": "Resources",
 	"footer_home": "Home",
 	"footer_openapi": "OpenAPI",
-	"footer_spec": ".tabularium spec",
+	"footer_spec": "{filename} spec",
 	"footer_spec_json": "Spec JSON",
 	"language_label": "Language",
 	"submit_title": "Submit a plugin",

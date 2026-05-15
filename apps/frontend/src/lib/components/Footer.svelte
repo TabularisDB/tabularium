@@ -9,6 +9,7 @@
 	import type { PageSummary } from '$lib/types'
 
 	let footerPages = $state<PageSummary[]>([])
+	let manifestPrimaryFile = $state<string>('tabularium')
 	const year = new Date().getFullYear()
 
 	async function load(locale: string) {
@@ -22,7 +23,21 @@
 		}
 	}
 
-	onMount(() => load(i18n.current))
+	async function loadManifestSpec() {
+		try {
+			const { data, error } = await eden.api.manifest.get()
+			if (error) throw error
+			const payload = data as { paths: string[] }
+			if (payload.paths.length > 0) manifestPrimaryFile = payload.paths[0]
+		} catch {
+			// keep default
+		}
+	}
+
+	onMount(() => {
+		load(i18n.current)
+		loadManifestSpec()
+	})
 
 	$effect(() => {
 		void i18n.current
@@ -81,7 +96,7 @@
 					{m.footer_openapi()} <ExternalLink class="h-3 w-3" />
 				</a>
 				<a href="/api/manifest" class="hover:text-foreground inline-flex items-center gap-1.5 transition-colors w-fit">
-					{m.footer_spec()} <ExternalLink class="h-3 w-3" />
+					{m.footer_spec({ filename: manifestPrimaryFile })} <ExternalLink class="h-3 w-3" />
 				</a>
 				<a href="/openapi/json" class="hover:text-foreground inline-flex items-center gap-1.5 transition-colors w-fit">
 					{m.footer_spec_json()} <ExternalLink class="h-3 w-3" />

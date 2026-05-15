@@ -11,7 +11,7 @@
 	"footer_resources": "资源",
 	"footer_home": "首页",
 	"footer_openapi": "OpenAPI",
-	"footer_spec": ".tabularium 规范",
+	"footer_spec": "{filename} 规范",
 	"footer_spec_json": "规范 JSON",
 	"language_label": "语言",
 	"submit_title": "提交插件",
