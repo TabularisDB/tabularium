@@ -671,7 +671,7 @@
 	"admin_manifest_ext_advanced_json_label": "JSON Schema for this property",
 	"admin_manifest_ext_advanced_back_to_form": "Back to form view",
 	"admin_manifest_ext_json_label": "Full extensions delta as JSON Schema",
-	"admin_manifest_ext_json_hint": "Flat record of { propertyName: JSONSchemaNode }. Server validates type whitelist, depth, $ref absence, and that no key shadows a core field.",
+	"admin_manifest_ext_json_hint": "Flat record of property names mapping to JSON Schema nodes. Server validates type whitelist, depth, $ref absence, and that no key shadows a core field.",
 	"admin_manifest_ext_json_invalid": "Invalid JSON — fix syntax before switching views",
 	"admin_manifest_ext_load_failed": "Failed to load manifest extensions",
 	"admin_manifest_ext_saved": "Manifest extensions saved",
