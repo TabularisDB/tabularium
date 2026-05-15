@@ -7,12 +7,14 @@ const kindSchema = t.Object({
   key: t.String(),
   label: t.String(),
   description: t.Nullable(t.String()),
+  extensionsSchema: t.Optional(t.Nullable(t.Record(t.String(), t.Any()))),
 })
 
 const putBodySchema = t.Object({
   key: t.String({ minLength: 1, maxLength: 40 }),
   label: t.String({ minLength: 1, maxLength: 60 }),
   description: t.Optional(t.Nullable(t.String({ maxLength: 280 }))),
+  extensionsSchema: t.Optional(t.Nullable(t.Record(t.String(), t.Any()))),
 })
 
 function statusFor(err: KindError, body?: { key: string }, path?: string): number {
@@ -49,6 +51,7 @@ export default new Elysia()
         key: body.key,
         label: body.label,
         description: body.description ?? null,
+        ...(body.extensionsSchema !== undefined ? { extensionsSchema: body.extensionsSchema } : {}),
       })
       await recordAudit({
         ...actorFromAdmin(admin, request),

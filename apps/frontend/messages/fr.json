@@ -675,5 +675,9 @@
 	"admin_manifest_ext_json_invalid": "Invalid JSON — fix syntax before switching views",
 	"admin_manifest_ext_load_failed": "Failed to load manifest extensions",
 	"admin_manifest_ext_saved": "Manifest extensions saved",
-	"admin_manifest_ext_save_failed": "Failed to save manifest extensions"
+	"admin_manifest_ext_save_failed": "Failed to save manifest extensions",
+	"admin_kinds_ext_toggle": "Custom schema extensions for this kind",
+	"admin_kinds_ext_override_active": "override",
+	"admin_kinds_ext_hint": "Plugins with this kind validate against these properties instead of the global extensions. Same JSON Schema delta format.",
+	"admin_kinds_ext_empty_reverts": "Empty means plugins of this kind fall back to the global extensions delta."
 }

@@ -13,6 +13,7 @@ const kindSchema = t.Object({
   key: t.String(),
   label: t.String(),
   description: t.Nullable(t.String()),
+  extensionsSchema: t.Optional(t.Nullable(t.Record(t.String(), t.Any()))),
 })
 
 export default new Elysia()
