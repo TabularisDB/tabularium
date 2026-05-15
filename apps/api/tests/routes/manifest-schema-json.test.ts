@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach } from 'bun:test'
 import { clearDb, buildApp } from '../helpers'
 import { setExtensionsDelta } from '../../src/lib/manifest-schema'
 import { setSetting } from '../../src/lib/settings'
+import { createKind } from '../../src/lib/kinds'
 
 describe('GET /manifest.schema.json', () => {
   beforeEach(clearDb)
@@ -40,5 +41,21 @@ describe('GET /manifest.schema.json', () => {
     const props = schema.properties as Record<string, unknown>
     expect(props['x-tabularis']).toBeTruthy()
     expect(props.name).toBeTruthy()
+  })
+
+  it('returns a kind-scoped schema when ?kind= is given', async () => {
+    await createKind({
+      key: 'theme',
+      label: 'Themes',
+      description: null,
+      extensionsSchema: { 'x-theme': { type: 'string' } },
+    })
+    const app = await buildApp()
+    const res = await app.handle(new Request('http://localhost/manifest.schema.json?kind=theme'))
+    expect(res.status).toBe(200)
+    const schema = await res.json() as Record<string, unknown>
+    expect(schema.$id).toContain('?kind=theme')
+    const props = schema.properties as Record<string, unknown>
+    expect(props['x-theme']).toBeTruthy()
   })
 })

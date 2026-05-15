@@ -1,9 +1,11 @@
 import { getSetting, setSetting } from './settings'
+import { validateExtensionsDelta, type ExtensionsDelta } from './manifest-schema'
 
 export type KindDef = {
   key: string
   label: string
   description: string | null
+  extensionsSchema?: ExtensionsDelta | null
 }
 
 export type KindErrorCode = 'invalid' | 'duplicate' | 'not_found'
@@ -46,7 +48,20 @@ export function validateKindDef(input: unknown): KindDef {
   } else {
     description = descRaw
   }
-  return { key, label, description }
+  let extensionsSchema: ExtensionsDelta | null | undefined
+  if (o.extensionsSchema !== undefined) {
+    if (o.extensionsSchema === null) {
+      extensionsSchema = null
+    } else {
+      try {
+        const cleaned = validateExtensionsDelta(o.extensionsSchema)
+        extensionsSchema = Object.keys(cleaned).length > 0 ? cleaned : null
+      } catch (err) {
+        throw new KindError('invalid', err instanceof Error ? err.message : 'invalid extensionsSchema')
+      }
+    }
+  }
+  return { key, label, description, ...(extensionsSchema !== undefined ? { extensionsSchema } : {}) }
 }
 
 export function getKinds(): KindDef[] {

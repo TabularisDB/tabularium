@@ -4,8 +4,10 @@ import {
   validateExtensionsDelta,
   getExtensionsDelta,
   setExtensionsDelta,
+  getEffectiveExtensions,
   buildMergedSchema,
 } from '../../src/lib/manifest-schema'
+import { createKind, updateKind } from '../../src/lib/kinds'
 
 describe('validateExtensionsDelta', () => {
   it('accepts an empty delta', () => {
@@ -134,5 +136,89 @@ describe('buildMergedSchema', () => {
     const props = schema.properties as Record<string, unknown>
     expect(props['x-app']).toEqual({ type: 'string', description: 'app-specific' })
     expect(props.name).toBeTruthy()
+  })
+})
+
+describe('per-kind extensions', () => {
+  beforeEach(clearDb)
+
+  it('falls back to global when no kind override is set', async () => {
+    await setExtensionsDelta({ 'x-global': { type: 'string' } })
+    await createKind({ key: 'theme', label: 'Themes', description: null })
+    const eff = getEffectiveExtensions('theme')
+    expect(eff['x-global']).toBeTruthy()
+  })
+
+  it('REPLACES global when a kind override exists', async () => {
+    await setExtensionsDelta({ 'x-global': { type: 'string' } })
+    await createKind({
+      key: 'theme',
+      label: 'Themes',
+      description: null,
+      extensionsSchema: { 'x-theme': { type: 'string' } },
+    })
+    const eff = getEffectiveExtensions('theme')
+    expect(eff['x-theme']).toBeTruthy()
+    expect(eff['x-global']).toBeUndefined()
+  })
+
+  it('produces a kind-scoped schema when kind option is passed to buildMergedSchema', async () => {
+    await setExtensionsDelta({ 'x-global': { type: 'string' } })
+    await createKind({
+      key: 'theme',
+      label: 'Themes',
+      description: null,
+      extensionsSchema: { 'x-theme': { type: 'string' } },
+    })
+    const themeSchema = buildMergedSchema({ kind: 'theme' })
+    expect(themeSchema.$id).toContain('?kind=theme')
+    const props = themeSchema.properties as Record<string, unknown>
+    expect(props['x-theme']).toBeTruthy()
+    expect(props['x-global']).toBeUndefined()
+
+    const noKindSchema = buildMergedSchema()
+    expect(noKindSchema.$id).not.toContain('?kind=')
+    const noKindProps = noKindSchema.properties as Record<string, unknown>
+    expect(noKindProps['x-global']).toBeTruthy()
+    expect(noKindProps['x-theme']).toBeTruthy() // lenient: top-level lists every key
+  })
+
+  it('emits allOf/if/then clauses for every kind with extensions', async () => {
+    await createKind({
+      key: 'theme',
+      label: 'Themes',
+      description: null,
+      extensionsSchema: { 'x-theme': { type: 'string' } },
+    })
+    await createKind({
+      key: 'snippet',
+      label: 'Snippets',
+      description: null,
+      extensionsSchema: { 'x-snippet': { type: 'object', properties: { lang: { type: 'string' } } } },
+    })
+    const schema = buildMergedSchema() as { allOf?: Array<{ if?: { properties?: { kind?: { const?: string } } } }> }
+    expect(schema.allOf).toBeTruthy()
+    expect(schema.allOf!.length).toBe(2)
+    const constants = schema.allOf!.map((c) => c.if?.properties?.kind?.const)
+    expect(new Set(constants)).toEqual(new Set(['theme', 'snippet']))
+  })
+
+  it('updates effective extensions when the kind override changes', async () => {
+    await createKind({
+      key: 'theme',
+      label: 'Themes',
+      description: null,
+      extensionsSchema: { 'x-old': { type: 'string' } },
+    })
+    expect(getEffectiveExtensions('theme')['x-old']).toBeTruthy()
+    await updateKind('theme', {
+      key: 'theme',
+      label: 'Themes',
+      description: null,
+      extensionsSchema: { 'x-new': { type: 'string' } },
+    })
+    const eff = getEffectiveExtensions('theme')
+    expect(eff['x-new']).toBeTruthy()
+    expect(eff['x-old']).toBeUndefined()
   })
 })

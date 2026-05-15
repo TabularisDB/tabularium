@@ -4,7 +4,7 @@ import type { RepoRef } from './providers'
 import { logger } from './logger'
 import { getManifestConfig } from './manifest-config'
 import { ManifestSchema, type Manifest, type ResolvedManifest } from './manifest-core'
-import { buildMergedSchema } from './manifest-schema'
+import { buildValidatorSchema } from './manifest-schema'
 
 const log = logger.child({ module: 'manifest' })
 
@@ -24,7 +24,10 @@ export function parseManifestText(text: string, source: ResolvedManifest['source
   if ('$schema' in (json as Record<string, unknown>)) {
     delete (json as Record<string, unknown>).$schema
   }
-  const merged = buildMergedSchema() as object
+  const declaredKind = typeof (json as Record<string, unknown>).kind === 'string'
+    ? ((json as Record<string, unknown>).kind as string)
+    : null
+  const merged = buildValidatorSchema({ kind: declaredKind })
   const errors = [...Value.Errors(merged, json)]
   if (errors.length > 0) {
     const summary = errors.slice(0, 5).map((e) => `${e.path}: ${e.message}`).join('; ')

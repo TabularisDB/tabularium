@@ -1,3 +1,4 @@
+import { Type, type TSchema } from '@sinclair/typebox'
 import { ManifestSchema } from './manifest-core'
 import { getManifestConfig } from './manifest-config'
 import { getSetting, setSetting, deleteSetting, hasSetting } from './settings'
@@ -124,20 +125,151 @@ export async function setExtensionsDelta(delta: ExtensionsDelta | null): Promise
 }
 
 /**
- * Builds the JSON Schema served at the public schema URL: the locked core ∪
- * the admin-defined extensions. Returns a JSON Schema 2020-12 compatible object.
+ * Translate a JSON Schema node from the admin delta into a TypeBox TSchema so
+ * Value.Errors/Clean can validate against it. The delta is already constrained
+ * by validateExtensionsDelta so the input shape is small.
  */
-export function buildMergedSchema(): Record<string, unknown> {
+function nodeToTypeBox(node: JsonSchemaProperty): TSchema {
+  const opts: Record<string, unknown> = {}
+  if (typeof node.description === 'string') opts.description = node.description
+  if (typeof node.title === 'string') opts.title = node.title
+  switch (node.type) {
+    case 'string': {
+      const stringOpts: Record<string, unknown> = { ...opts }
+      if (Array.isArray(node.enum)) stringOpts.enum = node.enum
+      if (typeof node.pattern === 'string') stringOpts.pattern = node.pattern
+      return Type.String(stringOpts)
+    }
+    case 'number':
+      return Type.Number(opts)
+    case 'integer':
+      return Type.Integer(opts)
+    case 'boolean':
+      return Type.Boolean(opts)
+    case 'array': {
+      const items = node.items as JsonSchemaProperty
+      return Type.Array(nodeToTypeBox(items), opts)
+    }
+    case 'object': {
+      const props: Record<string, TSchema> = {}
+      const required = new Set<string>(
+        Array.isArray(node.required) ? (node.required as string[]) : [],
+      )
+      const properties = (node.properties as Record<string, JsonSchemaProperty> | undefined) ?? {}
+      for (const [name, sub] of Object.entries(properties)) {
+        const schema = nodeToTypeBox(sub)
+        props[name] = required.has(name) ? schema : Type.Optional(schema)
+      }
+      return Type.Object(props, opts)
+    }
+    default:
+      return Type.Any()
+  }
+}
+
+function extensionsToTypeBox(delta: ExtensionsDelta): TSchema {
+  const props: Record<string, TSchema> = {}
+  for (const [name, node] of Object.entries(delta)) {
+    // Extension fields are optional at top level — operator can require nested fields
+    // but not the top-level extension key itself.
+    props[name] = Type.Optional(nodeToTypeBox(node))
+  }
+  return Type.Object(props)
+}
+
+/**
+ * Picks the effective extensions for the given kind. Per-kind override REPLACES
+ * the global delta when defined (operator chose "overwrite" semantics); plugins
+ * of that kind do not inherit global extensions.
+ */
+export function getEffectiveExtensions(kindKey?: string | null): ExtensionsDelta {
+  if (kindKey) {
+    // Lazy import to avoid the kinds.ts → manifest-schema.ts cycle.
+    const { getKind } = require('./kinds') as typeof import('./kinds')
+    const kind = getKind(kindKey)
+    if (kind && kind.extensionsSchema && Object.keys(kind.extensionsSchema).length > 0) {
+      return kind.extensionsSchema
+    }
+  }
+  return getExtensionsDelta()
+}
+
+/**
+ * Builds the JSON Schema served at the public schema URL: the locked core ∪
+ * the applicable extensions for the given kind (or global if no kind).
+ *
+ * When called without a kind we emit a single schema where each registered
+ * kind's properties are folded in via an `allOf` of `if/then` clauses on the
+ * `kind` field — so a single URL gives IDEs full autocomplete for every kind.
+ */
+export function buildMergedSchema(options: { kind?: string | null } = {}): Record<string, unknown> {
   const cfg = getManifestConfig()
   const core = ManifestSchema as { properties: Record<string, unknown>; required?: string[] }
-  const extensions = getExtensionsDelta()
-  return {
+
+  if (options.kind) {
+    const ext = getEffectiveExtensions(options.kind)
+    return {
+      $schema: 'https://json-schema.org/draft/2020-12/schema',
+      $id: `${cfg.schemaUrl}?kind=${encodeURIComponent(options.kind)}`,
+      title: `Tabularium plugin manifest — ${options.kind}`,
+      type: 'object',
+      additionalProperties: false,
+      properties: { ...core.properties, ...ext },
+      ...(core.required ? { required: core.required } : {}),
+    }
+  }
+
+  const globalExt = getExtensionsDelta()
+  const { getKinds } = require('./kinds') as typeof import('./kinds')
+  const kinds = getKinds().filter((k) => k.extensionsSchema && Object.keys(k.extensionsSchema).length > 0)
+
+  // Top-level lists every possible field across global + all kinds so a manifest
+  // that uses kind-specific extensions still passes the additionalProperties: false
+  // check. The per-kind `then` clauses then enforce the actual shape for that kind.
+  const allExtensionKeys = new Set<string>(Object.keys(globalExt))
+  for (const k of kinds) {
+    for (const key of Object.keys(k.extensionsSchema ?? {})) allExtensionKeys.add(key)
+  }
+  const lenientExtensionProps: Record<string, unknown> = {}
+  for (const key of allExtensionKeys) {
+    lenientExtensionProps[key] = globalExt[key] ?? {}
+  }
+
+  const schema: Record<string, unknown> = {
     $schema: 'https://json-schema.org/draft/2020-12/schema',
     $id: cfg.schemaUrl,
     title: 'Tabularium plugin manifest',
     type: 'object',
     additionalProperties: false,
-    properties: { ...core.properties, ...extensions },
+    properties: { ...core.properties, ...lenientExtensionProps },
     ...(core.required ? { required: core.required } : {}),
   }
+
+  if (kinds.length > 0) {
+    schema.allOf = kinds.map((k) => ({
+      if: { properties: { kind: { const: k.key } }, required: ['kind'] },
+      then: {
+        properties: { ...core.properties, ...(k.extensionsSchema ?? {}) },
+        additionalProperties: false,
+      },
+    }))
+  }
+
+  return schema
+}
+
+/**
+ * Builds a TypeBox schema for server-side validation. Unlike buildMergedSchema
+ * (which serves IDE-friendly JSON Schema), this returns a TSchema with the
+ * Kind brands TypeBox's Value.Errors/Clean require.
+ *
+ * Extensions are translated from the admin delta into TypeBox primitives at
+ * call time. Per-kind override REPLACES the global delta when defined.
+ */
+export function buildValidatorSchema(options: { kind?: string | null } = {}): TSchema {
+  const ext = getEffectiveExtensions(options.kind ?? null)
+  if (Object.keys(ext).length === 0) return ManifestSchema as unknown as TSchema
+  // Composite intersects the core (already a TypeBox schema) with the
+  // translated extensions, keeping optional/required semantics on both sides.
+  return Type.Composite([ManifestSchema as unknown as TSchema, extensionsToTypeBox(ext)])
 }
