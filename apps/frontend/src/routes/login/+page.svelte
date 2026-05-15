@@ -9,12 +9,18 @@
 	import CardTitle from '$components/ui/CardTitle.svelte'
 	import ProviderIcon from '$components/brand/ProviderIcon.svelte'
 	import { eden } from '$lib/eden'
+	import { auth } from '$lib/stores/auth.svelte'
 	import type { InitStatus, ProviderInfo } from '$lib/types'
 	import { m } from '$lib/paraglide/messages'
 
 	let providers = $state<ProviderInfo[] | null>(null)
 
 	onMount(async () => {
+		if (!auth.loaded) await auth.refresh()
+		if (auth.user) {
+			goto(auth.isAdmin ? '/admin' : '/')
+			return
+		}
 		const statusRes = await eden.api.init.status.get()
 		const status = (statusRes.data ?? null) as InitStatus | null
 		if (status?.requiresInit) {

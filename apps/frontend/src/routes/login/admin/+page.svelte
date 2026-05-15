@@ -24,6 +24,11 @@
 
 	onMount(async () => {
 		try {
+			if (!auth.loaded) await auth.refresh()
+			if (auth.user) {
+				goto(auth.isAdmin ? '/admin' : '/')
+				return
+			}
 			const { data, error } = await eden.api.init.status.get()
 			if (error) throw error
 			const status = data as InitStatus

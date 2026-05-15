@@ -85,7 +85,7 @@ describe('admin manifest extensions', () => {
     expect(getExtensionsDelta()).toEqual({})
   })
 
-  it('PUT rejects shadowing a core field', async () => {
+  it('PUT silently skips core-shadowing entries (paste-friendly)', async () => {
     const token = await adminToken()
     const app = await buildApp()
     const res = await app.handle(
@@ -93,12 +93,12 @@ describe('admin manifest extensions', () => {
         method: 'PUT',
         headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          extensions: { name: { type: 'string' } },
+          extensions: { name: { type: 'string' }, 'x-keep': { type: 'string' } },
         }),
       }),
     )
-    expect(res.status).toBe(400)
-    const body = await res.json() as { error: string }
-    expect(body.error).toMatch(/shadows a core/)
+    expect(res.status).toBe(200)
+    expect(getExtensionsDelta().name).toBeUndefined()
+    expect(getExtensionsDelta()['x-keep']).toBeTruthy()
   })
 })

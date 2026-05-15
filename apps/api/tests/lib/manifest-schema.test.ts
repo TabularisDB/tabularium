@@ -37,17 +37,37 @@ describe('validateExtensionsDelta', () => {
     expect((out.tabularis.properties as Record<string, unknown>).widgets).toBeTruthy()
   })
 
-  it('rejects shadowing of core fields', () => {
-    expect(() =>
-      validateExtensionsDelta({ name: { type: 'string' } }),
-    ).toThrow(/shadows a core/)
-    expect(() =>
-      validateExtensionsDelta({ kind: { type: 'string' } }),
-    ).toThrow(/shadows a core/)
+  it('silently skips core-shadowing keys (useful when pasting a full root schema)', () => {
+    const out = validateExtensionsDelta({
+      name: { type: 'string' },
+      kind: { type: 'string' },
+      'x-app': { type: 'string' },
+    })
+    expect(out.name).toBeUndefined()
+    expect(out.kind).toBeUndefined()
+    expect(out['x-app']).toBeTruthy()
   })
 
-  it('rejects unknown types', () => {
-    expect(() => validateExtensionsDelta({ x: { type: 'null' } })).toThrow(/type must be one of/)
+  it('unwraps a pasted root JSON Schema document', () => {
+    const out = validateExtensionsDelta({
+      $schema: 'http://json-schema.org/draft-07/schema#',
+      $id: 'https://example.com/schema.json',
+      title: 'My Schema',
+      type: 'object',
+      additionalProperties: false,
+      properties: {
+        'x-app-id': { type: 'string', pattern: '^[a-z]+$' },
+        'x-port': { type: ['integer', 'null'] },
+      },
+      required: ['x-app-id'],
+    })
+    expect(out['x-app-id']).toBeTruthy()
+    expect(out['x-port']).toBeTruthy()
+  })
+
+  it('tolerates unknown / unsupported types (maps to Type.Any at translation time)', () => {
+    const out = validateExtensionsDelta({ x: { type: 'null' } })
+    expect(out.x).toBeTruthy()
   })
 
   it('rejects $ref', () => {
@@ -56,13 +76,14 @@ describe('validateExtensionsDelta', () => {
     ).toThrow(/\$ref is not allowed/)
   })
 
-  it('rejects invalid property names', () => {
+  it('rejects invalid property names at the top level', () => {
     expect(() => validateExtensionsDelta({ '1bad': { type: 'string' } })).toThrow(/invalid property name/)
     expect(() => validateExtensionsDelta({ 'bad name': { type: 'string' } })).toThrow(/invalid property name/)
   })
 
-  it('rejects arrays without items', () => {
-    expect(() => validateExtensionsDelta({ x: { type: 'array' } })).toThrow(/items: required/)
+  it('tolerates arrays without items', () => {
+    const out = validateExtensionsDelta({ x: { type: 'array' } })
+    expect(out.x).toBeTruthy()
   })
 
   it('rejects excessive nesting', () => {
@@ -70,12 +91,12 @@ describe('validateExtensionsDelta', () => {
       level === 0
         ? { type: 'string' }
         : { type: 'object', properties: { x: deep(level - 1) } }
-    expect(() => validateExtensionsDelta({ x: deep(7) })).toThrow(/nesting exceeds max depth/)
+    expect(() => validateExtensionsDelta({ x: deep(9) })).toThrow(/nesting exceeds max depth/)
   })
 
   it('rejects more than the max top-level properties', () => {
     const big: Record<string, unknown> = {}
-    for (let i = 0; i < 33; i++) big[`p${i}`] = { type: 'string' }
+    for (let i = 0; i < 65; i++) big[`p${i}`] = { type: 'string' }
     expect(() => validateExtensionsDelta(big)).toThrow(/more than/)
   })
 })
@@ -108,8 +129,17 @@ describe('getExtensionsDelta / setExtensionsDelta', () => {
     expect(getExtensionsDelta()).toEqual({})
   })
 
-  it('throws on invalid input at set-time', async () => {
-    await expect(setExtensionsDelta({ kind: { type: 'string' } })).rejects.toThrow()
+  it('skips core-shadowing entries silently at set-time (so pasting a full schema works)', async () => {
+    await setExtensionsDelta({ kind: { type: 'string' }, 'x-real': { type: 'string' } })
+    const result = getExtensionsDelta()
+    expect(result.kind).toBeUndefined()
+    expect(result['x-real']).toBeTruthy()
+  })
+
+  it('throws only on hard safety violations ($ref)', async () => {
+    await expect(
+      setExtensionsDelta({ 'x-bad': { $ref: 'http://evil/schema' } }),
+    ).rejects.toThrow(/\$ref/)
   })
 })
 

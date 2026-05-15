@@ -1,5 +1,7 @@
 <script lang="ts">
 	import { JSONEditor, Mode, type Content } from 'svelte-jsoneditor'
+	import 'svelte-jsoneditor/themes/jse-theme-dark.css'
+	import { mode } from 'mode-watcher'
 
 	type Props = {
 		value: string
@@ -34,7 +36,11 @@
 	}
 </script>
 
-<div class="json-editor-host" style="min-height: {minHeight};">
+<div
+	class="json-editor-host"
+	class:jse-theme-dark={mode.current === 'dark'}
+	style="min-height: {minHeight};"
+>
 	<JSONEditor
 		bind:content
 		{readOnly}
@@ -49,23 +55,6 @@
 <style>
 	.json-editor-host :global(.jse-main) {
 		min-height: inherit;
-		--jse-theme-color: hsl(var(--card));
-		--jse-background-color: hsl(var(--card));
-		--jse-text-color: hsl(var(--foreground));
-		--jse-panel-background: hsl(var(--card));
-		--jse-panel-color: hsl(var(--foreground));
-		--jse-key-color: hsl(var(--primary));
-		--jse-value-color-string: hsl(var(--foreground));
-		--jse-value-color-number: hsl(var(--primary));
-		--jse-value-color-boolean: hsl(var(--primary));
-		--jse-value-color-null: hsl(var(--muted-foreground));
-		--jse-delimiter-color: hsl(var(--muted-foreground));
-		--jse-error-color: hsl(var(--destructive));
-		--jse-input-background: hsl(var(--card));
-		--jse-border-radius: 0.375rem;
 		font-size: 0.75rem;
-	}
-	.json-editor-host :global(.cm-editor) {
-		background-color: hsl(var(--card)) !important;
 	}
 </style>

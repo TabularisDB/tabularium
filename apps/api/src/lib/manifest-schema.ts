@@ -5,19 +5,12 @@ import { getSetting, setSetting, deleteSetting, hasSetting } from './settings'
 
 const SETTING_KEY = 'manifest.extensions_schema'
 
-const ALLOWED_TYPES = new Set([
-  'string',
-  'number',
-  'integer',
-  'boolean',
-  'array',
-  'object',
-])
-
 const PROP_NAME_RE = /^[A-Za-z_][A-Za-z0-9_-]*$/
-const MAX_PROPS = 32
-const MAX_DEPTH = 6
-const MAX_STRING_LEN = 200
+const MAX_PROPS = 64
+const MAX_DEPTH = 8
+const MAX_DESCRIPTION_LEN = 2000
+const MAX_TITLE_LEN = 200
+const MAX_PATTERN_LEN = 500
 
 export type JsonSchemaProperty = Record<string, unknown>
 export type ExtensionsDelta = Record<string, JsonSchemaProperty>
@@ -26,74 +19,63 @@ function isPlainObject(v: unknown): v is Record<string, unknown> {
   return typeof v === 'object' && v !== null && !Array.isArray(v)
 }
 
-function validateNode(node: unknown, depth: number, path: string): void {
+function safetyCheck(node: unknown, depth: number, path: string): void {
   if (depth > MAX_DEPTH) throw new Error(`${path}: nesting exceeds max depth of ${MAX_DEPTH}`)
   if (!isPlainObject(node)) throw new Error(`${path}: must be an object`)
-  if (typeof node.type !== 'string' || !ALLOWED_TYPES.has(node.type)) {
-    throw new Error(`${path}: type must be one of ${[...ALLOWED_TYPES].join(', ')}`)
-  }
   if ('$ref' in node) throw new Error(`${path}: $ref is not allowed`)
-  if ('default' in node && node.default !== null && typeof node.default !== node.type && !(node.type === 'integer' && typeof node.default === 'number')) {
-    throw new Error(`${path}.default: must match the declared type`)
+  if (typeof node.description === 'string' && node.description.length > MAX_DESCRIPTION_LEN) {
+    throw new Error(`${path}.description: exceeds ${MAX_DESCRIPTION_LEN} chars`)
   }
-  if (typeof node.description === 'string' && node.description.length > MAX_STRING_LEN) {
-    throw new Error(`${path}.description: exceeds ${MAX_STRING_LEN} chars`)
+  if (typeof node.title === 'string' && node.title.length > MAX_TITLE_LEN) {
+    throw new Error(`${path}.title: exceeds ${MAX_TITLE_LEN} chars`)
   }
-  if (typeof node.title === 'string' && node.title.length > MAX_STRING_LEN) {
-    throw new Error(`${path}.title: exceeds ${MAX_STRING_LEN} chars`)
+  if (typeof node.pattern === 'string' && node.pattern.length > MAX_PATTERN_LEN) {
+    throw new Error(`${path}.pattern: exceeds ${MAX_PATTERN_LEN} chars`)
   }
-  if (node.type === 'string') {
-    if ('enum' in node) {
-      if (!Array.isArray(node.enum)) throw new Error(`${path}.enum: must be an array`)
-      for (const e of node.enum) {
-        if (typeof e !== 'string') throw new Error(`${path}.enum: entries must be strings`)
-      }
-    }
-    if (typeof node.pattern === 'string' && node.pattern.length > MAX_STRING_LEN) {
-      throw new Error(`${path}.pattern: exceeds ${MAX_STRING_LEN} chars`)
+  if (isPlainObject(node.items)) safetyCheck(node.items, depth + 1, `${path}.items`)
+  if (isPlainObject(node.properties)) {
+    const entries = Object.entries(node.properties)
+    if (entries.length > MAX_PROPS) throw new Error(`${path}.properties: more than ${MAX_PROPS} keys`)
+    for (const [name, sub] of entries) {
+      safetyCheck(sub, depth + 1, `${path}.properties.${name}`)
     }
   }
-  if (node.type === 'array') {
-    if (!isPlainObject(node.items)) throw new Error(`${path}.items: required for arrays`)
-    validateNode(node.items, depth + 1, `${path}.items`)
-  }
-  if (node.type === 'object') {
-    if ('properties' in node) {
-      if (!isPlainObject(node.properties)) throw new Error(`${path}.properties: must be an object`)
-      const entries = Object.entries(node.properties)
-      if (entries.length > MAX_PROPS) throw new Error(`${path}.properties: more than ${MAX_PROPS} keys`)
-      for (const [name, sub] of entries) {
-        if (!PROP_NAME_RE.test(name) || name.length > 60) {
-          throw new Error(`${path}.properties.${name}: invalid property name`)
-        }
-        validateNode(sub, depth + 1, `${path}.properties.${name}`)
-      }
-    }
-    if ('required' in node) {
-      if (!Array.isArray(node.required)) throw new Error(`${path}.required: must be an array`)
-      for (const r of node.required) {
-        if (typeof r !== 'string') throw new Error(`${path}.required: entries must be strings`)
-      }
-    }
-  }
+}
+
+/**
+ * If the input looks like a full root JSON Schema document (has `properties`
+ * AND at least one of the meta fields), unwrap it to the properties record so
+ * pasting a complete schema doesn't fail validation.
+ */
+function unwrapRootSchema(input: Record<string, unknown>): Record<string, unknown> {
+  const hasProperties = isPlainObject(input.properties)
+  const looksLikeRoot =
+    hasProperties && (
+      '$schema' in input ||
+      '$id' in input ||
+      input.type === 'object' ||
+      'title' in input ||
+      'additionalProperties' in input
+    )
+  if (looksLikeRoot) return input.properties as Record<string, unknown>
+  return input
 }
 
 export function validateExtensionsDelta(input: unknown): ExtensionsDelta {
   if (input === null || input === undefined) return {}
   if (!isPlainObject(input)) throw new Error('extensions must be an object')
-  const entries = Object.entries(input)
+  const unwrapped = unwrapRootSchema(input)
+  const entries = Object.entries(unwrapped)
   if (entries.length > MAX_PROPS) throw new Error(`extensions: more than ${MAX_PROPS} top-level properties`)
   const coreKeys = new Set(Object.keys((ManifestSchema as { properties: Record<string, unknown> }).properties))
   const out: ExtensionsDelta = {}
   for (const [name, node] of entries) {
+    if (coreKeys.has(name)) continue
     if (!PROP_NAME_RE.test(name) || name.length > 60) {
       throw new Error(`extensions.${name}: invalid property name`)
     }
-    if (coreKeys.has(name)) {
-      throw new Error(`extensions.${name}: shadows a core manifest field`)
-    }
     if (!isPlainObject(node)) throw new Error(`extensions.${name}: must be a JSON Schema object`)
-    validateNode(node, 1, `extensions.${name}`)
+    safetyCheck(node, 1, `extensions.${name}`)
     out[name] = node as JsonSchemaProperty
   }
   return out
@@ -119,11 +101,21 @@ export async function setExtensionsDelta(delta: ExtensionsDelta | null): Promise
   await setSetting(SETTING_KEY, JSON.stringify(cleaned))
 }
 
+function primitiveType(rawType: unknown): string | null {
+  if (typeof rawType === 'string') return rawType
+  if (Array.isArray(rawType)) {
+    const found = rawType.find((t) => typeof t === 'string' && t !== 'null')
+    if (typeof found === 'string') return found
+  }
+  return null
+}
+
 function nodeToTypeBox(node: JsonSchemaProperty): TSchema {
   const opts: Record<string, unknown> = {}
   if (typeof node.description === 'string') opts.description = node.description
   if (typeof node.title === 'string') opts.title = node.title
-  switch (node.type) {
+  const t = primitiveType(node.type)
+  switch (t) {
     case 'string': {
       const stringOpts: Record<string, unknown> = { ...opts }
       if (Array.isArray(node.enum)) stringOpts.enum = node.enum
@@ -137,17 +129,21 @@ function nodeToTypeBox(node: JsonSchemaProperty): TSchema {
     case 'boolean':
       return Type.Boolean(opts)
     case 'array': {
-      const items = node.items as JsonSchemaProperty
-      return Type.Array(nodeToTypeBox(items), opts)
+      const items = isPlainObject(node.items) ? (node.items as JsonSchemaProperty) : null
+      const item = items ? nodeToTypeBox(items) : Type.Any()
+      return Type.Array(item, opts)
     }
     case 'object': {
       const props: Record<string, TSchema> = {}
       const required = new Set<string>(
         Array.isArray(node.required) ? (node.required as string[]) : [],
       )
-      const properties = (node.properties as Record<string, JsonSchemaProperty> | undefined) ?? {}
+      const properties = isPlainObject(node.properties)
+        ? (node.properties as Record<string, JsonSchemaProperty>)
+        : {}
       for (const [name, sub] of Object.entries(properties)) {
-        const schema = nodeToTypeBox(sub)
+        if (!isPlainObject(sub)) continue
+        const schema = nodeToTypeBox(sub as JsonSchemaProperty)
         props[name] = required.has(name) ? schema : Type.Optional(schema)
       }
       return Type.Object(props, opts)
