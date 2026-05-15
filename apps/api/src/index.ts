@@ -31,9 +31,6 @@ export async function createApp() {
     )
     .use(
       openapi({
-        exclude: {
-          paths: [/^\/api\/admin\//, /^\/api\/init\//, /^\/uploads\//, /^\/\*$/],
-        },
         documentation: {
           info: {
             title: 'Tabularium API',
@@ -60,6 +57,21 @@ export async function createApp() {
         },
       }),
     )
+    .onAfterHandle({ as: 'global' }, ({ request, response }) => {
+      if (new URL(request.url).pathname !== '/openapi/json') return
+      if (!response || typeof response !== 'object') return
+      const spec = response as { paths?: Record<string, unknown>; tags?: Array<{ name: string }> }
+      if (spec.paths) {
+        for (const p of Object.keys(spec.paths)) {
+          if (p.includes('/admin/') || p.includes('/init/') || p.includes('/uploads/') || p === '/*') {
+            delete spec.paths[p]
+          }
+        }
+      }
+      if (Array.isArray(spec.tags)) {
+        spec.tags = spec.tags.filter((t) => t.name !== 'Admin')
+      }
+    })
     .use(router)
 
   if (config.installed) {
