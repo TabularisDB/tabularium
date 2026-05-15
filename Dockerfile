@@ -73,6 +73,22 @@ RUN printf '%s\n' \
 
 FROM docker.io/oven/bun:1.3-alpine@sha256:5acc90a93e91ff07bf72aa90a7c9f0fa189765aec90b47bdbf2152d2196383c0 AS runtime
 
+ARG VERSION=dev
+ARG REVISION=unknown
+ARG CREATED=unknown
+
+LABEL org.opencontainers.image.title="Tabularium Registry" \
+      org.opencontainers.image.description="Plugin registry for the Tabularium platform — index, submit, and discover plugins." \
+      org.opencontainers.image.source="https://codeberg.org/Tabularium/Tabularium" \
+      org.opencontainers.image.url="https://registry.spitzli.dev" \
+      org.opencontainers.image.documentation="https://codeberg.org/Tabularium/pages" \
+      org.opencontainers.image.licenses="Apache-2.0" \
+      org.opencontainers.image.vendor="Tabularium" \
+      org.opencontainers.image.version="$VERSION" \
+      org.opencontainers.image.revision="$REVISION" \
+      org.opencontainers.image.created="$CREATED" \
+      org.opencontainers.image.authors="Tabularium contributors"
+
 WORKDIR /app
 
 RUN addgroup -S app && adduser -S -G app app
