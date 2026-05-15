@@ -6,6 +6,7 @@
 	import Edit from '@lucide/svelte/icons/pencil'
 	import Eye from '@lucide/svelte/icons/eye'
 	import EyeOff from '@lucide/svelte/icons/eye-off'
+	import Search from '@lucide/svelte/icons/search'
 	import Card from '$components/ui/Card.svelte'
 	import CardContent from '$components/ui/CardContent.svelte'
 	import CardHeader from '$components/ui/CardHeader.svelte'
@@ -17,6 +18,8 @@
 	import Badge from '$components/ui/Badge.svelte'
 	import { eden } from '$lib/eden'
 	import { m } from '$lib/paraglide/messages'
+	import AdminPageHeader from '$components/admin/AdminPageHeader.svelte'
+	import TabBar from '$components/admin/TabBar.svelte'
 
 	type AdminPage = {
 		slug: string
@@ -30,20 +33,48 @@
 		updatedAt: number
 	}
 
-	let pages = $state<AdminPage[]>([])
+	let allPages = $state<AdminPage[]>([])
 	let loading = $state(true)
 	let busy = $state(false)
+	let filter = $state<'all' | 'published' | 'draft'>('all')
+	let search = $state('')
 
 	let newSlug = $state('')
 	let newTitle = $state('')
 	let newPath = $state('')
+
+	const counts = $derived.by(() => {
+		let published = 0
+		let draft = 0
+		for (const p of allPages) {
+			if (p.published) published++
+			else draft++
+		}
+		return { all: allPages.length, published, draft }
+	})
+
+	const pages = $derived.by(() => {
+		const q = search.trim().toLowerCase()
+		return allPages
+			.filter((p) => {
+				if (filter === 'published' && !p.published) return false
+				if (filter === 'draft' && p.published) return false
+				if (!q) return true
+				return (
+					p.title.toLowerCase().includes(q) ||
+					p.slug.toLowerCase().includes(q) ||
+					p.path.toLowerCase().includes(q)
+				)
+			})
+			.sort((a, b) => b.updatedAt - a.updatedAt)
+	})
 
 	async function load() {
 		loading = true
 		try {
 			const { data, error } = await eden.api.admin.pages.get()
 			if (error) throw error
-			pages = (data as { pages: AdminPage[] }).pages
+			allPages = (data as { pages: AdminPage[] }).pages
 		} finally {
 			loading = false
 		}
@@ -98,15 +129,36 @@
 	}
 </script>
 
-<header class="space-y-1">
-	<h1 class="text-2xl font-semibold tracking-tight">{m.admin_pages_title()}</h1>
-	<p class="text-sm text-muted-foreground">{m.admin_pages_subtitle_prefix()} <code class="font-mono">/pages/:slug</code>.</p>
-</header>
+<AdminPageHeader title={m.admin_pages_title()}>
+	{#snippet subtitleSnippet()}
+		{m.admin_pages_subtitle_prefix()} <code class="font-mono">/pages/:slug</code>.
+	{/snippet}
+</AdminPageHeader>
+
+<div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+	<TabBar
+		size="sm"
+		bind:active={filter}
+		tabs={[
+			{ id: 'all', label: m.admin_pages_tab_all(), badge: counts.all },
+			{ id: 'published', label: m.admin_pages_published(), badge: counts.published },
+			{ id: 'draft', label: m.admin_pages_draft(), badge: counts.draft },
+		]}
+	/>
+	<div class="relative w-full sm:w-72">
+		<Search class="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+		<Input
+			bind:value={search}
+			class="pl-9"
+			placeholder={m.admin_pages_search_placeholder()}
+		/>
+	</div>
+</div>
 
 <Card>
 	<CardHeader>
 		<CardTitle class="text-base">{m.admin_pages_all()}</CardTitle>
-		<CardDescription>{m.admin_pages_count({ total: pages.length, published: pages.filter((p) => p.published).length })}</CardDescription>
+		<CardDescription>{m.admin_pages_count({ total: allPages.length, published: counts.published })}</CardDescription>
 	</CardHeader>
 	<CardContent class="space-y-2">
 		{#if loading}
