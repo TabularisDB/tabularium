@@ -25,6 +25,8 @@ const EnvSchema = Type.Object({
   ),
   REDIS_URL: Type.Optional(Type.String({ pattern: '^rediss?://.+' })),
 
+  DATA_DIR: Type.String({ default: './data' }),
+
   // Optional bootstrap-seed: if set, provider_instances will be seeded on first boot.
   // Once admins configure providers via the UI, these are ignored.
   GITHUB_CLIENT_ID: Type.Optional(Type.String()),

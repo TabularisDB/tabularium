@@ -1,9 +1,10 @@
+import { resolve } from 'node:path'
 import { hashPassword, verifyPassword } from './password'
-import { isProd } from './env'
+import { isProd, env } from './env'
 
 export const BOOTSTRAP_EMAIL = 'admin@example.com'
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'
-const BOOTSTRAP_PW_FILE = './data/bootstrap-password'
+const BOOTSTRAP_PW_FILE = resolve(env.DATA_DIR, 'bootstrap-password')
 
 type BootstrapState = {
   email: string

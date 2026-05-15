@@ -94,7 +94,7 @@ function readConfig(): Config {
 
   return {
     driver,
-    diskRoot: resolve('./data/uploads'),
+    diskRoot: resolve(env.DATA_DIR, 'uploads'),
     publicPrefix: '/uploads',
     s3Bucket: get('infra.storage.s3_bucket'),
     s3Region: get('infra.storage.s3_region') ?? 'us-east-1',

@@ -3,6 +3,7 @@ import { Value } from '@sinclair/typebox/value'
 import { resolve } from 'node:path'
 import { mkdir, rename } from 'node:fs/promises'
 import { dirname } from 'node:path'
+import { env } from './env'
 
 export const ConfigSchema = Type.Object({
   installed: Type.Boolean({ default: false }),
@@ -15,7 +16,7 @@ export const ConfigSchema = Type.Object({
 
 export type Config = Static<typeof ConfigSchema>
 
-const CONFIG_PATH = process.env.CONFIG_PATH ?? resolve(process.cwd(), 'data/config.json')
+const CONFIG_PATH = process.env.CONFIG_PATH ?? resolve(env.DATA_DIR, 'config.json')
 const DEFAULT: Config = { installed: false }
 
 let cached: Config | null = null
