@@ -4,7 +4,6 @@
 	import Plus from '@lucide/svelte/icons/plus'
 	import Save from '@lucide/svelte/icons/save'
 	import Trash2 from '@lucide/svelte/icons/trash-2'
-	import JsonEditor from '$components/JsonEditor.svelte'
 	import Card from '$components/ui/Card.svelte'
 	import CardContent from '$components/ui/CardContent.svelte'
 	import CardDescription from '$components/ui/CardDescription.svelte'
@@ -12,37 +11,46 @@
 	import CardTitle from '$components/ui/CardTitle.svelte'
 	import Button from '$components/ui/Button.svelte'
 	import Input from '$components/ui/Input.svelte'
+	import AdminPageHeader from '$components/admin/AdminPageHeader.svelte'
+	import CollapsibleRow from '$components/admin/CollapsibleRow.svelte'
+	import ExtensionsEditor, { type ExtensionsDelta } from '$components/admin/ExtensionsEditor.svelte'
 	import { eden } from '$lib/eden'
 	import type { Kind } from '$lib/types'
 	import { m } from '$lib/paraglide/messages'
 
-	type KindWithExt = Kind & { extensionsSchema?: Record<string, unknown> | null }
+	type KindRow = Kind & {
+		extensionsSchema: ExtensionsDelta
+		extOpen: boolean
+	}
 
-	let kinds = $state<KindWithExt[]>([])
+	let kinds = $state<KindRow[]>([])
 	let loading = $state(true)
 	let newKey = $state('')
 	let newLabel = $state('')
 	let newDescription = $state('')
 	let creating = $state(false)
 	let savingKey = $state<string | null>(null)
-	let extOpen = $state<Record<string, boolean>>({})
-	let extJson = $state<Record<string, string>>({})
-	let extErr = $state<Record<string, string | null>>({})
 
 	onMount(loadKinds)
+
+	function extractError(error: unknown): string {
+		const e = error as { value?: unknown; status?: number }
+		if (typeof e.value === 'string') return e.value
+		const v = e.value as { error?: string } | undefined
+		return v?.error ?? `Request failed (${e.status ?? '?'})`
+	}
 
 	async function loadKinds() {
 		loading = true
 		try {
 			const { data, error } = await eden.api.admin.kinds.get()
 			if (error) throw error
-			kinds = (data as { kinds: KindWithExt[] }).kinds
-			extJson = Object.fromEntries(
-				kinds.map((k) => [
-					k.key,
-					k.extensionsSchema ? JSON.stringify(k.extensionsSchema, null, 2) : '',
-				]),
-			)
+			const list = (data as { kinds: Array<Kind & { extensionsSchema?: Record<string, unknown> | null }> }).kinds
+			kinds = list.map((k) => ({
+				...k,
+				extensionsSchema: (k.extensionsSchema as ExtensionsDelta | null) ?? {},
+				extOpen: false,
+			}))
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : m.admin_kinds_load_failed())
 		} finally {
@@ -60,12 +68,8 @@
 				description: newDescription.trim() || null,
 			})
 			if (error) {
-				if (error.status === 409) {
-					toast.error(m.admin_kinds_duplicate())
-				} else {
-					const msg = typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? m.admin_kinds_save_failed())
-					toast.error(msg)
-				}
+				if (error.status === 409) toast.error(m.admin_kinds_duplicate())
+				else toast.error(extractError(error))
 				return
 			}
 			toast.success(m.admin_kinds_created())
@@ -78,34 +82,18 @@
 		}
 	}
 
-	async function saveKind(k: KindWithExt) {
+	async function saveKind(k: KindRow) {
 		savingKey = k.key
 		try {
-			let extensionsSchema: Record<string, unknown> | null = null
-			const raw = (extJson[k.key] ?? '').trim()
-			if (raw) {
-				try {
-					const parsed = JSON.parse(raw)
-					if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
-						throw new Error('extensions must be a JSON object')
-					}
-					extensionsSchema = parsed as Record<string, unknown>
-				} catch (e) {
-					extErr[k.key] = e instanceof Error ? e.message : 'invalid JSON'
-					toast.error(extErr[k.key]!)
-					return
-				}
-			}
-			extErr[k.key] = null
+			const payload = Object.keys(k.extensionsSchema).length === 0 ? null : k.extensionsSchema
 			const { error } = await eden.api.admin.kinds({ key: k.key }).put({
 				key: k.key,
 				label: k.label,
 				description: k.description,
-				extensionsSchema,
+				extensionsSchema: payload,
 			})
 			if (error) {
-				const msg = typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? m.admin_kinds_save_failed())
-				toast.error(msg)
+				toast.error(extractError(error))
 				return
 			}
 			toast.success(m.admin_kinds_updated())
@@ -120,8 +108,7 @@
 		try {
 			const { error } = await eden.api.admin.kinds({ key: k.key }).delete()
 			if (error) {
-				const msg = typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? m.admin_kinds_save_failed())
-				toast.error(msg)
+				toast.error(extractError(error))
 				return
 			}
 			toast.success(m.admin_kinds_deleted())
@@ -130,12 +117,23 @@
 			toast.error(e instanceof Error ? e.message : m.admin_kinds_save_failed())
 		}
 	}
+
+	function onCreateKey(e: KeyboardEvent) {
+		if (e.key === 'Enter' && !e.shiftKey) {
+			e.preventDefault()
+			addKind()
+		}
+	}
+
+	function onEditKey(e: KeyboardEvent, k: KindRow) {
+		if (e.key === 'Enter' && !e.shiftKey && (e.metaKey || e.ctrlKey || (e.target as HTMLElement).tagName === 'INPUT')) {
+			e.preventDefault()
+			saveKind(k)
+		}
+	}
 </script>
 
-<header class="space-y-1">
-	<h1 class="text-2xl font-semibold tracking-tight">{m.admin_kinds_title()}</h1>
-	<p class="text-sm text-muted-foreground">{m.admin_kinds_subtitle()}</p>
-</header>
+<AdminPageHeader title={m.admin_kinds_title()} subtitle={m.admin_kinds_subtitle()} />
 
 {#if loading}
 	<p class="text-sm text-muted-foreground">{m.common_loading()}</p>
@@ -152,37 +150,30 @@
 					<CardContent class="space-y-3">
 						<label class="block space-y-1">
 							<span class="text-xs font-medium text-muted-foreground">{m.admin_kinds_field_label()}</span>
-							<Input bind:value={k.label} />
+							<Input bind:value={k.label} onkeydown={(e) => onEditKey(e, k)} />
 						</label>
 						<label class="block space-y-1">
 							<span class="text-xs font-medium text-muted-foreground">{m.admin_kinds_field_description()}</span>
-							<Input value={k.description ?? ''} oninput={(e) => (k.description = (e.currentTarget as HTMLInputElement).value)} />
+							<Input
+								value={k.description ?? ''}
+								oninput={(e) => (k.description = (e.currentTarget as HTMLInputElement).value)}
+								onkeydown={(e) => onEditKey(e, k)}
+							/>
 						</label>
-						<div class="rounded-md border border-border bg-card/50 p-3 space-y-2">
-							<button
-								type="button"
-								class="text-xs text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5"
-								onclick={() => (extOpen[k.key] = !extOpen[k.key])}
-							>
-								<span>{extOpen[k.key] ? '▾' : '▸'}</span>
-								{m.admin_kinds_ext_toggle()}
-								{#if extJson[k.key]?.trim()}
-									<span class="text-[10px] uppercase tracking-wide text-primary">{m.admin_kinds_ext_override_active()}</span>
+
+						<CollapsibleRow bind:expanded={k.extOpen} name={m.admin_kinds_ext_toggle()}>
+							{#snippet header()}
+								<span class="text-sm font-medium">{m.admin_kinds_ext_toggle()}</span>
+								{#if Object.keys(k.extensionsSchema).length > 0}
+									<span class="text-[10px] uppercase tracking-wide text-primary ml-2">{m.admin_kinds_ext_override_active()}</span>
+								{:else}
+									<span class="text-xs text-muted-foreground ml-2 truncate">{m.admin_kinds_ext_empty_reverts()}</span>
 								{/if}
-							</button>
-							{#if extOpen[k.key]}
-								<p class="text-xs text-muted-foreground">{m.admin_kinds_ext_hint()}</p>
-								<JsonEditor
-									bind:value={extJson[k.key]}
-									minHeight="9rem"
-									onchange={(_, err) => (extErr[k.key] = err)}
-								/>
-								{#if extErr[k.key]}
-									<p class="text-xs text-destructive">{extErr[k.key]}</p>
-								{/if}
-								<p class="text-xs text-muted-foreground">{m.admin_kinds_ext_empty_reverts()}</p>
-							{/if}
-						</div>
+							{/snippet}
+							<p class="text-xs text-muted-foreground">{m.admin_kinds_ext_hint()}</p>
+							<ExtensionsEditor bind:value={k.extensionsSchema} templates={false} minHeight="14rem" />
+						</CollapsibleRow>
+
 						<div class="flex gap-2 justify-end">
 							<Button size="sm" variant="outline" onclick={() => deleteKind(k)}>
 								<Trash2 class="h-3.5 w-3.5" />
@@ -207,15 +198,15 @@
 		<CardContent class="space-y-3">
 			<label class="block space-y-1">
 				<span class="text-xs font-medium text-muted-foreground">{m.admin_kinds_field_key()}</span>
-				<Input bind:value={newKey} placeholder="theme" />
+				<Input bind:value={newKey} placeholder="theme" onkeydown={onCreateKey} />
 			</label>
 			<label class="block space-y-1">
 				<span class="text-xs font-medium text-muted-foreground">{m.admin_kinds_field_label()}</span>
-				<Input bind:value={newLabel} placeholder="Themes" />
+				<Input bind:value={newLabel} placeholder="Themes" onkeydown={onCreateKey} />
 			</label>
 			<label class="block space-y-1">
 				<span class="text-xs font-medium text-muted-foreground">{m.admin_kinds_field_description()}</span>
-				<Input bind:value={newDescription} />
+				<Input bind:value={newDescription} onkeydown={onCreateKey} />
 			</label>
 			<div class="flex justify-end">
 				<Button size="sm" onclick={addKind} disabled={creating || !newKey.trim() || !newLabel.trim()}>
