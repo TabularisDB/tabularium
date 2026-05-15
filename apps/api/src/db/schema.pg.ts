@@ -77,6 +77,7 @@ export const plugins = pgTable('plugins', {
   manifestVersion: text('manifest_version'),
   featured: smallint('featured').notNull().default(0),
   featuredOrder: integer('featured_order'),
+  downloads: integer('downloads').notNull().default(0),
   createdAt: ts('created_at').notNull().$defaultFn(now),
   updatedAt: ts('updated_at').notNull().$defaultFn(now),
 })
@@ -162,4 +163,14 @@ export const auditLog = pgTable('audit_log', {
   ip: text('ip'),
   createdAt: ts('created_at').notNull().$defaultFn(now),
 })
+
+export const downloadEvents = pgTable('download_events', {
+  id: text('id').primaryKey(),
+  pluginId: text('plugin_id').notNull().references(() => plugins.id, { onDelete: 'cascade' }),
+  version: text('version').notNull(),
+  platform: text('platform').notNull(),
+  createdAt: ts('created_at').notNull().$defaultFn(now),
+}, (t) => ({
+  byPluginCreated: uniqueIndex('download_events_plugin_created').on(t.pluginId, t.createdAt, t.id),
+}))
 

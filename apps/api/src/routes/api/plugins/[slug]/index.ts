@@ -49,6 +49,7 @@ const pluginDetailSchema = t.Object({
   issuesUrl: t.Nullable(t.String()),
   featured: t.Boolean(),
   featuredOrder: t.Nullable(t.Number()),
+  downloads: t.Number(),
   manifestFetchedAt: t.Nullable(t.Number()),
   readmeHtml: t.Nullable(t.String()),
   readmeLocale: t.Nullable(t.String()),

@@ -27,6 +27,7 @@ export type PublicPlugin = {
   issuesUrl: string | null
   featured: boolean
   featuredOrder: number | null
+  downloads: number
   manifestFetchedAt: number | null
   createdAt: number
   updatedAt: number
@@ -76,6 +77,7 @@ export function projectPlugin(row: PluginRow): PublicPlugin {
     issuesUrl: row.issuesUrl ?? null,
     featured: row.featured === 1,
     featuredOrder: row.featuredOrder ?? null,
+    downloads: row.downloads ?? 0,
     manifestFetchedAt: row.manifestFetchedAt ?? null,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,

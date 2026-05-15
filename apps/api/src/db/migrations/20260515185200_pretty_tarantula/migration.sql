@@ -1,0 +1,1 @@
+ALTER TABLE `plugins` ADD `downloads` integer DEFAULT 0 NOT NULL;

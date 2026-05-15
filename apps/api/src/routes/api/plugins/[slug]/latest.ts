@@ -1,5 +1,8 @@
 import { Elysia, t } from 'elysia'
+import { sql, eq } from 'drizzle-orm'
+import { ulid } from 'ulid'
 import { db } from '../../../../db'
+import { plugins, downloadEvents } from '../../../../db/schema'
 import { cache } from '../../../../lib/cache'
 import { parseAssets, type AssetMap } from '../../../../lib/asset'
 
@@ -99,6 +102,20 @@ export default new Elysia()
         platforms: resolved.assets,
       }
     }
+
+    // Best-effort tracking — failures don't break the resolve.
+    const resolvedPlatform = platformKey && resolved.assets[platformKey]
+      ? platformKey
+      : (resolved.assets.universal ? 'universal' : 'unknown')
+    Promise.allSettled([
+      db.update(plugins).set({ downloads: sql`${plugins.downloads} + 1` }).where(eq(plugins.id, params.slug)),
+      db.insert(downloadEvents).values({
+        id: ulid(),
+        pluginId: params.slug,
+        version: resolved.version,
+        platform: resolvedPlatform,
+      }),
+    ]).catch(() => {})
 
     return {
       version: resolved.version,

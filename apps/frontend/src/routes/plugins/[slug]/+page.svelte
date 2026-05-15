@@ -11,8 +11,8 @@
 	import Shield from '@lucide/svelte/icons/shield'
 	import Copy from '@lucide/svelte/icons/copy'
 	import Star from '@lucide/svelte/icons/star'
-	import GitFork from '@lucide/svelte/icons/git-fork'
 	import Clock from '@lucide/svelte/icons/clock'
+	import Download from '@lucide/svelte/icons/download'
 	import Cpu from '@lucide/svelte/icons/cpu'
 	import HardDrive from '@lucide/svelte/icons/hard-drive'
 	import Languages from '@lucide/svelte/icons/languages'
@@ -341,6 +341,38 @@
 		<!-- TWO-COLUMN GRID -->
 		<div class="grid gap-10 lg:grid-cols-[1fr_320px] mt-10">
 			<div class="space-y-12 min-w-0">
+				<!-- DOWNLOAD -->
+				<section class="space-y-4">
+					<div class="flex items-baseline justify-between gap-3 flex-wrap">
+						<h2 class="text-2xl font-semibold tracking-tight">{m.plugin_detail_download_title()}</h2>
+						{#if latestRelease}
+							<span class="text-xs font-mono text-muted-foreground">v{latestRelease.version}</span>
+						{/if}
+					</div>
+					{#if latestRelease && platformList.length > 0}
+						<div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+							{#each platformList as p (p.key)}
+								<a
+									href={p.url}
+									class="group flex items-center gap-3 px-4 py-3 rounded-lg border border-border bg-card hover:border-primary/40 hover:bg-foreground/[0.02] transition-colors"
+								>
+									<Download class="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+									<div class="flex-1 min-w-0">
+										<div class="font-mono text-sm">{platformLabel(p.key)}</div>
+										{#if p.size}
+											<div class="text-[11px] text-muted-foreground">{formatBytes(p.size)}</div>
+										{/if}
+									</div>
+								</a>
+							{/each}
+						</div>
+					{:else}
+						<div class="rounded-lg border border-dashed border-border p-6 text-sm text-muted-foreground">
+							{m.plugin_detail_download_empty()}
+						</div>
+					{/if}
+				</section>
+
 				<!-- SCREENSHOTS -->
 				{#if plugin.screenshots.length > 0}
 					<section class="space-y-4">
@@ -452,10 +484,10 @@
 					</div>
 					<div class="flex items-center justify-between py-3 border-b border-dashed border-border/70">
 						<div class="inline-flex items-center gap-2 text-xs uppercase tracking-[0.06em] text-muted-foreground font-mono">
-							<GitFork class="h-3.5 w-3.5" />
-							<span>{m.plugin_detail_stat_forks()}</span>
+							<Download class="h-3.5 w-3.5" />
+							<span>{m.plugin_detail_stat_downloads()}</span>
 						</div>
-						<div class="text-2xl font-semibold leading-none">{formatNumber(stats?.forks)}</div>
+						<div class="text-2xl font-semibold leading-none">{formatNumber(plugin.downloads)}</div>
 					</div>
 					<div class="flex items-center justify-between py-3 border-b border-dashed border-border/70">
 						<div class="inline-flex items-center gap-2 text-xs uppercase tracking-[0.06em] text-muted-foreground font-mono">

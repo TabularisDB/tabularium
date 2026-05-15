@@ -31,6 +31,10 @@ export async function createApp() {
     )
     .use(
       openapi({
+        exclude: {
+          tags: ['Admin'],
+          paths: [/^\/api\/init\//],
+        },
         documentation: {
           info: {
             title: 'Tabularium API',
@@ -39,7 +43,7 @@ export async function createApp() {
             contact: { name: 'Tabularium' },
             license: { name: 'Apache-2.0' },
           },
-          servers: [{ url: 'http://localhost:3000', description: 'Local dev' }],
+          servers: [{ url: env.BASE_URL, description: env.NODE_ENV === 'production' ? 'Production' : 'Local dev' }],
           tags: [
             { name: 'Plugins', description: 'Browse and inspect indexed plugins.' },
             { name: 'Auth', description: 'OAuth + email/password sign-in.' },
@@ -71,7 +75,7 @@ export async function createApp() {
         }
         set.headers['content-type'] = 'text/html; charset=utf-8'
         return Bun.file(resolve('../frontend/dist/index.html'))
-      })
+      }, { detail: { hide: true } })
   }
 
   return base
@@ -88,7 +92,7 @@ export async function createApp() {
     .get('/*', ({ set }) => {
       set.headers['content-type'] = 'text/html; charset=utf-8'
       return Bun.file(resolve('../frontend/dist/index.html'))
-    })
+    }, { detail: { hide: true } })
 }
 
 export type App = Awaited<ReturnType<typeof createApp>>

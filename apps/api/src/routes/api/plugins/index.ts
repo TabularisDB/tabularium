@@ -32,6 +32,7 @@ const pluginSummarySchema = t.Object({
   issuesUrl: t.Nullable(t.String()),
   featured: t.Boolean(),
   featuredOrder: t.Nullable(t.Number()),
+  downloads: t.Number(),
   manifestFetchedAt: t.Nullable(t.Number()),
   createdAt: t.Number(),
   updatedAt: t.Number(),

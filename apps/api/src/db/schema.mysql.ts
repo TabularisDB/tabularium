@@ -77,6 +77,7 @@ export const plugins = mysqlTable('plugins', {
   manifestVersion: varchar('manifest_version', { length: 80 }),
   featured: tinyint('featured').notNull().default(0),
   featuredOrder: int('featured_order'),
+  downloads: int('downloads').notNull().default(0),
   createdAt: ts('created_at').notNull().$defaultFn(now),
   updatedAt: ts('updated_at').notNull().$defaultFn(now),
 })
@@ -162,4 +163,14 @@ export const auditLog = mysqlTable('audit_log', {
   ip: varchar('ip', { length: 64 }),
   createdAt: ts('created_at').notNull().$defaultFn(now),
 })
+
+export const downloadEvents = mysqlTable('download_events', {
+  id: id('id').primaryKey(),
+  pluginId: id('plugin_id').notNull().references(() => plugins.id, { onDelete: 'cascade' }),
+  version: varchar('version', { length: 80 }).notNull(),
+  platform: varchar('platform', { length: 40 }).notNull(),
+  createdAt: ts('created_at').notNull().$defaultFn(now),
+}, (t) => ({
+  byPluginCreated: uniqueIndex('download_events_plugin_created').on(t.pluginId, t.createdAt, t.id),
+}))
 

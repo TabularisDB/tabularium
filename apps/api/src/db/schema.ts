@@ -72,6 +72,9 @@ export const plugins = sqliteTable('plugins', {
   // Admin pinning for landing "featured" slot.
   featured: integer('featured').notNull().default(0),
   featuredOrder: integer('featured_order'),
+  // Resolved-asset hits via /api/plugins/:slug/latest. Direct repo-asset
+  // clicks aren't counted (we don't proxy them).
+  downloads: integer('downloads').notNull().default(0),
   createdAt: integer('created_at').notNull().$defaultFn(now),
   updatedAt: integer('updated_at').notNull().$defaultFn(now),
 })
@@ -157,4 +160,17 @@ export const auditLog = sqliteTable('audit_log', {
   ip: text('ip'),
   createdAt: integer('created_at').notNull().$defaultFn(now),
 })
+
+// One row per resolved /latest hit. No PII — just enough to plot
+// download trends per plugin/platform/version over time.
+export const downloadEvents = sqliteTable('download_events', {
+  id: text('id').primaryKey(),
+  pluginId: text('plugin_id').notNull().references(() => plugins.id, { onDelete: 'cascade' }),
+  version: text('version').notNull(),
+  platform: text('platform').notNull(),
+  createdAt: integer('created_at').notNull().$defaultFn(now),
+}, (t) => ({
+  byPluginCreated: uniqueIndex('download_events_plugin_created')
+    .on(t.pluginId, t.createdAt, t.id),
+}))
 

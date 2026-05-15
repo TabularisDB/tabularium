@@ -39,4 +39,5 @@ export const relations = defineRelations(schema, (r) => ({
     to: r.one.users({ from: r.pluginTransfers.toUserId, to: r.users.id, alias: 'to' }),
   },
   auditLog: {},
+  downloadEvents: {},
 }))

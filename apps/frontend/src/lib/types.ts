@@ -66,6 +66,7 @@ export type Plugin = {
 	issuesUrl: string | null
 	featured: boolean
 	featuredOrder: number | null
+	downloads: number
 	manifestFetchedAt: number | null
 	createdAt: number
 	updatedAt: number
