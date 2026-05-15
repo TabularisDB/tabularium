@@ -1,6 +1,6 @@
 <script lang="ts">
 	import { page } from '$app/state'
-	import { onMount } from 'svelte'
+	import { onMount, untrack } from 'svelte'
 	import { goto } from '$app/navigation'
 	import ExternalLink from '@lucide/svelte/icons/external-link'
 	import Trash2 from '@lucide/svelte/icons/trash-2'
@@ -11,28 +11,43 @@
 	import Mail from '@lucide/svelte/icons/mail'
 	import Shield from '@lucide/svelte/icons/shield'
 	import Copy from '@lucide/svelte/icons/copy'
+	import Star from '@lucide/svelte/icons/star'
+	import GitFork from '@lucide/svelte/icons/git-fork'
+	import Clock from '@lucide/svelte/icons/clock'
+	import Cpu from '@lucide/svelte/icons/cpu'
+	import HardDrive from '@lucide/svelte/icons/hard-drive'
+	import Languages from '@lucide/svelte/icons/languages'
+	import Code2 from '@lucide/svelte/icons/code-2'
+	import Sparkles from '@lucide/svelte/icons/sparkles'
+	import Check from '@lucide/svelte/icons/check'
 	import Badge from '$components/ui/Badge.svelte'
 	import Button from '$components/ui/Button.svelte'
 	import Skeleton from '$components/ui/Skeleton.svelte'
 	import { eden } from '$lib/eden'
 	import { auth } from '$lib/stores/auth.svelte'
+	import { branding } from '$lib/stores/branding.svelte'
+	import { i18n, LOCALE_LABELS, type Locale } from '$lib/stores/i18n.svelte'
 	import { toast } from 'svelte-sonner'
-	import type { Plugin } from '$lib/types'
+	import type { Plugin, PluginStats } from '$lib/types'
 	import { m } from '$lib/paraglide/messages'
 
 	const slug = $derived(page.params.slug)
+	const locale = $derived(i18n.current)
 
 	let plugin = $state<Plugin | null>(null)
+	let stats = $state<PluginStats | null>(null)
 	let loading = $state(true)
 	let notFound = $state(false)
 	let deleting = $state(false)
 	let activeScreenshot = $state<number | null>(null)
+	let selectedPlatform = $state<string | null>(null)
+	let copying = $state(false)
 
-	async function load() {
+	async function load(currentLocale: Locale) {
 		loading = true
 		notFound = false
 		try {
-			const { data, error } = await eden.api.plugins({ slug }).get()
+			const { data, error } = await eden.api.plugins({ slug }).get({ query: { locale: currentLocale } })
 			if (error) {
 				if (error.status === 404) notFound = true
 				return
@@ -43,11 +58,25 @@
 		}
 	}
 
-	onMount(load)
+	async function loadStats() {
+		try {
+			const { data, error } = await eden.api.plugins({ slug }).stats.get()
+			if (error) return
+			stats = data as PluginStats
+		} catch {
+			// silent
+		}
+	}
+
+	onMount(() => {
+		void load(locale)
+		void loadStats()
+	})
 
 	$effect(() => {
 		void slug
-		load()
+		void locale
+		untrack(() => load(locale))
 	})
 
 	const sortedReleases = $derived(
@@ -56,18 +85,53 @@
 	const isOwner = $derived(auth.user?.id === plugin?.ownerId)
 
 	const baseUrl = $derived(typeof window === 'undefined' ? '' : window.location.origin)
-	const installCommand = $derived(
-		plugin
-			? `curl -L "${baseUrl}/api/plugins/${plugin.id}/latest?os=$(uname -s | tr '[:upper:]' '[:lower:]')&arch=$(uname -m)"`
-			: '',
-	)
+	const latestRelease = $derived(sortedReleases[0] ?? null)
+
+	const platformList = $derived.by(() => {
+		if (!latestRelease) return [] as Array<{ key: string; url: string; size?: number; sha256?: string }>
+		return Object.entries(latestRelease.assets).map(([key, entry]) => ({ key, ...entry }))
+	})
+
+	$effect(() => {
+		if (platformList.length > 0 && !platformList.find((p) => p.key === selectedPlatform)) {
+			untrack(() => {
+				selectedPlatform = guessPlatform(platformList.map((p) => p.key))
+			})
+		}
+	})
+
+	function guessPlatform(available: string[]): string {
+		if (typeof navigator === 'undefined') return available[0] ?? 'universal'
+		const ua = navigator.userAgent.toLowerCase()
+		const platform = (navigator.platform || '').toLowerCase()
+		let os = 'linux'
+		if (ua.includes('mac') || platform.includes('mac')) os = 'darwin'
+		else if (ua.includes('win') || platform.includes('win')) os = 'win'
+		let arch = 'x64'
+		if (ua.includes('arm64') || ua.includes('aarch64')) arch = 'arm64'
+		const key = `${os}-${arch}`
+		if (available.includes(key)) return key
+		if (available.includes(`${os}-x64`)) return `${os}-x64`
+		if (available.includes('universal')) return 'universal'
+		return available[0] ?? 'universal'
+	}
+
+	const installCommand = $derived.by(() => {
+		if (!plugin) return ''
+		const selected = platformList.find((p) => p.key === selectedPlatform)
+		if (selected) return `curl -fLO "${selected.url}"`
+		return `curl -fL "${baseUrl}/api/plugins/${plugin.id}/latest"`
+	})
 
 	async function copyInstall() {
+		copying = true
 		try {
 			await navigator.clipboard.writeText(installCommand)
 			toast.success(m.plugin_detail_copied())
 		} catch {
 			toast.error(m.plugin_detail_clipboard_unavailable())
+		} finally {
+			setTimeout(() => (copying = false), 1200)
 		}
 	}
 
@@ -103,47 +167,153 @@
 		}
 	}
 
-	function formatBytes(n: number | undefined): string {
+	function formatBytes(n: number | undefined | null): string {
 		if (!n) return '—'
 		if (n < 1024) return `${n} B`
 		if (n < 1024 * 1024) return `${(n / 1024).toFixed(1)} KB`
-		return `${(n / 1024 / 1024).toFixed(1)} MB`
+		if (n < 1024 * 1024 * 1024) return `${(n / 1024 / 1024).toFixed(1)} MB`
+		return `${(n / 1024 / 1024 / 1024).toFixed(2)} GB`
 	}
+
+	function formatNumber(n: number | null | undefined): string {
+		if (n === null || n === undefined) return '—'
+		if (n >= 1000) return `${(n / 1000).toFixed(1)}k`
+		return String(n)
+	}
+
+	function formatRelative(ts: number | null | undefined): string {
+		if (!ts) return '—'
+		const diff = Date.now() - ts
+		const minute = 60_000
+		const hour = 60 * minute
+		const day = 24 * hour
+		const week = 7 * day
+		const month = 30 * day
+		const year = 365 * day
+		if (diff < minute) return 'just now'
+		if (diff < hour) return `${Math.floor(diff / minute)}m ago`
+		if (diff < day) return `${Math.floor(diff / hour)}h ago`
+		if (diff < week) return `${Math.floor(diff / day)}d ago`
+		if (diff < month) return `${Math.floor(diff / week)}w ago`
+		if (diff < year) return `${Math.floor(diff / month)}mo ago`
+		return `${Math.floor(diff / year)}y ago`
+	}
+
+	function platformLabel(key: string): string {
+		const parts = key.split('-')
+		const os = parts[0]
+		const arch = parts[1] ?? ''
+		const osLabel = os === 'darwin' ? 'macOS' : os === 'win' ? 'Windows' : os === 'linux' ? 'Linux' : os
+		if (key === 'universal') return 'Universal'
+		return arch ? `${osLabel} · ${arch}` : osLabel
+	}
+
+	function providerKind(homepage: string): 'github' | 'gitlab' | 'codeberg' | 'gitea' {
+		if (homepage.includes('github.com')) return 'github'
+		if (homepage.includes('gitlab.com') || homepage.includes('gitlab.')) return 'gitlab'
+		if (homepage.includes('codeberg.org')) return 'codeberg'
+		return 'gitea'
+	}
+
+	function totalReleaseSize(release: typeof latestRelease): number {
+		if (!release) return 0
+		return Object.values(release.assets).reduce((acc, a) => acc + (a.size ?? 0), 0)
+	}
+
+	const ogImage = $derived(plugin?.iconUrl ?? `${baseUrl}/favicon.png`)
+	const ogTitle = $derived(plugin ? `${plugin.name} — ${branding.name}` : branding.name)
+	const ogDescription = $derived(plugin?.description ?? '')
+	const canonicalUrl = $derived(plugin ? `${baseUrl}/plugins/${plugin.id}` : baseUrl)
+
+	const author = $derived(plugin?.author.split('<')[0].trim() ?? '')
+	const provider = $derived(plugin ? providerKind(plugin.homepage) : 'github')
+	const selectedAsset = $derived(platformList.find((p) => p.key === selectedPlatform))
 </script>
 
-<div class="mx-auto max-w-5xl px-6 py-12 space-y-10">
+<svelte:head>
+	{#if plugin}
+		<title>{plugin.name} · {branding.name}</title>
+		<meta name="description" content={plugin.description} />
+		<link rel="canonical" href={canonicalUrl} />
+		<meta property="og:type" content="website" />
+		<meta property="og:url" content={canonicalUrl} />
+		<meta property="og:title" content={ogTitle} />
+		<meta property="og:description" content={ogDescription} />
+		<meta property="og:image" content={ogImage} />
+		<meta property="og:site_name" content={branding.name} />
+		<meta name="twitter:card" content="summary_large_image" />
+		<meta name="twitter:title" content={ogTitle} />
+		<meta name="twitter:description" content={ogDescription} />
+		<meta name="twitter:image" content={ogImage} />
+		{#if plugin.tags.length > 0}
+			<meta name="keywords" content={plugin.tags.join(', ')} />
+		{/if}
+	{/if}
+</svelte:head>
+
+<div class="mx-auto max-w-6xl px-6 pb-24">
 	{#if loading}
-		<Skeleton class="h-12 w-1/2 rounded-md" />
-		<Skeleton class="h-32 w-full rounded-md" />
+		<div class="space-y-6 pt-16">
+			<Skeleton class="h-20 w-1/2 rounded-md" />
+			<Skeleton class="h-32 w-full rounded-md" />
+			<div class="grid gap-4 md:grid-cols-3">
+				<Skeleton class="h-24 rounded-md" />
+				<Skeleton class="h-24 rounded-md" />
+				<Skeleton class="h-24 rounded-md" />
+			</div>
+		</div>
 	{:else if notFound}
-		<div class="rounded-lg border border-dashed border-border p-12 text-center space-y-3">
+		<div class="rounded-lg border border-dashed border-border p-12 text-center space-y-3 mt-16">
 			<p class="text-muted-foreground">{m.plugin_detail_not_found()}</p>
 			<Button size="sm" variant="outline" href="/plugins">{m.plugin_detail_back_to_catalog()}</Button>
 		</div>
 	{:else if plugin}
-		<header class="space-y-4">
-			<div class="flex items-start gap-4">
-				<div class="h-16 w-16 rounded-lg bg-primary/10 text-primary flex items-center justify-center overflow-hidden flex-shrink-0">
+		<!-- HERO -->
+		<header class="relative pt-14 pb-10">
+			<div class="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-br from-primary/10 via-transparent to-primary/[0.03]"></div>
+
+			<nav class="text-xs font-mono text-muted-foreground mb-6">
+				<a href="/plugins" class="hover:text-foreground transition-colors">/plugins</a>
+				<span class="opacity-50"> · </span>
+				<span class="text-foreground">{plugin.id}</span>
+			</nav>
+
+			<div class="flex items-start gap-6 flex-wrap">
+				<div class="h-24 w-24 rounded-2xl bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/20 flex items-center justify-center overflow-hidden flex-shrink-0 relative shadow-inner">
 					{#if plugin.iconUrl}
-						<img src={plugin.iconUrl} alt={plugin.name} class="h-16 w-16 object-contain" loading="eager" />
+						<img src={plugin.iconUrl} alt={plugin.name} class="h-full w-full object-contain" loading="eager" />
 					{:else}
-						<Boxes class="h-8 w-8" />
+						<Boxes class="h-10 w-10 text-primary/70" strokeWidth={1.4} />
 					{/if}
 				</div>
-				<div class="flex-1 min-w-0 space-y-1">
+
+				<div class="flex-1 min-w-[280px] space-y-3">
 					<div class="flex items-center gap-3 flex-wrap">
-						<h1 class="text-3xl font-semibold tracking-tight">{plugin.name}</h1>
-						{#if plugin.latestVersion}
-							<Badge variant="secondary" class="font-mono">v{plugin.latestVersion}</Badge>
-						{/if}
+						<h1 class="text-5xl md:text-6xl leading-[0.95] tracking-tight font-semibold">{plugin.name}</h1>
 						{#if plugin.featured}
-							<Badge variant="default">{m.plugin_detail_featured()}</Badge>
+							<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] tracking-[0.18em] uppercase font-mono bg-warning/10 text-warning border border-warning/25">
+								<Sparkles class="h-3 w-3" />
+								{m.plugin_detail_featured()}
+							</span>
 						{/if}
 					</div>
-					<p class="text-base text-foreground/90">{plugin.description}</p>
+					<p class="text-lg text-foreground/85 max-w-2xl leading-relaxed">{plugin.description}</p>
+					<div class="flex items-center gap-4 text-sm text-muted-foreground flex-wrap pt-1">
+						<span>{m.plugin_detail_by()} <span class="text-foreground">{author}</span></span>
+						{#if plugin.latestVersion}
+							<span class="font-mono text-foreground">v{plugin.latestVersion}</span>
+						{/if}
+						{#if plugin.license}
+							<span class="inline-flex items-center gap-1.5"><Shield class="h-3.5 w-3.5" />{plugin.license}</span>
+						{/if}
+						{#if plugin.category}
+							<Badge variant="outline">{plugin.category}</Badge>
+						{/if}
+					</div>
 				</div>
+
 				{#if isOwner}
-					<div class="flex flex-col gap-2 flex-shrink-0">
+					<div class="flex flex-col gap-2 ml-auto">
 						<Button variant="outline" size="sm" onclick={transferOwnership} disabled={deleting}>
 							<UserRoundCog class="h-3.5 w-3.5" />
 							{m.plugin_detail_transfer()}
@@ -155,140 +325,205 @@
 					</div>
 				{/if}
 			</div>
-			<div class="flex flex-wrap items-center gap-3 text-sm text-muted-foreground">
-				<span>{m.plugin_detail_by()} <span class="text-foreground">{plugin.author.split('<')[0].trim()}</span></span>
-				{#if plugin.license}
-					<span class="inline-flex items-center gap-1">
-						<Shield class="h-3 w-3" />
-						{plugin.license}
-					</span>
-				{/if}
-				{#if plugin.category}
-					<Badge variant="outline">{plugin.category}</Badge>
-				{/if}
-				{#each plugin.tags as tag (tag)}
-					<a href={`/plugins?tag=${encodeURIComponent(tag)}`} class="text-xs hover:text-foreground">
-						#{tag}
-					</a>
-				{/each}
-			</div>
-			<div class="flex flex-wrap items-center gap-2 text-sm">
-				{#if plugin.homepage}
-					<Button variant="outline" size="sm" href={plugin.homepage} target="_blank" rel="noreferrer">
-						<ExternalLink class="h-3 w-3" />
-						{m.plugin_detail_repository()}
-					</Button>
-				{/if}
-				{#if plugin.documentationUrl}
-					<Button variant="outline" size="sm" href={plugin.documentationUrl} target="_blank" rel="noreferrer">
-						<BookOpen class="h-3 w-3" />
-						{m.plugin_detail_docs()}
-					</Button>
-				{/if}
-				{#if plugin.issuesUrl}
-					<Button variant="outline" size="sm" href={plugin.issuesUrl} target="_blank" rel="noreferrer">
-						<Bug class="h-3 w-3" />
-						{m.plugin_detail_report_issue()}
-					</Button>
-				{/if}
-				{#if plugin.supportEmail}
-					<Button variant="outline" size="sm" href={`mailto:${plugin.supportEmail}`}>
-						<Mail class="h-3 w-3" />
-						{m.plugin_detail_email_support()}
-					</Button>
-				{/if}
-			</div>
-		</header>
 
-		<section class="space-y-3">
-			<div>
-				<h2 class="text-xl font-semibold tracking-tight">{m.plugin_detail_install_title()}</h2>
-				<p class="text-sm text-muted-foreground">{m.plugin_detail_install_subtitle()}</p>
-			</div>
-			<div class="relative rounded-lg border border-border bg-card font-mono text-xs">
-				<pre class="overflow-x-auto px-4 py-3 leading-relaxed">{installCommand}</pre>
-				<button
-					type="button"
-					class="absolute right-2 top-2 inline-flex items-center gap-1 rounded-md border border-border bg-background px-2 py-1 text-[10px] text-muted-foreground hover:text-foreground"
-					onclick={copyInstall}
-				>
-					<Copy class="h-3 w-3" />
-					{m.plugin_detail_copy()}
-				</button>
-			</div>
-		</section>
-
-		{#if plugin.screenshots.length > 0}
-			<section class="space-y-3">
-				<h2 class="text-xl font-semibold tracking-tight">{m.plugin_detail_screenshots()}</h2>
-				<div class="grid grid-cols-2 sm:grid-cols-3 gap-3">
-					{#each plugin.screenshots as shot, i (shot.url)}
-						<button
-							type="button"
-							class="aspect-video rounded-lg border border-border bg-card overflow-hidden hover:border-primary/40 transition-colors"
-							onclick={() => (activeScreenshot = i)}
-						>
-							<img src={shot.url} alt={shot.alt ?? shot.caption ?? plugin.name} class="h-full w-full object-cover" loading="lazy" />
-						</button>
+			{#if plugin.tags.length > 0}
+				<div class="flex flex-wrap items-center gap-x-3 gap-y-1 mt-6">
+					{#each plugin.tags as tag (tag)}
+						<a href={`/plugins?tag=${encodeURIComponent(tag)}`} class="font-mono text-xs text-muted-foreground hover:text-foreground transition-colors">
+							<span class="opacity-50">#</span>{tag}
+						</a>
 					{/each}
 				</div>
-			</section>
-		{/if}
+			{/if}
+		</header>
 
-		{#if plugin.readmeHtml}
-			<section class="space-y-3">
-				<h2 class="text-xl font-semibold tracking-tight">{m.plugin_detail_readme()}</h2>
-				<article class="prose prose-sm dark:prose-invert max-w-none rounded-lg border border-border bg-card p-6">
-					{@html plugin.readmeHtml}
-				</article>
-			</section>
-		{/if}
+		<hr class="border-border opacity-60" />
 
-		{#if sortedReleases.length > 0}
-			<section class="space-y-3">
-				<div>
-					<h2 class="text-xl font-semibold tracking-tight">{m.plugin_detail_releases()}</h2>
-					<p class="text-sm text-muted-foreground">{m.plugin_detail_releases_subtitle()}</p>
-				</div>
-				<div class="rounded-lg border border-border overflow-hidden">
-					<table class="w-full text-sm">
-						<thead class="border-b border-border bg-card/50">
-							<tr class="text-left">
-								<th class="font-medium text-foreground px-4 py-2.5">{m.plugin_detail_col_version()}</th>
-								<th class="font-medium text-foreground px-4 py-2.5">{m.plugin_detail_col_min_runtime()}</th>
-								<th class="font-medium text-foreground px-4 py-2.5">{m.plugin_detail_col_platforms()}</th>
-								<th class="font-medium text-foreground px-4 py-2.5">{m.plugin_detail_col_size()}</th>
-								<th class="font-medium text-foreground px-4 py-2.5">{m.plugin_detail_col_released()}</th>
-							</tr>
-						</thead>
-						<tbody>
-							{#each sortedReleases as release (release.id)}
-								{@const sizes = Object.values(release.assets).map((a) => a.size ?? 0).filter((s) => s > 0)}
-								{@const totalSize = sizes.reduce((a, b) => a + b, 0)}
-								<tr class="border-b border-border/50 last:border-0">
-									<td class="px-4 py-2.5 font-mono text-xs">{release.version}</td>
-									<td class="px-4 py-2.5 text-muted-foreground">{release.minRuntimeVersion ?? '—'}</td>
-									<td class="px-4 py-2.5 text-muted-foreground text-xs">
-										{Object.keys(release.assets).join(', ') || '—'}
-									</td>
-									<td class="px-4 py-2.5 text-muted-foreground text-xs">{formatBytes(totalSize)}</td>
-									<td class="px-4 py-2.5 text-muted-foreground">
-										{new Date(release.createdAt).toLocaleDateString()}
-									</td>
-								</tr>
+		<!-- TWO-COLUMN GRID -->
+		<div class="grid gap-10 lg:grid-cols-[1fr_320px] mt-10">
+			<div class="space-y-12 min-w-0">
+				<!-- SCREENSHOTS -->
+				{#if plugin.screenshots.length > 0}
+					<section class="space-y-4">
+						<h2 class="text-2xl font-semibold tracking-tight">{m.plugin_detail_screenshots()}</h2>
+						<div class="grid grid-cols-2 lg:grid-cols-3 gap-3">
+							{#each plugin.screenshots as shot, i (shot.url)}
+								<button
+									type="button"
+									class="group relative aspect-[16/10] rounded-lg border border-border overflow-hidden bg-card cursor-zoom-in transition-all hover:border-primary/40"
+									onclick={() => (activeScreenshot = i)}
+								>
+									<img
+										src={shot.url}
+										alt={shot.alt ?? shot.caption ?? plugin.name}
+										class="h-full w-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+										loading="lazy"
+									/>
+									{#if shot.caption}
+										<span class="absolute inset-x-0 bottom-0 px-2.5 py-1.5 text-xs bg-gradient-to-t from-black/70 to-transparent text-white/90 text-left">{shot.caption}</span>
+									{/if}
+								</button>
 							{/each}
-						</tbody>
-					</table>
+						</div>
+					</section>
+				{/if}
+
+				<!-- README -->
+				<section class="space-y-4">
+					<div class="flex items-baseline justify-between gap-3 flex-wrap">
+						<h2 class="text-2xl font-semibold tracking-tight">{m.plugin_detail_readme()}</h2>
+						{#if plugin.readmeAvailableLocales && plugin.readmeAvailableLocales.length > 1}
+							<div class="inline-flex items-center gap-2 text-xs text-muted-foreground">
+								<Languages class="h-3.5 w-3.5" />
+								<div class="inline-flex gap-1">
+									{#each plugin.readmeAvailableLocales as loc (loc)}
+										<span class="font-mono text-[11px] px-2 py-0.5 rounded border {loc === plugin.readmeLocale ? 'text-foreground bg-primary/10 border-primary/30' : 'text-muted-foreground border-border'}">{LOCALE_LABELS[loc as Locale] ?? loc}</span>
+									{/each}
+								</div>
+							</div>
+						{/if}
+					</div>
+					{#if plugin.readmeHtml}
+						<article class="prose prose-sm dark:prose-invert max-w-none rounded-xl border border-border bg-card px-9 py-8 prose-headings:font-semibold prose-headings:tracking-tight prose-pre:font-mono prose-pre:text-[12.5px] prose-pre:rounded-md prose-pre:border prose-pre:border-border prose-code:font-mono">
+							{@html plugin.readmeHtml}
+						</article>
+					{:else}
+						<div class="rounded-xl border border-dashed border-border p-8 text-center">
+							<p class="text-sm text-muted-foreground">{m.plugin_detail_readme_missing()}</p>
+						</div>
+					{/if}
+				</section>
+
+				<!-- RELEASES -->
+				{#if sortedReleases.length > 0}
+					<section class="space-y-4">
+						<div>
+							<h2 class="text-2xl font-semibold tracking-tight">{m.plugin_detail_releases()}</h2>
+							<p class="text-xs text-muted-foreground mt-1">{m.plugin_detail_releases_subtitle()}</p>
+						</div>
+						<div class="border-t border-border">
+							{#each sortedReleases as release (release.id)}
+								{@const totalSize = Object.values(release.assets).reduce((acc, a) => acc + (a.size ?? 0), 0)}
+								{@const platformCount = Object.keys(release.assets).length}
+								<details class="group border-b border-border [&_summary::-webkit-details-marker]:hidden">
+									<summary class="grid grid-cols-[auto_1fr_auto] gap-4 items-center py-4 cursor-pointer list-none transition-opacity hover:opacity-90">
+										<span class="font-mono text-sm">v{release.version}</span>
+										<span class="inline-flex gap-2 flex-wrap">
+											<span class="font-mono text-[10px] px-2 py-0.5 rounded-full bg-foreground/5 text-muted-foreground tracking-wide">{platformCount} {platformCount === 1 ? 'platform' : 'platforms'}</span>
+											<span class="font-mono text-[10px] px-2 py-0.5 rounded-full bg-foreground/5 text-muted-foreground tracking-wide">{formatBytes(totalSize)}</span>
+											{#if release.minRuntimeVersion}
+												<span class="font-mono text-[10px] px-2 py-0.5 rounded-full bg-foreground/5 text-muted-foreground tracking-wide">runtime ≥ {release.minRuntimeVersion}</span>
+											{/if}
+										</span>
+										<span class="font-mono text-[11px] text-muted-foreground whitespace-nowrap">{formatRelative(release.createdAt)}</span>
+									</summary>
+									<div class="pb-4">
+										<table class="w-full border-collapse">
+											<tbody>
+												{#each Object.entries(release.assets) as [key, asset] (key)}
+													<tr class="border-t border-dashed border-border/70 first:border-t-0">
+														<td class="px-2.5 py-2 font-mono text-xs">{platformLabel(key)}</td>
+														<td class="px-2.5 py-2 font-mono text-xs text-muted-foreground">{formatBytes(asset.size)}</td>
+														<td class="px-2.5 py-2 font-mono text-[11px] text-muted-foreground truncate max-w-[280px]" title={asset.sha256 ?? ''}>{asset.sha256?.slice(0, 16) ?? '—'}{asset.sha256 ? '…' : ''}</td>
+														<td class="px-2.5 py-2 text-right">
+															<a href={asset.url} class="font-mono text-[11px] text-primary hover:underline">↓ {m.plugin_detail_download()}</a>
+														</td>
+													</tr>
+												{/each}
+											</tbody>
+										</table>
+									</div>
+								</details>
+							{/each}
+						</div>
+					</section>
+				{/if}
+			</div>
+
+			<!-- SIDEBAR -->
+			<aside class="space-y-6 lg:sticky lg:top-4 lg:self-start">
+				<!-- STATS -->
+				<div class="border border-border rounded-xl bg-card px-4">
+					<div class="flex items-center justify-between py-3 border-b border-dashed border-border/70">
+						<div class="inline-flex items-center gap-2 text-xs uppercase tracking-[0.06em] text-muted-foreground font-mono">
+							<Star class="h-3.5 w-3.5" />
+							<span>{m.plugin_detail_stat_stars()}</span>
+						</div>
+						<div class="text-2xl font-semibold leading-none">{formatNumber(stats?.stars)}</div>
+					</div>
+					<div class="flex items-center justify-between py-3 border-b border-dashed border-border/70">
+						<div class="inline-flex items-center gap-2 text-xs uppercase tracking-[0.06em] text-muted-foreground font-mono">
+							<GitFork class="h-3.5 w-3.5" />
+							<span>{m.plugin_detail_stat_forks()}</span>
+						</div>
+						<div class="text-2xl font-semibold leading-none">{formatNumber(stats?.forks)}</div>
+					</div>
+					<div class="flex items-center justify-between py-3 border-b border-dashed border-border/70">
+						<div class="inline-flex items-center gap-2 text-xs uppercase tracking-[0.06em] text-muted-foreground font-mono">
+							<Clock class="h-3.5 w-3.5" />
+							<span>{m.plugin_detail_stat_last_push()}</span>
+						</div>
+						<div class="text-base">{formatRelative(stats?.lastPushAt)}</div>
+					</div>
+					{#if latestRelease}
+						<div class="flex items-center justify-between py-3 border-b border-dashed border-border/70">
+							<div class="inline-flex items-center gap-2 text-xs uppercase tracking-[0.06em] text-muted-foreground font-mono">
+								<HardDrive class="h-3.5 w-3.5" />
+								<span>{m.plugin_detail_stat_size()}</span>
+							</div>
+							<div class="text-base">{formatBytes(totalReleaseSize(latestRelease))}</div>
+						</div>
+					{/if}
+					{#if latestRelease?.minRuntimeVersion}
+						<div class="flex items-center justify-between py-3">
+							<div class="inline-flex items-center gap-2 text-xs uppercase tracking-[0.06em] text-muted-foreground font-mono">
+								<Cpu class="h-3.5 w-3.5" />
+								<span>{m.plugin_detail_stat_runtime()}</span>
+							</div>
+							<div class="text-base">≥ {latestRelease.minRuntimeVersion}</div>
+						</div>
+					{/if}
 				</div>
-			</section>
-		{/if}
+
+				<!-- LINKS -->
+				<div class="flex flex-col border border-border rounded-xl overflow-hidden">
+					{#if plugin.homepage}
+						<a class="inline-flex items-center gap-2.5 px-3.5 py-2.5 text-sm bg-card hover:bg-foreground/[0.04] transition-colors border-b border-border last:border-b-0" href={plugin.homepage} target="_blank" rel="noreferrer">
+							<Code2 class="h-4 w-4" />
+							<span class="capitalize">{provider}</span>
+							<ExternalLink class="h-3 w-3 ml-auto opacity-50" />
+						</a>
+					{/if}
+					{#if plugin.documentationUrl}
+						<a class="inline-flex items-center gap-2.5 px-3.5 py-2.5 text-sm bg-card hover:bg-foreground/[0.04] transition-colors border-b border-border last:border-b-0" href={plugin.documentationUrl} target="_blank" rel="noreferrer">
+							<BookOpen class="h-4 w-4" />
+							<span>{m.plugin_detail_docs()}</span>
+							<ExternalLink class="h-3 w-3 ml-auto opacity-50" />
+						</a>
+					{/if}
+					{#if plugin.issuesUrl}
+						<a class="inline-flex items-center gap-2.5 px-3.5 py-2.5 text-sm bg-card hover:bg-foreground/[0.04] transition-colors border-b border-border last:border-b-0" href={plugin.issuesUrl} target="_blank" rel="noreferrer">
+							<Bug class="h-4 w-4" />
+							<span>{m.plugin_detail_report_issue()}</span>
+							<ExternalLink class="h-3 w-3 ml-auto opacity-50" />
+						</a>
+					{/if}
+					{#if plugin.supportEmail}
+						<a class="inline-flex items-center gap-2.5 px-3.5 py-2.5 text-sm bg-card hover:bg-foreground/[0.04] transition-colors" href={`mailto:${plugin.supportEmail}`}>
+							<Mail class="h-4 w-4" />
+							<span>{m.plugin_detail_email_support()}</span>
+						</a>
+					{/if}
+				</div>
+			</aside>
+		</div>
 	{/if}
 </div>
 
 {#if activeScreenshot !== null && plugin && plugin.screenshots[activeScreenshot]}
 	<button
 		type="button"
-		class="fixed inset-0 z-50 bg-background/90 backdrop-blur-sm flex items-center justify-center p-8"
+		class="fixed inset-0 z-50 bg-background/90 backdrop-blur-md flex items-center justify-center p-8 cursor-zoom-out"
 		onclick={() => (activeScreenshot = null)}
 		aria-label={m.plugin_detail_close_screenshot()}
 	>

@@ -1,18 +1,16 @@
 # Minimal Tabularium deployment.
 #
-# Runs the registry against an embedded SQLite database — no extra services needed.
-# For Postgres / Dragonfly during development, see compose.dev.yml.
+# Quickstart:
+#   1. mkdir -p ./tabularium-data
+#   2. Create a .env next to this file with at minimum:
+#        JWT_SECRET=$(openssl rand -hex 32)
+#        TOKEN_ENC_KEY=$(openssl rand -hex 32)
+#        BASE_URL=https://your.public.url
+#   3. docker compose up -d
+#   4. tail ./tabularium-data/bootstrap-password — that's your one-time admin password.
 #
-# Before `docker compose up`:
-#   1. Generate proper secrets and replace the placeholders below.
-#        openssl rand -hex 32   # → JWT_SECRET
-#        openssl rand -hex 32   # → TOKEN_ENC_KEY
-#   2. Point BASE_URL at the public URL you'll serve Tabularium on.
-#   3. (Optional) Swap DATABASE_URL to Postgres / MySQL — see comments below.
-#
-# The placeholders inline here are DEV DEFAULTS — they MUST be replaced for
-# any non-throwaway deployment. Do not commit a real .env / docker-compose.yml
-# with secrets to source control.
+# All persistent state (SQLite DB, uploads, config.json, bootstrap-password) lives
+# in ./tabularium-data on the host. Back that folder up. Don't commit it.
 
 services:
   registry:
@@ -22,8 +20,6 @@ services:
     ports:
       - "3000:3000"
     environment:
-      # No defaults — required. App refuses to start if these are unset.
-      # Generate with: openssl rand -hex 32
       JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required — run: openssl rand -hex 32}
       TOKEN_ENC_KEY: ${TOKEN_ENC_KEY:?TOKEN_ENC_KEY is required — run: openssl rand -hex 32}
 
@@ -32,16 +28,14 @@ services:
       # SQLite (default). For other dialects, replace with one of:
       #   DATABASE_URL: "postgres://user:pass@host:5432/db"
       #   DATABASE_URL: "mysql://user:pass@host:3306/db"
-      DATABASE_URL: "sqlite:./data/registry.sqlite"
+      DATABASE_URL: "/data/registry.db"
+      DATA_DIR: "/data"
 
       CACHE_DRIVER: "memory"
     volumes:
-      - tabularium_data:/app/apps/api/data
+      - ./tabularium-data:/data
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://127.0.0.1:3000/healthz"]
       interval: 30s
       timeout: 5s
       retries: 3
-
-volumes:
-  tabularium_data:

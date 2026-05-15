@@ -35,7 +35,8 @@ export function manifestPatch(
   m: ResolvedManifest,
   opts: { repoBase: string; version: string | null },
 ): PluginManifestUpdate {
-  const { parsed, readmeMarkdown } = m
+  const { parsed, readmeMarkdown, readmeLocales } = m
+  const readmePayload = readmeLocales ? JSON.stringify(readmeLocales) : (readmeMarkdown ?? null)
 
   const iconUrl = parsed.icon ? resolveAbsolute(opts.repoBase, parsed.icon) : null
   const screenshots = parsed.screenshots?.map((s) => ({
@@ -55,7 +56,7 @@ export function manifestPatch(
     license: parsed.license ?? null,
     iconUrl,
     screenshots: jsonArray(screenshots),
-    readme: readmeMarkdown ?? null,
+    readme: readmePayload,
     documentationUrl: parsed.documentation_url ?? null,
     supportEmail: parsed.support?.email ?? null,
     issuesUrl: parsed.support?.issues_url ?? null,

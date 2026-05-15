@@ -3,7 +3,7 @@ import { parse as parseYaml } from 'yaml'
 import type { RepoRef } from './providers'
 import { logger } from './logger'
 import { getManifestConfig } from './manifest-config'
-import { ManifestSchema, type Manifest, type ResolvedManifest } from './manifest-core'
+import { ManifestSchema, type Manifest, type ResolvedManifest, type ReadmeMap } from './manifest-core'
 import { buildValidatorSchema } from './manifest-schema'
 
 const log = logger.child({ module: 'manifest' })
@@ -110,7 +110,7 @@ export function rawContentBase(ref: RepoRef, branch: string): string {
     return `${instance.baseUrl}/${owner}/${repo}/raw/${branch}/`
   }
   if (instance.kind === 'gitlab') return `${instance.baseUrl}/${ref.fullName}/-/raw/${branch}/`
-  return `${instance.baseUrl}/${owner}/${repo}/raw/branch/${branch}/`
+  return `${instance.baseUrl}/${owner}/${repo}/raw/${branch}/`
 }
 
 export async function resolveManifest(accessToken: string, ref: RepoRef, options: { ref?: string } = {}): Promise<ResolvedManifest | null> {
@@ -125,19 +125,34 @@ export async function resolveManifest(accessToken: string, ref: RepoRef, options
       }
       const parsed = parseManifestText(got.content, candidate.source)
       let readmeMarkdown: string | null = null
-      if (parsed.readme) {
+      let readmeLocales: ReadmeMap | null = null
+
+      if (parsed.readmes && Object.keys(parsed.readmes).length > 0) {
+        readmeLocales = {}
+        for (const [locale, path] of Object.entries(parsed.readmes)) {
+          try {
+            const r = await fetch(path)
+            if (r) readmeLocales[locale] = r.content
+          } catch (err) {
+            log.warn({ err, locale, path }, 'localized readme fetch failed')
+          }
+        }
+        if (Object.keys(readmeLocales).length === 0) readmeLocales = null
+      }
+      if (!readmeLocales && parsed.readme) {
         try {
-          const readme = await fetch(parsed.readme)
-          if (readme) readmeMarkdown = readme.content
+          const r = await fetch(parsed.readme)
+          if (r) readmeMarkdown = r.content
         } catch (err) {
           log.warn({ err, readme: parsed.readme }, 'readme path fetch failed — manifest still applied')
         }
-      } else {
+      }
+      if (!readmeLocales && !readmeMarkdown) {
         for (const fallback of ['README.md', 'readme.md', 'README.markdown']) {
           try {
-            const readme = await fetch(fallback)
-            if (readme) {
-              readmeMarkdown = readme.content
+            const r = await fetch(fallback)
+            if (r) {
+              readmeMarkdown = r.content
               break
             }
           } catch {
@@ -145,7 +160,7 @@ export async function resolveManifest(accessToken: string, ref: RepoRef, options
           }
         }
       }
-      return { raw: got.content, parsed, readmeMarkdown, source: candidate.source }
+      return { raw: got.content, parsed, readmeMarkdown, readmeLocales, source: candidate.source }
     } catch (err) {
       log.warn({ err, path: candidate.path }, 'manifest parse failed — trying next candidate')
     }

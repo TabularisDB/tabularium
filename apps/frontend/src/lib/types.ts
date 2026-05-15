@@ -71,6 +71,16 @@ export type Plugin = {
 	updatedAt: number
 	releases?: Release[]
 	readmeHtml?: string | null
+	readmeLocale?: string | null
+	readmeAvailableLocales?: string[]
+}
+
+export type PluginStats = {
+	stars: number | null
+	forks: number | null
+	watchers: number | null
+	lastPushAt: number | null
+	homepage: string | null
 }
 
 export type Kind = {

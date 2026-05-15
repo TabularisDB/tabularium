@@ -16,6 +16,10 @@ export const ManifestSchema = Type.Object({
     alt: Type.Optional(Type.String({ maxLength: 200 })),
   }), { maxItems: 12 })),
   readme: Type.Optional(Type.String({ maxLength: 500 })),
+  readmes: Type.Optional(Type.Record(
+    Type.String({ pattern: '^[a-z]{2}(-[A-Z]{2})?$', maxLength: 10 }),
+    Type.String({ maxLength: 500 }),
+  )),
   documentation_url: Type.Optional(Type.String({ pattern: '^https?://.+' })),
   homepage: Type.Optional(Type.String({ pattern: '^https?://.+' })),
   support: Type.Optional(Type.Object({
@@ -27,9 +31,12 @@ export const ManifestSchema = Type.Object({
 
 export type Manifest = Static<typeof ManifestSchema>
 
+export type ReadmeMap = Record<string, string>
+
 export type ResolvedManifest = {
   raw: string
   parsed: Manifest
   readmeMarkdown: string | null
+  readmeLocales: ReadmeMap | null
   source: 'tabularium.yaml' | 'tabularium.json'
 }

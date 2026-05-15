@@ -36,7 +36,7 @@ export async function signJwt(payload: JwtPayload): Promise<string> {
     .setIssuer(ISSUER)
     .setAudience(AUDIENCE)
     .setIssuedAt()
-    .setExpirationTime('1h')
+    .setExpirationTime('7d')
     .sign(getSecret())
 }
 

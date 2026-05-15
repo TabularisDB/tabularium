@@ -38,7 +38,7 @@ export default new Elysia()
       value: jwt,
       httpOnly: true,
       secure: isProd(),
-      maxAge: 3600,
+      maxAge: 60 * 60 * 24 * 7,
       sameSite: 'lax',
       path: '/',
     })

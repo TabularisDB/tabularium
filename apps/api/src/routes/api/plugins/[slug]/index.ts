@@ -51,17 +51,42 @@ const pluginDetailSchema = t.Object({
   featuredOrder: t.Nullable(t.Number()),
   manifestFetchedAt: t.Nullable(t.Number()),
   readmeHtml: t.Nullable(t.String()),
+  readmeLocale: t.Nullable(t.String()),
+  readmeAvailableLocales: t.Array(t.String()),
   createdAt: t.Number(),
   updatedAt: t.Number(),
   releases: t.Array(releaseSchema),
 })
+
+function pickReadme(raw: string | null, preferredLocale: string | undefined): { markdown: string | null; locale: string | null; available: string[] } {
+  if (!raw) return { markdown: null, locale: null, available: [] }
+  if (!raw.startsWith('{')) return { markdown: raw, locale: null, available: [] }
+  try {
+    const map = JSON.parse(raw) as Record<string, unknown>
+    const available = Object.keys(map).filter((k) => typeof map[k] === 'string')
+    if (available.length === 0) return { markdown: null, locale: null, available: [] }
+    const pick = (locale: string | undefined): string | null => {
+      if (locale && typeof map[locale] === 'string') return locale
+      return null
+    }
+    const baseLocale = preferredLocale?.split('-')[0]
+    const chosen =
+      pick(preferredLocale)
+      ?? pick(baseLocale)
+      ?? pick('en')
+      ?? available[0]
+    return { markdown: map[chosen] as string, locale: chosen, available }
+  } catch {
+    return { markdown: raw, locale: null, available: [] }
+  }
+}
 
 const errorSchema = t.Object({ error: t.String() })
 
 const README_TTL = 600
 
 export default new Elysia()
-  .get('/', async ({ params, set }) => {
+  .get('/', async ({ params, query, set }) => {
     const plugin = await db.query.plugins.findFirst({
       where: { id: params.slug },
       with: { releases: true },
@@ -73,12 +98,13 @@ export default new Elysia()
     }
 
     const detail = projectPluginDetail(plugin)
+    const picked = pickReadme(detail.readmeMarkdown, query.locale)
     let readmeHtml: string | null = null
-    if (detail.readmeMarkdown) {
-      const cacheKey = `plugin:readme:${plugin.id}:${plugin.updatedAt}`
+    if (picked.markdown) {
+      const cacheKey = `plugin:readme:${plugin.id}:${plugin.updatedAt}:${picked.locale ?? 'default'}`
       readmeHtml = await cache().get<string>(cacheKey, isString)
       if (!readmeHtml) {
-        readmeHtml = renderMarkdown(detail.readmeMarkdown)
+        readmeHtml = renderMarkdown(picked.markdown)
         await cache().set(cacheKey, readmeHtml, README_TTL)
       }
     }
@@ -86,17 +112,20 @@ export default new Elysia()
     return {
       ...detail,
       readmeHtml,
+      readmeLocale: picked.locale,
+      readmeAvailableLocales: picked.available,
       readmeMarkdown: undefined,
-    } as unknown as typeof detail & { readmeHtml: string | null }
+    } as unknown as typeof detail & { readmeHtml: string | null; readmeLocale: string | null; readmeAvailableLocales: string[] }
   }, {
     detail: {
       tags: ['Plugins'],
       summary: 'Get plugin detail',
       description:
-        'Full plugin record including release history and the rendered README HTML (sanitized via DOMPurify, cached 10 min). Public — no auth required.',
+        'Full plugin record including release history and the rendered README HTML (sanitized via DOMPurify, cached 10 min). Public — no auth required. Pass `?locale=` to request a localized README; falls back to base language, then `en`, then the first available.',
       operationId: 'getPlugin',
     },
     params: t.Object({ slug: t.String() }),
+    query: t.Object({ locale: t.Optional(t.String({ maxLength: 10 })) }),
     response: {
       200: pluginDetailSchema,
       404: errorSchema,

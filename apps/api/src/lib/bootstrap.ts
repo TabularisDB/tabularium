@@ -14,11 +14,6 @@ type BootstrapState = {
 let state: BootstrapState | null = null
 
 export async function initBootstrap(): Promise<void> {
-  if (isProd() && !process.env.BOOTSTRAP_PASSWORD) {
-    throw new Error(
-      'BOOTSTRAP_PASSWORD must be set in production. Generate with `openssl rand -hex 24` and set it via env/secret.',
-    )
-  }
   const fromEnv = process.env.BOOTSTRAP_PASSWORD
   const plaintext = fromEnv ?? generatePassword()
   const passwordHash = await hashPassword(plaintext)
