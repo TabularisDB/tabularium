@@ -9,6 +9,15 @@ CREATE TABLE `audit_log` (
 	`created_at` bigint NOT NULL
 );
 --> statement-breakpoint
+CREATE TABLE `download_events` (
+	`id` varchar(64) PRIMARY KEY,
+	`plugin_id` varchar(64) NOT NULL,
+	`version` varchar(80) NOT NULL,
+	`platform` varchar(40) NOT NULL,
+	`created_at` bigint NOT NULL,
+	CONSTRAINT `download_events_plugin_created` UNIQUE INDEX(`plugin_id`,`created_at`,`id`)
+);
+--> statement-breakpoint
 CREATE TABLE `identities` (
 	`id` varchar(64) PRIMARY KEY,
 	`user_id` varchar(64) NOT NULL,
@@ -97,6 +106,7 @@ CREATE TABLE `plugins` (
 	`manifest_version` varchar(80),
 	`featured` tinyint NOT NULL DEFAULT 0,
 	`featured_order` int,
+	`downloads` int NOT NULL DEFAULT 0,
 	`created_at` bigint NOT NULL,
 	`updated_at` bigint NOT NULL
 );
@@ -146,6 +156,7 @@ CREATE TABLE `users` (
 );
 --> statement-breakpoint
 ALTER TABLE `audit_log` ADD CONSTRAINT `audit_log_actor_id_users_id_fkey` FOREIGN KEY (`actor_id`) REFERENCES `users`(`id`) ON DELETE SET NULL;--> statement-breakpoint
+ALTER TABLE `download_events` ADD CONSTRAINT `download_events_plugin_id_plugins_id_fkey` FOREIGN KEY (`plugin_id`) REFERENCES `plugins`(`id`) ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE `identities` ADD CONSTRAINT `identities_user_id_users_id_fkey` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE `identities` ADD CONSTRAINT `identities_provider_instance_id_provider_instances_id_fkey` FOREIGN KEY (`provider_instance_id`) REFERENCES `provider_instances`(`id`);--> statement-breakpoint
 ALTER TABLE `plugin_request_claims` ADD CONSTRAINT `plugin_request_claims_request_id_plugin_requests_id_fkey` FOREIGN KEY (`request_id`) REFERENCES `plugin_requests`(`id`) ON DELETE CASCADE;--> statement-breakpoint

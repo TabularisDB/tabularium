@@ -9,6 +9,14 @@ CREATE TABLE "audit_log" (
 	"created_at" bigint NOT NULL
 );
 --> statement-breakpoint
+CREATE TABLE "download_events" (
+	"id" text PRIMARY KEY,
+	"plugin_id" text NOT NULL,
+	"version" text NOT NULL,
+	"platform" text NOT NULL,
+	"created_at" bigint NOT NULL
+);
+--> statement-breakpoint
 CREATE TABLE "identities" (
 	"id" text PRIMARY KEY,
 	"user_id" text NOT NULL,
@@ -94,6 +102,7 @@ CREATE TABLE "plugins" (
 	"manifest_version" text,
 	"featured" smallint DEFAULT 0 NOT NULL,
 	"featured_order" integer,
+	"downloads" integer DEFAULT 0 NOT NULL,
 	"created_at" bigint NOT NULL,
 	"updated_at" bigint NOT NULL
 );
@@ -140,10 +149,12 @@ CREATE TABLE "users" (
 	"created_at" bigint NOT NULL
 );
 --> statement-breakpoint
+CREATE UNIQUE INDEX "download_events_plugin_created" ON "download_events" ("plugin_id","created_at","id");--> statement-breakpoint
 CREATE UNIQUE INDEX "identities_instance_external_unique" ON "identities" ("provider_instance_id","external_id");--> statement-breakpoint
 CREATE UNIQUE INDEX "markdown_pages_path_locale" ON "markdown_pages" ("path","locale");--> statement-breakpoint
 CREATE UNIQUE INDEX "releases_plugin_version" ON "releases" ("plugin_id","version");--> statement-breakpoint
 ALTER TABLE "audit_log" ADD CONSTRAINT "audit_log_actor_id_users_id_fkey" FOREIGN KEY ("actor_id") REFERENCES "users"("id") ON DELETE SET NULL;--> statement-breakpoint
+ALTER TABLE "download_events" ADD CONSTRAINT "download_events_plugin_id_plugins_id_fkey" FOREIGN KEY ("plugin_id") REFERENCES "plugins"("id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "identities" ADD CONSTRAINT "identities_user_id_users_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "identities" ADD CONSTRAINT "identities_provider_instance_id_provider_instances_id_fkey" FOREIGN KEY ("provider_instance_id") REFERENCES "provider_instances"("id");--> statement-breakpoint
 ALTER TABLE "plugin_request_claims" ADD CONSTRAINT "plugin_request_claims_request_id_plugin_requests_id_fkey" FOREIGN KEY ("request_id") REFERENCES "plugin_requests"("id") ON DELETE CASCADE;--> statement-breakpoint

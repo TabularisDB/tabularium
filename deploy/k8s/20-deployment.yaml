@@ -49,6 +49,8 @@ spec:
               value: info
             - name: DATABASE_URL
               value: /data/registry.db
+            - name: DATA_DIR
+              value: /data
             - name: BASE_URL
               value: https://registry.spitzli.dev
             - name: WEB_BASE_URL

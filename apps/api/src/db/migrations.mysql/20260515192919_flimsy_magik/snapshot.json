@@ -1,13 +1,17 @@
 {
   "version": "6",
   "dialect": "mysql",
-  "id": "67de451a-7b8b-4eca-95c4-8e6141d254e8",
+  "id": "026b2c91-d925-4102-9289-d8f5377e7ee0",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
   "ddl": [
     {
       "name": "audit_log",
+      "entityType": "tables"
+    },
+    {
+      "name": "download_events",
       "entityType": "tables"
     },
     {
@@ -169,6 +173,76 @@
       "name": "created_at",
       "entityType": "columns",
       "table": "audit_log"
+    },
+    {
+      "type": "varchar(64)",
+      "notNull": true,
+      "autoIncrement": false,
+      "default": null,
+      "onUpdateNow": false,
+      "onUpdateNowFsp": null,
+      "charSet": null,
+      "collation": null,
+      "generated": null,
+      "name": "id",
+      "entityType": "columns",
+      "table": "download_events"
+    },
+    {
+      "type": "varchar(64)",
+      "notNull": true,
+      "autoIncrement": false,
+      "default": null,
+      "onUpdateNow": false,
+      "onUpdateNowFsp": null,
+      "charSet": null,
+      "collation": null,
+      "generated": null,
+      "name": "plugin_id",
+      "entityType": "columns",
+      "table": "download_events"
+    },
+    {
+      "type": "varchar(80)",
+      "notNull": true,
+      "autoIncrement": false,
+      "default": null,
+      "onUpdateNow": false,
+      "onUpdateNowFsp": null,
+      "charSet": null,
+      "collation": null,
+      "generated": null,
+      "name": "version",
+      "entityType": "columns",
+      "table": "download_events"
+    },
+    {
+      "type": "varchar(40)",
+      "notNull": true,
+      "autoIncrement": false,
+      "default": null,
+      "onUpdateNow": false,
+      "onUpdateNowFsp": null,
+      "charSet": null,
+      "collation": null,
+      "generated": null,
+      "name": "platform",
+      "entityType": "columns",
+      "table": "download_events"
+    },
+    {
+      "type": "bigint",
+      "notNull": true,
+      "autoIncrement": false,
+      "default": null,
+      "onUpdateNow": false,
+      "onUpdateNowFsp": null,
+      "charSet": null,
+      "collation": null,
+      "generated": null,
+      "name": "created_at",
+      "entityType": "columns",
+      "table": "download_events"
     },
     {
       "type": "varchar(64)",
@@ -1053,6 +1127,20 @@
       "table": "plugins"
     },
     {
+      "type": "int",
+      "notNull": true,
+      "autoIncrement": false,
+      "default": "0",
+      "onUpdateNow": false,
+      "onUpdateNowFsp": null,
+      "charSet": null,
+      "collation": null,
+      "generated": null,
+      "name": "downloads",
+      "entityType": "columns",
+      "table": "plugins"
+    },
+    {
       "type": "bigint",
       "notNull": true,
       "autoIncrement": false,
@@ -1498,6 +1586,14 @@
         "id"
       ],
       "name": "PRIMARY",
+      "table": "download_events",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "name": "PRIMARY",
       "table": "identities",
       "entityType": "pks"
     },
@@ -1600,6 +1696,30 @@
     {
       "columns": [
         {
+          "value": "plugin_id",
+          "isExpression": false
+        },
+        {
+          "value": "created_at",
+          "isExpression": false
+        },
+        {
+          "value": "id",
+          "isExpression": false
+        }
+      ],
+      "isUnique": true,
+      "using": null,
+      "algorithm": null,
+      "lock": null,
+      "nameExplicit": true,
+      "name": "download_events_plugin_created",
+      "entityType": "indexes",
+      "table": "download_events"
+    },
+    {
+      "columns": [
+        {
           "value": "provider_instance_id",
           "isExpression": false
         },
@@ -1671,6 +1791,21 @@
       "name": "audit_log_actor_id_users_id_fkey",
       "entityType": "fks",
       "table": "audit_log"
+    },
+    {
+      "columns": [
+        "plugin_id"
+      ],
+      "tableTo": "plugins",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "download_events_plugin_id_plugins_id_fkey",
+      "entityType": "fks",
+      "table": "download_events"
     },
     {
       "columns": [

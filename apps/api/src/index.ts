@@ -85,21 +85,15 @@ export async function createApp() {
 
   if (config.installed) {
     const { diskUploadsRoot } = await import('$lib/storage')
-    const { renderPluginHtml } = await import('$lib/og-injector')
     return base
       .use(staticPlugin({ assets: diskUploadsRoot(), prefix: '/uploads', alwaysStatic: false }))
       .use(staticPlugin({ assets: resolve('../frontend/dist'), prefix: '/' }))
-      .get('/*', async ({ path, set, request }) => {
+      .get('/*', ({ path, set }) => {
         if (path.startsWith('/api') || path.startsWith('/auth') || path.startsWith('/openapi') || path.startsWith('/uploads')) {
           set.status = 404
           return { error: 'Not found' }
         }
         set.headers['content-type'] = 'text/html; charset=utf-8'
-        const pluginMatch = path.match(/^\/plugins\/([a-z0-9-]+)\/?$/)
-        if (pluginMatch) {
-          const injected = await renderPluginHtml(pluginMatch[1], new URL(request.url).origin)
-          if (injected) return new Response(injected, { headers: { 'content-type': 'text/html; charset=utf-8' } })
-        }
         return Bun.file(resolve('../frontend/dist/index.html'))
       }, { detail: { hide: true } })
   }
