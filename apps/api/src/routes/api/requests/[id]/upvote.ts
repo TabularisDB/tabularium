@@ -1,4 +1,4 @@
-import { Elysia } from 'elysia'
+import { Elysia, t } from 'elysia'
 import { authMiddleware } from '../../../../middleware/auth'
 import { rateLimit } from '../../../../middleware/rate-limit'
 import { db } from '../../../../db'
@@ -68,4 +68,5 @@ export default new Elysia()
       operationId: 'toggleUpvote',
       security: [{ bearerAuth: [] }, { cookieAuth: [] }],
     },
+    params: t.Object({ id: t.String() }),
   })

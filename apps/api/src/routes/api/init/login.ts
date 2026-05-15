@@ -3,10 +3,12 @@ import { verifyBootstrap, isBootstrapActive } from '$lib/bootstrap'
 import { signBootstrapJwt } from '$lib/jwt'
 import { isProd } from '$lib/env'
 import { logger } from '$lib/logger'
+import { rateLimit } from '$middleware/rate-limit'
 
 const log = logger.child({ module: 'init-login' })
 
 export default new Elysia()
+  .use(rateLimit({ bucket: 'init-login', limit: 10, windowSeconds: 900 }))
   .post(
     '/',
     async ({ body, set, cookie }) => {
@@ -34,8 +36,8 @@ export default new Elysia()
     {
       detail: { tags: ['Auth'], summary: 'Bootstrap sign-in for the install wizard', operationId: 'initLogin' },
       body: t.Object({
-        email: t.String(),
-        password: t.String({ minLength: 1 }),
+        email: t.String({ minLength: 3, maxLength: 254 }),
+        password: t.String({ minLength: 1, maxLength: 256 }),
       }),
       response: {
         200: t.Object({ ok: t.Boolean() }),

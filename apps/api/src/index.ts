@@ -17,7 +17,7 @@ const corsOrigins = allowedOrigins()
 
 export async function createApp() {
   const router = await fileRouter({ dir: './src/routes', types: false })
-  let app = new Elysia({ systemRouter: false })
+  const base = new Elysia({ systemRouter: false })
     .use(loggerMiddleware)
     .use(
       cors({
@@ -61,8 +61,8 @@ export async function createApp() {
 
   if (config.installed) {
     const { diskUploadsRoot } = await import('$lib/storage')
-    app = app
-      .use(staticPlugin({ assets: diskUploadsRoot(), prefix: '/uploads', alwaysStatic: false, noCache: false }))
+    return base
+      .use(staticPlugin({ assets: diskUploadsRoot(), prefix: '/uploads', alwaysStatic: false }))
       .use(staticPlugin({ assets: resolve('../frontend/dist'), prefix: '/' }))
       .get('/*', ({ path, set }) => {
         if (path.startsWith('/api') || path.startsWith('/auth') || path.startsWith('/openapi') || path.startsWith('/uploads')) {
@@ -72,25 +72,23 @@ export async function createApp() {
         set.headers['content-type'] = 'text/html; charset=utf-8'
         return Bun.file(resolve('../frontend/dist/index.html'))
       })
-  } else {
-    app = app
-      .onRequest(({ request, set }) => {
-        const p = new URL(request.url).pathname
-        if (p.startsWith('/api/init/')) return
-        if (p === '/api/i18n' || p.startsWith('/api/i18n/')) return
-        if (p.startsWith('/api/') || p.startsWith('/auth/') || p.startsWith('/uploads/') || p.startsWith('/openapi')) {
-          set.status = 503
-          return { error: 'Setup required', code: 'setup_required' }
-        }
-      })
-      .use(staticPlugin({ assets: resolve('../frontend/dist'), prefix: '/' }))
-      .get('/*', ({ set }) => {
-        set.headers['content-type'] = 'text/html; charset=utf-8'
-        return Bun.file(resolve('../frontend/dist/index.html'))
-      })
   }
 
-  return app
+  return base
+    .onRequest(({ request, set }) => {
+      const p = new URL(request.url).pathname
+      if (p.startsWith('/api/init/')) return
+      if (p === '/api/i18n' || p.startsWith('/api/i18n/')) return
+      if (p.startsWith('/api/') || p.startsWith('/auth/') || p.startsWith('/uploads/') || p.startsWith('/openapi')) {
+        set.status = 503
+        return { error: 'Setup required', code: 'setup_required' }
+      }
+    })
+    .use(staticPlugin({ assets: resolve('../frontend/dist'), prefix: '/' }))
+    .get('/*', ({ set }) => {
+      set.headers['content-type'] = 'text/html; charset=utf-8'
+      return Bun.file(resolve('../frontend/dist/index.html'))
+    })
 }
 
 export type App = Awaited<ReturnType<typeof createApp>>
@@ -104,8 +102,10 @@ if (!config.installed) {
 async function bootSetupMode() {
   const { initBootstrap } = await import('$lib/bootstrap')
   const { setServerMode } = await import('$lib/server-mode')
+  const { initCache } = await import('$lib/cache')
   setServerMode('setup')
   await initBootstrap()
+  initCache()
   const app = (await createApp()).listen(port)
   logger.info({ module: 'boot', mode: 'setup', port: app.server?.port }, 'setup-mode ready')
 }

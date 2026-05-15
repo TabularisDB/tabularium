@@ -104,7 +104,7 @@ export default new Elysia()
       await setSetting('instance.require_approval', body.requireApproval ? '1' : '0')
     }
     if (body.rateLimits) {
-      const valid = new Set(BUCKETS.map((b) => b.id))
+      const valid: Set<string> = new Set(BUCKETS.map((b) => b.id))
       for (const r of body.rateLimits) {
         if (!valid.has(r.id)) {
           set.status = 400

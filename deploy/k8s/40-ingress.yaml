@@ -4,12 +4,15 @@ metadata:
   name: registry
   namespace: tabularis-registry
   annotations:
-    # Cloudflare is in front and terminates TLS for clients.
-    # Origin serves HTTP and CF should be in "Flexible" mode (or "Full" if
-    # you uncomment the TLS section below + cert-manager annotation).
-    traefik.ingress.kubernetes.io/router.entrypoints: web
+    cert-manager.io/cluster-issuer: letsencrypt
+    traefik.ingress.kubernetes.io/router.entrypoints: websecure
+    traefik.ingress.kubernetes.io/router.tls: "true"
 spec:
   ingressClassName: traefik
+  tls:
+    - hosts:
+        - registry.spitzli.dev
+      secretName: registry-tls
   rules:
     - host: registry.spitzli.dev
       http:
@@ -21,12 +24,3 @@ spec:
                 name: registry
                 port:
                   number: 80
-  # --- Enable below for Cloudflare "Full (strict)" mode with origin cert ---
-  # tls:
-  #   - hosts:
-  #       - registry.spitzli.dev
-  #     secretName: registry-tls
-  # And add this annotation under metadata.annotations:
-  #   cert-manager.io/cluster-issuer: letsencrypt
-  #   traefik.ingress.kubernetes.io/router.entrypoints: websecure
-  #   traefik.ingress.kubernetes.io/router.tls: "true"

@@ -52,8 +52,8 @@ export default new Elysia()
       operationId: 'emailLogin',
     },
     body: t.Object({
-      email: t.String(),
-      password: t.String({ minLength: 1 }),
+      email: t.String({ minLength: 3, maxLength: 254, format: 'email' }),
+      password: t.String({ minLength: 1, maxLength: 256 }),
     }),
     response: {
       200: t.Object({ ok: t.Boolean(), userId: t.String() }),

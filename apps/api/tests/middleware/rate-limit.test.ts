@@ -5,14 +5,19 @@ import { initCache, resetCacheForTests } from '../../src/lib/cache'
 
 function buildApp(limit: number, windowSeconds: number) {
   return new Elysia()
-    .use(rateLimit({ bucket: 'test', limit, windowSeconds }))
+    .use(rateLimit({
+      bucket: 'test',
+      limit,
+      windowSeconds,
+      keyFn: ({ request }) => request.headers.get('x-test-subject') ?? 'shared',
+    }))
     .post('/p', () => ({ ok: true }))
 }
 
-function req(ip = '1.2.3.4') {
+function req(subject = 'default') {
   return new Request('http://localhost/p', {
     method: 'POST',
-    headers: { 'x-forwarded-for': ip },
+    headers: { 'x-test-subject': subject },
   })
 }
 
@@ -39,10 +44,10 @@ describe('rateLimit middleware', () => {
     expect(blocked.headers.get('retry-after')).toBe('60')
   })
 
-  it('tracks separate buckets per IP', async () => {
+  it('tracks separate buckets per subject', async () => {
     const app = buildApp(1, 60)
-    expect((await app.handle(req('1.1.1.1'))).status).toBe(200)
-    expect((await app.handle(req('2.2.2.2'))).status).toBe(200)
-    expect((await app.handle(req('1.1.1.1'))).status).toBe(429)
+    expect((await app.handle(req('alice'))).status).toBe(200)
+    expect((await app.handle(req('bob'))).status).toBe(200)
+    expect((await app.handle(req('alice'))).status).toBe(429)
   })
 })

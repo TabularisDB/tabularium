@@ -38,6 +38,7 @@ export default new Elysia()
       if (!body.featured) patch.featuredOrder = null
     }
     if (body.featuredOrder !== undefined) patch.featuredOrder = body.featuredOrder
+    const ownerChange = body.ownerId !== undefined && body.ownerId !== existing.ownerId
     if (body.ownerId !== undefined) {
       const target = await db.query.users.findFirst({ where: { id: body.ownerId } })
       if (!target) {
@@ -48,6 +49,16 @@ export default new Elysia()
     }
     await db.update(plugins).set(patch).where(eq(plugins.id, params.id))
     await cache().del(latestCacheKey(params.id))
+    if (ownerChange) {
+      await recordAudit({
+        actorId: admin.id,
+        actorName: admin.displayName,
+        action: 'plugin.force_transfer',
+        target: `plugin:${params.id}`,
+        meta: { fromOwnerId: existing.ownerId, toOwnerId: body.ownerId } as Record<string, unknown>,
+        ip: request.headers.get('x-forwarded-for') ?? null,
+      })
+    }
     await recordAudit({
       actorId: admin.id,
       actorName: admin.displayName,
@@ -67,6 +78,7 @@ export default new Elysia()
       operationId: 'updatePlugin',
       security: [{ bearerAuth: [] }, { cookieAuth: [] }],
     },
+    params: t.Object({ id: t.String() }),
     body: t.Object({
       status: t.Optional(statusEnum),
       rejectionReason: t.Optional(t.String({ maxLength: 500 })),
@@ -106,4 +118,5 @@ export default new Elysia()
       operationId: 'adminDeletePlugin',
       security: [{ bearerAuth: [] }, { cookieAuth: [] }],
     },
+    params: t.Object({ id: t.String() }),
   })

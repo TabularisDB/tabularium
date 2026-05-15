@@ -34,6 +34,7 @@ export default new Elysia()
       operationId: 'adminDeleteRequest',
       security: [{ bearerAuth: [] }, { cookieAuth: [] }],
     },
+    params: t.Object({ id: t.String() }),
     response: {
       204: t.Null(),
       404: t.Object({ error: t.String() }),

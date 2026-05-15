@@ -26,12 +26,23 @@ export type RateLimitOptions = {
   keyFn?: (ctx: { user?: { sub: string }; request: Request }) => string
 }
 
+function trustProxy(): boolean {
+  if (!isSettingsInitialized()) return false
+  return getSetting('infra.trust_proxy') === '1'
+}
+
 function clientIp(req: Request): string {
-  const forwarded = req.headers.get('x-forwarded-for')
-  if (forwarded) return forwarded.split(',')[0].trim()
-  const real = req.headers.get('x-real-ip')
-  if (real) return real.trim()
-  return 'unknown'
+  if (trustProxy()) {
+    const xff = req.headers.get('x-forwarded-for')
+      ?.split(',').map((s) => s.trim()).filter(Boolean)
+    if (xff?.length) return xff[xff.length - 1]
+    const real = req.headers.get('x-real-ip')?.trim()
+    if (real) return real
+  }
+  const addr = (req as unknown as {
+    server?: { requestIP: (r: Request) => { address: string } | null }
+  }).server?.requestIP?.(req)?.address
+  return addr ?? 'unknown'
 }
 
 export function rateLimit(opts: RateLimitOptions) {

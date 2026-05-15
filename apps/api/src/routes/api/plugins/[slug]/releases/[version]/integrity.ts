@@ -35,6 +35,7 @@ export default new Elysia()
         'Lookup endpoint for `sum.<host>`-style verifiers. Returns the per-platform URL alongside `sha256` and `size` when hashing has completed (fail-soft on webhook ingest — values may be absent if the upstream fetch failed).',
       operationId: 'getReleaseIntegrity',
     },
+    params: t.Object({ slug: t.String(), version: t.String() }),
     response: {
       200: t.Object({
         slug: t.String(),

@@ -32,6 +32,7 @@ export default new Elysia()
       operationId: 'toggleRequestClaim',
       security: [{ bearerAuth: [] }, { cookieAuth: [] }],
     },
+    params: t.Object({ id: t.String() }),
     response: {
       200: t.Object({ claimed: t.Boolean(), claims: t.Number() }),
       404: t.Object({ error: t.String() }),

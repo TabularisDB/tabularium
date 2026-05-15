@@ -40,6 +40,7 @@ export default new Elysia()
       operationId: 'adminGetKind',
       security: [{ bearerAuth: [] }, { cookieAuth: [] }],
     },
+    params: t.Object({ key: t.String() }),
     response: {
       200: t.Object({ kind: kindSchema }),
       404: t.Object({ error: t.String() }),
@@ -74,6 +75,7 @@ export default new Elysia()
       operationId: 'adminUpdateKind',
       security: [{ bearerAuth: [] }, { cookieAuth: [] }],
     },
+    params: t.Object({ key: t.String() }),
     body: putBodySchema,
     response: {
       200: t.Object({ kind: kindSchema }),
@@ -107,6 +109,7 @@ export default new Elysia()
       operationId: 'adminDeleteKind',
       security: [{ bearerAuth: [] }, { cookieAuth: [] }],
     },
+    params: t.Object({ key: t.String() }),
     response: {
       204: t.Null(),
       404: t.Object({ error: t.String() }),

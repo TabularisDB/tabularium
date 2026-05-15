@@ -3,7 +3,7 @@ import { eq, asc, and } from 'drizzle-orm'
 import { db } from '$db'
 import { markdownPages } from '$db/schema'
 import { renderMarkdown } from '$lib/markdown'
-import { cache } from '$lib/cache'
+import { cache, isString } from '$lib/cache'
 import { normalizePath } from '$lib/page-path'
 import { getI18nConfig, SUPPORTED_LOCALES, type Locale } from '$lib/i18n'
 
@@ -114,7 +114,7 @@ export default new Elysia()
       return { error: 'No page at that path' }
     }
     const cacheKey = `page:html:${row.slug}:${row.locale}:${row.updatedAt}`
-    let html = await cache().get<string>(cacheKey)
+    let html = await cache().get<string>(cacheKey, isString)
     if (!html) {
       html = renderMarkdown(row.content)
       await cache().set(cacheKey, html, RENDER_TTL)

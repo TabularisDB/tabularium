@@ -17,7 +17,7 @@ await db.insert(users).values({
 await db.insert(identities).values({
   id: REGISTRY_OWNER_IDENTITY_ID,
   userId: REGISTRY_OWNER_ID,
-  provider: 'github' as const,
+  providerInstanceId: 'seed-system-provider',
   externalId: '0',
   username: 'tabularis-registry',
 }).onConflictDoNothing()

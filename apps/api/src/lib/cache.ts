@@ -8,18 +8,22 @@ export type CacheDriver = 'off' | 'memory' | 'redis'
 
 const VALID: readonly CacheDriver[] = ['off', 'memory', 'redis']
 
+export type CacheValidator<T> = (v: unknown) => v is T
+
 export interface CacheStore {
   driver: CacheDriver
-  get<T>(key: string): Promise<T | null>
+  get<T>(key: string, validate?: CacheValidator<T>): Promise<T | null>
   set(key: string, value: unknown, ttlSeconds?: number): Promise<void>
   del(key: string): Promise<void>
   incr(key: string, ttlSeconds?: number): Promise<number>
   dispose?(): Promise<void>
 }
 
+export const isString = (v: unknown): v is string => typeof v === 'string'
+
 class NullCache implements CacheStore {
   driver: CacheDriver = 'off'
-  async get<T>(): Promise<T | null> { return null }
+  async get<T>(_key: string, _validate?: CacheValidator<T>): Promise<T | null> { return null }
   async set(): Promise<void> { }
   async del(): Promise<void> { }
   async incr(): Promise<number> {
@@ -39,10 +43,15 @@ class MemoryCache implements CacheStore {
     return true
   }
 
-  async get<T>(key: string): Promise<T | null> {
+  async get<T>(key: string, validate?: CacheValidator<T>): Promise<T | null> {
     const entry = this.store.get(key)
     if (!this.alive(entry)) {
       if (entry) this.store.delete(key)
+      return null
+    }
+    if (validate && !validate(entry.value)) {
+      log.warn({ key }, 'cache value failed validation — discarding')
+      this.store.delete(key)
       return null
     }
     return entry.value as T
@@ -78,14 +87,21 @@ class RedisCache implements CacheStore {
   driver: CacheDriver = 'redis'
   constructor(private client: import('bun').RedisClient) { }
 
-  async get<T>(key: string): Promise<T | null> {
+  async get<T>(key: string, validate?: CacheValidator<T>): Promise<T | null> {
     const raw = await this.client.get(key)
     if (raw === null || raw === undefined) return null
+    let parsed: unknown
     try {
-      return JSON.parse(raw) as T
+      parsed = JSON.parse(raw)
     } catch {
-      return raw as unknown as T
+      parsed = raw
     }
+    if (validate && !validate(parsed)) {
+      log.warn({ key }, 'cache value failed validation — discarding')
+      await this.client.del(key)
+      return null
+    }
+    return parsed as T
   }
 
   async set(key: string, value: unknown, ttlSeconds?: number): Promise<void> {

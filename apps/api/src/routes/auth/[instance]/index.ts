@@ -4,19 +4,41 @@ import { verifyJwt } from '$lib/jwt'
 import { getInstance, type ProviderInstance } from '$lib/provider-instance'
 import { env, isProd } from '$lib/env'
 
-function safeReturnTo(raw: string | undefined): string | null {
-  if (!raw) return null
-  if (!raw.startsWith('/') || raw.startsWith('//')) return null
-  return raw
+export function safeReturnTo(raw: string | undefined): string | null {
+  if (!raw || typeof raw !== 'string' || raw.length > 512) return null
+  try {
+    const base = env.WEB_BASE_URL ?? env.BASE_URL
+    const baseOrigin = new URL(base).origin
+    const target = new URL(raw, base)
+    if (target.origin !== baseOrigin) return null
+    return target.pathname + target.search + target.hash
+  } catch {
+    return null
+  }
 }
 
-function buildAuthUrl(inst: ProviderInstance, state: string, linking: boolean): { url: URL; codeVerifier?: string } {
+async function s256Challenge(verifier: string): Promise<string> {
+  const data = new TextEncoder().encode(verifier)
+  const digest = await crypto.subtle.digest('SHA-256', data)
+  const bytes = new Uint8Array(digest)
+  let str = ''
+  for (const b of bytes) str += String.fromCharCode(b)
+  return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
+}
+
+async function buildAuthUrl(inst: ProviderInstance, state: string, linking: boolean): Promise<{ url: URL; codeVerifier?: string }> {
   const callback = `${env.BASE_URL}/auth/${inst.id}/callback`
 
   if (inst.kind === 'github') {
     const gh = new GitHub(inst.clientId, inst.clientSecret, callback)
     const url = gh.createAuthorizationURL(state, ['read:user', 'read:org', 'public_repo', 'admin:repo_hook'])
     if (linking) url.searchParams.set('prompt', 'consent')
+    if (inst.baseUrl === 'https://github.com') {
+      const codeVerifier = generateCodeVerifier()
+      url.searchParams.set('code_challenge', await s256Challenge(codeVerifier))
+      url.searchParams.set('code_challenge_method', 'S256')
+      return { url, codeVerifier }
+    }
     return { url }
   }
 
@@ -27,7 +49,6 @@ function buildAuthUrl(inst: ProviderInstance, state: string, linking: boolean): 
     return { url }
   }
 
-  // gitea-flavored (Codeberg, self-hosted Forgejo/Gitea)
   const codeVerifier = generateCodeVerifier()
   const gt = new Gitea(inst.baseUrl, inst.clientId, inst.clientSecret, callback)
   const url = gt.createAuthorizationURL(state, codeVerifier, ['read:user', 'write:repository', 'read:organization'])
@@ -59,7 +80,7 @@ export default new Elysia()
 
     const state = generateState()
     const returnTo = safeReturnTo(query.return_to)
-    const { url, codeVerifier } = buildAuthUrl(inst, state, linking)
+    const { url, codeVerifier } = await buildAuthUrl(inst, state, linking)
 
     cookie.oauth_state.set({
       value: { nonce: state, instanceId: inst.id, codeVerifier, linking, returnTo },
@@ -67,7 +88,7 @@ export default new Elysia()
       secure: isProd(),
       maxAge: 600,
       sameSite: 'lax',
-      path: '/',
+      path: `/auth/${inst.id}/callback`,
     })
 
     return redirect(url.toString(), 302)

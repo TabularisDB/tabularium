@@ -9,13 +9,24 @@ import { encryptToken } from '$lib/crypto'
 import { getInstance, type ProviderInstance } from '$lib/provider-instance'
 import { env, isProd } from '$lib/env'
 import { logger } from '$lib/logger'
+import { getSetting, setSetting, isSettingsInitialized } from '$lib/settings'
+import { safeReturnTo } from './index'
 
 const log = logger.child({ module: 'auth-callback' })
+
+const AUTO_ADMIN_FUSE_KEY = 'bootstrap.auto_admin_consumed'
 
 type ProviderProfile = {
   externalId: string
   username: string
   accessToken: string
+}
+
+const DISPLAY_NAME_RE = /^[\p{L}\p{N}._\-\s]{1,60}$/u
+
+function sanitizeUsername(raw: string): string {
+  const trimmed = raw.trim().slice(0, 60)
+  return DISPLAY_NAME_RE.test(trimmed) ? trimmed : `user-${Math.random().toString(36).slice(2, 10)}`
 }
 
 type StateData = {
@@ -26,11 +37,43 @@ type StateData = {
   returnTo?: string | null
 }
 
-async function exchangeGithub(inst: ProviderInstance, code: string): Promise<ProviderProfile> {
+async function exchangeGithubPkce(inst: ProviderInstance, code: string, codeVerifier: string): Promise<string> {
   const callback = `${env.BASE_URL}/auth/${inst.id}/callback`
-  const gh = new GitHub(inst.clientId, inst.clientSecret, callback)
-  const tokens = await gh.validateAuthorizationCode(code)
-  const accessToken = tokens.accessToken()
+  const body = new URLSearchParams({
+    grant_type: 'authorization_code',
+    code,
+    code_verifier: codeVerifier,
+    redirect_uri: callback,
+    client_id: inst.clientId,
+  })
+  const basic = Buffer.from(`${inst.clientId}:${inst.clientSecret}`).toString('base64')
+  const res = await fetch('https://github.com/login/oauth/access_token', {
+    method: 'POST',
+    headers: {
+      Authorization: `Basic ${basic}`,
+      'Content-Type': 'application/x-www-form-urlencoded',
+      Accept: 'application/json',
+    },
+    body,
+  })
+  if (!res.ok) throw new Error(`GitHub token endpoint ${res.status}`)
+  const data = await res.json() as { access_token?: string; error?: string; error_description?: string }
+  if (data.error || !data.access_token) {
+    throw new Error(`GitHub OAuth: ${data.error_description ?? data.error ?? 'no access_token'}`)
+  }
+  return data.access_token
+}
+
+async function exchangeGithub(inst: ProviderInstance, code: string, state: StateData): Promise<ProviderProfile> {
+  let accessToken: string
+  if (inst.baseUrl === 'https://github.com' && state.codeVerifier) {
+    accessToken = await exchangeGithubPkce(inst, code, state.codeVerifier)
+  } else {
+    const callback = `${env.BASE_URL}/auth/${inst.id}/callback`
+    const gh = new GitHub(inst.clientId, inst.clientSecret, callback)
+    const tokens = await gh.validateAuthorizationCode(code)
+    accessToken = tokens.accessToken()
+  }
   log.info({ instance: inst.id }, 'github token issued')
   const apiBase = inst.baseUrl === 'https://github.com' ? 'https://api.github.com' : `${inst.baseUrl}/api/v3`
   const profileRes = await fetch(`${apiBase}/user`, {
@@ -67,7 +110,7 @@ async function exchangeGitea(inst: ProviderInstance, code: string, state: StateD
 }
 
 async function exchange(inst: ProviderInstance, code: string, state: StateData): Promise<ProviderProfile> {
-  if (inst.kind === 'github') return exchangeGithub(inst, code)
+  if (inst.kind === 'github') return exchangeGithub(inst, code, state)
   if (inst.kind === 'gitlab') return exchangeGitlab(inst, code)
   return exchangeGitea(inst, code, state)
 }
@@ -113,6 +156,7 @@ export default new Elysia()
 
     try {
       const profile = await exchange(inst, query.code, stateData)
+      profile.username = sanitizeUsername(profile.username)
 
       const existingIdentity = await db.query.identities.findFirst({
         where: { providerInstanceId: inst.id, externalId: profile.externalId },
@@ -144,9 +188,18 @@ export default new Elysia()
             .select({ adminCount: count() })
             .from(users)
             .where(eq(users.role, 'admin'))
+          const fuseBlown = isSettingsInitialized() && getSetting(AUTO_ADMIN_FUSE_KEY) === '1'
+          if (adminCount === 0 && fuseBlown) {
+            log.error({ username: profile.username }, 'auto-admin fuse already consumed but adminCount=0 — refusing silent promotion')
+            set.status = 503
+            return { error: 'Instance state inconsistent — restore admin via email recovery instead' }
+          }
           const role = adminCount === 0 ? 'admin' : 'user'
           await db.insert(users).values({ id: userId, displayName: profile.username, role })
-          if (role === 'admin') log.info({ userId, username: profile.username }, 'first user promoted to admin')
+          if (role === 'admin') {
+            log.info({ userId, username: profile.username }, 'first user promoted to admin')
+            if (isSettingsInitialized()) await setSetting(AUTO_ADMIN_FUSE_KEY, '1')
+          }
         }
 
         await db.insert(identities).values({
@@ -167,8 +220,8 @@ export default new Elysia()
               columns: { id: true },
             })
             if (remaining.length === 1) {
-              const deleted = await db.delete(rootCredentials).where(eq(rootCredentials.userId, linkUserId))
-              if (deleted) log.info({ userId: linkUserId }, 'root_credentials revoked after first OAuth link')
+              await db.delete(rootCredentials).where(eq(rootCredentials.userId, linkUserId))
+              log.info({ userId: linkUserId }, 'root_credentials revoked after first OAuth link')
             }
           }
         }
@@ -192,7 +245,8 @@ export default new Elysia()
       cookie.oauth_state.remove()
 
       const webBase = env.WEB_BASE_URL ?? env.BASE_URL
-      const target = stateData.returnTo ?? (linkUserId ? '/settings' : '/welcome')
+      const safeTarget = safeReturnTo(stateData.returnTo ?? undefined)
+      const target = safeTarget ?? (linkUserId ? '/settings' : '/welcome')
       return redirect(`${webBase}${target}`, 302)
     } catch (e) {
       if (e instanceof OAuth2RequestError) {

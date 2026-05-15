@@ -1,4 +1,5 @@
 import { logger } from './logger'
+import { isPublicHttpUrl } from './url'
 
 const log = logger.child({ module: 'asset' })
 
@@ -35,11 +36,32 @@ export function serializeAssets(map: AssetMap): string {
   return JSON.stringify(map)
 }
 
-const MAX_BYTES = 200 * 1024 * 1024 // 200 MB upper bound for streaming hash
+const MAX_BYTES = 200 * 1024 * 1024
+const MAX_REDIRECTS = 3
+const FETCH_TIMEOUT_MS = 30_000
+
+async function fetchWithGuards(initialUrl: string): Promise<Response> {
+  let url = initialUrl
+  for (let hop = 0; hop <= MAX_REDIRECTS; hop++) {
+    if (!isPublicHttpUrl(url)) throw new Error(`blocked URL: ${url}`)
+    const res = await fetch(url, {
+      redirect: 'manual',
+      signal: AbortSignal.timeout(FETCH_TIMEOUT_MS),
+    })
+    if (res.status >= 300 && res.status < 400) {
+      const loc = res.headers.get('location')
+      if (!loc) throw new Error('redirect without location')
+      url = new URL(loc, url).toString()
+      continue
+    }
+    return res
+  }
+  throw new Error(`too many redirects (>${MAX_REDIRECTS})`)
+}
 
 export async function hashAsset(url: string): Promise<{ sha256?: string; size?: number; reason?: string }> {
   try {
-    const res = await fetch(url, { redirect: 'follow' })
+    const res = await fetchWithGuards(url)
     if (!res.ok) return { reason: `HTTP ${res.status}` }
     const body = res.body
     if (!body) return { reason: 'no body' }

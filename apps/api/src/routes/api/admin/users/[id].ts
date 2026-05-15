@@ -2,8 +2,24 @@ import { Elysia, t } from 'elysia'
 import { eq, count } from 'drizzle-orm'
 import { adminMiddleware } from '$middleware/admin'
 import { db } from '$db'
-import { users } from '$db/schema'
+import { users, rootCredentials } from '$db/schema'
 import { recordAudit, actorFromAdmin } from '$lib/audit'
+
+async function readUser(id: string) {
+  const row = await db
+    .select({
+      id: users.id,
+      displayName: users.displayName,
+      role: users.role,
+      createdAt: users.createdAt,
+      email: rootCredentials.email,
+    })
+    .from(users)
+    .leftJoin(rootCredentials, eq(rootCredentials.userId, users.id))
+    .where(eq(users.id, id))
+    .limit(1)
+  return row[0] ?? null
+}
 
 const userSchema = t.Object({
   id: t.String(),
@@ -16,7 +32,7 @@ const userSchema = t.Object({
 export default new Elysia()
   .use(adminMiddleware)
   .get('/', async ({ params, set }) => {
-    const row = await db.query.users.findFirst({ where: { id: params.id } })
+    const row = await readUser(params.id)
     if (!row) {
       set.status = 404
       return { error: 'User not found' }
@@ -77,7 +93,7 @@ export default new Elysia()
       })
     }
 
-    const updated = await db.query.users.findFirst({ where: { id: params.id } })
+    const updated = await readUser(params.id)
     return {
       id: updated!.id,
       displayName: updated!.displayName,

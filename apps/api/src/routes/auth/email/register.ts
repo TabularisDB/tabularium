@@ -86,8 +86,8 @@ export default new Elysia()
       operationId: 'registerBootstrapAdmin',
     },
     body: t.Object({
-      email: t.String(),
-      password: t.String({ minLength: 8 }),
+      email: t.String({ minLength: 3, maxLength: 254, format: 'email' }),
+      password: t.String({ minLength: 8, maxLength: 256 }),
       displayName: t.String({ minLength: 1, maxLength: 60 }),
     }),
     response: {

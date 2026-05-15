@@ -28,10 +28,8 @@ export default new Elysia()
     let affected = 0
     if (body.action === 'delete') {
       await db.delete(releases).where(inArray(releases.pluginId, body.ids))
-      const result = await db.delete(plugins).where(inArray(plugins.id, body.ids))
-      affected = (result as { changes?: number; rowsAffected?: number }).changes
-        ?? (result as { rowsAffected?: number }).rowsAffected
-        ?? targets.length
+      await db.delete(plugins).where(inArray(plugins.id, body.ids))
+      affected = targets.length
     } else {
       const status = body.action === 'approve' ? 'approved' : 'rejected'
       const patch: Partial<typeof plugins.$inferInsert> = {

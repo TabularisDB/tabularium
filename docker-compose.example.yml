@@ -22,11 +22,12 @@ services:
     ports:
       - "3000:3000"
     environment:
-      # REPLACE THESE — see openssl commands above.
-      JWT_SECRET: "change-me-please-min-32-chars-1234567890ab"
-      TOKEN_ENC_KEY: "0000000000000000000000000000000000000000000000000000000000000000"
+      # No defaults — required. App refuses to start if these are unset.
+      # Generate with: openssl rand -hex 32
+      JWT_SECRET: ${JWT_SECRET:?JWT_SECRET is required — run: openssl rand -hex 32}
+      TOKEN_ENC_KEY: ${TOKEN_ENC_KEY:?TOKEN_ENC_KEY is required — run: openssl rand -hex 32}
 
-      BASE_URL: "http://localhost:3000"
+      BASE_URL: ${BASE_URL:-http://localhost:3000}
 
       # SQLite (default). For other dialects, replace with one of:
       #   DATABASE_URL: "postgres://user:pass@host:5432/db"

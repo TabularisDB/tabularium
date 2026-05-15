@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.7
 
-FROM docker.io/oven/bun:1.3-alpine AS build
+FROM docker.io/oven/bun:1.3-alpine@sha256:5acc90a93e91ff07bf72aa90a7c9f0fa189765aec90b47bdbf2152d2196383c0 AS build
 
 WORKDIR /repo
 
@@ -17,7 +17,7 @@ COPY . .
 
 RUN cd apps/frontend && bun run build
 
-FROM docker.io/oven/bun:1.3-alpine AS prod-deps
+FROM docker.io/oven/bun:1.3-alpine@sha256:5acc90a93e91ff07bf72aa90a7c9f0fa189765aec90b47bdbf2152d2196383c0 AS prod-deps
 
 WORKDIR /repo
 
@@ -71,7 +71,7 @@ RUN printf '%s\n' \
             node_modules/.bun/prettier@*/node_modules/prettier/standalone.js \
             node_modules/.bun/prettier@*/node_modules/prettier/standalone.mjs
 
-FROM docker.io/oven/bun:1.3-alpine AS runtime
+FROM docker.io/oven/bun:1.3-alpine@sha256:5acc90a93e91ff07bf72aa90a7c9f0fa189765aec90b47bdbf2152d2196383c0 AS runtime
 
 WORKDIR /app
 
@@ -102,8 +102,6 @@ ENV CACHE_DRIVER=memory
 ENV DATABASE_URL="sqlite:./data/registry.sqlite"
 
 EXPOSE 3000
-
-VOLUME ["/app/apps/api/data"]
 
 HEALTHCHECK --interval=30s --timeout=5s --retries=3 \
   CMD wget -qO- http://127.0.0.1:3000/healthz || exit 1

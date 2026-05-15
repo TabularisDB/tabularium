@@ -21,14 +21,18 @@ env:
 
 jobs:
   build:
+    if: github.event_name == 'release' || github.ref == 'refs/heads/main'
     runs-on: codeberg-medium
     container:
       image: node:24-bookworm-slim
     steps:
-      - name: Install buildah
+      - name: Install buildah + trivy
         run: |
           apt-get update
-          apt-get install -y --no-install-recommends buildah ca-certificates
+          apt-get install -y --no-install-recommends buildah ca-certificates curl gnupg
+          curl -sSL https://aquasecurity.github.io/trivy-repo/deb/public.key | gpg --dearmor -o /usr/share/keyrings/trivy.gpg
+          echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb bookworm main" > /etc/apt/sources.list.d/trivy.list
+          apt-get update && apt-get install -y --no-install-recommends trivy
           rm -rf /var/lib/apt/lists/*
 
       - name: Checkout
@@ -54,6 +58,19 @@ jobs:
             -t "$IMAGE:latest" \
             -t "$IMAGE:${{ github.sha }}" \
             .
+
+      - name: Scan image for HIGH/CRITICAL CVEs
+        run: |
+          OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          IMAGE="codeberg.org/$OWNER/tabularium"
+          VERSION="${{ github.event.release.tag_name }}"
+          VERSION="${VERSION#v}"
+          trivy image \
+            --severity HIGH,CRITICAL \
+            --ignore-unfixed \
+            --exit-code 1 \
+            --no-progress \
+            "$IMAGE:$VERSION"
 
       - name: Push image
         run: |

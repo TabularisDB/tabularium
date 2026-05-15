@@ -1,7 +1,7 @@
 import { Elysia, t } from 'elysia'
 import { db } from '$db'
 import { renderMarkdown } from '$lib/markdown'
-import { cache } from '$lib/cache'
+import { cache, isString } from '$lib/cache'
 import { getI18nConfig, SUPPORTED_LOCALES, type Locale } from '$lib/i18n'
 
 const RENDER_TTL = 600
@@ -44,7 +44,7 @@ export default new Elysia()
       return { error: 'Page not found' }
     }
     const cacheKey = `page:html:${row.slug}:${row.locale}:${row.updatedAt}`
-    let html = await cache().get<string>(cacheKey)
+    let html = await cache().get<string>(cacheKey, isString)
     if (!html) {
       html = renderMarkdown(row.content)
       await cache().set(cacheKey, html, RENDER_TTL)

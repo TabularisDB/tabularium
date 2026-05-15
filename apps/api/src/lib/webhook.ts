@@ -16,11 +16,15 @@ export function inferPlatformKey(filename: string): string | null {
   return null
 }
 
+const MIN_WEBHOOK_SECRET_LEN = 32
+
 export async function verifyGithubSignature(
   secret: string,
   body: Buffer,
   signature: string,
 ): Promise<boolean> {
+  if (!secret || secret.length < MIN_WEBHOOK_SECRET_LEN) return false
+  if (!signature?.startsWith('sha256=')) return false
   const hasher = new Bun.CryptoHasher('sha256', secret)
   hasher.update(body)
   const expected = 'sha256=' + hasher.digest('hex')
@@ -31,6 +35,8 @@ export async function verifyGithubSignature(
 }
 
 export function verifyGitlabToken(secret: string, headerToken: string): boolean {
+  if (!secret || secret.length < MIN_WEBHOOK_SECRET_LEN) return false
+  if (!headerToken) return false
   const a = Buffer.from(secret)
   const b = Buffer.from(headerToken)
   if (a.length !== b.length) return false

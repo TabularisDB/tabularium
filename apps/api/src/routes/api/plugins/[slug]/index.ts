@@ -5,7 +5,7 @@ import { eq } from 'drizzle-orm'
 import { authMiddleware } from '../../../../middleware/auth'
 import { projectPluginDetail } from '../../../../lib/plugin-projection'
 import { renderMarkdown } from '../../../../lib/markdown'
-import { cache } from '../../../../lib/cache'
+import { cache, isString } from '../../../../lib/cache'
 
 const screenshotSchema = t.Object({
   url: t.String(),
@@ -76,7 +76,7 @@ export default new Elysia()
     let readmeHtml: string | null = null
     if (detail.readmeMarkdown) {
       const cacheKey = `plugin:readme:${plugin.id}:${plugin.updatedAt}`
-      readmeHtml = await cache().get<string>(cacheKey)
+      readmeHtml = await cache().get<string>(cacheKey, isString)
       if (!readmeHtml) {
         readmeHtml = renderMarkdown(detail.readmeMarkdown)
         await cache().set(cacheKey, readmeHtml, README_TTL)
@@ -96,6 +96,7 @@ export default new Elysia()
         'Full plugin record including release history and the rendered README HTML (sanitized via DOMPurify, cached 10 min). Public — no auth required.',
       operationId: 'getPlugin',
     },
+    params: t.Object({ slug: t.String() }),
     response: {
       200: pluginDetailSchema,
       404: errorSchema,
@@ -129,4 +130,5 @@ export default new Elysia()
       operationId: 'deletePlugin',
       security: [{ bearerAuth: [] }, { cookieAuth: [] }],
     },
+    params: t.Object({ slug: t.String() }),
   })

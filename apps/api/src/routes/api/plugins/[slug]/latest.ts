@@ -3,6 +3,14 @@ import { db } from '../../../../db'
 import { cache } from '../../../../lib/cache'
 import { parseAssets, type AssetMap } from '../../../../lib/asset'
 
+function isLatestResolved(v: unknown): v is LatestResolved {
+  if (!v || typeof v !== 'object') return false
+  const o = v as Record<string, unknown>
+  return typeof o.version === 'string'
+    && (o.minRuntimeVersion === null || typeof o.minRuntimeVersion === 'string')
+    && typeof o.assets === 'object' && o.assets !== null
+}
+
 const latestSuccessSchema = t.Object({
   version: t.String(),
   min_runtime_version: t.Nullable(t.String()),
@@ -28,7 +36,7 @@ const TTL_SECONDS = 60
 export default new Elysia()
   .get('/', async ({ params, query, set }) => {
     const key = latestCacheKey(params.slug)
-    let resolved = await cache().get<LatestResolved>(key)
+    let resolved = await cache().get<LatestResolved>(key, isLatestResolved)
 
     if (!resolved) {
       const plugin = await db.query.plugins.findFirst({
@@ -82,6 +90,7 @@ export default new Elysia()
         'Response is cached server-side for 60s; cache is invalidated on every release webhook.',
       operationId: 'getLatestAsset',
     },
+    params: t.Object({ slug: t.String() }),
     query: t.Object({
       os: t.String({ description: 'Operating system: `linux`, `darwin`, or `win`.' }),
       arch: t.String({ description: 'CPU architecture: `x64` or `arm64`.' }),

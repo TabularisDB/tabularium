@@ -48,7 +48,7 @@ describe('POST /api/webhooks/release', () => {
     const user = await makeUser()
     const plugin = await makePlugin(user.id, {
       repoUrl: 'https://github.com/alice/my-plugin',
-      webhookSecret: 'real-secret',
+      webhookSecret: 'real-secret-padded-to-thirty-two-chars',
     })
 
     const body = JSON.stringify(makeGithubReleasePayload(plugin.repoUrl, 'v1.0.0', 'plugin-linux-x64.zip'))
@@ -71,12 +71,12 @@ describe('POST /api/webhooks/release', () => {
     const user = await makeUser()
     const plugin = await makePlugin(user.id, {
       repoUrl: 'https://github.com/alice/my-plugin',
-      webhookSecret: 'test-secret',
+      webhookSecret: 'test-secret-padded-to-thirty-two-chars',
     })
 
     const payload = makeGithubReleasePayload(plugin.repoUrl, 'v1.2.0', 'my-plugin-linux-x64.zip')
     const body = JSON.stringify(payload)
-    const sig = await signPayload('test-secret', body)
+    const sig = await signPayload('test-secret-padded-to-thirty-two-chars', body)
 
     const app = await buildApp()
     const res = await app.handle(
@@ -109,12 +109,12 @@ describe('POST /api/webhooks/release', () => {
     const user = await makeUser()
     const plugin = await makePlugin(user.id, {
       repoUrl: 'https://github.com/alice/my-plugin',
-      webhookSecret: 'test-secret',
+      webhookSecret: 'test-secret-padded-to-thirty-two-chars',
     })
 
     const payload = { action: 'created', release: { tag_name: 'v1.0.0', assets: [] }, repository: { html_url: plugin.repoUrl } }
     const body = JSON.stringify(payload)
-    const sig = await signPayload('test-secret', body)
+    const sig = await signPayload('test-secret-padded-to-thirty-two-chars', body)
 
     const app = await buildApp()
     const res = await app.handle(

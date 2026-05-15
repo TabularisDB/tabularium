@@ -74,7 +74,7 @@ export default new Elysia()
       .offset(offset)
 
     const viewer = await resolveOptionalViewer(headers, cookie)
-    const ids = rows.map((r: { id: string }) => r.id)
+    const ids = rows.map((r) => r.id)
     const claimRows = ids.length === 0
       ? []
       : await db
@@ -83,7 +83,7 @@ export default new Elysia()
           .where(inArray(pluginRequestClaims.requestId, ids))
           .groupBy(pluginRequestClaims.requestId)
     const claimsByRequest = new Map<string, number>(
-      claimRows.map((r: { requestId: string; n: number }) => [r.requestId, r.n]),
+      claimRows.map((r) => [r.requestId, r.n]),
     )
 
     let myClaimSet = new Set<string>()
@@ -97,14 +97,14 @@ export default new Elysia()
             inArray(pluginRequestClaims.requestId, ids),
           ),
         )
-      myClaimSet = new Set(mine.map((r: { requestId: string }) => r.requestId))
+      myClaimSet = new Set(mine.map((r) => r.requestId))
     }
 
     return {
       total,
       page,
       limit,
-      requests: rows.map((r: { id: string }) => ({
+      requests: rows.map((r) => ({
         ...r,
         claims: claimsByRequest.get(r.id) ?? 0,
         claimedByMe: myClaimSet.has(r.id),

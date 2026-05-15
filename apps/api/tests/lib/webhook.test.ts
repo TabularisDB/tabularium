@@ -22,27 +22,38 @@ describe('inferPlatformKey', () => {
   })
 })
 
+const VALID_SECRET = 'a'.repeat(40)
+const OTHER_SECRET = 'b'.repeat(40)
+
 describe('verifyGithubSignature', () => {
   it('returns true for a valid HMAC', async () => {
-    const secret = 'my-secret'
     const body = Buffer.from('{"action":"published"}')
-    const hasher = new Bun.CryptoHasher('sha256', secret)
+    const hasher = new Bun.CryptoHasher('sha256', VALID_SECRET)
     hasher.update(body)
     const sig = 'sha256=' + hasher.digest('hex')
-    expect(await verifyGithubSignature(secret, body, sig)).toBe(true)
+    expect(await verifyGithubSignature(VALID_SECRET, body, sig)).toBe(true)
   })
   it('returns false for wrong secret', async () => {
     const body = Buffer.from('{"action":"published"}')
-    const hasher = new Bun.CryptoHasher('sha256', 'correct-secret')
+    const hasher = new Bun.CryptoHasher('sha256', VALID_SECRET)
     hasher.update(body)
     const sig = 'sha256=' + hasher.digest('hex')
-    expect(await verifyGithubSignature('wrong-secret', body, sig)).toBe(false)
+    expect(await verifyGithubSignature(OTHER_SECRET, body, sig)).toBe(false)
   })
   it('returns false for tampered body', async () => {
-    const secret = 'my-secret'
-    const hasher = new Bun.CryptoHasher('sha256', secret)
+    const hasher = new Bun.CryptoHasher('sha256', VALID_SECRET)
     hasher.update(Buffer.from('original'))
     const sig = 'sha256=' + hasher.digest('hex')
-    expect(await verifyGithubSignature(secret, Buffer.from('tampered'), sig)).toBe(false)
+    expect(await verifyGithubSignature(VALID_SECRET, Buffer.from('tampered'), sig)).toBe(false)
+  })
+  it('rejects empty secret even with matching empty signature', async () => {
+    expect(await verifyGithubSignature('', Buffer.from('x'), 'sha256=')).toBe(false)
+  })
+  it('rejects secrets shorter than 32 chars', async () => {
+    const shortSecret = 'short'
+    const hasher = new Bun.CryptoHasher('sha256', shortSecret)
+    hasher.update(Buffer.from('x'))
+    const sig = 'sha256=' + hasher.digest('hex')
+    expect(await verifyGithubSignature(shortSecret, Buffer.from('x'), sig)).toBe(false)
   })
 })

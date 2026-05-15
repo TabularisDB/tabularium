@@ -27,6 +27,11 @@ export const authMiddleware = new Elysia({ name: 'auth-middleware' })
       set.status = 401
       throw new Error('Unauthorized')
     }
+    if (user.bootstrap) {
+      log.warn({ sub: user.sub }, 'bootstrap token rejected in normal auth path')
+      set.status = 401
+      throw new Error('Unauthorized')
+    }
 
     return { user }
   })

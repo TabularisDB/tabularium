@@ -1,7 +1,7 @@
 import { Elysia, t } from 'elysia'
 import { sql } from 'drizzle-orm'
 import { db } from '$db'
-import { cache } from '$lib/cache'
+import { cache, isString } from '$lib/cache'
 import { storage } from '$lib/storage'
 
 const startedAt = Date.now()
@@ -19,7 +19,7 @@ export default new Elysia()
 
     try {
       await cache().set('healthz:ping', '1', 5)
-      const v = await cache().get<string>('healthz:ping')
+      const v = await cache().get<string>('healthz:ping', isString)
       checks.cache = v === '1'
         ? { ok: true, detail: `driver=${cache().driver}` }
         : { ok: false, detail: `roundtrip mismatch (driver=${cache().driver})` }

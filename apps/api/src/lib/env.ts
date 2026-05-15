@@ -61,6 +61,6 @@ export function allowedOrigins(): string[] {
   const fromList = env.ALLOWED_ORIGINS?.split(',').map((s) => s.trim()).filter(Boolean) ?? []
   const fromWeb = env.WEB_BASE_URL ? [env.WEB_BASE_URL] : []
   const fromBase = [env.BASE_URL]
-  const dev = isProd() ? [] : ['http://localhost:5180', 'http://127.0.0.1:5180']
+  const dev = env.NODE_ENV === 'development' ? ['http://localhost:5180', 'http://127.0.0.1:5180'] : []
   return [...new Set([...fromList, ...fromWeb, ...fromBase, ...dev])]
 }

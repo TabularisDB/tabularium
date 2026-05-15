@@ -17,10 +17,23 @@ spec:
       labels:
         app: tabularis-registry
     spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 1000
+        runAsGroup: 1000
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
       containers:
         - name: registry
-          image: tabularis-registry:dev
-          imagePullPolicy: Never
+          image: codeberg.org/tabularium/tabularium:latest
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: [ALL]
           ports:
             - containerPort: 3000
               name: http
@@ -43,15 +56,17 @@ spec:
           volumeMounts:
             - name: data
               mountPath: /data
+            - name: tmp
+              mountPath: /tmp
           readinessProbe:
             httpGet:
-              path: /openapi/json
+              path: /healthz
               port: 3000
             initialDelaySeconds: 5
             periodSeconds: 10
           livenessProbe:
             httpGet:
-              path: /openapi/json
+              path: /healthz
               port: 3000
             initialDelaySeconds: 15
             periodSeconds: 20
@@ -66,3 +81,5 @@ spec:
         - name: data
           persistentVolumeClaim:
             claimName: registry-data
+        - name: tmp
+          emptyDir: {}
