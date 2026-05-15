@@ -57,34 +57,49 @@ export async function createApp() {
         },
       }),
     )
-    .onAfterHandle({ as: 'global' }, ({ request, response }) => {
-      if (new URL(request.url).pathname !== '/openapi/json') return
-      if (!response || typeof response !== 'object') return
-      const spec = response as { paths?: Record<string, unknown>; tags?: Array<{ name: string }> }
-      const filteredPaths: Record<string, unknown> = {}
-      for (const [p, v] of Object.entries(spec.paths ?? {})) {
-        if (p.includes('/admin/') || p.includes('/init/') || p.includes('/uploads/') || p === '/*') continue
-        filteredPaths[p] = v
-      }
-      return {
-        ...spec,
-        paths: filteredPaths,
-        tags: Array.isArray(spec.tags) ? spec.tags.filter((t) => t.name !== 'Admin') : spec.tags,
+    .mapResponse({ as: 'global' }, async ({ request, response }) => {
+      const url = new URL(request.url)
+      if (url.pathname !== '/openapi/json') return
+      if (!(response instanceof Response)) return
+      try {
+        const spec = await response.clone().json() as { paths?: Record<string, unknown>; tags?: Array<{ name: string }> }
+        const filteredPaths: Record<string, unknown> = {}
+        for (const [p, v] of Object.entries(spec.paths ?? {})) {
+          if (p.includes('/admin/') || p.includes('/init/') || p.includes('/uploads/') || p === '/*') continue
+          filteredPaths[p] = v
+        }
+        const filtered = {
+          ...spec,
+          paths: filteredPaths,
+          tags: Array.isArray(spec.tags) ? spec.tags.filter((t) => t.name !== 'Admin') : spec.tags,
+        }
+        return new Response(JSON.stringify(filtered), {
+          status: response.status,
+          headers: response.headers,
+        })
+      } catch {
+        return
       }
     })
     .use(router)
 
   if (config.installed) {
     const { diskUploadsRoot } = await import('$lib/storage')
+    const { renderPluginHtml } = await import('$lib/og-injector')
     return base
       .use(staticPlugin({ assets: diskUploadsRoot(), prefix: '/uploads', alwaysStatic: false }))
       .use(staticPlugin({ assets: resolve('../frontend/dist'), prefix: '/' }))
-      .get('/*', ({ path, set }) => {
+      .get('/*', async ({ path, set, request }) => {
         if (path.startsWith('/api') || path.startsWith('/auth') || path.startsWith('/openapi') || path.startsWith('/uploads')) {
           set.status = 404
           return { error: 'Not found' }
         }
         set.headers['content-type'] = 'text/html; charset=utf-8'
+        const pluginMatch = path.match(/^\/plugins\/([a-z0-9-]+)\/?$/)
+        if (pluginMatch) {
+          const injected = await renderPluginHtml(pluginMatch[1], new URL(request.url).origin)
+          if (injected) return new Response(injected, { headers: { 'content-type': 'text/html; charset=utf-8' } })
+        }
         return Bun.file(resolve('../frontend/dist/index.html'))
       }, { detail: { hide: true } })
   }
