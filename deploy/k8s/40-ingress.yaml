@@ -4,15 +4,12 @@ metadata:
   name: registry
   namespace: tabularis-registry
   annotations:
-    cert-manager.io/cluster-issuer: letsencrypt
-    traefik.ingress.kubernetes.io/router.entrypoints: websecure
-    traefik.ingress.kubernetes.io/router.tls: "true"
+    # Cloudflare proxies + terminates client TLS. Origin serves HTTP only.
+    # If you ever move off Cloudflare, switch to websecure + cert-manager
+    # (see commented block below for the recipe).
+    traefik.ingress.kubernetes.io/router.entrypoints: web
 spec:
   ingressClassName: traefik
-  tls:
-    - hosts:
-        - registry.spitzli.dev
-      secretName: registry-tls
   rules:
     - host: registry.spitzli.dev
       http:
@@ -24,3 +21,12 @@ spec:
                 name: registry
                 port:
                   number: 80
+  # --- Direct-origin TLS (no Cloudflare) ---
+  # tls:
+  #   - hosts:
+  #       - registry.spitzli.dev
+  #     secretName: registry-tls
+  # And under metadata.annotations:
+  #   cert-manager.io/cluster-issuer: letsencrypt
+  #   traefik.ingress.kubernetes.io/router.entrypoints: websecure
+  #   traefik.ingress.kubernetes.io/router.tls: "true"
