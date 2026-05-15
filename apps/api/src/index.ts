@@ -32,8 +32,7 @@ export async function createApp() {
     .use(
       openapi({
         exclude: {
-          tags: ['Admin'],
-          paths: [/^\/api\/init\//],
+          paths: [/^\/api\/admin\//, /^\/api\/init\//, /^\/uploads\//, /^\/\*$/],
         },
         documentation: {
           info: {
