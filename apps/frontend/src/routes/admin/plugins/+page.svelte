@@ -9,6 +9,7 @@
 	import Star from '@lucide/svelte/icons/star'
 	import StarOff from '@lucide/svelte/icons/star-off'
 	import Pin from '@lucide/svelte/icons/pin'
+	import Search from '@lucide/svelte/icons/search'
 	import Card from '$components/ui/Card.svelte'
 	import CardContent from '$components/ui/CardContent.svelte'
 	import CardDescription from '$components/ui/CardDescription.svelte'
@@ -16,11 +17,11 @@
 	import CardTitle from '$components/ui/CardTitle.svelte'
 	import Badge from '$components/ui/Badge.svelte'
 	import Button from '$components/ui/Button.svelte'
-	import Tabs from '$components/ui/Tabs.svelte'
-	import TabsList from '$components/ui/TabsList.svelte'
-	import TabsTrigger from '$components/ui/TabsTrigger.svelte'
+	import Input from '$components/ui/Input.svelte'
 	import { eden } from '$lib/eden'
 	import { m } from '$lib/paraglide/messages'
+	import AdminPageHeader from '$components/admin/AdminPageHeader.svelte'
+	import TabBar from '$components/admin/TabBar.svelte'
 
 	type AdminPlugin = {
 		id: string
@@ -37,21 +38,40 @@
 		updatedAt: number
 	}
 
-	let plugins = $state<AdminPlugin[]>([])
+	let allPlugins = $state<AdminPlugin[]>([])
 	let loading = $state(true)
 	let filter = $state<'all' | 'approved' | 'pending' | 'rejected'>('all')
+	let search = $state('')
 	let busy = $state<Record<string, boolean>>({})
 	let selected = $state<Set<string>>(new Set())
 	let bulkBusy = $state(false)
 
+	const counts = $derived.by(() => {
+		const c = { all: allPlugins.length, approved: 0, pending: 0, rejected: 0 }
+		for (const p of allPlugins) c[p.status]++
+		return c
+	})
+
+	const plugins = $derived.by(() => {
+		const q = search.trim().toLowerCase()
+		return allPlugins.filter((p) => {
+			if (filter !== 'all' && p.status !== filter) return false
+			if (!q) return true
+			return (
+				p.name.toLowerCase().includes(q) ||
+				p.id.toLowerCase().includes(q) ||
+				p.repoUrl.toLowerCase().includes(q)
+			)
+		})
+	})
+
 	async function load() {
 		loading = true
 		try {
-			const query = filter === 'all' ? {} : { status: filter }
-			const { data, error } = await eden.api.admin.plugins.get({ query })
+			const { data, error } = await eden.api.admin.plugins.get({ query: {} })
 			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
-			plugins = (data as { plugins: AdminPlugin[] }).plugins
-			selected = new Set([...selected].filter((id) => plugins.some((p) => p.id === id)))
+			allPlugins = (data as { plugins: AdminPlugin[] }).plugins
+			selected = new Set([...selected].filter((id) => allPlugins.some((p) => p.id === id)))
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : m.admin_plugins_load_failed())
 		} finally {
@@ -104,11 +124,6 @@
 	}
 
 	onMount(load)
-
-	$effect(() => {
-		void filter
-		load()
-	})
 
 	async function setStatus(p: AdminPlugin, status: 'approved' | 'pending' | 'rejected') {
 		const reason = status === 'rejected' ? prompt(m.admin_plugins_rejection_prompt()) : undefined
@@ -186,19 +201,28 @@
 	}
 </script>
 
-<header class="space-y-1">
-	<h1 class="text-2xl font-semibold tracking-tight">{m.admin_plugins_title()}</h1>
-	<p class="text-sm text-muted-foreground">{m.admin_plugins_subtitle()}</p>
-</header>
+<AdminPageHeader title={m.admin_plugins_title()} subtitle={m.admin_plugins_subtitle()} />
 
-<Tabs bind:value={filter}>
-	<TabsList>
-		<TabsTrigger value="all">{m.admin_plugins_tab_all()}</TabsTrigger>
-		<TabsTrigger value="pending">{m.admin_plugins_tab_pending()}</TabsTrigger>
-		<TabsTrigger value="approved">{m.admin_plugins_tab_approved()}</TabsTrigger>
-		<TabsTrigger value="rejected">{m.admin_plugins_tab_rejected()}</TabsTrigger>
-	</TabsList>
-</Tabs>
+<div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+	<TabBar
+		size="sm"
+		bind:active={filter}
+		tabs={[
+			{ id: 'all', label: m.admin_plugins_tab_all(), badge: counts.all },
+			{ id: 'pending', label: m.admin_plugins_tab_pending(), badge: counts.pending },
+			{ id: 'approved', label: m.admin_plugins_tab_approved(), badge: counts.approved },
+			{ id: 'rejected', label: m.admin_plugins_tab_rejected(), badge: counts.rejected },
+		]}
+	/>
+	<div class="relative w-full sm:w-72">
+		<Search class="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
+		<Input
+			bind:value={search}
+			class="pl-9"
+			placeholder={m.admin_plugins_search_placeholder()}
+		/>
+	</div>
+</div>
 
 {#if selected.size > 0}
 	<div class="flex items-center justify-between gap-3 rounded-md border border-primary/30 bg-primary/5 px-4 py-2">
