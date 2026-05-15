@@ -1,9 +1,7 @@
 import { Type, type Static } from '@sinclair/typebox'
 
-/**
- * Locked Tabularium manifest core schema.
- * Operators cannot edit this; they extend it via `manifest.extensions_schema`.
- */
+// Locked core. Operator-editable fields live in `manifest.extensions_schema`,
+// not here.
 export const ManifestSchema = Type.Object({
   name: Type.Optional(Type.String({ minLength: 1, maxLength: 60 })),
   description: Type.Optional(Type.String({ maxLength: 280 })),

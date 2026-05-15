@@ -78,11 +78,6 @@ function validateNode(node: unknown, depth: number, path: string): void {
   }
 }
 
-/**
- * Validates an extensions delta: a flat record of { propertyName -> JSON Schema node }.
- * The registry wraps this into a proper object schema at merge time; the admin only
- * ever defines the extra properties they want to add on top of the locked core.
- */
 export function validateExtensionsDelta(input: unknown): ExtensionsDelta {
   if (input === null || input === undefined) return {}
   if (!isPlainObject(input)) throw new Error('extensions must be an object')
@@ -124,11 +119,6 @@ export async function setExtensionsDelta(delta: ExtensionsDelta | null): Promise
   await setSetting(SETTING_KEY, JSON.stringify(cleaned))
 }
 
-/**
- * Translate a JSON Schema node from the admin delta into a TypeBox TSchema so
- * Value.Errors/Clean can validate against it. The delta is already constrained
- * by validateExtensionsDelta so the input shape is small.
- */
 function nodeToTypeBox(node: JsonSchemaProperty): TSchema {
   const opts: Record<string, unknown> = {}
   if (typeof node.description === 'string') opts.description = node.description
@@ -170,21 +160,16 @@ function nodeToTypeBox(node: JsonSchemaProperty): TSchema {
 function extensionsToTypeBox(delta: ExtensionsDelta): TSchema {
   const props: Record<string, TSchema> = {}
   for (const [name, node] of Object.entries(delta)) {
-    // Extension fields are optional at top level — operator can require nested fields
-    // but not the top-level extension key itself.
     props[name] = Type.Optional(nodeToTypeBox(node))
   }
   return Type.Object(props)
 }
 
-/**
- * Picks the effective extensions for the given kind. Per-kind override REPLACES
- * the global delta when defined (operator chose "overwrite" semantics); plugins
- * of that kind do not inherit global extensions.
- */
+// Per-kind override REPLACES the global delta when defined — operator chose
+// this explicitly over a merge.
 export function getEffectiveExtensions(kindKey?: string | null): ExtensionsDelta {
   if (kindKey) {
-    // Lazy import to avoid the kinds.ts → manifest-schema.ts cycle.
+    // require() breaks the kinds.ts → manifest-schema.ts cycle.
     const { getKind } = require('./kinds') as typeof import('./kinds')
     const kind = getKind(kindKey)
     if (kind && kind.extensionsSchema && Object.keys(kind.extensionsSchema).length > 0) {
@@ -194,14 +179,6 @@ export function getEffectiveExtensions(kindKey?: string | null): ExtensionsDelta
   return getExtensionsDelta()
 }
 
-/**
- * Builds the JSON Schema served at the public schema URL: the locked core ∪
- * the applicable extensions for the given kind (or global if no kind).
- *
- * When called without a kind we emit a single schema where each registered
- * kind's properties are folded in via an `allOf` of `if/then` clauses on the
- * `kind` field — so a single URL gives IDEs full autocomplete for every kind.
- */
 export function buildMergedSchema(options: { kind?: string | null } = {}): Record<string, unknown> {
   const cfg = getManifestConfig()
   const core = ManifestSchema as { properties: Record<string, unknown>; required?: string[] }
@@ -223,9 +200,9 @@ export function buildMergedSchema(options: { kind?: string | null } = {}): Recor
   const { getKinds } = require('./kinds') as typeof import('./kinds')
   const kinds = getKinds().filter((k) => k.extensionsSchema && Object.keys(k.extensionsSchema).length > 0)
 
-  // Top-level lists every possible field across global + all kinds so a manifest
-  // that uses kind-specific extensions still passes the additionalProperties: false
-  // check. The per-kind `then` clauses then enforce the actual shape for that kind.
+  // Top-level lists every possible field across global + all kinds; if we left
+  // kind-specific fields out, additionalProperties:false would reject manifests
+  // that use them. The per-kind `then` clauses enforce the real shape.
   const allExtensionKeys = new Set<string>(Object.keys(globalExt))
   for (const k of kinds) {
     for (const key of Object.keys(k.extensionsSchema ?? {})) allExtensionKeys.add(key)
@@ -258,18 +235,8 @@ export function buildMergedSchema(options: { kind?: string | null } = {}): Recor
   return schema
 }
 
-/**
- * Builds a TypeBox schema for server-side validation. Unlike buildMergedSchema
- * (which serves IDE-friendly JSON Schema), this returns a TSchema with the
- * Kind brands TypeBox's Value.Errors/Clean require.
- *
- * Extensions are translated from the admin delta into TypeBox primitives at
- * call time. Per-kind override REPLACES the global delta when defined.
- */
 export function buildValidatorSchema(options: { kind?: string | null } = {}): TSchema {
   const ext = getEffectiveExtensions(options.kind ?? null)
   if (Object.keys(ext).length === 0) return ManifestSchema as unknown as TSchema
-  // Composite intersects the core (already a TypeBox schema) with the
-  // translated extensions, keeping optional/required semantics on both sides.
   return Type.Composite([ManifestSchema as unknown as TSchema, extensionsToTypeBox(ext)])
 }
