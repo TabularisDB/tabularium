@@ -35,6 +35,7 @@
 		"clsx": "^2.1.1",
 		"elysia": "^1.4.28",
 		"mode-watcher": "^1.0.7",
+		"svelte-jsoneditor": "3.12.0",
 		"svelte-sonner": "^1.0.0",
 		"tailwind-merge": "^3.0.0",
 		"tailwind-variants": "^1.0.0"

@@ -4,6 +4,7 @@
 	import Plus from '@lucide/svelte/icons/plus'
 	import Save from '@lucide/svelte/icons/save'
 	import Trash2 from '@lucide/svelte/icons/trash-2'
+	import JsonEditor from '$components/JsonEditor.svelte'
 	import Card from '$components/ui/Card.svelte'
 	import CardContent from '$components/ui/CardContent.svelte'
 	import CardDescription from '$components/ui/CardDescription.svelte'
@@ -27,8 +28,6 @@
 	let extOpen = $state<Record<string, boolean>>({})
 	let extJson = $state<Record<string, string>>({})
 	let extErr = $state<Record<string, string | null>>({})
-
-	const extPlaceholder = '{ "x-theme-mode": { "type": "string", "enum": ["light", "dark"] } }'
 
 	onMount(loadKinds)
 
@@ -173,13 +172,11 @@
 							</button>
 							{#if extOpen[k.key]}
 								<p class="text-xs text-muted-foreground">{m.admin_kinds_ext_hint()}</p>
-								<textarea
+								<JsonEditor
 									bind:value={extJson[k.key]}
-									oninput={() => (extErr[k.key] = null)}
-									placeholder={extPlaceholder}
-									class="font-mono text-xs min-h-32 w-full rounded-md border border-input bg-card px-3 py-2 shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-									spellcheck="false"
-								></textarea>
+									minHeight="9rem"
+									onchange={(_, err) => (extErr[k.key] = err)}
+								/>
 								{#if extErr[k.key]}
 									<p class="text-xs text-destructive">{extErr[k.key]}</p>
 								{/if}

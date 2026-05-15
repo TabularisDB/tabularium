@@ -6,6 +6,7 @@
 	import Trash2 from '@lucide/svelte/icons/trash-2'
 	import Code from '@lucide/svelte/icons/code'
 	import LayoutList from '@lucide/svelte/icons/layout-list'
+	import JsonEditor from '$components/JsonEditor.svelte'
 	import Card from '$components/ui/Card.svelte'
 	import CardContent from '$components/ui/CardContent.svelte'
 	import CardDescription from '$components/ui/CardDescription.svelte'
@@ -355,11 +356,7 @@
 					{:else}
 						<div class="grid gap-1">
 							<Label class="text-xs">{m.admin_manifest_ext_advanced_json_label()}</Label>
-							<textarea
-								bind:value={fp.advancedJson}
-								class="font-mono text-xs min-h-32 rounded-md border border-input bg-card px-3 py-2 shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-								spellcheck="false"
-							></textarea>
+							<JsonEditor bind:value={fp.advancedJson} minHeight="10rem" />
 							<button
 								type="button"
 								class="text-xs text-muted-foreground hover:text-foreground underline self-start"
@@ -387,12 +384,11 @@
 		{:else}
 			<div class="space-y-2">
 				<Label class="text-xs">{m.admin_manifest_ext_json_label()}</Label>
-				<textarea
+				<JsonEditor
 					bind:value={advancedJson}
-					oninput={() => (advancedJsonError = null)}
-					class="font-mono text-xs min-h-64 w-full rounded-md border border-input bg-card px-3 py-2 shadow-sm focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-					spellcheck="false"
-				></textarea>
+					minHeight="18rem"
+					onchange={(_, err) => (advancedJsonError = err)}
+				/>
 				{#if advancedJsonError}
 					<p class="text-xs text-destructive">{advancedJsonError}</p>
 				{/if}
