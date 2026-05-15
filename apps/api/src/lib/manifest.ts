@@ -110,9 +110,9 @@ function fetcherFor(accessToken: string, ref: RepoRef, branch?: string): FileFet
 }
 
 function manifestCandidates(): Array<{ path: string; source: ResolvedManifest['source'] }> {
-  return getManifestConfig().paths.map((path) => ({
+  return getManifestConfig().candidates.map(({ path, source }) => ({
     path,
-    source: path.endsWith('.json') ? 'tabularium.json' : 'tabularium.yaml',
+    source: source === 'json' ? 'tabularium.json' : 'tabularium.yaml',
   }))
 }
 

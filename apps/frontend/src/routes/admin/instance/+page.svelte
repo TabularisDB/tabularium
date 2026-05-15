@@ -24,9 +24,10 @@
 	}
 
 	type ManifestState = {
-		filename: string
+		allowedFiles: string[]
+		defaultFiles: string[]
 		schemaUrl: string
-		filenameOverridden: boolean
+		filesOverridden: boolean
 		schemaUrlOverridden: boolean
 	}
 
@@ -38,12 +39,16 @@
 
 	let requireApproval = $state(false)
 	let rateLimits = $state<RateLimitBucket[]>([])
-	let manifestFilename = $state('')
+	let manifestFiles = $state<string[]>([])
 	let manifestSchemaUrl = $state('')
-	let manifestDefaults = $state<{ filename: string; schemaUrl: string }>({ filename: 'tabularium', schemaUrl: '' })
+	let manifestDefaults = $state<{ files: string[]; schemaUrl: string }>({ files: [], schemaUrl: '' })
+	let manifestFilesOverridden = $state(false)
+	let newFileInput = $state('')
 	let loading = $state(true)
 	let saving = $state(false)
 	let savingManifest = $state(false)
+
+	const FILE_RE = /^\.?[a-z][a-z0-9-]*(\.(yaml|yml|json))?$/
 
 	async function load() {
 		try {
@@ -52,9 +57,10 @@
 			const res = data as InstanceState
 			requireApproval = res.requireApproval
 			rateLimits = res.rateLimits
-			manifestFilename = res.manifest.filenameOverridden ? res.manifest.filename : ''
+			manifestFiles = [...res.manifest.allowedFiles]
 			manifestSchemaUrl = res.manifest.schemaUrlOverridden ? res.manifest.schemaUrl : ''
-			manifestDefaults = { filename: res.manifest.filename, schemaUrl: res.manifest.schemaUrl }
+			manifestDefaults = { files: res.manifest.defaultFiles, schemaUrl: res.manifest.schemaUrl }
+			manifestFilesOverridden = res.manifest.filesOverridden
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : m.admin_instance_load_failed())
 		} finally {
@@ -84,8 +90,9 @@
 	async function saveManifest() {
 		savingManifest = true
 		try {
+			const filesPayload = sameAsDefault(manifestFiles, manifestDefaults.files) ? null : manifestFiles
 			const { error } = await eden.api.admin.instance.put({
-				manifestFilename: manifestFilename.trim() ? manifestFilename.trim() : null,
+				manifestAllowedFiles: filesPayload,
 				manifestSchemaUrl: manifestSchemaUrl.trim() ? manifestSchemaUrl.trim() : null,
 			})
 			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
@@ -96,6 +103,44 @@
 		} finally {
 			savingManifest = false
 		}
+	}
+
+	function sameAsDefault(a: string[], b: string[]): boolean {
+		if (a.length !== b.length) return false
+		const sa = [...a].sort()
+		const sb = [...b].sort()
+		return sa.every((v, i) => v === sb[i])
+	}
+
+	function addFile() {
+		const v = newFileInput.trim()
+		if (!v) return
+		if (!FILE_RE.test(v) || v.length > 60) {
+			toast.error(m.admin_manifest_filename_invalid())
+			return
+		}
+		if (manifestFiles.includes(v)) {
+			toast.error(m.admin_manifest_filename_duplicate())
+			return
+		}
+		if (manifestFiles.length >= 12) {
+			toast.error(m.admin_manifest_filename_too_many())
+			return
+		}
+		manifestFiles = [...manifestFiles, v]
+		newFileInput = ''
+	}
+
+	function removeFile(file: string) {
+		if (manifestFiles.length <= 1) {
+			toast.error(m.admin_manifest_filename_one_required())
+			return
+		}
+		manifestFiles = manifestFiles.filter((f) => f !== file)
+	}
+
+	function resetFilesToDefaults() {
+		manifestFiles = [...manifestDefaults.files]
 	}
 
 	async function resetBucket(bucket: RateLimitBucket) {
@@ -208,10 +253,40 @@
 		{#if loading}
 			<p class="text-sm text-muted-foreground">{m.common_loading()}</p>
 		{:else}
-			<div class="grid gap-2 max-w-md">
-				<Label for="manifestFilename">{m.admin_manifest_filename()}</Label>
-				<Input id="manifestFilename" bind:value={manifestFilename} maxlength={40} placeholder={manifestDefaults.filename} />
-				<p class="text-xs text-muted-foreground">{m.admin_manifest_filename_hint()}</p>
+			<div class="grid gap-2 max-w-xl">
+				<div class="flex items-center justify-between">
+					<Label>{m.admin_manifest_allowed_files()}</Label>
+					{#if manifestFilesOverridden}
+						<button type="button" class="text-xs text-muted-foreground hover:text-foreground underline" onclick={resetFilesToDefaults}>
+							{m.admin_manifest_reset_to_defaults()}
+						</button>
+					{/if}
+				</div>
+				<p class="text-xs text-muted-foreground">{m.admin_manifest_allowed_files_hint()}</p>
+				<ul class="grid gap-1.5 rounded-md border border-border bg-card/50 p-3">
+					{#each manifestFiles as file (file)}
+						<li class="flex items-center justify-between gap-2 group">
+							<code class="font-mono text-sm">{file}</code>
+							<button
+								type="button"
+								class="text-xs text-muted-foreground hover:text-destructive opacity-60 group-hover:opacity-100"
+								onclick={() => removeFile(file)}
+								aria-label={m.common_remove()}
+							>
+								{m.common_remove()}
+							</button>
+						</li>
+					{/each}
+				</ul>
+				<div class="flex gap-2">
+					<Input
+						placeholder=".my-manifest"
+						bind:value={newFileInput}
+						maxlength={60}
+						onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); addFile() } }}
+					/>
+					<Button variant="outline" size="sm" onclick={addFile}>{m.common_add()}</Button>
+				</div>
 			</div>
 			<div class="grid gap-2 max-w-md">
 				<Label for="manifestSchemaUrl">{m.admin_manifest_schema_url()}</Label>

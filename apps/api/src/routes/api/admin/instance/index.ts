@@ -4,8 +4,9 @@ import { getSetting, setSetting, deleteSetting, hasSetting } from '$lib/settings
 import { recordAudit, actorFromAdmin } from '$lib/audit'
 import {
   getManifestConfig,
-  validateManifestFilename,
+  validateAllowedFiles,
   validateSchemaUrl,
+  MANIFEST_DEFAULTS,
 } from '$lib/manifest-config'
 
 const BUCKETS = [
@@ -41,9 +42,10 @@ function bucketStates(): BucketState[] {
 function manifestState() {
   const cfg = getManifestConfig()
   return {
-    filename: cfg.filename,
+    allowedFiles: cfg.files,
+    defaultFiles: [...MANIFEST_DEFAULTS.files],
     schemaUrl: cfg.schemaUrl,
-    filenameOverridden: getSetting('manifest.filename') !== undefined,
+    filesOverridden: getSetting('manifest.allowed_files') !== undefined,
     schemaUrlOverridden: getSetting('manifest.schema_url') !== undefined,
   }
 }
@@ -72,9 +74,10 @@ export default new Elysia()
           defaultWindowSeconds: t.Number(),
         })),
         manifest: t.Object({
-          filename: t.String(),
+          allowedFiles: t.Array(t.String()),
+          defaultFiles: t.Array(t.String()),
           schemaUrl: t.String(),
-          filenameOverridden: t.Boolean(),
+          filesOverridden: t.Boolean(),
           schemaUrlOverridden: t.Boolean(),
         }),
       }),
@@ -105,17 +108,17 @@ export default new Elysia()
       }
     }
     let manifestTouched = false
-    if (body.manifestFilename !== undefined) {
-      if (body.manifestFilename === null || body.manifestFilename === '') {
-        if (hasSetting('manifest.filename')) await deleteSetting('manifest.filename')
+    if (body.manifestAllowedFiles !== undefined) {
+      if (body.manifestAllowedFiles === null) {
+        if (hasSetting('manifest.allowed_files')) await deleteSetting('manifest.allowed_files')
       } else {
         try {
-          validateManifestFilename(body.manifestFilename)
+          const cleaned = validateAllowedFiles(body.manifestAllowedFiles)
+          await setSetting('manifest.allowed_files', JSON.stringify(cleaned))
         } catch (err) {
           set.status = 400
-          return { error: err instanceof Error ? err.message : 'invalid manifest filename' }
+          return { error: err instanceof Error ? err.message : 'invalid manifest allowed_files' }
         }
-        await setSetting('manifest.filename', body.manifestFilename)
       }
       manifestTouched = true
     }
@@ -145,7 +148,7 @@ export default new Elysia()
         action: 'manifest.update',
         target: 'manifest',
         meta: {
-          filename: body.manifestFilename ?? null,
+          allowedFiles: body.manifestAllowedFiles ?? null,
           schemaUrl: body.manifestSchemaUrl ?? null,
         },
       })
@@ -168,7 +171,7 @@ export default new Elysia()
         windowSeconds: t.Number(),
         reset: t.Optional(t.Boolean()),
       }))),
-      manifestFilename: t.Optional(t.Nullable(t.String({ maxLength: 40 }))),
+      manifestAllowedFiles: t.Optional(t.Nullable(t.Array(t.String({ maxLength: 60 }), { maxItems: 12 }))),
       manifestSchemaUrl: t.Optional(t.Nullable(t.String({ maxLength: 500 }))),
     }),
     response: {

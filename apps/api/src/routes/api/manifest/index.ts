@@ -24,9 +24,10 @@ min_runtime_version: '2.4.0'
 readme: README.md
 `
 
-function buildDescription(filename: string): string {
+function buildDescription(files: string[]): string {
+  const list = files.map((f) => `\`${f}\``).join(', ')
   return (
-    `Plugin authors drop a \`.${filename}\` (YAML), \`.${filename}.yaml\`, \`.${filename}.yml\`, or \`.${filename}.json\` file in their repo root. ` +
+    `Plugin authors drop one of ${list} (YAML or JSON) at the root of their repo. ` +
     'The registry fetches it on submission and on every release webhook. Relative `icon`/`screenshots` paths are resolved against the repo at the matching ref. ' +
     'Set `kind` to one of the values in `kinds` (the registry\'s active kind catalog) to surface your plugin in kind-filtered views. ' +
     'The kind value is also folded into `tags` internally so generic tag filters keep working.'
@@ -37,8 +38,8 @@ export default new Elysia()
   .get('/', () => {
     const cfg = getManifestConfig()
     return {
-      description: buildDescription(cfg.filename),
-      paths: cfg.paths,
+      description: buildDescription(cfg.files),
+      paths: cfg.files,
       schema: { $id: cfg.schemaUrl, ...ManifestSchema },
       example: EXAMPLE,
       kinds: getKinds().map((k) => k.key),

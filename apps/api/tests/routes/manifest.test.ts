@@ -23,7 +23,7 @@ describe('GET /api/manifest', () => {
     expect(data.kinds.sort()).toEqual(['snippet', 'theme'])
   })
 
-  it('returns the default tabularium paths and schema $id when nothing is configured', async () => {
+  it('returns the default tabularium filenames and schema $id when nothing is configured', async () => {
     const app = await buildApp()
     const res = await app.handle(new Request('http://localhost/api/manifest'))
     const data = await res.json() as {
@@ -33,25 +33,20 @@ describe('GET /api/manifest', () => {
     }
     expect(data.paths).toEqual([
       '.tabularium',
-      '.tabularium.yaml',
-      '.tabularium.yml',
       '.tabularium.json',
+      'tabularium.yaml',
+      'tabularium.json',
     ])
     expect(data.description).toContain('.tabularium')
-    expect(data.schema.$id).toBe('http://localhost:3000/api/manifest')
+    expect(data.schema.$id).toBe('http://localhost:3000/manifest.schema.json')
   })
 
-  it('reflects a custom filename setting in paths and description', async () => {
-    await setSetting('manifest.filename', 'tabularis')
+  it('reflects a custom allowed_files list in paths and description', async () => {
+    await setSetting('manifest.allowed_files', JSON.stringify(['.tabularis', 'tabularis.yaml']))
     const app = await buildApp()
     const res = await app.handle(new Request('http://localhost/api/manifest'))
     const data = await res.json() as { paths: string[]; description: string }
-    expect(data.paths).toEqual([
-      '.tabularis',
-      '.tabularis.yaml',
-      '.tabularis.yml',
-      '.tabularis.json',
-    ])
+    expect(data.paths).toEqual(['.tabularis', 'tabularis.yaml'])
     expect(data.description).toContain('.tabularis')
     expect(data.description).not.toContain('.tabularium')
   })
