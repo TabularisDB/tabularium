@@ -1,5 +1,8 @@
 import { Elysia, t } from 'elysia'
+import { count, eq } from 'drizzle-orm'
 import { adminMiddleware } from '$middleware/admin'
+import { db } from '$db'
+import { users } from '$db/schema'
 import { getSetting, setSetting, deleteSetting, hasSetting } from '$lib/settings'
 import { recordAudit, actorFromAdmin } from '$lib/audit'
 import {
@@ -25,8 +28,21 @@ type BucketState = {
   defaultWindowSeconds: number
 }
 
-function bucketStates(): BucketState[] {
-  return BUCKETS.map((b) => {
+// Both email buckets gate routes that close themselves once bootstrap is
+// done or recovery credentials are removed. Hiding the unreachable ones
+// keeps OAuth-only instances from showing tunables that do nothing.
+async function bucketStates(): Promise<BucketState[]> {
+  const [{ adminCount }] = await db
+    .select({ adminCount: count() })
+    .from(users)
+    .where(eq(users.role, 'admin'))
+  const hasRootCreds = (await db.query.rootCredentials.findFirst()) !== undefined
+
+  return BUCKETS.filter((b) => {
+    if (b.id === 'auth-email-register') return adminCount === 0
+    if (b.id === 'auth-email-login') return hasRootCreds
+    return true
+  }).map((b) => {
     const limit = Number(getSetting(`ratelimit.${b.id}.limit`) ?? b.defaultLimit)
     const window = Number(getSetting(`ratelimit.${b.id}.window`) ?? b.defaultWindow)
     return {
@@ -52,9 +68,9 @@ function manifestState() {
 
 export default new Elysia()
   .use(adminMiddleware)
-  .get('/', () => ({
+  .get('/', async () => ({
     requireApproval: getSetting('instance.require_approval') === '1',
-    rateLimits: bucketStates(),
+    rateLimits: await bucketStates(),
     manifest: manifestState(),
   }), {
     detail: {
