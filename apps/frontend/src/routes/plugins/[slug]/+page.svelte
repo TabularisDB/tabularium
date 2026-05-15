@@ -8,7 +8,6 @@
 	import Boxes from '@lucide/svelte/icons/boxes'
 	import BookOpen from '@lucide/svelte/icons/book-open'
 	import Bug from '@lucide/svelte/icons/bug'
-	import Mail from '@lucide/svelte/icons/mail'
 	import Shield from '@lucide/svelte/icons/shield'
 	import Copy from '@lucide/svelte/icons/copy'
 	import Star from '@lucide/svelte/icons/star'
@@ -279,11 +278,11 @@
 			</nav>
 
 			<div class="flex items-start gap-6 flex-wrap">
-				<div class="h-24 w-24 rounded-2xl bg-gradient-to-br from-primary/15 to-primary/5 border border-primary/20 flex items-center justify-center overflow-hidden flex-shrink-0 relative shadow-inner">
+				<div class="h-20 w-20 rounded-xl border border-border flex items-center justify-center overflow-hidden flex-shrink-0 bg-card">
 					{#if plugin.iconUrl}
-						<img src={plugin.iconUrl} alt={plugin.name} class="h-full w-full object-contain" loading="eager" />
+						<img src={plugin.iconUrl} alt={plugin.name} class="h-full w-full object-contain p-2" loading="eager" />
 					{:else}
-						<Boxes class="h-10 w-10 text-primary/70" strokeWidth={1.4} />
+						<Boxes class="h-8 w-8 text-muted-foreground" strokeWidth={1.4} />
 					{/if}
 				</div>
 
@@ -461,9 +460,9 @@
 					<div class="flex items-center justify-between py-3 border-b border-dashed border-border/70">
 						<div class="inline-flex items-center gap-2 text-xs uppercase tracking-[0.06em] text-muted-foreground font-mono">
 							<Clock class="h-3.5 w-3.5" />
-							<span>{m.plugin_detail_stat_last_push()}</span>
+							<span>{m.plugin_detail_stat_last_release()}</span>
 						</div>
-						<div class="text-base">{formatRelative(stats?.lastPushAt)}</div>
+						<div class="text-base">{formatRelative(latestRelease?.createdAt)}</div>
 					</div>
 					{#if latestRelease}
 						<div class="flex items-center justify-between py-3 border-b border-dashed border-border/70">
@@ -506,12 +505,6 @@
 							<Bug class="h-4 w-4" />
 							<span>{m.plugin_detail_report_issue()}</span>
 							<ExternalLink class="h-3 w-3 ml-auto opacity-50" />
-						</a>
-					{/if}
-					{#if plugin.supportEmail}
-						<a class="inline-flex items-center gap-2.5 px-3.5 py-2.5 text-sm bg-card hover:bg-foreground/[0.04] transition-colors" href={`mailto:${plugin.supportEmail}`}>
-							<Mail class="h-4 w-4" />
-							<span>{m.plugin_detail_email_support()}</span>
 						</a>
 					{/if}
 				</div>

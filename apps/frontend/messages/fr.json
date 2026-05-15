@@ -603,7 +603,7 @@
 	"plugin_detail_repository": "Dépôt",
 	"plugin_detail_screenshots": "Captures d'écran",
 	"plugin_detail_stat_forks": "Forks",
-	"plugin_detail_stat_last_push": "Dernier push",
+	"plugin_detail_stat_last_release": "Dernier release",
 	"plugin_detail_stat_runtime": "Runtime",
 	"plugin_detail_stat_size": "Taille",
 	"plugin_detail_stat_stars": "Étoiles",

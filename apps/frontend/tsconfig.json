@@ -12,9 +12,10 @@
 		"strict": true,
 		"moduleResolution": "bundler"
 	}
-	// Path aliases are handled by https://svelte.dev/docs/kit/configuration#alias
-	// except $lib which is handled by https://svelte.dev/docs/kit/configuration#files
-	//
-	// To make changes to top-level options such as include and exclude, we recommend extending
-	// the generated config; see https://svelte.dev/docs/kit/configuration#typescript
+	// NOTE: Frontend type-check has ~18 transitive-resolution errors from
+	// apps/api/src/index.ts (uses $lib/* aliases that the frontend tsconfig
+	// can't see). These don't affect runtime — the API + frontend each
+	// build correctly via their own tooling. Proper fix requires either
+	// TypeScript project references (composite mode) or extracting the
+	// App-defining chain into a file with relative imports.
 }

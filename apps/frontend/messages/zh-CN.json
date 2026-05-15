@@ -603,7 +603,7 @@
 	"plugin_detail_repository": "仓库",
 	"plugin_detail_screenshots": "截图",
 	"plugin_detail_stat_forks": "分叉",
-	"plugin_detail_stat_last_push": "上次推送",
+	"plugin_detail_stat_last_release": "上次发布",
 	"plugin_detail_stat_runtime": "运行时",
 	"plugin_detail_stat_size": "大小",
 	"plugin_detail_stat_stars": "星标",
