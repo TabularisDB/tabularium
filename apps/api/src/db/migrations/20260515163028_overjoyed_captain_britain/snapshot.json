@@ -1,7 +1,7 @@
 {
-  "version": "6",
-  "dialect": "mysql",
-  "id": "72916aa6-2a28-4636-983c-b7a42c5dfbf4",
+  "version": "7",
+  "dialect": "sqlite",
+  "id": "9cd370da-9c55-43e4-9914-fa1453195ab6",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -16,6 +16,10 @@
     },
     {
       "name": "markdown_pages",
+      "entityType": "tables"
+    },
+    {
+      "name": "plugin_request_claims",
       "entityType": "tables"
     },
     {
@@ -55,70 +59,50 @@
       "entityType": "tables"
     },
     {
-      "type": "varchar(64)",
-      "notNull": true,
-      "autoIncrement": false,
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "id",
       "entityType": "columns",
       "table": "audit_log"
     },
     {
-      "type": "varchar(64)",
+      "type": "text",
       "notNull": false,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "actor_id",
       "entityType": "columns",
       "table": "audit_log"
     },
     {
-      "type": "varchar(120)",
+      "type": "text",
       "notNull": false,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "actor_name",
       "entityType": "columns",
       "table": "audit_log"
     },
     {
-      "type": "varchar(80)",
+      "type": "text",
       "notNull": true,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "action",
       "entityType": "columns",
       "table": "audit_log"
     },
     {
-      "type": "varchar(200)",
+      "type": "text",
       "notNull": false,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "target",
       "entityType": "columns",
@@ -127,110 +111,78 @@
     {
       "type": "text",
       "notNull": false,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "meta",
       "entityType": "columns",
       "table": "audit_log"
     },
     {
-      "type": "varchar(64)",
+      "type": "text",
       "notNull": false,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "ip",
       "entityType": "columns",
       "table": "audit_log"
     },
     {
-      "type": "bigint",
+      "type": "integer",
       "notNull": true,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "created_at",
       "entityType": "columns",
       "table": "audit_log"
     },
     {
-      "type": "varchar(64)",
-      "notNull": true,
-      "autoIncrement": false,
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "id",
       "entityType": "columns",
       "table": "identities"
     },
     {
-      "type": "varchar(64)",
+      "type": "text",
       "notNull": true,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "user_id",
       "entityType": "columns",
       "table": "identities"
     },
     {
-      "type": "varchar(64)",
+      "type": "text",
       "notNull": true,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "provider_instance_id",
       "entityType": "columns",
       "table": "identities"
     },
     {
-      "type": "varchar(120)",
+      "type": "text",
       "notNull": true,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "external_id",
       "entityType": "columns",
       "table": "identities"
     },
     {
-      "type": "varchar(120)",
+      "type": "text",
       "notNull": true,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "username",
       "entityType": "columns",
@@ -239,82 +191,48 @@
     {
       "type": "text",
       "notNull": false,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "access_token",
       "entityType": "columns",
       "table": "identities"
     },
     {
-      "type": "bigint",
+      "type": "integer",
       "notNull": true,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "created_at",
       "entityType": "columns",
       "table": "identities"
     },
     {
-      "type": "varchar(80)",
+      "type": "text",
       "notNull": true,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "slug",
       "entityType": "columns",
       "table": "markdown_pages"
     },
     {
-      "type": "varchar(16)",
+      "type": "text",
       "notNull": true,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": "'en'",
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "locale",
       "entityType": "columns",
       "table": "markdown_pages"
     },
     {
-      "type": "varchar(16)",
+      "type": "text",
       "notNull": true,
-      "autoIncrement": false,
-      "default": "'markdown'",
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
-      "generated": null,
-      "name": "format",
-      "entityType": "columns",
-      "table": "markdown_pages"
-    },
-    {
-      "type": "varchar(120)",
-      "notNull": true,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "title",
       "entityType": "columns",
@@ -323,530 +241,408 @@
     {
       "type": "text",
       "notNull": true,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "content",
       "entityType": "columns",
       "table": "markdown_pages"
     },
     {
-      "type": "tinyint",
+      "type": "integer",
       "notNull": true,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": "1",
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "published",
       "entityType": "columns",
       "table": "markdown_pages"
     },
     {
-      "type": "varchar(200)",
+      "type": "text",
       "notNull": true,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "path",
       "entityType": "columns",
       "table": "markdown_pages"
     },
     {
-      "type": "int",
+      "type": "integer",
       "notNull": false,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "nav_order",
       "entityType": "columns",
       "table": "markdown_pages"
     },
     {
-      "type": "tinyint",
+      "type": "integer",
       "notNull": true,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": "0",
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "show_in_footer",
       "entityType": "columns",
       "table": "markdown_pages"
     },
     {
-      "type": "bigint",
+      "type": "integer",
       "notNull": true,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "created_at",
       "entityType": "columns",
       "table": "markdown_pages"
     },
     {
-      "type": "bigint",
+      "type": "integer",
       "notNull": true,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "updated_at",
       "entityType": "columns",
       "table": "markdown_pages"
     },
     {
-      "type": "varchar(64)",
+      "type": "text",
       "notNull": true,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
+      "generated": null,
+      "name": "request_id",
+      "entityType": "columns",
+      "table": "plugin_request_claims"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "user_id",
+      "entityType": "columns",
+      "table": "plugin_request_claims"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "created_at",
+      "entityType": "columns",
+      "table": "plugin_request_claims"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
       "generated": null,
       "name": "request_id",
       "entityType": "columns",
       "table": "plugin_request_votes"
     },
     {
-      "type": "varchar(64)",
+      "type": "text",
       "notNull": true,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "user_id",
       "entityType": "columns",
       "table": "plugin_request_votes"
     },
     {
-      "type": "varchar(64)",
-      "notNull": true,
-      "autoIncrement": false,
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "id",
       "entityType": "columns",
       "table": "plugin_requests"
     },
     {
-      "type": "varchar(80)",
+      "type": "text",
       "notNull": true,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "slug",
       "entityType": "columns",
       "table": "plugin_requests"
     },
     {
-      "type": "varchar(120)",
+      "type": "text",
       "notNull": true,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "name",
       "entityType": "columns",
       "table": "plugin_requests"
     },
     {
-      "type": "varchar(500)",
+      "type": "text",
       "notNull": true,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "description",
       "entityType": "columns",
       "table": "plugin_requests"
     },
     {
-      "type": "varchar(64)",
+      "type": "text",
       "notNull": true,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "requester_id",
       "entityType": "columns",
       "table": "plugin_requests"
     },
     {
-      "type": "int",
+      "type": "integer",
       "notNull": true,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": "0",
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "upvotes",
       "entityType": "columns",
       "table": "plugin_requests"
     },
     {
-      "type": "bigint",
+      "type": "integer",
       "notNull": true,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "created_at",
       "entityType": "columns",
       "table": "plugin_requests"
     },
     {
-      "type": "varchar(64)",
-      "notNull": true,
-      "autoIncrement": false,
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "id",
       "entityType": "columns",
       "table": "plugin_transfers"
     },
     {
-      "type": "varchar(80)",
+      "type": "text",
       "notNull": true,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "plugin_id",
       "entityType": "columns",
       "table": "plugin_transfers"
     },
     {
-      "type": "varchar(64)",
+      "type": "text",
       "notNull": true,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "from_user_id",
       "entityType": "columns",
       "table": "plugin_transfers"
     },
     {
-      "type": "varchar(64)",
+      "type": "text",
       "notNull": true,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "to_user_id",
       "entityType": "columns",
       "table": "plugin_transfers"
     },
     {
-      "type": "varchar(16)",
+      "type": "text",
       "notNull": true,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": "'pending'",
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "status",
       "entityType": "columns",
       "table": "plugin_transfers"
     },
     {
-      "type": "varchar(500)",
+      "type": "text",
       "notNull": false,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "message",
       "entityType": "columns",
       "table": "plugin_transfers"
     },
     {
-      "type": "bigint",
+      "type": "integer",
       "notNull": true,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "created_at",
       "entityType": "columns",
       "table": "plugin_transfers"
     },
     {
-      "type": "bigint",
+      "type": "integer",
       "notNull": true,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "expires_at",
       "entityType": "columns",
       "table": "plugin_transfers"
     },
     {
-      "type": "bigint",
+      "type": "integer",
       "notNull": false,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "responded_at",
       "entityType": "columns",
       "table": "plugin_transfers"
     },
     {
-      "type": "varchar(80)",
-      "notNull": true,
-      "autoIncrement": false,
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "id",
       "entityType": "columns",
       "table": "plugins"
     },
     {
-      "type": "varchar(64)",
+      "type": "text",
       "notNull": true,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "owner_id",
       "entityType": "columns",
       "table": "plugins"
     },
     {
-      "type": "varchar(64)",
+      "type": "text",
       "notNull": false,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "provider_instance_id",
       "entityType": "columns",
       "table": "plugins"
     },
     {
-      "type": "varchar(120)",
+      "type": "text",
       "notNull": true,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "name",
       "entityType": "columns",
       "table": "plugins"
     },
     {
-      "type": "varchar(500)",
+      "type": "text",
       "notNull": true,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "description",
       "entityType": "columns",
       "table": "plugins"
     },
     {
-      "type": "varchar(500)",
+      "type": "text",
       "notNull": true,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "author",
       "entityType": "columns",
       "table": "plugins"
     },
     {
-      "type": "varchar(500)",
+      "type": "text",
       "notNull": true,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "repo_url",
       "entityType": "columns",
       "table": "plugins"
     },
     {
-      "type": "varchar(500)",
+      "type": "text",
       "notNull": true,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "homepage",
       "entityType": "columns",
       "table": "plugins"
     },
     {
-      "type": "varchar(40)",
+      "type": "text",
       "notNull": false,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "latest_version",
       "entityType": "columns",
       "table": "plugins"
     },
     {
-      "type": "varchar(128)",
+      "type": "text",
       "notNull": true,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "webhook_secret",
       "entityType": "columns",
       "table": "plugins"
     },
     {
-      "type": "varchar(16)",
+      "type": "text",
       "notNull": true,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": "'approved'",
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "status",
       "entityType": "columns",
       "table": "plugins"
     },
     {
-      "type": "varchar(500)",
+      "type": "text",
       "notNull": false,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "rejection_reason",
       "entityType": "columns",
       "table": "plugins"
     },
     {
-      "type": "varchar(40)",
+      "type": "text",
       "notNull": false,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "category",
       "entityType": "columns",
@@ -855,40 +651,28 @@
     {
       "type": "text",
       "notNull": false,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "tags",
       "entityType": "columns",
       "table": "plugins"
     },
     {
-      "type": "varchar(40)",
+      "type": "text",
       "notNull": false,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "license",
       "entityType": "columns",
       "table": "plugins"
     },
     {
-      "type": "varchar(500)",
+      "type": "text",
       "notNull": false,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "icon_url",
       "entityType": "columns",
@@ -897,12 +681,8 @@
     {
       "type": "text",
       "notNull": false,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "screenshots",
       "entityType": "columns",
@@ -911,208 +691,148 @@
     {
       "type": "text",
       "notNull": false,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "readme",
       "entityType": "columns",
       "table": "plugins"
     },
     {
-      "type": "varchar(500)",
+      "type": "text",
       "notNull": false,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "documentation_url",
       "entityType": "columns",
       "table": "plugins"
     },
     {
-      "type": "varchar(254)",
+      "type": "text",
       "notNull": false,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "support_email",
       "entityType": "columns",
       "table": "plugins"
     },
     {
-      "type": "varchar(500)",
+      "type": "text",
       "notNull": false,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "issues_url",
       "entityType": "columns",
       "table": "plugins"
     },
     {
-      "type": "bigint",
+      "type": "integer",
       "notNull": false,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "manifest_fetched_at",
       "entityType": "columns",
       "table": "plugins"
     },
     {
-      "type": "varchar(80)",
+      "type": "text",
       "notNull": false,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "manifest_version",
       "entityType": "columns",
       "table": "plugins"
     },
     {
-      "type": "tinyint",
+      "type": "integer",
       "notNull": true,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": "0",
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "featured",
       "entityType": "columns",
       "table": "plugins"
     },
     {
-      "type": "int",
+      "type": "integer",
       "notNull": false,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "featured_order",
       "entityType": "columns",
       "table": "plugins"
     },
     {
-      "type": "bigint",
+      "type": "integer",
       "notNull": true,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "created_at",
       "entityType": "columns",
       "table": "plugins"
     },
     {
-      "type": "bigint",
+      "type": "integer",
       "notNull": true,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "updated_at",
       "entityType": "columns",
       "table": "plugins"
     },
     {
-      "type": "varchar(64)",
-      "notNull": true,
-      "autoIncrement": false,
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "id",
       "entityType": "columns",
       "table": "provider_instances"
     },
     {
-      "type": "varchar(16)",
+      "type": "text",
       "notNull": true,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "kind",
       "entityType": "columns",
       "table": "provider_instances"
     },
     {
-      "type": "varchar(120)",
+      "type": "text",
       "notNull": true,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "display_name",
       "entityType": "columns",
       "table": "provider_instances"
     },
     {
-      "type": "varchar(500)",
+      "type": "text",
       "notNull": true,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "base_url",
       "entityType": "columns",
       "table": "provider_instances"
     },
     {
-      "type": "varchar(500)",
+      "type": "text",
       "notNull": true,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "client_id",
       "entityType": "columns",
@@ -1121,110 +841,78 @@
     {
       "type": "text",
       "notNull": true,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "client_secret",
       "entityType": "columns",
       "table": "provider_instances"
     },
     {
-      "type": "varchar(500)",
+      "type": "text",
       "notNull": false,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "logo_url",
       "entityType": "columns",
       "table": "provider_instances"
     },
     {
-      "type": "tinyint",
+      "type": "integer",
       "notNull": true,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": "1",
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "enabled",
       "entityType": "columns",
       "table": "provider_instances"
     },
     {
-      "type": "bigint",
+      "type": "integer",
       "notNull": true,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "created_at",
       "entityType": "columns",
       "table": "provider_instances"
     },
     {
-      "type": "varchar(64)",
-      "notNull": true,
-      "autoIncrement": false,
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "id",
       "entityType": "columns",
       "table": "releases"
     },
     {
-      "type": "varchar(80)",
+      "type": "text",
       "notNull": true,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "plugin_id",
       "entityType": "columns",
       "table": "releases"
     },
     {
-      "type": "varchar(40)",
+      "type": "text",
       "notNull": true,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "version",
       "entityType": "columns",
       "table": "releases"
     },
     {
-      "type": "varchar(40)",
+      "type": "text",
       "notNull": false,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "min_runtime_version",
       "entityType": "columns",
@@ -1233,54 +921,38 @@
     {
       "type": "text",
       "notNull": true,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "assets",
       "entityType": "columns",
       "table": "releases"
     },
     {
-      "type": "bigint",
+      "type": "integer",
       "notNull": true,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "created_at",
       "entityType": "columns",
       "table": "releases"
     },
     {
-      "type": "varchar(64)",
-      "notNull": true,
-      "autoIncrement": false,
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "user_id",
       "entityType": "columns",
       "table": "root_credentials"
     },
     {
-      "type": "varchar(320)",
+      "type": "text",
       "notNull": true,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "email",
       "entityType": "columns",
@@ -1289,40 +961,28 @@
     {
       "type": "text",
       "notNull": true,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "password_hash",
       "entityType": "columns",
       "table": "root_credentials"
     },
     {
-      "type": "bigint",
+      "type": "integer",
       "notNull": true,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "created_at",
       "entityType": "columns",
       "table": "root_credentials"
     },
     {
-      "type": "varchar(120)",
-      "notNull": true,
-      "autoIncrement": false,
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "key",
       "entityType": "columns",
@@ -1331,96 +991,68 @@
     {
       "type": "text",
       "notNull": true,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "value",
       "entityType": "columns",
       "table": "settings"
     },
     {
-      "type": "tinyint",
+      "type": "integer",
       "notNull": true,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": "0",
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "encrypted",
       "entityType": "columns",
       "table": "settings"
     },
     {
-      "type": "bigint",
+      "type": "integer",
       "notNull": true,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "updated_at",
       "entityType": "columns",
       "table": "settings"
     },
     {
-      "type": "varchar(64)",
-      "notNull": true,
-      "autoIncrement": false,
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "id",
       "entityType": "columns",
       "table": "users"
     },
     {
-      "type": "varchar(120)",
+      "type": "text",
       "notNull": true,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "display_name",
       "entityType": "columns",
       "table": "users"
     },
     {
-      "type": "varchar(16)",
+      "type": "text",
       "notNull": true,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": "'user'",
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "role",
       "entityType": "columns",
       "table": "users"
     },
     {
-      "type": "bigint",
+      "type": "integer",
       "notNull": true,
-      "autoIncrement": false,
+      "autoincrement": false,
       "default": null,
-      "onUpdateNow": false,
-      "onUpdateNowFsp": null,
-      "charSet": null,
-      "collation": null,
       "generated": null,
       "name": "created_at",
       "entityType": "columns",
@@ -1428,27 +1060,265 @@
     },
     {
       "columns": [
+        "actor_id"
+      ],
+      "tableTo": "users",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "SET NULL",
+      "nameExplicit": false,
+      "name": "fk_audit_log_actor_id_users_id_fk",
+      "entityType": "fks",
+      "table": "audit_log"
+    },
+    {
+      "columns": [
+        "user_id"
+      ],
+      "tableTo": "users",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_identities_user_id_users_id_fk",
+      "entityType": "fks",
+      "table": "identities"
+    },
+    {
+      "columns": [
+        "provider_instance_id"
+      ],
+      "tableTo": "provider_instances",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "NO ACTION",
+      "nameExplicit": false,
+      "name": "fk_identities_provider_instance_id_provider_instances_id_fk",
+      "entityType": "fks",
+      "table": "identities"
+    },
+    {
+      "columns": [
+        "request_id"
+      ],
+      "tableTo": "plugin_requests",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_plugin_request_claims_request_id_plugin_requests_id_fk",
+      "entityType": "fks",
+      "table": "plugin_request_claims"
+    },
+    {
+      "columns": [
+        "user_id"
+      ],
+      "tableTo": "users",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_plugin_request_claims_user_id_users_id_fk",
+      "entityType": "fks",
+      "table": "plugin_request_claims"
+    },
+    {
+      "columns": [
+        "request_id"
+      ],
+      "tableTo": "plugin_requests",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "NO ACTION",
+      "nameExplicit": false,
+      "name": "fk_plugin_request_votes_request_id_plugin_requests_id_fk",
+      "entityType": "fks",
+      "table": "plugin_request_votes"
+    },
+    {
+      "columns": [
+        "user_id"
+      ],
+      "tableTo": "users",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "NO ACTION",
+      "nameExplicit": false,
+      "name": "fk_plugin_request_votes_user_id_users_id_fk",
+      "entityType": "fks",
+      "table": "plugin_request_votes"
+    },
+    {
+      "columns": [
+        "requester_id"
+      ],
+      "tableTo": "users",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "NO ACTION",
+      "nameExplicit": false,
+      "name": "fk_plugin_requests_requester_id_users_id_fk",
+      "entityType": "fks",
+      "table": "plugin_requests"
+    },
+    {
+      "columns": [
+        "plugin_id"
+      ],
+      "tableTo": "plugins",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_plugin_transfers_plugin_id_plugins_id_fk",
+      "entityType": "fks",
+      "table": "plugin_transfers"
+    },
+    {
+      "columns": [
+        "from_user_id"
+      ],
+      "tableTo": "users",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_plugin_transfers_from_user_id_users_id_fk",
+      "entityType": "fks",
+      "table": "plugin_transfers"
+    },
+    {
+      "columns": [
+        "to_user_id"
+      ],
+      "tableTo": "users",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_plugin_transfers_to_user_id_users_id_fk",
+      "entityType": "fks",
+      "table": "plugin_transfers"
+    },
+    {
+      "columns": [
+        "owner_id"
+      ],
+      "tableTo": "users",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "NO ACTION",
+      "nameExplicit": false,
+      "name": "fk_plugins_owner_id_users_id_fk",
+      "entityType": "fks",
+      "table": "plugins"
+    },
+    {
+      "columns": [
+        "provider_instance_id"
+      ],
+      "tableTo": "provider_instances",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "NO ACTION",
+      "nameExplicit": false,
+      "name": "fk_plugins_provider_instance_id_provider_instances_id_fk",
+      "entityType": "fks",
+      "table": "plugins"
+    },
+    {
+      "columns": [
+        "plugin_id"
+      ],
+      "tableTo": "plugins",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "NO ACTION",
+      "nameExplicit": false,
+      "name": "fk_releases_plugin_id_plugins_id_fk",
+      "entityType": "fks",
+      "table": "releases"
+    },
+    {
+      "columns": [
+        "user_id"
+      ],
+      "tableTo": "users",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_root_credentials_user_id_users_id_fk",
+      "entityType": "fks",
+      "table": "root_credentials"
+    },
+    {
+      "columns": [
         "slug",
         "locale"
       ],
-      "name": "PRIMARY",
-      "table": "markdown_pages",
-      "entityType": "pks"
+      "nameExplicit": false,
+      "name": "markdown_pages_pk",
+      "entityType": "pks",
+      "table": "markdown_pages"
     },
     {
       "columns": [
         "request_id",
         "user_id"
       ],
-      "name": "PRIMARY",
-      "table": "plugin_request_votes",
-      "entityType": "pks"
+      "nameExplicit": false,
+      "name": "plugin_request_claims_pk",
+      "entityType": "pks",
+      "table": "plugin_request_claims"
+    },
+    {
+      "columns": [
+        "request_id",
+        "user_id"
+      ],
+      "nameExplicit": false,
+      "name": "plugin_request_votes_pk",
+      "entityType": "pks",
+      "table": "plugin_request_votes"
     },
     {
       "columns": [
         "id"
       ],
-      "name": "PRIMARY",
+      "nameExplicit": false,
+      "name": "audit_log_pk",
       "table": "audit_log",
       "entityType": "pks"
     },
@@ -1456,7 +1326,8 @@
       "columns": [
         "id"
       ],
-      "name": "PRIMARY",
+      "nameExplicit": false,
+      "name": "identities_pk",
       "table": "identities",
       "entityType": "pks"
     },
@@ -1464,7 +1335,8 @@
       "columns": [
         "id"
       ],
-      "name": "PRIMARY",
+      "nameExplicit": false,
+      "name": "plugin_requests_pk",
       "table": "plugin_requests",
       "entityType": "pks"
     },
@@ -1472,7 +1344,8 @@
       "columns": [
         "id"
       ],
-      "name": "PRIMARY",
+      "nameExplicit": false,
+      "name": "plugin_transfers_pk",
       "table": "plugin_transfers",
       "entityType": "pks"
     },
@@ -1480,7 +1353,8 @@
       "columns": [
         "id"
       ],
-      "name": "PRIMARY",
+      "nameExplicit": false,
+      "name": "plugins_pk",
       "table": "plugins",
       "entityType": "pks"
     },
@@ -1488,7 +1362,8 @@
       "columns": [
         "id"
       ],
-      "name": "PRIMARY",
+      "nameExplicit": false,
+      "name": "provider_instances_pk",
       "table": "provider_instances",
       "entityType": "pks"
     },
@@ -1496,7 +1371,8 @@
       "columns": [
         "id"
       ],
-      "name": "PRIMARY",
+      "nameExplicit": false,
+      "name": "releases_pk",
       "table": "releases",
       "entityType": "pks"
     },
@@ -1504,7 +1380,8 @@
       "columns": [
         "user_id"
       ],
-      "name": "PRIMARY",
+      "nameExplicit": false,
+      "name": "root_credentials_pk",
       "table": "root_credentials",
       "entityType": "pks"
     },
@@ -1512,7 +1389,8 @@
       "columns": [
         "key"
       ],
-      "name": "PRIMARY",
+      "nameExplicit": false,
+      "name": "settings_pk",
       "table": "settings",
       "entityType": "pks"
     },
@@ -1520,41 +1398,10 @@
       "columns": [
         "id"
       ],
-      "name": "PRIMARY",
+      "nameExplicit": false,
+      "name": "users_pk",
       "table": "users",
       "entityType": "pks"
-    },
-    {
-      "columns": [
-        {
-          "value": "slug",
-          "isExpression": false
-        }
-      ],
-      "isUnique": true,
-      "using": null,
-      "algorithm": null,
-      "lock": null,
-      "nameExplicit": false,
-      "name": "slug_unique",
-      "table": "plugin_requests",
-      "entityType": "indexes"
-    },
-    {
-      "columns": [
-        {
-          "value": "email",
-          "isExpression": false
-        }
-      ],
-      "isUnique": true,
-      "using": null,
-      "algorithm": null,
-      "lock": null,
-      "nameExplicit": false,
-      "name": "email_unique",
-      "table": "root_credentials",
-      "entityType": "indexes"
     },
     {
       "columns": [
@@ -1568,10 +1415,8 @@
         }
       ],
       "isUnique": true,
-      "using": null,
-      "algorithm": null,
-      "lock": null,
-      "nameExplicit": true,
+      "where": null,
+      "origin": "manual",
       "name": "identities_instance_external_unique",
       "entityType": "indexes",
       "table": "identities"
@@ -1588,10 +1433,8 @@
         }
       ],
       "isUnique": true,
-      "using": null,
-      "algorithm": null,
-      "lock": null,
-      "nameExplicit": true,
+      "where": null,
+      "origin": "manual",
       "name": "markdown_pages_path_locale",
       "entityType": "indexes",
       "table": "markdown_pages"
@@ -1608,207 +1451,28 @@
         }
       ],
       "isUnique": true,
-      "using": null,
-      "algorithm": null,
-      "lock": null,
-      "nameExplicit": true,
+      "where": null,
+      "origin": "manual",
       "name": "releases_plugin_version",
       "entityType": "indexes",
       "table": "releases"
     },
     {
       "columns": [
-        "actor_id"
+        "slug"
       ],
-      "tableTo": "users",
-      "columnsTo": [
-        "id"
-      ],
-      "onUpdate": "NO ACTION",
-      "onDelete": "SET NULL",
       "nameExplicit": false,
-      "name": "audit_log_actor_id_users_id_fkey",
-      "entityType": "fks",
-      "table": "audit_log"
-    },
-    {
-      "columns": [
-        "user_id"
-      ],
-      "tableTo": "users",
-      "columnsTo": [
-        "id"
-      ],
-      "onUpdate": "NO ACTION",
-      "onDelete": "CASCADE",
-      "nameExplicit": false,
-      "name": "identities_user_id_users_id_fkey",
-      "entityType": "fks",
-      "table": "identities"
-    },
-    {
-      "columns": [
-        "provider_instance_id"
-      ],
-      "tableTo": "provider_instances",
-      "columnsTo": [
-        "id"
-      ],
-      "onUpdate": "NO ACTION",
-      "onDelete": "NO ACTION",
-      "nameExplicit": false,
-      "name": "identities_provider_instance_id_provider_instances_id_fkey",
-      "entityType": "fks",
-      "table": "identities"
-    },
-    {
-      "columns": [
-        "request_id"
-      ],
-      "tableTo": "plugin_requests",
-      "columnsTo": [
-        "id"
-      ],
-      "onUpdate": "NO ACTION",
-      "onDelete": "NO ACTION",
-      "nameExplicit": false,
-      "name": "plugin_request_votes_request_id_plugin_requests_id_fkey",
-      "entityType": "fks",
-      "table": "plugin_request_votes"
-    },
-    {
-      "columns": [
-        "user_id"
-      ],
-      "tableTo": "users",
-      "columnsTo": [
-        "id"
-      ],
-      "onUpdate": "NO ACTION",
-      "onDelete": "NO ACTION",
-      "nameExplicit": false,
-      "name": "plugin_request_votes_user_id_users_id_fkey",
-      "entityType": "fks",
-      "table": "plugin_request_votes"
-    },
-    {
-      "columns": [
-        "requester_id"
-      ],
-      "tableTo": "users",
-      "columnsTo": [
-        "id"
-      ],
-      "onUpdate": "NO ACTION",
-      "onDelete": "NO ACTION",
-      "nameExplicit": false,
-      "name": "plugin_requests_requester_id_users_id_fkey",
-      "entityType": "fks",
+      "name": "plugin_requests_slug_unique",
+      "entityType": "uniques",
       "table": "plugin_requests"
     },
     {
       "columns": [
-        "plugin_id"
+        "email"
       ],
-      "tableTo": "plugins",
-      "columnsTo": [
-        "id"
-      ],
-      "onUpdate": "NO ACTION",
-      "onDelete": "CASCADE",
       "nameExplicit": false,
-      "name": "plugin_transfers_plugin_id_plugins_id_fkey",
-      "entityType": "fks",
-      "table": "plugin_transfers"
-    },
-    {
-      "columns": [
-        "from_user_id"
-      ],
-      "tableTo": "users",
-      "columnsTo": [
-        "id"
-      ],
-      "onUpdate": "NO ACTION",
-      "onDelete": "CASCADE",
-      "nameExplicit": false,
-      "name": "plugin_transfers_from_user_id_users_id_fkey",
-      "entityType": "fks",
-      "table": "plugin_transfers"
-    },
-    {
-      "columns": [
-        "to_user_id"
-      ],
-      "tableTo": "users",
-      "columnsTo": [
-        "id"
-      ],
-      "onUpdate": "NO ACTION",
-      "onDelete": "CASCADE",
-      "nameExplicit": false,
-      "name": "plugin_transfers_to_user_id_users_id_fkey",
-      "entityType": "fks",
-      "table": "plugin_transfers"
-    },
-    {
-      "columns": [
-        "owner_id"
-      ],
-      "tableTo": "users",
-      "columnsTo": [
-        "id"
-      ],
-      "onUpdate": "NO ACTION",
-      "onDelete": "NO ACTION",
-      "nameExplicit": false,
-      "name": "plugins_owner_id_users_id_fkey",
-      "entityType": "fks",
-      "table": "plugins"
-    },
-    {
-      "columns": [
-        "provider_instance_id"
-      ],
-      "tableTo": "provider_instances",
-      "columnsTo": [
-        "id"
-      ],
-      "onUpdate": "NO ACTION",
-      "onDelete": "NO ACTION",
-      "nameExplicit": false,
-      "name": "plugins_provider_instance_id_provider_instances_id_fkey",
-      "entityType": "fks",
-      "table": "plugins"
-    },
-    {
-      "columns": [
-        "plugin_id"
-      ],
-      "tableTo": "plugins",
-      "columnsTo": [
-        "id"
-      ],
-      "onUpdate": "NO ACTION",
-      "onDelete": "NO ACTION",
-      "nameExplicit": false,
-      "name": "releases_plugin_id_plugins_id_fkey",
-      "entityType": "fks",
-      "table": "releases"
-    },
-    {
-      "columns": [
-        "user_id"
-      ],
-      "tableTo": "users",
-      "columnsTo": [
-        "id"
-      ],
-      "onUpdate": "NO ACTION",
-      "onDelete": "CASCADE",
-      "nameExplicit": false,
-      "name": "root_credentials_user_id_users_id_fkey",
-      "entityType": "fks",
+      "name": "root_credentials_email_unique",
+      "entityType": "uniques",
       "table": "root_credentials"
     }
   ],

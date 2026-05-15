@@ -23,7 +23,6 @@ CREATE TABLE `identities` (
 CREATE TABLE `markdown_pages` (
 	`slug` varchar(80) NOT NULL,
 	`locale` varchar(16) NOT NULL DEFAULT 'en',
-	`format` varchar(16) NOT NULL DEFAULT 'markdown',
 	`title` varchar(120) NOT NULL,
 	`content` text NOT NULL,
 	`published` tinyint NOT NULL DEFAULT 1,
@@ -34,6 +33,13 @@ CREATE TABLE `markdown_pages` (
 	`updated_at` bigint NOT NULL,
 	CONSTRAINT PRIMARY KEY(`slug`,`locale`),
 	CONSTRAINT `markdown_pages_path_locale` UNIQUE INDEX(`path`,`locale`)
+);
+--> statement-breakpoint
+CREATE TABLE `plugin_request_claims` (
+	`request_id` varchar(64) NOT NULL,
+	`user_id` varchar(64) NOT NULL,
+	`created_at` bigint NOT NULL,
+	CONSTRAINT PRIMARY KEY(`request_id`,`user_id`)
 );
 --> statement-breakpoint
 CREATE TABLE `plugin_request_votes` (
@@ -142,6 +148,8 @@ CREATE TABLE `users` (
 ALTER TABLE `audit_log` ADD CONSTRAINT `audit_log_actor_id_users_id_fkey` FOREIGN KEY (`actor_id`) REFERENCES `users`(`id`) ON DELETE SET NULL;--> statement-breakpoint
 ALTER TABLE `identities` ADD CONSTRAINT `identities_user_id_users_id_fkey` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE `identities` ADD CONSTRAINT `identities_provider_instance_id_provider_instances_id_fkey` FOREIGN KEY (`provider_instance_id`) REFERENCES `provider_instances`(`id`);--> statement-breakpoint
+ALTER TABLE `plugin_request_claims` ADD CONSTRAINT `plugin_request_claims_request_id_plugin_requests_id_fkey` FOREIGN KEY (`request_id`) REFERENCES `plugin_requests`(`id`) ON DELETE CASCADE;--> statement-breakpoint
+ALTER TABLE `plugin_request_claims` ADD CONSTRAINT `plugin_request_claims_user_id_users_id_fkey` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE `plugin_request_votes` ADD CONSTRAINT `plugin_request_votes_request_id_plugin_requests_id_fkey` FOREIGN KEY (`request_id`) REFERENCES `plugin_requests`(`id`);--> statement-breakpoint
 ALTER TABLE `plugin_request_votes` ADD CONSTRAINT `plugin_request_votes_user_id_users_id_fkey` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`);--> statement-breakpoint
 ALTER TABLE `plugin_requests` ADD CONSTRAINT `plugin_requests_requester_id_users_id_fkey` FOREIGN KEY (`requester_id`) REFERENCES `users`(`id`);--> statement-breakpoint

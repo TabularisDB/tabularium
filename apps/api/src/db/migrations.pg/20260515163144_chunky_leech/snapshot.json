@@ -1,7 +1,7 @@
 {
   "version": "8",
   "dialect": "postgres",
-  "id": "422b5b6e-4e2d-4140-ba81-53e8f4a414dc",
+  "id": "1a9ffc7c-53c9-4ebe-ae29-504ea221016b",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -21,6 +21,12 @@
     {
       "isRlsEnabled": false,
       "name": "markdown_pages",
+      "entityType": "tables",
+      "schema": "public"
+    },
+    {
+      "isRlsEnabled": false,
+      "name": "plugin_request_claims",
       "entityType": "tables",
       "schema": "public"
     },
@@ -304,19 +310,6 @@
       "typeSchema": null,
       "notNull": true,
       "dimensions": 0,
-      "default": "'markdown'",
-      "generated": null,
-      "identity": null,
-      "name": "format",
-      "entityType": "columns",
-      "schema": "public",
-      "table": "markdown_pages"
-    },
-    {
-      "type": "text",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
       "default": null,
       "generated": null,
       "identity": null,
@@ -415,6 +408,45 @@
       "entityType": "columns",
       "schema": "public",
       "table": "markdown_pages"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "request_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "plugin_request_claims"
+    },
+    {
+      "type": "text",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "user_id",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "plugin_request_claims"
+    },
+    {
+      "type": "bigint",
+      "typeSchema": null,
+      "notNull": true,
+      "dimensions": 0,
+      "default": null,
+      "generated": null,
+      "identity": null,
+      "name": "created_at",
+      "entityType": "columns",
+      "schema": "public",
+      "table": "plugin_request_claims"
     },
     {
       "type": "text",
@@ -1498,6 +1530,40 @@
         "id"
       ],
       "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "name": "plugin_request_claims_request_id_plugin_requests_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "plugin_request_claims"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "user_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "users",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "name": "plugin_request_claims_user_id_users_id_fkey",
+      "entityType": "fks",
+      "schema": "public",
+      "table": "plugin_request_claims"
+    },
+    {
+      "nameExplicit": false,
+      "columns": [
+        "request_id"
+      ],
+      "schemaTo": "public",
+      "tableTo": "plugin_requests",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
       "onDelete": "NO ACTION",
       "name": "plugin_request_votes_request_id_plugin_requests_id_fkey",
       "entityType": "fks",
@@ -1667,6 +1733,17 @@
       "entityType": "pks",
       "schema": "public",
       "table": "markdown_pages"
+    },
+    {
+      "columns": [
+        "request_id",
+        "user_id"
+      ],
+      "nameExplicit": false,
+      "name": "plugin_request_claims_pkey",
+      "entityType": "pks",
+      "schema": "public",
+      "table": "plugin_request_claims"
     },
     {
       "columns": [

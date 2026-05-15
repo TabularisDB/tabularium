@@ -1,1 +1,0 @@
-ALTER TABLE "markdown_pages" DROP COLUMN "format";
