@@ -1,51 +1,17 @@
-import { Type, type Static } from '@sinclair/typebox'
 import { Value } from '@sinclair/typebox/value'
 import { parse as parseYaml } from 'yaml'
 import type { RepoRef } from './providers'
 import { logger } from './logger'
 import { getManifestConfig } from './manifest-config'
+import { ManifestSchema, type Manifest, type ResolvedManifest } from './manifest-core'
+import { buildMergedSchema } from './manifest-schema'
 
 const log = logger.child({ module: 'manifest' })
 
-/**
- * .tabularium manifest schema.
- * Plugin authors drop a `.tabularium` (YAML) or `.tabularium.json` file at the root of their repo.
- * Re-fetched on every release webhook and persisted to the plugin row.
- */
-export const ManifestSchema = Type.Object({
-  name: Type.Optional(Type.String({ minLength: 1, maxLength: 60 })),
-  description: Type.Optional(Type.String({ maxLength: 280 })),
-  category: Type.Optional(Type.String({ maxLength: 40 })),
-  kind: Type.Optional(Type.String({ minLength: 1, maxLength: 40, pattern: '^[a-z0-9][a-z0-9-]*$' })),
-  tags: Type.Optional(Type.Array(Type.String({ maxLength: 30 }), { maxItems: 16 })),
-  license: Type.Optional(Type.String({ maxLength: 40 })),
-  icon: Type.Optional(Type.String({ maxLength: 500 })),
-  screenshots: Type.Optional(Type.Array(Type.Object({
-    url: Type.String({ minLength: 1, maxLength: 500 }),
-    caption: Type.Optional(Type.String({ maxLength: 200 })),
-    alt: Type.Optional(Type.String({ maxLength: 200 })),
-  }), { maxItems: 12 })),
-  readme: Type.Optional(Type.String({ maxLength: 500 })), // relative path; resolved separately
-  documentation_url: Type.Optional(Type.String({ pattern: '^https?://.+' })),
-  homepage: Type.Optional(Type.String({ pattern: '^https?://.+' })),
-  support: Type.Optional(Type.Object({
-    email: Type.Optional(Type.String({ maxLength: 254 })),
-    issues_url: Type.Optional(Type.String({ pattern: '^https?://.+' })),
-  })),
-  min_runtime_version: Type.Optional(Type.String({ maxLength: 40 })),
-})
-
-export type Manifest = Static<typeof ManifestSchema>
+export { ManifestSchema, type Manifest, type ResolvedManifest }
 
 const MAX_BYTES = 64 * 1024
 const MAX_README_BYTES = 200 * 1024
-
-export type ResolvedManifest = {
-  raw: string
-  parsed: Manifest
-  readmeMarkdown: string | null
-  source: 'tabularium.yaml' | 'tabularium.json'
-}
 
 export function parseManifestText(text: string, source: ResolvedManifest['source']): Manifest {
   let json: unknown
@@ -55,12 +21,16 @@ export function parseManifestText(text: string, source: ResolvedManifest['source
     json = parseYaml(text)
   }
   if (!json || typeof json !== 'object') throw new Error('Manifest root must be an object')
-  const errors = [...Value.Errors(ManifestSchema, json)]
+  if ('$schema' in (json as Record<string, unknown>)) {
+    delete (json as Record<string, unknown>).$schema
+  }
+  const merged = buildMergedSchema() as object
+  const errors = [...Value.Errors(merged, json)]
   if (errors.length > 0) {
     const summary = errors.slice(0, 5).map((e) => `${e.path}: ${e.message}`).join('; ')
     throw new Error(`Invalid manifest: ${summary}`)
   }
-  return Value.Clean(ManifestSchema, json) as Manifest
+  return Value.Clean(merged, json) as Manifest
 }
 
 type FileFetcher = (path: string) => Promise<{ content: string; bytes: number } | null>

@@ -1,6 +1,6 @@
 import { Elysia, t } from 'elysia'
-import { ManifestSchema } from '$lib/manifest'
 import { getManifestConfig } from '$lib/manifest-config'
+import { buildMergedSchema } from '$lib/manifest-schema'
 import { getKinds } from '$lib/kinds'
 
 const EXAMPLE = `name: My Plugin
@@ -40,7 +40,7 @@ export default new Elysia()
     return {
       description: buildDescription(cfg.files),
       paths: cfg.files,
-      schema: { $id: cfg.schemaUrl, ...ManifestSchema },
+      schema: buildMergedSchema(),
       example: EXAMPLE,
       kinds: getKinds().map((k) => k.key),
     }
