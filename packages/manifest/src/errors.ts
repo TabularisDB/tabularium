@@ -49,14 +49,13 @@ function pickExpected(err: ErrorObject): unknown {
 export function mapAjvErrors(errors: ErrorObject[] | null | undefined): ValidationError[] {
   if (!errors || errors.length === 0) return []
   return errors.map((err) => {
-    const parent = err.instancePath === '' ? '' : err.instancePath
     let path: string
     if (err.keyword === 'additionalProperties') {
-      path = `${parent}/${(err.params as { additionalProperty: string }).additionalProperty}`
+      path = `${err.instancePath}/${(err.params as { additionalProperty: string }).additionalProperty}`
     } else if (err.keyword === 'required') {
-      path = `${parent}/${(err.params as { missingProperty: string }).missingProperty}`
+      path = `${err.instancePath}/${(err.params as { missingProperty: string }).missingProperty}`
     } else {
-      path = parent === '' ? '/' : parent
+      path = err.instancePath === '' ? '/' : err.instancePath
     }
     return {
       path,
