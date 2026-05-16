@@ -49,6 +49,20 @@ describe('validateManifest', () => {
     }
   })
 
+  it('lenient mode strips unknown fields without erroring', () => {
+    const result = validateManifest({ name: 'X', 'x-unknown': 'extra' }, baseSchema, { lenient: true })
+    expect(result.ok).toBe(true)
+    if (result.ok) {
+      expect(result.normalized.name).toBe('X')
+      expect((result.normalized as Record<string, unknown>)['x-unknown']).toBeUndefined()
+    }
+  })
+
+  it('lenient mode still errors on type mismatches', () => {
+    const result = validateManifest({ name: 42 }, baseSchema, { lenient: true })
+    expect(result.ok).toBe(false)
+  })
+
   it('honours allOf/if/then kind routing', () => {
     const schema = buildSchema({
       coreSchema: ManifestSchema as never,

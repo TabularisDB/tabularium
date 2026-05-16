@@ -161,9 +161,8 @@ describe('POST /api/submit/oauth', () => {
       expect(err).toBeInstanceOf(ManifestValidationError)
       const e = err as InstanceType<typeof ManifestValidationError>
       expect(e.errors[0].path).toBe('/name')
-      // TypeBox reverse-maps ValueErrorType numeric enum to its string name;
-      // for a string-type mismatch the actual value is 'String'
-      expect(e.errors[0].code).toBe('String')
+      // ajv produces keyword name as the code; for a string-type mismatch it is 'type'
+      expect(e.errors[0].code).toBe('type')
     }
   })
 })

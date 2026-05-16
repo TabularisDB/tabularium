@@ -1,11 +1,8 @@
-import { Value } from '@sinclair/typebox/value'
-import { ValueErrorType } from '@sinclair/typebox/errors'
-import { parse as parseYaml } from 'yaml'
 import type { RepoRef } from './providers'
 import { logger } from './logger'
 import { getManifestConfig } from './manifest-config'
-import { ManifestSchema, type Manifest, type ResolvedManifest, type ReadmeMap } from '@tabularium/manifest'
-import { buildValidatorSchema } from './manifest-schema'
+import { ManifestSchema, type Manifest, type ResolvedManifest, type ReadmeMap, parseManifest, validateManifest, ParseError } from '@tabularium/manifest'
+import { buildMergedSchema } from './manifest-schema'
 import type { ValidationError } from '@tabularium/manifest'
 
 const log = logger.child({ module: 'manifest' })
@@ -24,47 +21,24 @@ export class ManifestValidationError extends Error {
 }
 
 export function parseManifestText(text: string, source: ResolvedManifest['source']): Manifest {
-  let json: unknown
+  let parsed: Record<string, unknown>
   try {
-    json = source === 'tabularium.json' ? JSON.parse(text) : parseYaml(text)
+    parsed = parseManifest(text, source)
   } catch (err) {
-    throw new ManifestValidationError([
-      {
-        path: '/',
-        code: 'parse',
-        message: err instanceof Error ? err.message : String(err),
-      },
-    ])
+    if (err instanceof ParseError) {
+      throw new ManifestValidationError([
+        { path: '/', code: 'parse', message: err.message },
+      ])
+    }
+    throw err
   }
-  if (!json || typeof json !== 'object') {
-    throw new ManifestValidationError([
-      { path: '/', code: 'type', message: 'Manifest root must be an object' },
-    ])
+  const declaredKind = typeof parsed.kind === 'string' ? parsed.kind : null
+  const schema = buildMergedSchema({ kind: declaredKind })
+  const result = validateManifest(parsed, schema, { lenient: true })
+  if (!result.ok) {
+    throw new ManifestValidationError(result.errors)
   }
-  if ('$schema' in (json as Record<string, unknown>)) {
-    delete (json as Record<string, unknown>).$schema
-  }
-  const declaredKind = typeof (json as Record<string, unknown>).kind === 'string'
-    ? ((json as Record<string, unknown>).kind as string)
-    : null
-  const merged = buildValidatorSchema({ kind: declaredKind })
-  const errors = [...Value.Errors(merged, json)]
-  if (errors.length > 0) {
-    const structured: ValidationError[] = errors.map((e) => ({
-      path: e.path === '' ? '/' : e.path,
-      // ValueErrorType is a numeric enum — reverse-lookup gives a readable
-      // name like "ObjectRequiredProperty". Falls back to numeric string if
-      // a new error type lands without a mapping.
-      code: ValueErrorType[e.type] ?? String(e.type),
-      message: e.message,
-      // expected intentionally omitted — TypeBox errors don't carry the
-      // expected-constraint value the way ajv does. The ajv-backed mapper
-      // (package's mapAjvErrors) populates this; this server path does not.
-      actual: typeof e.value === 'string' && e.value.length > 200 ? e.value.slice(0, 200) : e.value,
-    }))
-    throw new ManifestValidationError(structured)
-  }
-  return Value.Clean(merged, json) as Manifest
+  return result.normalized as Manifest
 }
 
 type FileFetcher = (path: string) => Promise<{ content: string; bytes: number } | null>

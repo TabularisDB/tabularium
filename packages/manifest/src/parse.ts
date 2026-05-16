@@ -9,6 +9,11 @@ export class ParseError extends Error {
   }
 }
 
+export function sniffSource(text: string): ManifestSource {
+  const head = text.replace(/^﻿/, '').trimStart()
+  return head.startsWith('{') || head.startsWith('[') ? 'tabularium.json' : 'tabularium.yaml'
+}
+
 export function parseManifest(text: string, source: ManifestSource): Record<string, unknown> {
   let parsed: unknown
   try {

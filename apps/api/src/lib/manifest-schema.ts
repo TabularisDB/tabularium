@@ -1,4 +1,4 @@
-import { Type, type TSchema } from '@sinclair/typebox'
+import { type TSchema } from '@sinclair/typebox'
 import { ManifestSchema } from '@tabularium/manifest'
 import { getManifestConfig } from './manifest-config'
 import { getSetting, setSetting, deleteSetting, hasSetting } from './settings'
@@ -124,62 +124,4 @@ export function buildMergedSchema(options: { kind?: string | null } = {}): Recor
     kind: options.kind ?? null,
     schemaUrl: cfg.schemaUrl,
   })
-}
-
-// Server-side TypeBox composite for parseManifestText. Kept because the existing
-// resolve/manifest path uses Value.Clean + Value.Errors; switching it over to the
-// ajv path happens in a separate task (this one preserves behaviour).
-function nodeToTypeBox(node: JsonSchemaProperty): TSchema {
-  const opts: Record<string, unknown> = {}
-  if (typeof node.description === 'string') opts.description = node.description
-  if (typeof node.title === 'string') opts.title = node.title
-  const t = Array.isArray(node.type)
-    ? (node.type.find((x) => typeof x === 'string' && x !== 'null') as string | undefined)
-    : (typeof node.type === 'string' ? node.type : undefined)
-  switch (t) {
-    case 'string': {
-      const stringOpts: Record<string, unknown> = { ...opts }
-      if (Array.isArray(node.enum)) stringOpts.enum = node.enum
-      if (typeof node.pattern === 'string') stringOpts.pattern = node.pattern
-      return Type.String(stringOpts)
-    }
-    case 'number': return Type.Number(opts)
-    case 'integer': return Type.Integer(opts)
-    case 'boolean': return Type.Boolean(opts)
-    case 'array': {
-      const items = isPlainObject(node.items) ? (node.items as JsonSchemaProperty) : null
-      const item = items ? nodeToTypeBox(items) : Type.Any()
-      return Type.Array(item, opts)
-    }
-    case 'object': {
-      const props: Record<string, TSchema> = {}
-      const required = new Set<string>(
-        Array.isArray(node.required) ? (node.required as string[]) : [],
-      )
-      const properties = isPlainObject(node.properties)
-        ? (node.properties as Record<string, JsonSchemaProperty>)
-        : {}
-      for (const [name, sub] of Object.entries(properties)) {
-        if (!isPlainObject(sub)) continue
-        const schema = nodeToTypeBox(sub as JsonSchemaProperty)
-        props[name] = required.has(name) ? schema : Type.Optional(schema)
-      }
-      return Type.Object(props, opts)
-    }
-    default: return Type.Any()
-  }
-}
-
-function extensionsToTypeBox(delta: ExtensionsDelta): TSchema {
-  const props: Record<string, TSchema> = {}
-  for (const [name, node] of Object.entries(delta)) {
-    props[name] = Type.Optional(nodeToTypeBox(node))
-  }
-  return Type.Object(props)
-}
-
-export function buildValidatorSchema(options: { kind?: string | null } = {}): TSchema {
-  const ext = getEffectiveExtensions(options.kind ?? null)
-  if (Object.keys(ext).length === 0) return ManifestSchema as unknown as TSchema
-  return Type.Composite([ManifestSchema as unknown as TSchema, extensionsToTypeBox(ext)])
 }

@@ -1,6 +1,5 @@
 import { describe, it, expect, beforeEach } from 'bun:test'
 import { buildApp, clearDb } from '../helpers'
-import { setExtensionsDelta } from '../../src/lib/manifest-schema'
 import { createKind } from '../../src/lib/kinds'
 
 async function post(body: unknown, contentType = 'application/json') {
