@@ -1,4 +1,5 @@
 import { Value } from '@sinclair/typebox/value'
+import { ValueErrorType } from '@sinclair/typebox/errors'
 import { parse as parseYaml } from 'yaml'
 import type { RepoRef } from './providers'
 import { logger } from './logger'
@@ -16,8 +17,8 @@ const MAX_README_BYTES = 200 * 1024
 
 export class ManifestValidationError extends Error {
   constructor(public errors: ValidationError[]) {
-    const summary = errors.slice(0, 3).map((e) => `${e.path}: ${e.message}`).join('; ')
-    super(`Invalid manifest: ${summary}${errors.length > 3 ? ` (+${errors.length - 3} more)` : ''}`)
+    const summary = errors.slice(0, 5).map((e) => `${e.path}: ${e.message}`).join('; ')
+    super(`Invalid manifest: ${summary}${errors.length > 5 ? ` (+${errors.length - 5} more)` : ''}`)
     this.name = 'ManifestValidationError'
   }
 }
@@ -51,8 +52,14 @@ export function parseManifestText(text: string, source: ResolvedManifest['source
   if (errors.length > 0) {
     const structured: ValidationError[] = errors.map((e) => ({
       path: e.path === '' ? '/' : e.path,
-      code: String(e.type),
+      // ValueErrorType is a numeric enum — reverse-lookup gives a readable
+      // name like "ObjectRequiredProperty". Falls back to numeric string if
+      // a new error type lands without a mapping.
+      code: ValueErrorType[e.type] ?? String(e.type),
       message: e.message,
+      // expected intentionally omitted — TypeBox errors don't carry the
+      // expected-constraint value the way ajv does. The ajv-backed mapper
+      // (package's mapAjvErrors) populates this; this server path does not.
       actual: typeof e.value === 'string' && e.value.length > 200 ? e.value.slice(0, 200) : e.value,
     }))
     throw new ManifestValidationError(structured)

@@ -68,4 +68,17 @@ describe('parseManifestText', () => {
       expect(e.errors[0].path).toContain('x-app')
     }
   })
+
+  it('throws ManifestValidationError with code:parse on malformed JSON input', async () => {
+    const { ManifestValidationError } = await import('../../src/lib/manifest')
+    try {
+      parseManifestText('{ not json', 'tabularium.json')
+      throw new Error('expected throw')
+    } catch (err) {
+      expect(err).toBeInstanceOf(ManifestValidationError)
+      const e = err as InstanceType<typeof ManifestValidationError>
+      expect(e.errors[0].code).toBe('parse')
+      expect(e.errors[0].path).toBe('/')
+    }
+  })
 })
