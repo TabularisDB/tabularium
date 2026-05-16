@@ -193,7 +193,11 @@ export async function resolveManifest(accessToken: string, ref: RepoRef, options
       }
       return { raw: got.content, parsed, readmeMarkdown, readmeLocales, source: candidate.source }
     } catch (err) {
-      log.warn({ err, path: candidate.path }, 'manifest parse failed — trying next candidate')
+      if (err instanceof ManifestValidationError) {
+        log.warn({ path: candidate.path, errors: err.errors }, 'manifest invalid — trying next candidate')
+      } else {
+        log.warn({ err, path: candidate.path }, 'manifest fetch/parse failed — trying next candidate')
+      }
     }
   }
   return null
