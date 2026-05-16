@@ -19,8 +19,15 @@ describe('validateManifest', () => {
     const result = validateManifest({ name: 'X', extra: 'nope' }, baseSchema)
     expect(result.ok).toBe(false)
     if (!result.ok) {
-      expect(result.errors.some((e) => e.code === 'additionalProperties')).toBe(true)
+      const e = result.errors.find((e) => e.code === 'additionalProperties')
+      expect(e?.path).toBe('/extra')
     }
+  })
+
+  it('does not mutate the input object', () => {
+    const input = { name: 'X', extra: 'nope' }
+    validateManifest(input, baseSchema)
+    expect(input).toEqual({ name: 'X', extra: 'nope' })
   })
 
   it('returns structured errors for type mismatches', () => {
@@ -54,5 +61,8 @@ describe('validateManifest', () => {
 
     const bad = validateManifest({ kind: 'theme', 'x-theme': 42 }, schema)
     expect(bad.ok).toBe(false)
+    if (!bad.ok) {
+      expect(bad.errors.some((e) => e.path === '/x-theme' && e.code === 'type')).toBe(true)
+    }
   })
 })
