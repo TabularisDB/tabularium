@@ -10,7 +10,7 @@ import { setupWebhook } from '$lib/setup-webhook'
 import { decryptToken } from '$lib/crypto'
 import { env } from '$lib/env'
 import { getSetting } from '$lib/settings'
-import { resolveManifest, rawContentBase } from '$lib/manifest'
+import { resolveManifest, rawContentBase, ManifestValidationError } from '$lib/manifest'
 import { manifestPatch, applyManifestToPlugin } from '$lib/manifest-apply'
 import { fetchLatestRelease } from '$lib/release-fetch'
 import { getFeatures } from '$lib/features'
@@ -105,7 +105,11 @@ export default new Elysia()
         }
       }
     } catch (err) {
-      log.warn({ err, slug }, 'manifest fetch failed at submit — continuing without it')
+      if (err instanceof ManifestValidationError) {
+        log.warn({ slug, errors: err.errors }, 'manifest invalid at submit — continuing without it')
+      } else {
+        log.warn({ err, slug }, 'manifest fetch failed at submit — continuing without it')
+      }
     }
 
     try {
