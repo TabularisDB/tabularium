@@ -37,4 +37,32 @@ describe('mapAjvErrors', () => {
     expect(typeof e.actual).toBe('string')
     expect((e.actual as string).length).toBeLessThanOrEqual(200)
   })
+
+  it('puts the missing field in the path for required-property errors', () => {
+    const ajv = new Ajv({ allErrors: true, verbose: true })
+    const validate = ajv.compile({
+      type: 'object',
+      properties: { name: { type: 'string' } },
+      required: ['name'],
+    })
+    validate({})
+    const mapped = mapAjvErrors(validate.errors)
+    const e = mapped.find((m) => m.code === 'required')!
+    expect(e.path).toBe('/name')
+    expect(e.expected).toBeUndefined()
+  })
+
+  it('appends the offending property to nested additionalProperties paths', () => {
+    const ajv = new Ajv({ allErrors: true, verbose: true })
+    const validate = ajv.compile({
+      type: 'object',
+      properties: {
+        meta: { type: 'object', properties: {}, additionalProperties: false },
+      },
+    })
+    validate({ meta: { bogus: 1 } })
+    const mapped = mapAjvErrors(validate.errors)
+    const e = mapped.find((m) => m.code === 'additionalProperties')!
+    expect(e.path).toBe('/meta/bogus')
+  })
 })

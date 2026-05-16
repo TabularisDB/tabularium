@@ -18,7 +18,9 @@ function truncate(value: unknown): unknown {
 function pickExpected(err: ErrorObject): unknown {
   switch (err.keyword) {
     case 'type':
-      return (err.params as { type: string }).type
+      // ajv emits a string for single-type schemas and a string[] for unions
+      // (e.g. { type: ['string', 'null'] }). Reflect both possibilities.
+      return (err.params as { type: string | string[] }).type
     case 'pattern':
       return (err.params as { pattern: string }).pattern
     case 'enum':
@@ -29,7 +31,8 @@ function pickExpected(err: ErrorObject): unknown {
     case 'minItems':
       return (err.params as Record<string, unknown>).limit
     case 'required':
-      return (err.params as { missingProperty: string }).missingProperty
+      // path carries the missing field — see mapAjvErrors below
+      return undefined
     case 'additionalProperties':
       return false
     default:
@@ -37,16 +40,24 @@ function pickExpected(err: ErrorObject): unknown {
   }
 }
 
+// `path` convention: always identifies the specific offending field when one
+// exists. For `additionalProperties` we append `params.additionalProperty`;
+// for `required` we append `params.missingProperty`. ajv puts both error kinds
+// at the parent's instancePath, which is too coarse for callers that want to
+// highlight the bad field. Consumers can rely on `path` being field-specific
+// and don't need to branch on `code` to find which field is at fault.
 export function mapAjvErrors(errors: ErrorObject[] | null | undefined): ValidationError[] {
   if (!errors || errors.length === 0) return []
   return errors.map((err) => {
-    const path = err.instancePath === ''
-      ? (err.keyword === 'additionalProperties'
-          ? `/${(err.params as { additionalProperty: string }).additionalProperty}`
-          : '/')
-      : err.keyword === 'additionalProperties'
-        ? `${err.instancePath}/${(err.params as { additionalProperty: string }).additionalProperty}`
-        : err.instancePath
+    const parent = err.instancePath === '' ? '' : err.instancePath
+    let path: string
+    if (err.keyword === 'additionalProperties') {
+      path = `${parent}/${(err.params as { additionalProperty: string }).additionalProperty}`
+    } else if (err.keyword === 'required') {
+      path = `${parent}/${(err.params as { missingProperty: string }).missingProperty}`
+    } else {
+      path = parent === '' ? '/' : parent
+    }
     return {
       path,
       code: err.keyword,
