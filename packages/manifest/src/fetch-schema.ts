@@ -14,7 +14,8 @@ export async function fetchSchema(
   const fetchImpl = options.fetch ?? globalThis.fetch
   const res = await fetchImpl(url, { signal: options.signal })
   if (!res.ok) {
-    throw new Error(`fetchSchema ${url}: HTTP ${res.status}`)
+    const body = await res.text().catch(() => '')
+    throw new Error(`fetchSchema ${url}: HTTP ${res.status}${body ? ` — ${body.slice(0, 500)}` : ''}`)
   }
   return (await res.json()) as Record<string, unknown>
 }
