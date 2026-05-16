@@ -5,6 +5,7 @@ import { logger } from './logger'
 import { getManifestConfig } from './manifest-config'
 import { ManifestSchema, type Manifest, type ResolvedManifest, type ReadmeMap } from './manifest-core'
 import { buildValidatorSchema } from './manifest-schema'
+import type { ValidationError } from '@tabularium/manifest'
 
 const log = logger.child({ module: 'manifest' })
 
@@ -13,14 +14,32 @@ export { ManifestSchema, type Manifest, type ResolvedManifest }
 const MAX_BYTES = 64 * 1024
 const MAX_README_BYTES = 200 * 1024
 
+export class ManifestValidationError extends Error {
+  constructor(public errors: ValidationError[]) {
+    const summary = errors.slice(0, 3).map((e) => `${e.path}: ${e.message}`).join('; ')
+    super(`Invalid manifest: ${summary}${errors.length > 3 ? ` (+${errors.length - 3} more)` : ''}`)
+    this.name = 'ManifestValidationError'
+  }
+}
+
 export function parseManifestText(text: string, source: ResolvedManifest['source']): Manifest {
   let json: unknown
-  if (source === 'tabularium.json') {
-    json = JSON.parse(text)
-  } else {
-    json = parseYaml(text)
+  try {
+    json = source === 'tabularium.json' ? JSON.parse(text) : parseYaml(text)
+  } catch (err) {
+    throw new ManifestValidationError([
+      {
+        path: '/',
+        code: 'parse',
+        message: err instanceof Error ? err.message : String(err),
+      },
+    ])
   }
-  if (!json || typeof json !== 'object') throw new Error('Manifest root must be an object')
+  if (!json || typeof json !== 'object') {
+    throw new ManifestValidationError([
+      { path: '/', code: 'type', message: 'Manifest root must be an object' },
+    ])
+  }
   if ('$schema' in (json as Record<string, unknown>)) {
     delete (json as Record<string, unknown>).$schema
   }
@@ -30,8 +49,13 @@ export function parseManifestText(text: string, source: ResolvedManifest['source
   const merged = buildValidatorSchema({ kind: declaredKind })
   const errors = [...Value.Errors(merged, json)]
   if (errors.length > 0) {
-    const summary = errors.slice(0, 5).map((e) => `${e.path}: ${e.message}`).join('; ')
-    throw new Error(`Invalid manifest: ${summary}`)
+    const structured: ValidationError[] = errors.map((e) => ({
+      path: e.path === '' ? '/' : e.path,
+      code: String(e.type),
+      message: e.message,
+      actual: typeof e.value === 'string' && e.value.length > 200 ? e.value.slice(0, 200) : e.value,
+    }))
+    throw new ManifestValidationError(structured)
   }
   return Value.Clean(merged, json) as Manifest
 }

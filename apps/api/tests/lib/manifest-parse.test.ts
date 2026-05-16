@@ -54,9 +54,18 @@ describe('parseManifestText', () => {
     expect(stripped['x-global']).toBeUndefined()
   })
 
-  it('rejects fields with the wrong TYPE (not just unknown — actual schema violations)', async () => {
+  it('throws ManifestValidationError with structured errors on type mismatch', async () => {
+    const { ManifestValidationError } = await import('../../src/lib/manifest')
     await setExtensionsDelta({ 'x-app': { type: 'string' } })
     const text = `name: X\nx-app: 42\n` // 42 is a number, not a string
-    expect(() => parseManifestText(text, 'tabularium.yaml')).toThrow(/Invalid manifest/)
+    try {
+      parseManifestText(text, 'tabularium.yaml')
+      throw new Error('expected throw')
+    } catch (err) {
+      expect(err).toBeInstanceOf(ManifestValidationError)
+      const e = err as InstanceType<typeof ManifestValidationError>
+      expect(e.errors.length).toBeGreaterThan(0)
+      expect(e.errors[0].path).toContain('x-app')
+    }
   })
 })
