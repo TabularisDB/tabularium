@@ -1,0 +1,19 @@
+{
+  "name": "@tabularium/cli",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "bin": {
+    "tabularium": "src/bin.ts"
+  },
+  "scripts": {
+    "test": "bun test"
+  },
+  "dependencies": {
+    "@tabularium/manifest": "workspace:*",
+    "commander": "^14.0.1"
+  },
+  "devDependencies": {
+    "@tabularium/tsconfig": "workspace:*"
+  }
+}
