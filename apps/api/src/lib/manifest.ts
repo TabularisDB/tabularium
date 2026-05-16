@@ -4,7 +4,7 @@ import { parse as parseYaml } from 'yaml'
 import type { RepoRef } from './providers'
 import { logger } from './logger'
 import { getManifestConfig } from './manifest-config'
-import { ManifestSchema, type Manifest, type ResolvedManifest, type ReadmeMap } from './manifest-core'
+import { ManifestSchema, type Manifest, type ResolvedManifest, type ReadmeMap } from '@tabularium/manifest'
 import { buildValidatorSchema } from './manifest-schema'
 import type { ValidationError } from '@tabularium/manifest'
 

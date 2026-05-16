@@ -1,5 +1,5 @@
 import { Type, type TSchema } from '@sinclair/typebox'
-import { ManifestSchema } from './manifest-core'
+import { ManifestSchema } from '@tabularium/manifest'
 import { getManifestConfig } from './manifest-config'
 import { getSetting, setSetting, deleteSetting, hasSetting } from './settings'
 import { buildSchema, type ExtensionsDelta, type JsonSchemaProperty } from '@tabularium/manifest'
