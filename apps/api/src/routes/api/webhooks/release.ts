@@ -161,7 +161,7 @@ export default new Elysia()
           if (!result.sha256 || typeof result.size !== 'number') {
             // Over-cap skips emit an audit entry so operators can trace
             // why a release came in without one of its expected assets.
-            if (result.reason && /exceeds.*byte cap/i.test(result.reason)) {
+            if (result.reason && /exceeds.*hash budget/i.test(result.reason)) {
               await recordAudit({
                 action: 'release.asset_skipped',
                 target: `release:${current.id}`,

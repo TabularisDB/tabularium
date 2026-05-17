@@ -88,6 +88,6 @@ describe('webhook ingest → asset over cap → audit', () => {
     const meta = JSON.parse(skipped[0].meta ?? '{}') as { url: string; name: string; reason: string }
     expect(meta.url).toBe(assetUrl)
     expect(meta.name).toBe(assetName)
-    expect(meta.reason).toMatch(/exceeds.*byte cap/i)
+    expect(meta.reason).toMatch(/exceeds.*hash budget/i)
   })
 })
