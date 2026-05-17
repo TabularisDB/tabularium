@@ -4,3 +4,4 @@ export { buildSchema, type ExtensionsDelta, type JsonSchemaProperty, type BuildS
 export { validateManifest, type ValidateResult, type ValidateOptions } from './validate'
 export { parseManifest, sniffSource, ParseError, type ManifestSource } from './parse'
 export { fetchSchema, type FetchSchemaOptions } from './fetch-schema'
+export { canonicalize } from './canonical'
