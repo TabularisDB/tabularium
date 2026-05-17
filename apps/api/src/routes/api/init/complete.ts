@@ -90,6 +90,24 @@ export default new Elysia()
         set.status = 500
         return { error: 'config_save_failed', detail: String(e) }
       }
+
+      // Seed the registry signing keypair before the post-install restart, so
+      // the very first webhook ingest after the user finishes the wizard can
+      // sign release-integrity payloads without waiting for the next boot.
+      // `bootNormalMode()` also calls `ensureSigningKey()` on every start (for
+      // upgrades from pre-Phase-2 installs), so this is the install-time
+      // counterpart for fresh deployments.
+      try {
+        const { initSettings } = await import('$lib/settings')
+        await initSettings()
+        const { ensureSigningKey } = await import('$lib/registry-key')
+        await ensureSigningKey()
+      } catch (e) {
+        log.error({ err: String(e) }, 'signing key seed failed')
+        set.status = 500
+        return { error: 'signing_key_seed_failed', detail: String(e) }
+      }
+
       clearBootstrap()
 
       const jwt = await signJwt({

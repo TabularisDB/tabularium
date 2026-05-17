@@ -167,7 +167,12 @@ async function bootNormalMode() {
   await mkdir(diskUploadsRoot(), { recursive: true })
   await initProviderInstances()
 
-  // TODO(integrity): order after ensureSigningKey once Task 7 lands.
+  // Seed/upgrade the registry signing keypair on every boot. Fresh installs
+  // also seed at the end of `/api/init/complete`; this boot-time call covers
+  // upgrades from instances created before Phase 2 shipped Ed25519 signing.
+  const { ensureSigningKey } = await import('$lib/registry-key')
+  await ensureSigningKey()
+
   // Gate: only kick off the backfill when release_assets is behind releases.
   // The admin "Run backfill" button (Task 14) calls backfillReleaseAssets()
   // directly without this gate, so the gate is intentionally here at the
