@@ -4,6 +4,7 @@ import { adminMiddleware } from '$middleware/admin'
 import { db } from '$db'
 import { users } from '$db/schema'
 import { getSetting, setSetting, deleteSetting, hasSetting } from '$lib/settings'
+import { getAssetSizeCap } from '$lib/asset'
 import { recordAudit, actorFromAdmin } from '$lib/audit'
 import {
   getManifestConfig,
@@ -11,6 +12,8 @@ import {
   validateSchemaUrl,
   MANIFEST_DEFAULTS,
 } from '$lib/manifest-config'
+
+const ASSET_SIZE_CAP_MAX_BYTES = 16 * 1024 * 1024 * 1024
 
 const BUCKETS = [
   { id: 'submit', defaultLimit: 10, defaultWindow: 3600 },
@@ -72,6 +75,7 @@ export default new Elysia()
     requireApproval: getSetting('instance.require_approval') === '1',
     rateLimits: await bucketStates(),
     manifest: manifestState(),
+    assetSizeCapBytes: getAssetSizeCap(),
   }), {
     detail: {
       tags: ['Admin'],
@@ -96,6 +100,7 @@ export default new Elysia()
           filesOverridden: t.Boolean(),
           schemaUrlOverridden: t.Boolean(),
         }),
+        assetSizeCapBytes: t.Number(),
       }),
     },
   })
@@ -122,6 +127,14 @@ export default new Elysia()
         await setSetting(`ratelimit.${r.id}.limit`, String(r.limit))
         await setSetting(`ratelimit.${r.id}.window`, String(r.windowSeconds))
       }
+    }
+    if (body.assetSizeCapBytes !== undefined) {
+      const cap = body.assetSizeCapBytes
+      if (!Number.isInteger(cap) || cap <= 0 || cap > ASSET_SIZE_CAP_MAX_BYTES) {
+        set.status = 400
+        return { error: 'assetSizeCapBytes must be a positive integer ≤ 16 GiB' }
+      }
+      await setSetting('registry.asset_size_cap_bytes', String(cap))
     }
     let manifestTouched = false
     if (body.manifestAllowedFiles !== undefined) {
@@ -189,6 +202,7 @@ export default new Elysia()
       }))),
       manifestAllowedFiles: t.Optional(t.Nullable(t.Array(t.String({ maxLength: 60 }), { maxItems: 12 }))),
       manifestSchemaUrl: t.Optional(t.Nullable(t.String({ maxLength: 500 }))),
+      assetSizeCapBytes: t.Optional(t.Number()),
     }),
     response: {
       200: t.Object({ ok: t.Boolean() }),
