@@ -20,7 +20,7 @@ describe('asset_size_cap_bytes setting', () => {
   it('GET /api/admin/instance returns 500 MB default when unset', async () => {
     const app = await buildApp()
     const res = await app.handle(
-      new Request('http://t/api/admin/instance', { headers: await adminCookie() }),
+      new Request('http://localhost/api/admin/instance/', { headers: await adminCookie() }),
     )
     const body = (await res.json()) as { assetSizeCapBytes: number }
     expect(body.assetSizeCapBytes).toBe(500 * 1024 * 1024)
@@ -29,7 +29,7 @@ describe('asset_size_cap_bytes setting', () => {
   it('PUT persists override', async () => {
     const app = await buildApp()
     const res = await app.handle(
-      new Request('http://t/api/admin/instance', {
+      new Request('http://localhost/api/admin/instance/', {
         method: 'PUT',
         headers: { ...(await adminCookie()), 'content-type': 'application/json' },
         body: JSON.stringify({ assetSizeCapBytes: 10_000_000 }),
@@ -42,7 +42,7 @@ describe('asset_size_cap_bytes setting', () => {
   it('rejects non-positive cap', async () => {
     const app = await buildApp()
     const res = await app.handle(
-      new Request('http://t/api/admin/instance', {
+      new Request('http://localhost/api/admin/instance/', {
         method: 'PUT',
         headers: { ...(await adminCookie()), 'content-type': 'application/json' },
         body: JSON.stringify({ assetSizeCapBytes: 0 }),
