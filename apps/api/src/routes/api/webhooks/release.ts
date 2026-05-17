@@ -21,6 +21,7 @@ import { decryptToken } from '$lib/crypto'
 import { resolveManifest, rawContentBase } from '$lib/manifest'
 import { manifestPatch, applyManifestToPlugin } from '$lib/manifest-apply'
 import { parseRepoUrl } from '$lib/providers'
+import { fetchAttestation } from '$lib/attestation'
 
 const ingestLog = logger.child({ module: 'release-ingest' })
 
@@ -191,6 +192,46 @@ export default new Elysia()
               target: [releaseAssets.releaseId, releaseAssets.name],
               set: { url: info.url, size: info.size, sha256: info.sha256 },
             })
+        }
+
+        // GitHub artifact attestation relay — for plugins hosted on a GitHub
+        // (or GHE) instance, look up the sigstore bundle GitHub stores
+        // alongside the build and persist it verbatim into
+        // `release_assets.attestation_bundle`. Non-GitHub providers and
+        // releases without a bundle are silently skipped.
+        const ref = parseRepoUrl(plugin.repoUrl)
+        if (ref && ref.instance.kind === 'github' && hashed.size > 0) {
+          const ownerIdentity = await db.query.identities.findFirst({
+            where: { userId: plugin.ownerId, providerInstanceId: ref.instance.id },
+          })
+          if (ownerIdentity?.accessToken) {
+            const token = decryptToken(ownerIdentity.accessToken)
+            const apiBase = ref.instance.baseUrl === 'https://github.com'
+              ? 'https://api.github.com'
+              : `${ref.instance.baseUrl}/api/v3`
+            for (const [name, info] of hashed) {
+              try {
+                const bundle = await fetchAttestation({
+                  apiBase,
+                  owner: ref.owner,
+                  repo: ref.repo,
+                  sha256: info.sha256,
+                  token,
+                })
+                if (bundle) {
+                  await db
+                    .update(releaseAssets)
+                    .set({ attestationBundle: JSON.stringify(bundle) })
+                    .where(and(eq(releaseAssets.releaseId, current.id), eq(releaseAssets.name, name)))
+                }
+              } catch (err) {
+                ingestLog.warn(
+                  { err, slug: plugin.id, version, name },
+                  'attestation relay failed',
+                )
+              }
+            }
+          }
         }
 
         await cache().del(latestCacheKey(plugin.id))
