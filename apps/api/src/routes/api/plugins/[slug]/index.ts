@@ -6,6 +6,7 @@ import { authMiddleware } from '../../../../middleware/auth'
 import { projectPluginDetail } from '../../../../lib/plugin-projection'
 import { renderMarkdown } from '../../../../lib/markdown'
 import { cache, isString } from '../../../../lib/cache'
+import { buildIntegrity } from '../../../../lib/release-integrity'
 
 const screenshotSchema = t.Object({
   url: t.String(),
@@ -19,6 +20,16 @@ const assetEntrySchema = t.Object({
   sha256: t.Optional(t.String()),
 })
 
+const integritySchema = t.Object({
+  jws: t.String(),
+  assets: t.Array(t.Object({
+    name: t.String(),
+    sha256: t.String(),
+    size: t.Number(),
+    attestation_bundle: t.Any(),
+  })),
+})
+
 const releaseSchema = t.Object({
   id: t.String(),
   pluginId: t.String(),
@@ -26,6 +37,7 @@ const releaseSchema = t.Object({
   minRuntimeVersion: t.Nullable(t.String()),
   assets: t.Record(t.String(), assetEntrySchema),
   createdAt: t.Number(),
+  integrity: t.Nullable(integritySchema),
 })
 
 const pluginDetailSchema = t.Object({
@@ -110,8 +122,16 @@ export default new Elysia()
       }
     }
 
+    const releasesWithIntegrity = await Promise.all(
+      detail.releases.map(async (r) => ({
+        ...r,
+        integrity: await buildIntegrity({ slug: plugin.id, version: r.version }),
+      })),
+    )
+
     return {
       ...detail,
+      releases: releasesWithIntegrity,
       readmeHtml,
       readmeLocale: picked.locale,
       readmeAvailableLocales: picked.available,
