@@ -22,6 +22,7 @@ import { resolveManifest, rawContentBase } from '$lib/manifest'
 import { manifestPatch, applyManifestToPlugin } from '$lib/manifest-apply'
 import { parseRepoUrl } from '$lib/providers'
 import { fetchAttestation } from '$lib/attestation'
+import { recordAudit } from '$lib/audit'
 
 const ingestLog = logger.child({ module: 'release-ingest' })
 
@@ -150,19 +151,31 @@ export default new Elysia()
         // hashed[name] = { sha256, size } — keyed by raw asset.name so we can
         // also upsert per-asset rows into `release_assets` below.
         const hashed = new Map<string, { sha256: string; size: number; url: string }>()
+        // We need the release row early so over-cap audits can target it.
+        const current = await db.query.releases.findFirst({
+          where: { pluginId: plugin.id, version },
+        })
+        if (!current) return
         for (const asset of normalized.assets) {
           const result = await hashAsset(asset.url)
-          if (!result.sha256 || typeof result.size !== 'number') continue
+          if (!result.sha256 || typeof result.size !== 'number') {
+            // Over-cap skips emit an audit entry so operators can trace
+            // why a release came in without one of its expected assets.
+            if (result.reason && /exceeds.*byte cap/i.test(result.reason)) {
+              await recordAudit({
+                action: 'release.asset_skipped',
+                target: `release:${current.id}`,
+                meta: { reason: result.reason, url: asset.url, name: asset.name },
+              })
+            }
+            continue
+          }
           hashed.set(asset.name, { sha256: result.sha256, size: result.size, url: asset.url })
           const platform = inferPlatformKey(asset.name)
           if (platform && fresh[platform]) {
             fresh[platform] = { ...fresh[platform], sha256: result.sha256, size: result.size }
           }
         }
-        const current = await db.query.releases.findFirst({
-          where: { pluginId: plugin.id, version },
-        })
-        if (!current) return
 
         // Keep the legacy JSON-blob in sync (read-only fallback per spec §C.6).
         const merged = parseAssets(current.assets)
