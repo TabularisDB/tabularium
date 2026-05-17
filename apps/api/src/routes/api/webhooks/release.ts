@@ -2,7 +2,7 @@ import { Elysia } from 'elysia'
 import { ulid } from 'ulid'
 import { eq, and } from 'drizzle-orm'
 import { db } from '$db'
-import { plugins, releases } from '$db/schema'
+import { plugins, releases, releaseAssets } from '$db/schema'
 import {
   inferPlatformKey,
   verifyGithubSignature,
@@ -146,14 +146,24 @@ export default new Elysia()
     queueMicrotask(async () => {
       try {
         const fresh: AssetMap = { ...assetMap }
-        for (const [platform, entry] of Object.entries(fresh)) {
-          const result = await hashAsset(entry.url)
-          if (result.sha256) fresh[platform] = { ...entry, sha256: result.sha256, size: result.size }
+        // hashed[name] = { sha256, size } — keyed by raw asset.name so we can
+        // also upsert per-asset rows into `release_assets` below.
+        const hashed = new Map<string, { sha256: string; size: number; url: string }>()
+        for (const asset of normalized.assets) {
+          const result = await hashAsset(asset.url)
+          if (!result.sha256 || typeof result.size !== 'number') continue
+          hashed.set(asset.name, { sha256: result.sha256, size: result.size, url: asset.url })
+          const platform = inferPlatformKey(asset.name)
+          if (platform && fresh[platform]) {
+            fresh[platform] = { ...fresh[platform], sha256: result.sha256, size: result.size }
+          }
         }
         const current = await db.query.releases.findFirst({
           where: { pluginId: plugin.id, version },
         })
         if (!current) return
+
+        // Keep the legacy JSON-blob in sync (read-only fallback per spec §C.6).
         const merged = parseAssets(current.assets)
         for (const [platform, entry] of Object.entries(fresh)) {
           if (entry.sha256) merged[platform] = entry
@@ -162,8 +172,32 @@ export default new Elysia()
           .update(releases)
           .set({ assets: serializeAssets(merged) })
           .where(and(eq(releases.pluginId, plugin.id), eq(releases.version, version)))
+
+        // Persist one row per asset into `release_assets`, upserting by the
+        // `(release_id, name)` unique index so webhook re-deliveries don't
+        // duplicate rows.
+        for (const [name, info] of hashed) {
+          await db
+            .insert(releaseAssets)
+            .values({
+              id: ulid(),
+              releaseId: current.id,
+              name,
+              url: info.url,
+              size: info.size,
+              sha256: info.sha256,
+            })
+            .onConflictDoUpdate({
+              target: [releaseAssets.releaseId, releaseAssets.name],
+              set: { url: info.url, size: info.size, sha256: info.sha256 },
+            })
+        }
+
         await cache().del(latestCacheKey(plugin.id))
-        ingestLog.info({ slug: plugin.id, version, hashed: Object.keys(merged).length }, 'release assets hashed')
+        ingestLog.info(
+          { slug: plugin.id, version, hashed: hashed.size },
+          'release assets hashed',
+        )
       } catch (err) {
         ingestLog.error({ err, slug: plugin.id, version }, 'asset hashing failed')
       }
