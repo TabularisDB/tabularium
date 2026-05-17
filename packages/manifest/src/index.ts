@@ -5,3 +5,4 @@ export { validateManifest, type ValidateResult, type ValidateOptions } from './v
 export { parseManifest, sniffSource, ParseError, type ManifestSource } from './parse'
 export { fetchSchema, type FetchSchemaOptions } from './fetch-schema'
 export { canonicalize } from './canonical'
+export { verifyAssetHash, verifyRegistrySignature, type VerifyAssetHashResult, type VerifyRegistrySignatureInput } from './integrity'
