@@ -93,6 +93,22 @@ export const releases = mysqlTable('releases', {
   uniqueVersion: uniqueIndex('releases_plugin_version').on(t.pluginId, t.version),
 }))
 
+export const releaseAssets = mysqlTable('release_assets', {
+  id: id('id').primaryKey(),
+  releaseId: id('release_id').notNull().references(() => releases.id, { onDelete: 'cascade' }),
+  name: varchar('name', { length: 255 }).notNull(),
+  url: varchar('url', { length: 500 }).notNull(),
+  size: bigint('size', { mode: 'number' }).notNull(),
+  sha256: varchar('sha256', { length: 64 }).notNull(),
+  contentType: varchar('content_type', { length: 120 }),
+  arch: varchar('arch', { length: 40 }),
+  os: varchar('os', { length: 40 }),
+  attestationBundle: text('attestation_bundle'),
+  createdAt: ts('created_at').notNull().$defaultFn(now),
+}, (t) => ({
+  uniqueReleaseName: uniqueIndex('release_assets_release_name').on(t.releaseId, t.name),
+}))
+
 export const pluginRequests = mysqlTable('plugin_requests', {
   id: id('id').primaryKey(),
   slug: varchar('slug', { length: 80 }).notNull().unique(),

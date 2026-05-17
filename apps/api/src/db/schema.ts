@@ -90,6 +90,22 @@ export const releases = sqliteTable('releases', {
   uniqueVersion: uniqueIndex('releases_plugin_version').on(t.pluginId, t.version),
 }))
 
+export const releaseAssets = sqliteTable('release_assets', {
+  id: text('id').primaryKey(),
+  releaseId: text('release_id').notNull().references(() => releases.id, { onDelete: 'cascade' }),
+  name: text('name').notNull(),
+  url: text('url').notNull(),
+  size: integer('size').notNull(),
+  sha256: text('sha256').notNull(),
+  contentType: text('content_type'),
+  arch: text('arch'),
+  os: text('os'),
+  attestationBundle: text('attestation_bundle'),
+  createdAt: integer('created_at').notNull().$defaultFn(now),
+}, (t) => ({
+  uniqueReleaseName: uniqueIndex('release_assets_release_name').on(t.releaseId, t.name),
+}))
+
 export const pluginRequests = sqliteTable('plugin_requests', {
   id: text('id').primaryKey(),
   slug: text('slug').notNull().unique(),
