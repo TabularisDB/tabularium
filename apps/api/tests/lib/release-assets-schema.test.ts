@@ -31,7 +31,7 @@ describe('release_assets schema', () => {
     const base = { releaseId, name: 'plugin.zip', url: 'https://e/p.zip', size: 1, sha256: 'b'.repeat(64) }
     await db.insert(releaseAssets).values({ id: ulid(), ...base })
     await expect(
-      db.insert(releaseAssets).values({ id: ulid(), ...base })
+      (async () => { await db.insert(releaseAssets).values({ id: ulid(), ...base }) })()
     ).rejects.toThrow()
   })
 })

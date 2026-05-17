@@ -18,7 +18,7 @@ export const relations = defineRelations(schema, (r) => ({
   },
   releases: {
     plugin: r.one.plugins({ from: r.releases.pluginId, to: r.plugins.id }),
-    assets: r.many.releaseAssets(),
+    assetRows: r.many.releaseAssets(),
   },
   releaseAssets: {
     release: r.one.releases({ from: r.releaseAssets.releaseId, to: r.releases.id }),
