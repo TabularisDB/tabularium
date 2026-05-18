@@ -7,18 +7,14 @@ describe('authMiddleware', () => {
   beforeEach(clearDb)
 
   it('returns 401 with no token', async () => {
-    const app = new Elysia()
-      .use(authMiddleware)
-      .get('/protected', ({ user }) => ({ user }))
+    const app = new Elysia().use(authMiddleware).get('/protected', ({ user }) => ({ user }))
 
     const res = await app.handle(new Request('http://localhost/protected'))
     expect(res.status).toBe(401)
   })
 
   it('returns 401 with invalid token', async () => {
-    const app = new Elysia()
-      .use(authMiddleware)
-      .get('/protected', ({ user }) => ({ user }))
+    const app = new Elysia().use(authMiddleware).get('/protected', ({ user }) => ({ user }))
 
     const res = await app.handle(
       new Request('http://localhost/protected', {
@@ -37,9 +33,7 @@ describe('authMiddleware', () => {
       providerInstanceId: 'github',
     })
 
-    const app = new Elysia()
-      .use(authMiddleware)
-      .get('/protected', ({ user }) => ({ username: user.username }))
+    const app = new Elysia().use(authMiddleware).get('/protected', ({ user }) => ({ username: user.username }))
 
     const res = await app.handle(
       new Request('http://localhost/protected', {
@@ -94,7 +88,7 @@ describe('GET /auth/me', () => {
       }),
     )
     expect(res.status).toBe(200)
-    const data = await res.json() as { username: string }
+    const data = (await res.json()) as { username: string }
     expect(data.username).toBe(user.username)
   })
 })
@@ -104,9 +98,7 @@ describe('POST /auth/logout', () => {
 
   it('returns ok and clears the auth cookie', async () => {
     const app = await buildApp()
-    const res = await app.handle(
-      new Request('http://localhost/auth/logout', { method: 'POST' }),
-    )
+    const res = await app.handle(new Request('http://localhost/auth/logout', { method: 'POST' }))
     expect(res.status).toBe(200)
     expect(await res.json()).toEqual({ ok: true })
     const setCookie = res.headers.get('set-cookie') ?? ''

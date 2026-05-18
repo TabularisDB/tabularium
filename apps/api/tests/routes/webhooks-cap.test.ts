@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'bun:test'
 import { eq } from 'drizzle-orm'
 import { clearDb, makeUser, makePlugin, buildApp } from '../helpers'
 import { db } from '../../src/db'
-import { auditLog, releaseAssets, releases } from '../../src/db/schema'
+import { auditLog, releaseAssets } from '../../src/db/schema'
 import { setSetting } from '../../src/lib/settings'
 
 async function signPayload(secret: string, body: string) {
@@ -74,10 +74,7 @@ describe('webhook ingest → asset over cap → audit', () => {
     expect(release).toBeTruthy()
 
     // No release_assets row for the skipped asset.
-    const assetRows = await db
-      .select()
-      .from(releaseAssets)
-      .where(eq(releaseAssets.releaseId, release!.id))
+    const assetRows = await db.select().from(releaseAssets).where(eq(releaseAssets.releaseId, release!.id))
     expect(assetRows).toHaveLength(0)
 
     // Exactly one release.asset_skipped audit entry, matching the asset.

@@ -8,9 +8,7 @@ describe('GET /.well-known/registry-key.json', () => {
   it('returns a JWKS with the current key', async () => {
     await ensureSigningKey()
     const app = await buildApp()
-    const res = await app.handle(
-      new Request('http://localhost/.well-known/registry-key.json'),
-    )
+    const res = await app.handle(new Request('http://localhost/.well-known/registry-key.json'))
     expect(res.status).toBe(200)
     expect(res.headers.get('content-type')).toContain('application/jwk-set+json')
     expect(res.headers.get('cache-control')).toBe('public, max-age=300')
@@ -29,9 +27,7 @@ describe('GET /.well-known/registry-key.json', () => {
     await ensureSigningKey()
     await rotateSigningKey()
     const app = await buildApp()
-    const res = await app.handle(
-      new Request('http://localhost/.well-known/registry-key.json'),
-    )
+    const res = await app.handle(new Request('http://localhost/.well-known/registry-key.json'))
     expect(res.status).toBe(200)
     const body = (await res.json()) as {
       keys: Array<{ kid: string }>
@@ -43,9 +39,7 @@ describe('GET /.well-known/registry-key.json', () => {
 
   it('returns 503 when no key is configured yet', async () => {
     const app = await buildApp()
-    const res = await app.handle(
-      new Request('http://localhost/.well-known/registry-key.json'),
-    )
+    const res = await app.handle(new Request('http://localhost/.well-known/registry-key.json'))
     expect(res.status).toBe(503)
     const body = (await res.json()) as { error: string }
     expect(body.error).toBe('signing key not configured')

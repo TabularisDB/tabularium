@@ -19,9 +19,7 @@ describe('asset_size_cap_bytes setting', () => {
 
   it('GET /api/admin/instance returns 500 MB default when unset', async () => {
     const app = await buildApp()
-    const res = await app.handle(
-      new Request('http://localhost/api/admin/instance/', { headers: await adminCookie() }),
-    )
+    const res = await app.handle(new Request('http://localhost/api/admin/instance/', { headers: await adminCookie() }))
     const body = (await res.json()) as { assetSizeCapBytes: number }
     expect(body.assetSizeCapBytes).toBe(500 * 1024 * 1024)
   })

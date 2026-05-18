@@ -1,0 +1,33 @@
+# Lint + format check via Biome (.ts/.js/.json) and Prettier (.svelte).
+# Auto-fix locally with `bun run format`.
+
+name: Lint
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  lint:
+    runs-on: codeberg-small
+    container:
+      image: node:24-bookworm-slim
+    steps:
+      - name: Install bun + git
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends ca-certificates curl unzip git
+          curl -fsSL https://bun.sh/install | bash -s "bun-v1.3.12"
+          echo "$HOME/.bun/bin" >> "$GITHUB_PATH"
+          rm -rf /var/lib/apt/lists/*
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install deps
+        run: bun install --frozen-lockfile
+
+      - name: Lint
+        run: bun run lint

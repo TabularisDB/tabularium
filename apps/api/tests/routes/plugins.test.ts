@@ -12,7 +12,7 @@ describe('GET /api/plugins', () => {
     const app = await buildApp()
     const res = await app.handle(new Request('http://localhost/api/plugins'))
     expect(res.status).toBe(200)
-    const data = await res.json() as { total: number; plugins: unknown[] }
+    const data = (await res.json()) as { total: number; plugins: unknown[] }
     expect(data.total).toBe(0)
     expect(data.plugins).toHaveLength(0)
   })
@@ -24,7 +24,7 @@ describe('GET /api/plugins', () => {
 
     const app = await buildApp()
     const res = await app.handle(new Request('http://localhost/api/plugins?search=duck'))
-    const data = await res.json() as { total: number; plugins: Array<{ id: string }> }
+    const data = (await res.json()) as { total: number; plugins: Array<{ id: string }> }
     expect(data.total).toBe(1)
     expect(data.plugins[0].id).toBe('duckdb')
   })
@@ -34,7 +34,7 @@ describe('GET /api/plugins', () => {
     await makePlugin(user.id, { id: 'duckdb', webhookSecret: 'should-not-leak' })
     const app = await buildApp()
     const res = await app.handle(new Request('http://localhost/api/plugins'))
-    const data = await res.json() as { plugins: Array<Record<string, unknown>> }
+    const data = (await res.json()) as { plugins: Array<Record<string, unknown>> }
     expect(data.plugins[0]).not.toHaveProperty('webhookSecret')
     expect(JSON.stringify(data)).not.toContain('should-not-leak')
   })
@@ -62,7 +62,7 @@ describe('GET /api/plugins/:slug', () => {
     const app = await buildApp()
     const res = await app.handle(new Request(`http://localhost/api/plugins/${plugin.id}`))
     expect(res.status).toBe(200)
-    const data = await res.json() as {
+    const data = (await res.json()) as {
       id: string
       releases: Array<{ version: string; assets: Record<string, { url: string }> }>
     }
@@ -76,9 +76,7 @@ describe('GET /api/plugins/:slug/latest', () => {
 
   it('returns 404 for unknown slug', async () => {
     const app = await buildApp()
-    const res = await app.handle(
-      new Request('http://localhost/api/plugins/nope/latest?os=linux&arch=x64'),
-    )
+    const res = await app.handle(new Request('http://localhost/api/plugins/nope/latest?os=linux&arch=x64'))
     expect(res.status).toBe(404)
   })
 
@@ -93,11 +91,9 @@ describe('GET /api/plugins/:slug/latest', () => {
     })
 
     const app = await buildApp()
-    const res = await app.handle(
-      new Request(`http://localhost/api/plugins/${plugin.id}/latest?os=linux&arch=x64`),
-    )
+    const res = await app.handle(new Request(`http://localhost/api/plugins/${plugin.id}/latest?os=linux&arch=x64`))
     expect(res.status).toBe(200)
-    const data = await res.json() as { version: string; download_url: string }
+    const data = (await res.json()) as { version: string; download_url: string }
     expect(data.version).toBe('1.0.0')
     expect(data.download_url).toBe('https://example.com/linux.zip')
   })
@@ -113,9 +109,7 @@ describe('GET /api/plugins/:slug/latest', () => {
     })
 
     const app = await buildApp()
-    const res = await app.handle(
-      new Request(`http://localhost/api/plugins/${plugin.id}/latest?os=darwin&arch=arm64`),
-    )
+    const res = await app.handle(new Request(`http://localhost/api/plugins/${plugin.id}/latest?os=darwin&arch=arm64`))
     expect(res.status).toBe(422)
   })
 })
@@ -131,7 +125,7 @@ describe('GET /api/plugins ?kind filter', () => {
 
     const app = await buildApp()
     const res = await app.handle(new Request('http://localhost/api/plugins?kind=theme'))
-    const data = await res.json() as { total: number; plugins: Array<{ id: string }> }
+    const data = (await res.json()) as { total: number; plugins: Array<{ id: string }> }
     expect(data.total).toBe(1)
     expect(data.plugins[0].id).toBe('dark')
   })
@@ -141,7 +135,7 @@ describe('GET /api/plugins ?kind filter', () => {
     await makePlugin(user.id, { id: 'dark', tags: JSON.stringify(['theme']) })
     const app = await buildApp()
     const res = await app.handle(new Request('http://localhost/api/plugins?kind=theme'))
-    const data = await res.json() as { total: number }
+    const data = (await res.json()) as { total: number }
     expect(data.total).toBe(0)
   })
 })
@@ -159,7 +153,7 @@ describe('GET /api/plugins facets.kinds', () => {
 
     const app = await buildApp()
     const res = await app.handle(new Request('http://localhost/api/plugins'))
-    const data = await res.json() as { facets: { kinds: Array<{ key: string; count: number }> } }
+    const data = (await res.json()) as { facets: { kinds: Array<{ key: string; count: number }> } }
     const byKey = Object.fromEntries(data.facets.kinds.map((k) => [k.key, k.count]))
     expect(byKey.theme).toBe(2)
     expect(byKey.snippet).toBe(2)
@@ -172,7 +166,7 @@ describe('GET /api/plugins facets.kinds', () => {
 
     const app = await buildApp()
     const res = await app.handle(new Request('http://localhost/api/plugins'))
-    const data = await res.json() as { facets: { kinds: Array<{ key: string }> } }
+    const data = (await res.json()) as { facets: { kinds: Array<{ key: string }> } }
     expect(data.facets.kinds.map((k) => k.key)).toEqual(['theme'])
   })
 })

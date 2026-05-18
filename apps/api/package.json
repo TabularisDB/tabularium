@@ -18,6 +18,7 @@
     "dev": "bash scripts/dev.sh",
     "start": "bun src/index.ts",
     "build": "echo 'no build step — Bun runs TS directly'",
+    "check": "tsc --noEmit",
     "test": "bun test",
     "seed": "bun src/db/seed.ts",
     "migrate": "bun src/db/migrate.ts",

@@ -1,8 +1,10 @@
-# Build and push the Tabularium container image to Codeberg's container registry.
+# Build and push the Tabularium container image to Codeberg's container
+# registry. Runs directly on the lyna host (runs-on: lyna) so it can use
+# the host's docker daemon — drops the buildah/trivy apt-install boilerplate
+# we needed on Codeberg's shared runners.
 #
-# Buildah (rootless, daemonless) on a Node-capable base — Forgejo's
-# actions/checkout requires Node inside the container. Runs on Codeberg's
-# shared `codeberg-small` runner.
+# Trivy CVE scan still runs as a container; image push uses the docker CLI
+# against Codeberg's registry.
 #
 # Secrets:
 #   PACKAGE_TOKEN — a Codeberg access token with `write:package` scope.
@@ -14,70 +16,65 @@ on:
     types: [published]
   workflow_dispatch:
 
-env:
-  STORAGE_DRIVER: vfs
-  BUILDAH_FORMAT: docker
-  BUILDAH_ISOLATION: chroot
-
 jobs:
   build:
-    if: github.event_name == 'release' || github.ref == 'refs/heads/main'
-    runs-on: codeberg-medium
-    container:
-      image: node:24-bookworm-slim
+    if: github.event_name == 'release' || github.ref == 'refs/heads/main' || github.event_name == 'workflow_dispatch'
+    runs-on: lyna
     steps:
-      - name: Install buildah + trivy
-        run: |
-          apt-get update
-          apt-get install -y --no-install-recommends buildah ca-certificates curl gnupg
-          curl -sSL https://aquasecurity.github.io/trivy-repo/deb/public.key | gpg --dearmor -o /usr/share/keyrings/trivy.gpg
-          echo "deb [signed-by=/usr/share/keyrings/trivy.gpg] https://aquasecurity.github.io/trivy-repo/deb bookworm main" > /etc/apt/sources.list.d/trivy.list
-          apt-get update && apt-get install -y --no-install-recommends trivy
-          rm -rf /var/lib/apt/lists/*
-
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Log in to Codeberg Container Registry
-        run: |
-          buildah login \
-            --username "${{ github.repository_owner }}" \
-            --password "${{ secrets.PACKAGE_TOKEN }}" \
-            codeberg.org
-
-      - name: Build image
+      - name: Resolve image + tag
+        id: meta
         run: |
           set -eu
           OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
           IMAGE="codeberg.org/$OWNER/tabularium"
-          VERSION="${{ github.event.release.tag_name }}"
-          VERSION="${VERSION#v}"
-          buildah build \
+          if [ "${{ github.event_name }}" = "release" ]; then
+            VERSION="${{ github.event.release.tag_name }}"
+            VERSION="${VERSION#v}"
+          else
+            VERSION="dev-${GITHUB_SHA:0:7}"
+          fi
+          echo "image=${IMAGE}"     >> "$GITHUB_OUTPUT"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "sha=${GITHUB_SHA}"  >> "$GITHUB_OUTPUT"
+
+      - name: Log in to Codeberg Container Registry
+        run: |
+          echo "${{ secrets.PACKAGE_TOKEN }}" | \
+            docker login codeberg.org -u "${{ github.repository_owner }}" --password-stdin
+
+      - name: Build image
+        run: |
+          docker build \
             -f Dockerfile \
-            -t "$IMAGE:$VERSION" \
-            -t "$IMAGE:latest" \
-            -t "$IMAGE:${{ github.sha }}" \
+            -t "${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.version }}" \
+            -t "${{ steps.meta.outputs.image }}:latest" \
+            -t "${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.sha }}" \
+            --build-arg VERSION="${{ steps.meta.outputs.version }}" \
+            --build-arg REVISION="${{ steps.meta.outputs.sha }}" \
+            --build-arg CREATED="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
             .
 
       - name: Scan image for HIGH/CRITICAL CVEs
         run: |
-          OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
-          IMAGE="codeberg.org/$OWNER/tabularium"
-          VERSION="${{ github.event.release.tag_name }}"
-          VERSION="${VERSION#v}"
-          trivy image \
-            --severity HIGH,CRITICAL \
-            --ignore-unfixed \
-            --exit-code 1 \
-            --no-progress \
-            "$IMAGE:$VERSION"
+          docker run --rm \
+            -v /var/run/docker.sock:/var/run/docker.sock \
+            -v "$PWD/.trivy-cache:/root/.cache/" \
+            aquasec/trivy:latest image \
+              --severity HIGH,CRITICAL \
+              --ignore-unfixed \
+              --exit-code 1 \
+              --no-progress \
+              "${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.version }}"
 
       - name: Push image
         run: |
-          OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
-          IMAGE="codeberg.org/$OWNER/tabularium"
-          VERSION="${{ github.event.release.tag_name }}"
-          VERSION="${VERSION#v}"
-          buildah push "$IMAGE:$VERSION"
-          buildah push "$IMAGE:latest"
-          buildah push "$IMAGE:${{ github.sha }}"
+          docker push "${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.version }}"
+          docker push "${{ steps.meta.outputs.image }}:latest"
+          docker push "${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.sha }}"
+
+      - name: Logout
+        if: always()
+        run: docker logout codeberg.org || true

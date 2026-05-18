@@ -22,7 +22,12 @@ describe('POST /api/submit/oauth', () => {
 
   it('creates plugin when user owns the repo', async () => {
     const user = await makeUser({ username: 'alice' })
-    const token = await signJwt({ sub: user.id, identityId: user.identityId, username: 'alice', providerInstanceId: 'github' })
+    const token = await signJwt({
+      sub: user.id,
+      identityId: user.identityId,
+      username: 'alice',
+      providerInstanceId: 'github',
+    })
 
     const fetchSpy = spyOn(global, 'fetch').mockImplementation((async (url: string | URL | Request) => {
       if (String(url).includes('api.github.com/repos')) {
@@ -46,7 +51,7 @@ describe('POST /api/submit/oauth', () => {
 
     fetchSpy.mockRestore()
     expect(res.status).toBe(200)
-    const data = await res.json() as { slug: string; webhookSecret: string; webhookUrl: string }
+    const data = (await res.json()) as { slug: string; webhookSecret: string; webhookUrl: string }
     expect(data.slug).toBe('mydb')
     expect(data.webhookSecret).toHaveLength(64)
     expect(data.webhookUrl).toContain('/api/webhooks/release')
@@ -57,10 +62,20 @@ describe('POST /api/submit/oauth', () => {
 
   it('removes the matching plugin request on success', async () => {
     const user = await makeUser({ username: 'alice' })
-    const token = await signJwt({ sub: user.id, identityId: user.identityId, username: 'alice', providerInstanceId: 'github' })
+    const token = await signJwt({
+      sub: user.id,
+      identityId: user.identityId,
+      username: 'alice',
+      providerInstanceId: 'github',
+    })
     const requestId = ulid()
     await db.insert(pluginRequests).values({
-      id: requestId, slug: 'mydb', name: 'MyDB', description: 'desc', requesterId: user.id, upvotes: 0,
+      id: requestId,
+      slug: 'mydb',
+      name: 'MyDB',
+      description: 'desc',
+      requesterId: user.id,
+      upvotes: 0,
     })
     await db.insert(pluginRequestClaims).values({ requestId, userId: user.id })
 
@@ -94,11 +109,17 @@ describe('POST /api/submit/oauth', () => {
 
   it('returns 403 when user does not own the repo', async () => {
     const user = await makeUser({ username: 'alice' })
-    const token = await signJwt({ sub: user.id, identityId: user.identityId, username: 'alice', providerInstanceId: 'github' })
+    const token = await signJwt({
+      sub: user.id,
+      identityId: user.identityId,
+      username: 'alice',
+      providerInstanceId: 'github',
+    })
 
-    const fetchSpy = spyOn(global, 'fetch').mockImplementation((async () =>
-      new Response(JSON.stringify({ owner: { login: 'bob' } }), { status: 200 })
-    ) as unknown as typeof fetch)
+    const fetchSpy = spyOn(global, 'fetch').mockImplementation(
+      (async () =>
+        new Response(JSON.stringify({ owner: { login: 'bob' } }), { status: 200 })) as unknown as typeof fetch,
+    )
 
     const app = await buildApp()
     const res = await app.handle(
@@ -115,7 +136,12 @@ describe('POST /api/submit/oauth', () => {
 
   it('keeps submit lenient even when the manifest is invalid', async () => {
     const user = await makeUser({ username: 'alice' })
-    const token = await signJwt({ sub: user.id, identityId: user.identityId, username: 'alice', providerInstanceId: 'github' })
+    const token = await signJwt({
+      sub: user.id,
+      identityId: user.identityId,
+      username: 'alice',
+      providerInstanceId: 'github',
+    })
 
     const fetchSpy = spyOn(global, 'fetch').mockImplementation((async (url: string | URL | Request) => {
       const u = String(url)
@@ -153,7 +179,8 @@ describe('POST /api/submit/oauth', () => {
   })
 
   it('ManifestValidationError carries structured errors usable for downstream surfaces', () => {
-    const { ManifestValidationError, parseManifestText } = require('../../src/lib/manifest') as typeof import('../../src/lib/manifest')
+    const { ManifestValidationError, parseManifestText } =
+      require('../../src/lib/manifest') as typeof import('../../src/lib/manifest')
     try {
       parseManifestText('name: 42\n', 'tabularium.yaml')
       throw new Error('expected throw')
@@ -166,4 +193,3 @@ describe('POST /api/submit/oauth', () => {
     }
   })
 })
-

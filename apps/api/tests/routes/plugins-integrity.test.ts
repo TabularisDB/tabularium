@@ -14,11 +14,15 @@ describe('GET /api/plugins/:slug — integrity field', () => {
     const plugin = await makePlugin(user.id, { status: 'approved', latestVersion: '1.0.0' })
     const releaseId = ulid()
     await db.insert(releases).values({ id: releaseId, pluginId: plugin.id, version: '1.0.0', assets: '{}' })
-    await db.insert(releaseAssets).values({ id: ulid(), releaseId, name: 'p.zip', url: 'https://e/p.zip', size: 100, sha256: 'c'.repeat(64) })
+    await db
+      .insert(releaseAssets)
+      .values({ id: ulid(), releaseId, name: 'p.zip', url: 'https://e/p.zip', size: 100, sha256: 'c'.repeat(64) })
 
     const app = await buildApp()
     const res = await app.handle(new Request(`http://localhost/api/plugins/${plugin.id}`))
-    const body = await res.json() as { releases: Array<{ integrity: { jws: string, assets: Array<{ name: string }> } | null }> }
+    const body = (await res.json()) as {
+      releases: Array<{ integrity: { jws: string; assets: Array<{ name: string }> } | null }>
+    }
     expect(body.releases[0].integrity?.jws.split('.')).toHaveLength(3)
     expect(body.releases[0].integrity?.assets[0].name).toBe('p.zip')
   })
@@ -30,7 +34,7 @@ describe('GET /api/plugins/:slug — integrity field', () => {
     await db.insert(releases).values({ id: ulid(), pluginId: plugin.id, version: '0.9.0', assets: '{}' })
     const app = await buildApp()
     const res = await app.handle(new Request(`http://localhost/api/plugins/${plugin.id}`))
-    const body = await res.json() as { releases: Array<{ integrity: unknown }> }
+    const body = (await res.json()) as { releases: Array<{ integrity: unknown }> }
     expect(body.releases[0].integrity).toBeNull()
   })
 })

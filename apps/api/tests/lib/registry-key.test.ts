@@ -1,11 +1,6 @@
 import { describe, it, expect, beforeEach } from 'bun:test'
 import { clearDb } from '../helpers'
-import {
-  ensureSigningKey,
-  getCurrentPublicJwk,
-  rotateSigningKey,
-  signPayload,
-} from '../../src/lib/registry-key'
+import { ensureSigningKey, getCurrentPublicJwk, rotateSigningKey, signPayload } from '../../src/lib/registry-key'
 import { getSetting } from '../../src/lib/settings'
 
 describe('registry signing key', () => {
@@ -28,9 +23,7 @@ describe('registry signing key', () => {
 
   it('encrypts the private key at rest (TOKEN_ENC_KEY envelope)', async () => {
     await ensureSigningKey()
-    const rows = await (await import('../../src/db')).db
-      .select()
-      .from((await import('../../src/db/schema')).settings)
+    const rows = await (await import('../../src/db')).db.select().from((await import('../../src/db/schema')).settings)
     const priv = rows.find((r) => r.key === 'registry.signing_key.private')!
     expect(priv.encrypted).toBe(1)
   })

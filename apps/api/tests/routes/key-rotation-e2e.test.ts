@@ -17,9 +17,7 @@ describe('key rotation e2e', () => {
 
     // 2. Snapshot key A.
     const app = await buildApp()
-    const beforeJwks = await (
-      await app.handle(new Request('http://localhost/.well-known/registry-key.json'))
-    ).json()
+    const beforeJwks = await (await app.handle(new Request('http://localhost/.well-known/registry-key.json'))).json()
     const kidA = beforeJwks.keys[0].kid
 
     // 3. Rotate.
@@ -28,9 +26,7 @@ describe('key rotation e2e', () => {
     expect(newKid).not.toBe(kidA)
 
     // 4. JWKS now has both — current (B) and previous (A).
-    const afterJwks = await (
-      await app.handle(new Request('http://localhost/.well-known/registry-key.json'))
-    ).json()
+    const afterJwks = await (await app.handle(new Request('http://localhost/.well-known/registry-key.json'))).json()
     expect(afterJwks.keys).toHaveLength(2)
     expect(afterJwks.keys[0].kid).toBe(newKid)
     expect(afterJwks.keys[1].kid).toBe(oldKid)
@@ -65,10 +61,7 @@ describe('key rotation e2e', () => {
     expect(integrity).not.toBeNull()
 
     const currentJwk = await importJWK(afterJwks.keys[0], 'EdDSA')
-    const { payload: newPayload, protectedHeader } = await compactVerify(
-      integrity!.jws,
-      currentJwk,
-    )
+    const { payload: newPayload, protectedHeader } = await compactVerify(integrity!.jws, currentJwk)
     expect(protectedHeader.kid).toBe(newKid)
     expect(JSON.parse(new TextDecoder().decode(newPayload))).toMatchObject({ kid: newKid })
 

@@ -1,0 +1,35 @@
+# Vite production build for the frontend — catches build-time errors that
+# svelte-check doesn't see (asset resolution, CSS bundling, route generation).
+# API has no build step (Bun runs TS directly), so this is frontend-only.
+
+name: Build
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  frontend:
+    runs-on: codeberg-small
+    container:
+      image: node:24-bookworm-slim
+    steps:
+      - name: Install bun + git
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends ca-certificates curl unzip git
+          curl -fsSL https://bun.sh/install | bash -s "bun-v1.3.12"
+          echo "$HOME/.bun/bin" >> "$GITHUB_PATH"
+          rm -rf /var/lib/apt/lists/*
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install deps
+        run: bun install --frozen-lockfile
+
+      - name: Vite build
+        working-directory: apps/frontend
+        run: bun run build

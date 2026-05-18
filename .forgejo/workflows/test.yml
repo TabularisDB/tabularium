@@ -1,0 +1,36 @@
+# Run bun:test across all workspaces that have a test script.
+#
+# Targets `runs-on: codeberg-small` which our lyna self-hosted runner also
+# claims, so jobs run on lyna when available and fall back to Codeberg's
+# shared runners otherwise.
+
+name: Test
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: codeberg-small
+    container:
+      image: node:24-bookworm-slim
+    steps:
+      - name: Install bun + git
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends ca-certificates curl unzip git
+          curl -fsSL https://bun.sh/install | bash -s "bun-v1.3.12"
+          echo "$HOME/.bun/bin" >> "$GITHUB_PATH"
+          rm -rf /var/lib/apt/lists/*
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install deps
+        run: bun install --frozen-lockfile
+
+      - name: Run tests
+        run: bun run test

@@ -2,10 +2,10 @@ import { describe, it, expect, beforeEach, afterEach } from 'bun:test'
 import { eq } from 'drizzle-orm'
 import { clearDb, makeUser, makePlugin, buildApp } from '../helpers'
 import { db } from '../../src/db'
-import { releaseAssets, releases } from '../../src/db/schema'
+import { releaseAssets } from '../../src/db/schema'
 
 async function sha256Hex(bytes: Uint8Array) {
-  const buf = await crypto.subtle.digest('SHA-256', bytes)
+  const buf = await crypto.subtle.digest('SHA-256', bytes as BufferSource)
   return [...new Uint8Array(buf)].map((b) => b.toString(16).padStart(2, '0')).join('')
 }
 

@@ -91,10 +91,7 @@ export async function makeUser(overrides: Partial<TestUser> = {}): Promise<TestU
   return user
 }
 
-export async function makePlugin(
-  ownerId: string,
-  overrides: Partial<typeof schema.plugins.$inferInsert> = {}
-) {
+export async function makePlugin(ownerId: string, overrides: Partial<typeof schema.plugins.$inferInsert> = {}) {
   const plugin = {
     id: 'test-plugin',
     ownerId,

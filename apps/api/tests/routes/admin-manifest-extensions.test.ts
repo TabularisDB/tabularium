@@ -19,7 +19,12 @@ describe('admin manifest extensions', () => {
 
   it('403 for non-admin', async () => {
     const u = await makeUser()
-    const token = await signJwt({ sub: u.id, identityId: u.identityId, username: u.username, providerInstanceId: 'github' })
+    const token = await signJwt({
+      sub: u.id,
+      identityId: u.identityId,
+      username: u.username,
+      providerInstanceId: 'github',
+    })
     const app = await buildApp()
     const res = await app.handle(
       new Request('http://localhost/api/admin/manifest/extensions', {
@@ -38,7 +43,7 @@ describe('admin manifest extensions', () => {
       }),
     )
     expect(res.status).toBe(200)
-    const body = await res.json() as { extensions: Record<string, unknown>; mergedSchema: Record<string, unknown> }
+    const body = (await res.json()) as { extensions: Record<string, unknown>; mergedSchema: Record<string, unknown> }
     expect(body.extensions).toEqual({})
     expect(body.mergedSchema.type).toBe('object')
   })
