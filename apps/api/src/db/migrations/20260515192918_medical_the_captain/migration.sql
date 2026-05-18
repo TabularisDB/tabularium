@@ -1,4 +1,4 @@
-CREATE TABLE `audit_log` (
+CREATE TABLE IF NOT EXISTS `audit_log` (
 	`id` text PRIMARY KEY,
 	`actor_id` text,
 	`actor_name` text,
@@ -10,7 +10,7 @@ CREATE TABLE `audit_log` (
 	CONSTRAINT `fk_audit_log_actor_id_users_id_fk` FOREIGN KEY (`actor_id`) REFERENCES `users`(`id`) ON DELETE SET NULL
 );
 --> statement-breakpoint
-CREATE TABLE `download_events` (
+CREATE TABLE IF NOT EXISTS `download_events` (
 	`id` text PRIMARY KEY,
 	`plugin_id` text NOT NULL,
 	`version` text NOT NULL,
@@ -19,7 +19,7 @@ CREATE TABLE `download_events` (
 	CONSTRAINT `fk_download_events_plugin_id_plugins_id_fk` FOREIGN KEY (`plugin_id`) REFERENCES `plugins`(`id`) ON DELETE CASCADE
 );
 --> statement-breakpoint
-CREATE TABLE `identities` (
+CREATE TABLE IF NOT EXISTS `identities` (
 	`id` text PRIMARY KEY,
 	`user_id` text NOT NULL,
 	`provider_instance_id` text NOT NULL,
@@ -31,7 +31,7 @@ CREATE TABLE `identities` (
 	CONSTRAINT `fk_identities_provider_instance_id_provider_instances_id_fk` FOREIGN KEY (`provider_instance_id`) REFERENCES `provider_instances`(`id`)
 );
 --> statement-breakpoint
-CREATE TABLE `markdown_pages` (
+CREATE TABLE IF NOT EXISTS `markdown_pages` (
 	`slug` text NOT NULL,
 	`locale` text DEFAULT 'en' NOT NULL,
 	`title` text NOT NULL,
@@ -45,7 +45,7 @@ CREATE TABLE `markdown_pages` (
 	CONSTRAINT `markdown_pages_pk` PRIMARY KEY(`slug`, `locale`)
 );
 --> statement-breakpoint
-CREATE TABLE `plugin_request_claims` (
+CREATE TABLE IF NOT EXISTS `plugin_request_claims` (
 	`request_id` text NOT NULL,
 	`user_id` text NOT NULL,
 	`created_at` integer NOT NULL,
@@ -54,7 +54,7 @@ CREATE TABLE `plugin_request_claims` (
 	CONSTRAINT `fk_plugin_request_claims_user_id_users_id_fk` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
 );
 --> statement-breakpoint
-CREATE TABLE `plugin_request_votes` (
+CREATE TABLE IF NOT EXISTS `plugin_request_votes` (
 	`request_id` text NOT NULL,
 	`user_id` text NOT NULL,
 	CONSTRAINT `plugin_request_votes_pk` PRIMARY KEY(`request_id`, `user_id`),
@@ -62,7 +62,7 @@ CREATE TABLE `plugin_request_votes` (
 	CONSTRAINT `fk_plugin_request_votes_user_id_users_id_fk` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`)
 );
 --> statement-breakpoint
-CREATE TABLE `plugin_requests` (
+CREATE TABLE IF NOT EXISTS `plugin_requests` (
 	`id` text PRIMARY KEY,
 	`slug` text NOT NULL UNIQUE,
 	`name` text NOT NULL,
@@ -73,7 +73,7 @@ CREATE TABLE `plugin_requests` (
 	CONSTRAINT `fk_plugin_requests_requester_id_users_id_fk` FOREIGN KEY (`requester_id`) REFERENCES `users`(`id`)
 );
 --> statement-breakpoint
-CREATE TABLE `plugin_transfers` (
+CREATE TABLE IF NOT EXISTS `plugin_transfers` (
 	`id` text PRIMARY KEY,
 	`plugin_id` text NOT NULL,
 	`from_user_id` text NOT NULL,
@@ -88,7 +88,7 @@ CREATE TABLE `plugin_transfers` (
 	CONSTRAINT `fk_plugin_transfers_to_user_id_users_id_fk` FOREIGN KEY (`to_user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
 );
 --> statement-breakpoint
-CREATE TABLE `plugins` (
+CREATE TABLE IF NOT EXISTS `plugins` (
 	`id` text PRIMARY KEY,
 	`owner_id` text NOT NULL,
 	`provider_instance_id` text,
@@ -121,7 +121,7 @@ CREATE TABLE `plugins` (
 	CONSTRAINT `fk_plugins_provider_instance_id_provider_instances_id_fk` FOREIGN KEY (`provider_instance_id`) REFERENCES `provider_instances`(`id`)
 );
 --> statement-breakpoint
-CREATE TABLE `provider_instances` (
+CREATE TABLE IF NOT EXISTS `provider_instances` (
 	`id` text PRIMARY KEY,
 	`kind` text NOT NULL,
 	`display_name` text NOT NULL,
@@ -133,7 +133,7 @@ CREATE TABLE `provider_instances` (
 	`created_at` integer NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE `releases` (
+CREATE TABLE IF NOT EXISTS `releases` (
 	`id` text PRIMARY KEY,
 	`plugin_id` text NOT NULL,
 	`version` text NOT NULL,
@@ -143,7 +143,7 @@ CREATE TABLE `releases` (
 	CONSTRAINT `fk_releases_plugin_id_plugins_id_fk` FOREIGN KEY (`plugin_id`) REFERENCES `plugins`(`id`)
 );
 --> statement-breakpoint
-CREATE TABLE `root_credentials` (
+CREATE TABLE IF NOT EXISTS `root_credentials` (
 	`user_id` text PRIMARY KEY,
 	`email` text NOT NULL UNIQUE,
 	`password_hash` text NOT NULL,
@@ -151,21 +151,21 @@ CREATE TABLE `root_credentials` (
 	CONSTRAINT `fk_root_credentials_user_id_users_id_fk` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE
 );
 --> statement-breakpoint
-CREATE TABLE `settings` (
+CREATE TABLE IF NOT EXISTS `settings` (
 	`key` text PRIMARY KEY,
 	`value` text NOT NULL,
 	`encrypted` integer DEFAULT 0 NOT NULL,
 	`updated_at` integer NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE `users` (
+CREATE TABLE IF NOT EXISTS `users` (
 	`id` text PRIMARY KEY,
 	`display_name` text NOT NULL,
 	`role` text DEFAULT 'user' NOT NULL,
 	`created_at` integer NOT NULL
 );
 --> statement-breakpoint
-CREATE UNIQUE INDEX `download_events_plugin_created` ON `download_events` (`plugin_id`,`created_at`,`id`);--> statement-breakpoint
-CREATE UNIQUE INDEX `identities_instance_external_unique` ON `identities` (`provider_instance_id`,`external_id`);--> statement-breakpoint
-CREATE UNIQUE INDEX `markdown_pages_path_locale` ON `markdown_pages` (`path`,`locale`);--> statement-breakpoint
-CREATE UNIQUE INDEX `releases_plugin_version` ON `releases` (`plugin_id`,`version`);
+CREATE UNIQUE INDEX IF NOT EXISTS `download_events_plugin_created` ON `download_events` (`plugin_id`,`created_at`,`id`);--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS `identities_instance_external_unique` ON `identities` (`provider_instance_id`,`external_id`);--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS `markdown_pages_path_locale` ON `markdown_pages` (`path`,`locale`);--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS `releases_plugin_version` ON `releases` (`plugin_id`,`version`);

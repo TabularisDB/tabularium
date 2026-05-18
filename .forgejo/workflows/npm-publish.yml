@@ -1,0 +1,102 @@
+# Publish a @tabularium/* package to npm.
+#
+# Triggers on tags shaped `<package>-v<semver>` so the two publishable packages
+# can release independently:
+#
+#   manifest-v0.1.0  → publishes packages/manifest
+#   cli-v0.1.0       → publishes packages/cli
+#
+# Also supports workflow_dispatch with an explicit package + version for
+# republishes or first-time pushes from a local tag.
+#
+# Secrets:
+#   NPM_TOKEN — an npm automation token with publish rights on @tabularium/*.
+
+name: npm publish
+
+on:
+  push:
+    tags:
+      - 'manifest-v*'
+      - 'cli-v*'
+  workflow_dispatch:
+    inputs:
+      package:
+        description: 'Package to publish'
+        required: true
+        type: choice
+        options: [manifest, cli]
+      version:
+        description: 'Semver to publish (e.g. 0.1.0). Must match packages/<pkg>/package.json `version`.'
+        required: true
+        type: string
+
+jobs:
+  publish:
+    runs-on: codeberg-small
+    container:
+      image: node:24-bookworm-slim
+    permissions:
+      contents: read
+    steps:
+      - name: Install bun + git
+        run: |
+          apt-get update
+          apt-get install -y --no-install-recommends ca-certificates curl unzip git
+          curl -fsSL https://bun.sh/install | bash -s "bun-v1.3.12"
+          echo "$HOME/.bun/bin" >> "$GITHUB_PATH"
+          rm -rf /var/lib/apt/lists/*
+
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve package + expected version
+        id: pkg
+        run: |
+          set -eu
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            PKG="${{ inputs.package }}"
+            VERSION="${{ inputs.version }}"
+          else
+            TAG="${{ github.ref_name }}"        # e.g. manifest-v0.1.0
+            PKG="${TAG%%-v*}"                   # manifest
+            VERSION="${TAG#${PKG}-v}"           # 0.1.0
+          fi
+          DIR="packages/${PKG}"
+          if [ ! -f "${DIR}/package.json" ]; then
+            echo "::error::${DIR}/package.json not found"; exit 1
+          fi
+          PKG_VERSION=$(node -p "require('./${DIR}/package.json').version")
+          if [ "${PKG_VERSION}" != "${VERSION}" ]; then
+            echo "::error::Tag version (${VERSION}) does not match package.json version (${PKG_VERSION}) in ${DIR}"
+            exit 1
+          fi
+          PKG_NAME=$(node -p "require('./${DIR}/package.json').name")
+          echo "name=${PKG_NAME}"     >> "$GITHUB_OUTPUT"
+          echo "dir=${DIR}"           >> "$GITHUB_OUTPUT"
+          echo "version=${VERSION}"   >> "$GITHUB_OUTPUT"
+
+      - name: Install workspace deps
+        run: bun install --frozen-lockfile
+
+      - name: Run package tests
+        working-directory: ${{ steps.pkg.outputs.dir }}
+        run: bun test
+
+      - name: Build package
+        working-directory: ${{ steps.pkg.outputs.dir }}
+        run: bun run build
+
+      - name: Configure npm auth
+        run: |
+          echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
+        env:
+          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish
+        working-directory: ${{ steps.pkg.outputs.dir }}
+        run: npm publish --access public --provenance=false
+
+      - name: Cleanup npm auth
+        if: always()
+        run: rm -f ~/.npmrc

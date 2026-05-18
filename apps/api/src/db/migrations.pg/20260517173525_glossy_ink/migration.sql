@@ -1,4 +1,4 @@
-CREATE TABLE "release_assets" (
+CREATE TABLE IF NOT EXISTS "release_assets" (
 	"id" text PRIMARY KEY,
 	"release_id" text NOT NULL,
 	"name" text NOT NULL,
@@ -12,5 +12,5 @@ CREATE TABLE "release_assets" (
 	"created_at" bigint NOT NULL
 );
 --> statement-breakpoint
-CREATE UNIQUE INDEX "release_assets_release_name" ON "release_assets" ("release_id","name");--> statement-breakpoint
+CREATE UNIQUE INDEX IF NOT EXISTS "release_assets_release_name" ON "release_assets" ("release_id","name");--> statement-breakpoint
 ALTER TABLE "release_assets" ADD CONSTRAINT "release_assets_release_id_releases_id_fkey" FOREIGN KEY ("release_id") REFERENCES "releases"("id") ON DELETE CASCADE;

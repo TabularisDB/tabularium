@@ -8,6 +8,8 @@ COPY package.json bun.lock turbo.json ./
 COPY apps/api/package.json ./apps/api/
 COPY apps/frontend/package.json ./apps/frontend/
 COPY packages/client/package.json ./packages/client/
+COPY packages/cli/package.json ./packages/cli/
+COPY packages/manifest/package.json ./packages/manifest/
 COPY packages/tsconfig/package.json ./packages/tsconfig/
 COPY vendor ./vendor
 
@@ -24,17 +26,19 @@ WORKDIR /repo
 # Root manifest with frontend removed from workspaces so its deps are not installed
 COPY apps/api/package.json ./apps/api/
 COPY packages/client/package.json ./packages/client/
+COPY packages/manifest/package.json ./packages/manifest/
 COPY packages/tsconfig/package.json ./packages/tsconfig/
 COPY vendor ./vendor
 
-# Synthesize a slim root package.json that only references API + packages workspaces.
-# Drop devDependencies and the frontend workspace so its deps are not installed.
+# Synthesize a slim root package.json that only references API + runtime
+# packages workspaces. Drop devDependencies, the frontend workspace, and the
+# CLI workspace (author-side tool, not loaded at runtime).
 RUN printf '%s\n' \
   '{' \
   '  "name": "tabularis-registry",' \
   '  "private": true,' \
   '  "type": "module",' \
-  '  "workspaces": ["apps/api", "packages/client", "packages/tsconfig"],' \
+  '  "workspaces": ["apps/api", "packages/client", "packages/manifest", "packages/tsconfig"],' \
   '  "overrides": { "elysia": "^1.4.28" },' \
   '  "packageManager": "bun@1.3.12"' \
   '}' > package.json \
@@ -105,6 +109,7 @@ COPY --from=build --chown=app:app /repo/apps/api/scripts ./apps/api/scripts
 COPY --from=build --chown=app:app /repo/apps/api/index.ts ./apps/api/index.ts
 COPY --from=build --chown=app:app /repo/apps/api/tsconfig.json ./apps/api/tsconfig.json
 COPY --from=build --chown=app:app /repo/apps/api/bunfig.toml ./apps/api/bunfig.toml
+COPY --from=build --chown=app:app /repo/packages/manifest/src ./packages/manifest/src
 COPY --from=build --chown=app:app /repo/apps/frontend/dist ./apps/frontend/dist
 
 RUN mkdir -p /app/apps/api/data && chown -R app:app /app/apps/api/data

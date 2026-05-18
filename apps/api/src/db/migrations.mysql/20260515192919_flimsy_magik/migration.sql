@@ -1,4 +1,4 @@
-CREATE TABLE `audit_log` (
+CREATE TABLE IF NOT EXISTS `audit_log` (
 	`id` varchar(64) PRIMARY KEY,
 	`actor_id` varchar(64),
 	`actor_name` varchar(120),
@@ -9,7 +9,7 @@ CREATE TABLE `audit_log` (
 	`created_at` bigint NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE `download_events` (
+CREATE TABLE IF NOT EXISTS `download_events` (
 	`id` varchar(64) PRIMARY KEY,
 	`plugin_id` varchar(64) NOT NULL,
 	`version` varchar(80) NOT NULL,
@@ -18,7 +18,7 @@ CREATE TABLE `download_events` (
 	CONSTRAINT `download_events_plugin_created` UNIQUE INDEX(`plugin_id`,`created_at`,`id`)
 );
 --> statement-breakpoint
-CREATE TABLE `identities` (
+CREATE TABLE IF NOT EXISTS `identities` (
 	`id` varchar(64) PRIMARY KEY,
 	`user_id` varchar(64) NOT NULL,
 	`provider_instance_id` varchar(64) NOT NULL,
@@ -29,7 +29,7 @@ CREATE TABLE `identities` (
 	CONSTRAINT `identities_instance_external_unique` UNIQUE INDEX(`provider_instance_id`,`external_id`)
 );
 --> statement-breakpoint
-CREATE TABLE `markdown_pages` (
+CREATE TABLE IF NOT EXISTS `markdown_pages` (
 	`slug` varchar(80) NOT NULL,
 	`locale` varchar(16) NOT NULL DEFAULT 'en',
 	`title` varchar(120) NOT NULL,
@@ -44,20 +44,20 @@ CREATE TABLE `markdown_pages` (
 	CONSTRAINT `markdown_pages_path_locale` UNIQUE INDEX(`path`,`locale`)
 );
 --> statement-breakpoint
-CREATE TABLE `plugin_request_claims` (
+CREATE TABLE IF NOT EXISTS `plugin_request_claims` (
 	`request_id` varchar(64) NOT NULL,
 	`user_id` varchar(64) NOT NULL,
 	`created_at` bigint NOT NULL,
 	CONSTRAINT PRIMARY KEY(`request_id`,`user_id`)
 );
 --> statement-breakpoint
-CREATE TABLE `plugin_request_votes` (
+CREATE TABLE IF NOT EXISTS `plugin_request_votes` (
 	`request_id` varchar(64) NOT NULL,
 	`user_id` varchar(64) NOT NULL,
 	CONSTRAINT PRIMARY KEY(`request_id`,`user_id`)
 );
 --> statement-breakpoint
-CREATE TABLE `plugin_requests` (
+CREATE TABLE IF NOT EXISTS `plugin_requests` (
 	`id` varchar(64) PRIMARY KEY,
 	`slug` varchar(80) NOT NULL,
 	`name` varchar(120) NOT NULL,
@@ -68,7 +68,7 @@ CREATE TABLE `plugin_requests` (
 	CONSTRAINT `slug_unique` UNIQUE INDEX(`slug`)
 );
 --> statement-breakpoint
-CREATE TABLE `plugin_transfers` (
+CREATE TABLE IF NOT EXISTS `plugin_transfers` (
 	`id` varchar(64) PRIMARY KEY,
 	`plugin_id` varchar(80) NOT NULL,
 	`from_user_id` varchar(64) NOT NULL,
@@ -80,7 +80,7 @@ CREATE TABLE `plugin_transfers` (
 	`responded_at` bigint
 );
 --> statement-breakpoint
-CREATE TABLE `plugins` (
+CREATE TABLE IF NOT EXISTS `plugins` (
 	`id` varchar(80) PRIMARY KEY,
 	`owner_id` varchar(64) NOT NULL,
 	`provider_instance_id` varchar(64),
@@ -111,7 +111,7 @@ CREATE TABLE `plugins` (
 	`updated_at` bigint NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE `provider_instances` (
+CREATE TABLE IF NOT EXISTS `provider_instances` (
 	`id` varchar(64) PRIMARY KEY,
 	`kind` varchar(16) NOT NULL,
 	`display_name` varchar(120) NOT NULL,
@@ -123,7 +123,7 @@ CREATE TABLE `provider_instances` (
 	`created_at` bigint NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE `releases` (
+CREATE TABLE IF NOT EXISTS `releases` (
 	`id` varchar(64) PRIMARY KEY,
 	`plugin_id` varchar(80) NOT NULL,
 	`version` varchar(40) NOT NULL,
@@ -133,7 +133,7 @@ CREATE TABLE `releases` (
 	CONSTRAINT `releases_plugin_version` UNIQUE INDEX(`plugin_id`,`version`)
 );
 --> statement-breakpoint
-CREATE TABLE `root_credentials` (
+CREATE TABLE IF NOT EXISTS `root_credentials` (
 	`user_id` varchar(64) PRIMARY KEY,
 	`email` varchar(320) NOT NULL,
 	`password_hash` text NOT NULL,
@@ -141,14 +141,14 @@ CREATE TABLE `root_credentials` (
 	CONSTRAINT `email_unique` UNIQUE INDEX(`email`)
 );
 --> statement-breakpoint
-CREATE TABLE `settings` (
+CREATE TABLE IF NOT EXISTS `settings` (
 	`key` varchar(120) PRIMARY KEY,
 	`value` text NOT NULL,
 	`encrypted` tinyint NOT NULL DEFAULT 0,
 	`updated_at` bigint NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE `users` (
+CREATE TABLE IF NOT EXISTS `users` (
 	`id` varchar(64) PRIMARY KEY,
 	`display_name` varchar(120) NOT NULL,
 	`role` varchar(16) NOT NULL DEFAULT 'user',

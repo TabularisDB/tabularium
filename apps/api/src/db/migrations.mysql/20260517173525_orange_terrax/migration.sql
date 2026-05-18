@@ -1,4 +1,4 @@
-CREATE TABLE `release_assets` (
+CREATE TABLE IF NOT EXISTS `release_assets` (
 	`id` varchar(64) PRIMARY KEY,
 	`release_id` varchar(64) NOT NULL,
 	`name` varchar(255) NOT NULL,
