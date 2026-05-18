@@ -467,7 +467,7 @@
 	"admin_security_rotate_button": "Rotate signing key",
 	"admin_security_rotate_confirm": "Rotate the registry signing key? The current key moves to the previous slot — signatures it produced will still verify until the next rotation. New releases will be signed with the new key.",
 	"admin_security_rotate_failed": "Failed to rotate signing key",
-	"admin_security_rotate_success": "Signing key rotated. Old kid moved to previous slot.",
+	"admin_security_rotate_success": "Signing key rotated. Previous key moved to verification-only slot.",
 	"admin_security_subtitle": "Release signing key, asset-hash budget, and integrity backfill.",
 	"admin_users_demote": "Demote",
 	"admin_users_display_name": "Display name",
