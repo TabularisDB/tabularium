@@ -21,17 +21,22 @@ type Stats = {
 function isStats(v: unknown): v is Stats {
   if (!v || typeof v !== 'object') return false
   const o = v as Record<string, unknown>
-  return ('stars' in o) && ('forks' in o)
+  return 'stars' in o && 'forks' in o
 }
 
-async function fetchGithubFlavored(apiBase: string, owner: string, repo: string, userAgent: string | null): Promise<Stats | null> {
+async function fetchGithubFlavored(
+  apiBase: string,
+  owner: string,
+  repo: string,
+  userAgent: string | null,
+): Promise<Stats | null> {
   const headers: Record<string, string> = { Accept: 'application/json' }
   if (userAgent) headers['User-Agent'] = userAgent
   const url = `${apiBase}/repos/${owner}/${repo}`
   if (!isPublicHttpUrl(url)) return null
   const res = await fetch(url, { headers, signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) })
   if (!res.ok) return null
-  const data = await res.json() as {
+  const data = (await res.json()) as {
     // GitHub field names
     stargazers_count?: number
     forks_count?: number
@@ -58,7 +63,7 @@ async function fetchGitlab(baseUrl: string, fullName: string): Promise<Stats | n
   if (!isPublicHttpUrl(url)) return null
   const res = await fetch(url, { signal: AbortSignal.timeout(FETCH_TIMEOUT_MS) })
   if (!res.ok) return null
-  const data = await res.json() as {
+  const data = (await res.json()) as {
     star_count?: number
     forks_count?: number
     last_activity_at?: string
@@ -73,8 +78,9 @@ async function fetchGitlab(baseUrl: string, fullName: string): Promise<Stats | n
   }
 }
 
-export default new Elysia()
-  .get('/', async ({ params, set }) => {
+export default new Elysia().get(
+  '/',
+  async ({ params, set }) => {
     const cacheKey = `plugin:stats:${params.slug}`
     const cached = await cache().get<Stats>(cacheKey, isStats)
     if (cached) return cached
@@ -93,9 +99,8 @@ export default new Elysia()
     let stats: Stats | null = null
     try {
       if (ref.instance.kind === 'github') {
-        const apiBase = ref.instance.baseUrl === 'https://github.com'
-          ? 'https://api.github.com'
-          : `${ref.instance.baseUrl}/api/v3`
+        const apiBase =
+          ref.instance.baseUrl === 'https://github.com' ? 'https://api.github.com' : `${ref.instance.baseUrl}/api/v3`
         stats = await fetchGithubFlavored(apiBase, ref.owner, ref.repo, 'tabularium/1.0')
       } else if (ref.instance.kind === 'gitea') {
         stats = await fetchGithubFlavored(`${ref.instance.baseUrl}/api/v1`, ref.owner, ref.repo, null)
@@ -111,11 +116,13 @@ export default new Elysia()
     }
     await cache().set(cacheKey, stats, TTL_SECONDS)
     return stats
-  }, {
+  },
+  {
     detail: {
       tags: ['Plugins'],
       summary: 'Provider stats (stars / forks / last push) for a plugin',
-      description: 'Lazily fetched from the upstream provider and cached for 10 minutes. Returns null fields when the provider is unreachable or the repo is private.',
+      description:
+        'Lazily fetched from the upstream provider and cached for 10 minutes. Returns null fields when the provider is unreachable or the repo is private.',
       operationId: 'getPluginStats',
     },
     params: t.Object({ slug: t.String() }),
@@ -130,4 +137,5 @@ export default new Elysia()
       404: t.Object({ error: t.String() }),
       422: t.Object({ error: t.String() }),
     },
-  })
+  },
+)

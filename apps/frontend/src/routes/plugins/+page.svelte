@@ -123,105 +123,103 @@
 		<CmsPage html={cmsOverride.html} />
 	</div>
 {:else}
-<div class="mx-auto max-w-6xl px-6 py-12 space-y-8">
-	<header class="space-y-2">
-		<h1 class="text-3xl font-semibold tracking-tight">{m.plugins_list_title()}</h1>
-		<p class="text-muted-foreground">{m.plugins_list_subtitle({ total })}</p>
-	</header>
+	<div class="mx-auto max-w-6xl px-6 py-12 space-y-8">
+		<header class="space-y-2">
+			<h1 class="text-3xl font-semibold tracking-tight">{m.plugins_list_title()}</h1>
+			<p class="text-muted-foreground">{m.plugins_list_subtitle({ total })}</p>
+		</header>
 
-	<div class="flex flex-wrap gap-3 items-center">
-		<div class="relative flex-1 min-w-[16rem]">
-			<Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-			<Input bind:value={search} placeholder={m.plugins_list_search_placeholder()} class="pl-9" />
-		</div>
-		<Select bind:value={sort}>
-			<option value="updated">{m.plugins_list_sort_updated()}</option>
-			<option value="new">{m.plugins_list_sort_new()}</option>
-			<option value="name">{m.plugins_list_sort_name()}</option>
-			<option value="featured">{m.plugins_list_sort_featured()}</option>
-		</Select>
-		<label class="flex items-center gap-2 text-sm cursor-pointer">
-			<input type="checkbox" bind:checked={onlyFeatured} class="h-4 w-4 rounded border-input" />
-			<span>{m.plugins_list_featured_only()}</span>
-		</label>
-		{#if hasActiveFilters}
-			<Button variant="ghost" size="sm" onclick={clearFilters}>
-				<X class="h-3.5 w-3.5" />
-				{m.common_clear()}
-			</Button>
-		{/if}
-	</div>
-
-	{#if kindFacet.length > 0}
-		<div class="flex flex-wrap gap-2 items-center">
-			<span class="text-xs text-muted-foreground uppercase tracking-wider mr-1">{m.plugins_list_filter_kinds_label()}</span>
-			{#each kindFacet as k (k.key)}
-				<button
-					type="button"
-					onclick={() => (kind = kind === k.key ? '' : k.key)}
-					aria-pressed={kind === k.key}
-				>
-					<Badge variant={kind === k.key ? 'default' : 'outline'} class="cursor-pointer">
-						{k.label}
-						<span class="ml-1 text-[10px] opacity-70">{k.count}</span>
-					</Badge>
-				</button>
-			{/each}
-		</div>
-	{/if}
-
-	{#if categories.length > 0}
-		<div class="flex flex-wrap items-center gap-2">
-			<span class="text-xs text-muted-foreground uppercase tracking-wider mr-1">{m.plugins_list_categories()}</span>
-			{#each categories as cat (cat.value)}
-				<button
-					type="button"
-					onclick={() => (category = category === cat.value ? '' : cat.value)}
-					class="text-xs"
-					aria-pressed={category === cat.value}
-				>
-					<Badge variant={category === cat.value ? 'default' : 'outline'} class="cursor-pointer">
-						{cat.value} <span class="ml-1 opacity-60">{cat.count}</span>
-					</Badge>
-				</button>
-			{/each}
-		</div>
-	{/if}
-
-	{#if tag}
-		<div class="text-sm">
-			<Badge variant="default" class="gap-1">
-				#{tag}
-				<button type="button" onclick={() => (tag = '')} aria-label={m.plugins_list_clear_tag()} class="-mr-1 ml-1">
-					<X class="h-3 w-3" />
-				</button>
-			</Badge>
-		</div>
-	{/if}
-
-	{#if loading && !plugins}
-		<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-			{#each Array(6) as _}
-				<Skeleton class="h-36 rounded-lg" />
-			{/each}
-		</div>
-	{:else if plugins && plugins.length > 0}
-		<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
-			{#each plugins as p (p.id)}
-				<PluginCard plugin={p} />
-			{/each}
-		</div>
-	{:else}
-		<div class="rounded-lg border border-dashed border-border p-12 text-center space-y-3">
-			<p class="text-muted-foreground">
-				{hasActiveFilters ? m.plugins_list_no_filter_match() : m.plugins_list_empty()}
-			</p>
+		<div class="flex flex-wrap gap-3 items-center">
+			<div class="relative flex-1 min-w-[16rem]">
+				<Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+				<Input bind:value={search} placeholder={m.plugins_list_search_placeholder()} class="pl-9" />
+			</div>
+			<Select bind:value={sort}>
+				<option value="updated">{m.plugins_list_sort_updated()}</option>
+				<option value="new">{m.plugins_list_sort_new()}</option>
+				<option value="name">{m.plugins_list_sort_name()}</option>
+				<option value="featured">{m.plugins_list_sort_featured()}</option>
+			</Select>
+			<label class="flex items-center gap-2 text-sm cursor-pointer">
+				<input type="checkbox" bind:checked={onlyFeatured} class="h-4 w-4 rounded border-input" />
+				<span>{m.plugins_list_featured_only()}</span>
+			</label>
 			{#if hasActiveFilters}
-				<Button variant="outline" size="sm" onclick={clearFilters}>{m.plugins_list_clear_filters()}</Button>
-			{:else}
-				<Button size="sm" href="/submit">{m.plugins_list_submit_first()}</Button>
+				<Button variant="ghost" size="sm" onclick={clearFilters}>
+					<X class="h-3.5 w-3.5" />
+					{m.common_clear()}
+				</Button>
 			{/if}
 		</div>
-	{/if}
-</div>
+
+		{#if kindFacet.length > 0}
+			<div class="flex flex-wrap gap-2 items-center">
+				<span class="text-xs text-muted-foreground uppercase tracking-wider mr-1"
+					>{m.plugins_list_filter_kinds_label()}</span
+				>
+				{#each kindFacet as k (k.key)}
+					<button type="button" onclick={() => (kind = kind === k.key ? '' : k.key)} aria-pressed={kind === k.key}>
+						<Badge variant={kind === k.key ? 'default' : 'outline'} class="cursor-pointer">
+							{k.label}
+							<span class="ml-1 text-[10px] opacity-70">{k.count}</span>
+						</Badge>
+					</button>
+				{/each}
+			</div>
+		{/if}
+
+		{#if categories.length > 0}
+			<div class="flex flex-wrap items-center gap-2">
+				<span class="text-xs text-muted-foreground uppercase tracking-wider mr-1">{m.plugins_list_categories()}</span>
+				{#each categories as cat (cat.value)}
+					<button
+						type="button"
+						onclick={() => (category = category === cat.value ? '' : cat.value)}
+						class="text-xs"
+						aria-pressed={category === cat.value}
+					>
+						<Badge variant={category === cat.value ? 'default' : 'outline'} class="cursor-pointer">
+							{cat.value} <span class="ml-1 opacity-60">{cat.count}</span>
+						</Badge>
+					</button>
+				{/each}
+			</div>
+		{/if}
+
+		{#if tag}
+			<div class="text-sm">
+				<Badge variant="default" class="gap-1">
+					#{tag}
+					<button type="button" onclick={() => (tag = '')} aria-label={m.plugins_list_clear_tag()} class="-mr-1 ml-1">
+						<X class="h-3 w-3" />
+					</button>
+				</Badge>
+			</div>
+		{/if}
+
+		{#if loading && !plugins}
+			<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+				{#each Array(6) as _}
+					<Skeleton class="h-36 rounded-lg" />
+				{/each}
+			</div>
+		{:else if plugins && plugins.length > 0}
+			<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+				{#each plugins as p (p.id)}
+					<PluginCard plugin={p} />
+				{/each}
+			</div>
+		{:else}
+			<div class="rounded-lg border border-dashed border-border p-12 text-center space-y-3">
+				<p class="text-muted-foreground">
+					{hasActiveFilters ? m.plugins_list_no_filter_match() : m.plugins_list_empty()}
+				</p>
+				{#if hasActiveFilters}
+					<Button variant="outline" size="sm" onclick={clearFilters}>{m.plugins_list_clear_filters()}</Button>
+				{:else}
+					<Button size="sm" href="/submit">{m.plugins_list_submit_first()}</Button>
+				{/if}
+			</div>
+		{/if}
+	</div>
 {/if}

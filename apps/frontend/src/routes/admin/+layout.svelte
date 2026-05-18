@@ -99,10 +99,18 @@
 				<ShieldAlert class="h-4 w-4 text-primary" />
 				<span>{activeLabel}</span>
 				{#if pendingCount > 0 && activeLabel !== m.admin_nav_plugins()}
-					<span class="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-warning/20 text-warning text-[10px] font-semibold px-1.5">{pendingCount}</span>
+					<span
+						class="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-warning/20 text-warning text-[10px] font-semibold px-1.5"
+						>{pendingCount}</span
+					>
 				{/if}
 			</div>
-			<button type="button" onclick={() => (drawerOpen = !drawerOpen)} class="inline-flex h-9 w-9 items-center justify-center rounded-md hover:bg-accent" aria-label={m.admin_nav_toggle_menu()}>
+			<button
+				type="button"
+				onclick={() => (drawerOpen = !drawerOpen)}
+				class="inline-flex h-9 w-9 items-center justify-center rounded-md hover:bg-accent"
+				aria-label={m.admin_nav_toggle_menu()}
+			>
 				{#if drawerOpen}<X class="h-4 w-4" />{:else}<Menu class="h-4 w-4" />{/if}
 			</button>
 		</div>
@@ -135,7 +143,10 @@
 							{s.label}
 						</span>
 						{#if s.badge > 0}
-							<span class="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-warning/20 text-warning text-[10px] font-semibold px-1.5">{s.badge}</span>
+							<span
+								class="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-warning/20 text-warning text-[10px] font-semibold px-1.5"
+								>{s.badge}</span
+							>
 						{/if}
 					</a>
 				{/each}
@@ -150,14 +161,26 @@
 	<!-- Mobile drawer -->
 	{#if drawerOpen}
 		<div class="lg:hidden fixed inset-0 z-40 bg-background/80 backdrop-blur-sm" role="dialog" aria-modal="true">
-			<button type="button" class="absolute inset-0" onclick={() => (drawerOpen = false)} aria-label={m.admin_nav_close_menu()}></button>
-			<aside class="relative ml-auto h-full w-72 max-w-[80vw] border-l border-border bg-background p-6 space-y-6 overflow-y-auto">
+			<button
+				type="button"
+				class="absolute inset-0"
+				onclick={() => (drawerOpen = false)}
+				aria-label={m.admin_nav_close_menu()}
+			></button>
+			<aside
+				class="relative ml-auto h-full w-72 max-w-[80vw] border-l border-border bg-background p-6 space-y-6 overflow-y-auto"
+			>
 				<div class="flex items-center justify-between">
 					<div class="flex items-center gap-2 text-sm font-semibold">
 						<ShieldAlert class="h-4 w-4 text-primary" />
 						{m.admin_nav_panel_title()}
 					</div>
-					<button type="button" onclick={() => (drawerOpen = false)} class="inline-flex h-8 w-8 items-center justify-center rounded-md hover:bg-accent" aria-label={m.common_close()}>
+					<button
+						type="button"
+						onclick={() => (drawerOpen = false)}
+						class="inline-flex h-8 w-8 items-center justify-center rounded-md hover:bg-accent"
+						aria-label={m.common_close()}
+					>
 						<X class="h-4 w-4" />
 					</button>
 				</div>
@@ -178,7 +201,10 @@
 								{s.label}
 							</span>
 							{#if s.badge > 0}
-								<span class="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-warning/20 text-warning text-[10px] font-semibold px-1.5">{s.badge}</span>
+								<span
+									class="inline-flex h-5 min-w-5 items-center justify-center rounded-full bg-warning/20 text-warning text-[10px] font-semibold px-1.5"
+									>{s.badge}</span
+								>
 							{/if}
 						</a>
 					{/each}

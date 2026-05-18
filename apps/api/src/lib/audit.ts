@@ -14,7 +14,10 @@ export type AuditEntry = {
   ip?: string | null
 }
 
-export function actorFromAdmin(admin: { id: string; displayName: string }, request: Request): Pick<AuditEntry, 'actorId' | 'actorName' | 'ip'> {
+export function actorFromAdmin(
+  admin: { id: string; displayName: string },
+  request: Request,
+): Pick<AuditEntry, 'actorId' | 'actorName' | 'ip'> {
   return {
     actorId: admin.id,
     actorName: admin.displayName,

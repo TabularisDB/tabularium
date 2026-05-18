@@ -1,7 +1,15 @@
 import type { RepoRef } from './providers'
 import { logger } from './logger'
 import { getManifestConfig } from './manifest-config'
-import { ManifestSchema, type Manifest, type ResolvedManifest, type ReadmeMap, parseManifest, validateManifest, ParseError } from '@tabularium/manifest'
+import {
+  ManifestSchema,
+  type Manifest,
+  type ResolvedManifest,
+  type ReadmeMap,
+  parseManifest,
+  validateManifest,
+  ParseError,
+} from '@tabularium/manifest'
 import { buildMergedSchema } from './manifest-schema'
 import type { ValidationError } from '@tabularium/manifest'
 
@@ -14,7 +22,10 @@ const MAX_README_BYTES = 200 * 1024
 
 export class ManifestValidationError extends Error {
   constructor(public errors: ValidationError[]) {
-    const summary = errors.slice(0, 5).map((e) => `${e.path}: ${e.message}`).join('; ')
+    const summary = errors
+      .slice(0, 5)
+      .map((e) => `${e.path}: ${e.message}`)
+      .join('; ')
     super(`Invalid manifest: ${summary}${errors.length > 5 ? ` (+${errors.length - 5} more)` : ''}`)
     this.name = 'ManifestValidationError'
   }
@@ -26,9 +37,7 @@ export function parseManifestText(text: string, source: ResolvedManifest['source
     parsed = parseManifest(text, source)
   } catch (err) {
     if (err instanceof ParseError) {
-      throw new ManifestValidationError([
-        { path: '/', code: 'parse', message: err.message },
-      ])
+      throw new ManifestValidationError([{ path: '/', code: 'parse', message: err.message }])
     }
     throw err
   }
@@ -43,7 +52,13 @@ export function parseManifestText(text: string, source: ResolvedManifest['source
 
 type FileFetcher = (path: string) => Promise<{ content: string; bytes: number } | null>
 
-function makeGithubFlavoredFetcher(apiBase: string, accessToken: string, ref: RepoRef, branch: string | undefined, userAgent: string | null): FileFetcher {
+function makeGithubFlavoredFetcher(
+  apiBase: string,
+  accessToken: string,
+  ref: RepoRef,
+  branch: string | undefined,
+  userAgent: string | null,
+): FileFetcher {
   return async (path) => {
     const headers: Record<string, string> = {
       Authorization: `Bearer ${accessToken}`,
@@ -75,7 +90,12 @@ function makeGiteaFetcher(apiBase: string, accessToken: string, ref: RepoRef, br
   }
 }
 
-function makeGitlabFetcher(baseUrl: string, accessToken: string, ref: RepoRef, branch: string | undefined): FileFetcher {
+function makeGitlabFetcher(
+  baseUrl: string,
+  accessToken: string,
+  ref: RepoRef,
+  branch: string | undefined,
+): FileFetcher {
   return async (path) => {
     const projectId = encodeURIComponent(ref.fullName)
     const url = `${baseUrl}/api/v4/projects/${projectId}/repository/files/${encodeURIComponent(path)}/raw?ref=${encodeURIComponent(branch ?? 'HEAD')}`
@@ -90,9 +110,7 @@ function makeGitlabFetcher(baseUrl: string, accessToken: string, ref: RepoRef, b
 function fetcherFor(accessToken: string, ref: RepoRef, branch?: string): FileFetcher {
   const { instance } = ref
   if (instance.kind === 'github') {
-    const apiBase = instance.baseUrl === 'https://github.com'
-      ? 'https://api.github.com'
-      : `${instance.baseUrl}/api/v3`
+    const apiBase = instance.baseUrl === 'https://github.com' ? 'https://api.github.com' : `${instance.baseUrl}/api/v3`
     return makeGithubFlavoredFetcher(apiBase, accessToken, ref, branch, 'tabularium/1.0')
   }
   if (instance.kind === 'gitea') {
@@ -111,14 +129,19 @@ function manifestCandidates(): Array<{ path: string; source: ResolvedManifest['s
 export function rawContentBase(ref: RepoRef, branch: string): string {
   const { instance, owner, repo } = ref
   if (instance.kind === 'github') {
-    if (instance.baseUrl === 'https://github.com') return `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/`
+    if (instance.baseUrl === 'https://github.com')
+      return `https://raw.githubusercontent.com/${owner}/${repo}/${branch}/`
     return `${instance.baseUrl}/${owner}/${repo}/raw/${branch}/`
   }
   if (instance.kind === 'gitlab') return `${instance.baseUrl}/${ref.fullName}/-/raw/${branch}/`
   return `${instance.baseUrl}/${owner}/${repo}/raw/${branch}/`
 }
 
-export async function resolveManifest(accessToken: string, ref: RepoRef, options: { ref?: string } = {}): Promise<ResolvedManifest | null> {
+export async function resolveManifest(
+  accessToken: string,
+  ref: RepoRef,
+  options: { ref?: string } = {},
+): Promise<ResolvedManifest | null> {
   const fetch = fetcherFor(accessToken, ref, options.ref)
   for (const candidate of manifestCandidates()) {
     try {

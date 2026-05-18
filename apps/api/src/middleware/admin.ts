@@ -5,8 +5,9 @@ import { logger } from '$lib/logger'
 
 const log = logger.child({ module: 'admin-middleware' })
 
-export const adminMiddleware = new Elysia({ name: 'admin-middleware' })
-  .derive({ as: 'scoped' }, async ({ headers, cookie, set }) => {
+export const adminMiddleware = new Elysia({ name: 'admin-middleware' }).derive(
+  { as: 'scoped' },
+  async ({ headers, cookie, set }) => {
     const authHeader = headers.authorization
     const bearerToken = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined
     const rawCookieValue = cookie.auth?.value
@@ -35,4 +36,5 @@ export const adminMiddleware = new Elysia({ name: 'admin-middleware' })
     }
 
     return { user: jwtUser, admin: row }
-  })
+  },
+)

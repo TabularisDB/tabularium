@@ -38,16 +38,22 @@
 	}
 
 	function emptyByLocale(): Record<Locale, string> {
-		return i18n.availableLocales.reduce((acc, l) => {
-			acc[l] = ''
-			return acc
-		}, {} as Record<Locale, string>)
+		return i18n.availableLocales.reduce(
+			(acc, l) => {
+				acc[l] = ''
+				return acc
+			},
+			{} as Record<Locale, string>,
+		)
 	}
 
 	let form = $state<FormState>({
 		name: '',
-		primaryHex: '#3b82f6', accentHex: '#8b5cf6', successHex: '#10b981',
-		logoUrl: '', faviconUrl: '',
+		primaryHex: '#3b82f6',
+		accentHex: '#8b5cf6',
+		successHex: '#10b981',
+		logoUrl: '',
+		faviconUrl: '',
 		analyticsScript: '',
 		allowIndexing: true,
 		taglines: {} as Record<Locale, string>,
@@ -85,7 +91,12 @@
 	async function load() {
 		try {
 			const { data, error } = await eden.api.admin.branding.get()
-			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
+			if (error)
+				throw new Error(
+					typeof error.value === 'string'
+						? error.value
+						: ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`),
+				)
 			const res = data as { current: LocalizedBranding; defaults: Branding }
 			form = toForm(res.current)
 			defaults = res.defaults
@@ -124,7 +135,12 @@
 				footerTextTranslations,
 			}
 			const { data, error } = await eden.api.admin.branding.put(body)
-			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
+			if (error)
+				throw new Error(
+					typeof error.value === 'string'
+						? error.value
+						: ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`),
+				)
 			const res = data as { ok: boolean; branding: LocalizedBranding }
 			branding.set(res.branding)
 			form = toForm(res.branding)
@@ -136,7 +152,17 @@
 		}
 	}
 
-	function resetField(key: 'name' | 'primaryHex' | 'accentHex' | 'successHex' | 'logoUrl' | 'faviconUrl' | 'analyticsScript' | 'allowIndexing') {
+	function resetField(
+		key:
+			| 'name'
+			| 'primaryHex'
+			| 'accentHex'
+			| 'successHex'
+			| 'logoUrl'
+			| 'faviconUrl'
+			| 'analyticsScript'
+			| 'allowIndexing',
+	) {
 		if (!defaults) return
 		const d = defaults
 		if (key === 'name') form.name = d.name
@@ -179,7 +205,9 @@
 				<Label for="name">{m.admin_branding_instance_name()}</Label>
 				<div class="flex gap-2">
 					<Input id="name" bind:value={form.name} maxlength={60} />
-					<Button variant="ghost" size="sm" onclick={() => resetField('name')} aria-label={m.common_reset()}><RotateCcw class="h-3.5 w-3.5" /></Button>
+					<Button variant="ghost" size="sm" onclick={() => resetField('name')} aria-label={m.common_reset()}
+						><RotateCcw class="h-3.5 w-3.5" /></Button
+					>
 				</div>
 				<p class="text-xs text-muted-foreground">{m.admin_branding_name_note()}</p>
 			</div>
@@ -199,8 +227,12 @@
 				{#each i18n.availableLocales as l (l)}
 					<button
 						type="button"
-						class={['rounded-md border px-2.5 py-1 text-xs transition-colors',
-							activeLocale === l ? 'border-primary text-foreground bg-primary/10' : 'border-border text-muted-foreground hover:bg-accent/50'].join(' ')}
+						class={[
+							'rounded-md border px-2.5 py-1 text-xs transition-colors',
+							activeLocale === l
+								? 'border-primary text-foreground bg-primary/10'
+								: 'border-border text-muted-foreground hover:bg-accent/50',
+						].join(' ')}
 						onclick={() => (activeLocale = l)}
 					>
 						{LOCALE_LABELS[l] ?? l}
@@ -213,8 +245,18 @@
 				{/each}
 			</div>
 			<div class="flex gap-2">
-				<Input bind:value={form.taglines[activeLocale]} maxlength={200} placeholder={activeLocale === i18n.defaultLocale ? defaults?.tagline : m.admin_branding_fallback_placeholder({ locale: LOCALE_LABELS[i18n.defaultLocale] ?? i18n.defaultLocale })} />
-				<Button variant="ghost" size="sm" onclick={() => resetTagline(activeLocale)} aria-label={m.common_reset()}><RotateCcw class="h-3.5 w-3.5" /></Button>
+				<Input
+					bind:value={form.taglines[activeLocale]}
+					maxlength={200}
+					placeholder={activeLocale === i18n.defaultLocale
+						? defaults?.tagline
+						: m.admin_branding_fallback_placeholder({
+								locale: LOCALE_LABELS[i18n.defaultLocale] ?? i18n.defaultLocale,
+							})}
+				/>
+				<Button variant="ghost" size="sm" onclick={() => resetTagline(activeLocale)} aria-label={m.common_reset()}
+					><RotateCcw class="h-3.5 w-3.5" /></Button
+				>
 			</div>
 		</CardContent>
 	</Card>
@@ -222,31 +264,55 @@
 	<Card>
 		<CardHeader>
 			<CardTitle class="text-base">{m.admin_branding_colors()}</CardTitle>
-			<CardDescription>Applied as CSS custom properties (<code class="font-mono">--brand-primary</code>, <code class="font-mono">--brand-accent</code>, <code class="font-mono">--brand-success</code>).</CardDescription>
+			<CardDescription
+				>Applied as CSS custom properties (<code class="font-mono">--brand-primary</code>,
+				<code class="font-mono">--brand-accent</code>, <code class="font-mono">--brand-success</code>).</CardDescription
+			>
 		</CardHeader>
 		<CardContent class="space-y-4">
 			<div class="grid gap-2 max-w-xs">
 				<Label for="primaryHex">{m.admin_branding_primary()}</Label>
 				<div class="flex gap-2 items-center">
-					<input id="primaryHex" type="color" bind:value={form.primaryHex} class="h-9 w-12 rounded-md border border-input bg-card cursor-pointer" />
+					<input
+						id="primaryHex"
+						type="color"
+						bind:value={form.primaryHex}
+						class="h-9 w-12 rounded-md border border-input bg-card cursor-pointer"
+					/>
 					<Input bind:value={form.primaryHex} placeholder="#3b82f6" />
-					<Button variant="ghost" size="sm" onclick={() => resetField('primaryHex')} aria-label={m.common_reset()}><RotateCcw class="h-3.5 w-3.5" /></Button>
+					<Button variant="ghost" size="sm" onclick={() => resetField('primaryHex')} aria-label={m.common_reset()}
+						><RotateCcw class="h-3.5 w-3.5" /></Button
+					>
 				</div>
 			</div>
 			<div class="grid gap-2 max-w-xs">
 				<Label for="accentHex">{m.admin_branding_accent()}</Label>
 				<div class="flex gap-2 items-center">
-					<input id="accentHex" type="color" bind:value={form.accentHex} class="h-9 w-12 rounded-md border border-input bg-card cursor-pointer" />
+					<input
+						id="accentHex"
+						type="color"
+						bind:value={form.accentHex}
+						class="h-9 w-12 rounded-md border border-input bg-card cursor-pointer"
+					/>
 					<Input bind:value={form.accentHex} placeholder="#8b5cf6" />
-					<Button variant="ghost" size="sm" onclick={() => resetField('accentHex')} aria-label={m.common_reset()}><RotateCcw class="h-3.5 w-3.5" /></Button>
+					<Button variant="ghost" size="sm" onclick={() => resetField('accentHex')} aria-label={m.common_reset()}
+						><RotateCcw class="h-3.5 w-3.5" /></Button
+					>
 				</div>
 			</div>
 			<div class="grid gap-2 max-w-xs">
 				<Label for="successHex">{m.admin_branding_success()}</Label>
 				<div class="flex gap-2 items-center">
-					<input id="successHex" type="color" bind:value={form.successHex} class="h-9 w-12 rounded-md border border-input bg-card cursor-pointer" />
+					<input
+						id="successHex"
+						type="color"
+						bind:value={form.successHex}
+						class="h-9 w-12 rounded-md border border-input bg-card cursor-pointer"
+					/>
 					<Input bind:value={form.successHex} placeholder="#10b981" />
-					<Button variant="ghost" size="sm" onclick={() => resetField('successHex')} aria-label={m.common_reset()}><RotateCcw class="h-3.5 w-3.5" /></Button>
+					<Button variant="ghost" size="sm" onclick={() => resetField('successHex')} aria-label={m.common_reset()}
+						><RotateCcw class="h-3.5 w-3.5" /></Button
+					>
 				</div>
 			</div>
 		</CardContent>
@@ -261,7 +327,9 @@
 				<Label for="logo">{m.admin_branding_logo_url()}</Label>
 				<div class="flex gap-2">
 					<Input id="logo" bind:value={form.logoUrl} placeholder="https://example.com/logo.svg" />
-					<Button variant="ghost" size="sm" onclick={() => resetField('logoUrl')} aria-label={m.common_reset()}><RotateCcw class="h-3.5 w-3.5" /></Button>
+					<Button variant="ghost" size="sm" onclick={() => resetField('logoUrl')} aria-label={m.common_reset()}
+						><RotateCcw class="h-3.5 w-3.5" /></Button
+					>
 				</div>
 				<p class="text-xs text-muted-foreground">{m.admin_branding_logo_note()}</p>
 			</div>
@@ -269,7 +337,9 @@
 				<Label for="favicon">{m.admin_branding_favicon_url()}</Label>
 				<div class="flex gap-2">
 					<Input id="favicon" bind:value={form.faviconUrl} placeholder="https://example.com/favicon.ico" />
-					<Button variant="ghost" size="sm" onclick={() => resetField('faviconUrl')} aria-label={m.common_reset()}><RotateCcw class="h-3.5 w-3.5" /></Button>
+					<Button variant="ghost" size="sm" onclick={() => resetField('faviconUrl')} aria-label={m.common_reset()}
+						><RotateCcw class="h-3.5 w-3.5" /></Button
+					>
 				</div>
 			</div>
 		</CardContent>
@@ -289,8 +359,12 @@
 					{#each i18n.availableLocales as l (l)}
 						<button
 							type="button"
-							class={['rounded-md border px-2.5 py-1 text-xs transition-colors',
-								activeLocale === l ? 'border-primary text-foreground bg-primary/10' : 'border-border text-muted-foreground hover:bg-accent/50'].join(' ')}
+							class={[
+								'rounded-md border px-2.5 py-1 text-xs transition-colors',
+								activeLocale === l
+									? 'border-primary text-foreground bg-primary/10'
+									: 'border-border text-muted-foreground hover:bg-accent/50',
+							].join(' ')}
 							onclick={() => (activeLocale = l)}
 						>
 							{LOCALE_LABELS[l] ?? l}
@@ -303,8 +377,18 @@
 					{/each}
 				</div>
 				<div class="flex gap-2">
-					<Input bind:value={form.footers[activeLocale]} maxlength={1000} placeholder={activeLocale === i18n.defaultLocale ? '© 2026 Example Inc.' : m.admin_branding_fallback_placeholder({ locale: LOCALE_LABELS[i18n.defaultLocale] ?? i18n.defaultLocale })} />
-					<Button variant="ghost" size="sm" onclick={() => resetFooter(activeLocale)} aria-label={m.common_reset()}><RotateCcw class="h-3.5 w-3.5" /></Button>
+					<Input
+						bind:value={form.footers[activeLocale]}
+						maxlength={1000}
+						placeholder={activeLocale === i18n.defaultLocale
+							? '© 2026 Example Inc.'
+							: m.admin_branding_fallback_placeholder({
+									locale: LOCALE_LABELS[i18n.defaultLocale] ?? i18n.defaultLocale,
+								})}
+					/>
+					<Button variant="ghost" size="sm" onclick={() => resetFooter(activeLocale)} aria-label={m.common_reset()}
+						><RotateCcw class="h-3.5 w-3.5" /></Button
+					>
 				</div>
 			</div>
 

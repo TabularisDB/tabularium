@@ -41,7 +41,11 @@
 	let recent = $state<AdminPluginRow[]>([])
 	let audit = $state<AuditEntry[]>([])
 	let loading = $state(true)
-	let health = $state<{ ok: boolean; uptimeSeconds: number; checks: Record<string, { ok: boolean; detail?: string }> } | null>(null)
+	let health = $state<{
+		ok: boolean
+		uptimeSeconds: number
+		checks: Record<string, { ok: boolean; detail?: string }>
+	} | null>(null)
 
 	onMount(async () => {
 		try {
@@ -111,7 +115,9 @@
 				<Plug class="h-4 w-4 text-muted-foreground" />
 			</div>
 			<div class="text-3xl font-semibold tracking-tight">{loading ? '—' : counts.providers}</div>
-			<div class="text-xs text-muted-foreground">{m.admin_overview_providers_enabled({ count: counts.providersEnabled })}</div>
+			<div class="text-xs text-muted-foreground">
+				{m.admin_overview_providers_enabled({ count: counts.providersEnabled })}
+			</div>
 		</CardContent>
 	</Card>
 	<Card>
@@ -142,7 +148,9 @@
 					<AlertTriangle class={`h-4 w-4 ${counts.pluginsPending > 0 ? 'text-warning' : 'text-muted-foreground'}`} />
 				</div>
 				<div class="text-3xl font-semibold tracking-tight">{loading ? '—' : counts.pluginsPending}</div>
-				<div class="text-xs text-muted-foreground">{m.admin_overview_pending_rejected({ count: counts.pluginsRejected })}</div>
+				<div class="text-xs text-muted-foreground">
+					{m.admin_overview_pending_rejected({ count: counts.pluginsRejected })}
+				</div>
 			</CardContent>
 		</Card>
 	</a>
@@ -165,7 +173,10 @@
 						<li class="flex items-center justify-between gap-3">
 							<a href={`/admin/plugins?slug=${p.id}`} class="truncate hover:text-primary">{p.name}</a>
 							<div class="flex items-center gap-2 flex-shrink-0">
-								<Badge variant={p.status === 'approved' ? 'default' : p.status === 'pending' ? 'secondary' : 'destructive'} class="text-[10px]">{p.status}</Badge>
+								<Badge
+									variant={p.status === 'approved' ? 'default' : p.status === 'pending' ? 'secondary' : 'destructive'}
+									class="text-[10px]">{p.status}</Badge
+								>
 								<span class="text-xs text-muted-foreground">{relative(p.updatedAt)}</span>
 							</div>
 						</li>
@@ -193,7 +204,9 @@
 								<span class="font-mono text-xs text-muted-foreground">{e.action}</span>
 								{#if e.target}<span class="text-xs text-muted-foreground"> · {e.target}</span>{/if}
 							</div>
-							<span class="text-xs text-muted-foreground flex-shrink-0">{e.actorName ?? '—'} · {relative(e.createdAt)}</span>
+							<span class="text-xs text-muted-foreground flex-shrink-0"
+								>{e.actorName ?? '—'} · {relative(e.createdAt)}</span
+							>
 						</li>
 					{/each}
 				</ul>
@@ -210,15 +223,21 @@
 					<Activity class="h-4 w-4" />
 					{m.admin_overview_system_health()}
 				</h2>
-				<Badge variant={health.ok ? 'default' : 'destructive'}>{health.ok ? m.admin_overview_health_ok() : m.admin_overview_health_degraded()}</Badge>
+				<Badge variant={health.ok ? 'default' : 'destructive'}
+					>{health.ok ? m.admin_overview_health_ok() : m.admin_overview_health_degraded()}</Badge
+				>
 			</div>
-			<div class="text-xs text-muted-foreground">{m.admin_overview_uptime({ minutes: Math.floor(health.uptimeSeconds / 60) })}</div>
+			<div class="text-xs text-muted-foreground">
+				{m.admin_overview_uptime({ minutes: Math.floor(health.uptimeSeconds / 60) })}
+			</div>
 			<div class="grid grid-cols-1 sm:grid-cols-3 gap-2 text-sm">
 				{#each Object.entries(health.checks) as [name, check] (name)}
 					<div class="rounded-md border border-border bg-card/50 px-3 py-2">
 						<div class="flex items-center justify-between">
 							<span class="text-xs uppercase tracking-wider text-muted-foreground">{name}</span>
-							<Badge variant={check.ok ? 'default' : 'destructive'} class="text-[10px]">{check.ok ? m.admin_overview_check_ok() : m.admin_overview_check_fail()}</Badge>
+							<Badge variant={check.ok ? 'default' : 'destructive'} class="text-[10px]"
+								>{check.ok ? m.admin_overview_check_ok() : m.admin_overview_check_fail()}</Badge
+							>
 						</div>
 						{#if check.detail}<div class="text-[10px] text-muted-foreground mt-1 font-mono">{check.detail}</div>{/if}
 					</div>

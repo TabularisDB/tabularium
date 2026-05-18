@@ -3,10 +3,7 @@ import { parseManifest, ParseError } from '../src/index'
 
 describe('parseManifest', () => {
   it('parses a YAML manifest', () => {
-    const parsed = parseManifest(
-      'name: My Plugin\nkind: theme\n',
-      'tabularium.yaml',
-    )
+    const parsed = parseManifest('name: My Plugin\nkind: theme\n', 'tabularium.yaml')
     expect(parsed.name).toBe('My Plugin')
     expect(parsed.kind).toBe('theme')
   })
@@ -18,10 +15,7 @@ describe('parseManifest', () => {
   })
 
   it('strips authored $schema (IDE hint, not data)', () => {
-    const parsed = parseManifest(
-      '$schema: https://example/schema.json\nname: X\n',
-      'tabularium.yaml',
-    )
+    const parsed = parseManifest('$schema: https://example/schema.json\nname: X\n', 'tabularium.yaml')
     expect((parsed as Record<string, unknown>).$schema).toBeUndefined()
     expect(parsed.name).toBe('X')
   })

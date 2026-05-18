@@ -72,7 +72,8 @@
 			<CardDescription>
 				{m.admin_instance_approval_subtitle_prefix()} <code class="font-mono">pending</code>
 				{m.admin_instance_approval_subtitle_middle()}
-				<code class="font-mono">423</code> {m.admin_instance_approval_subtitle_suffix()}
+				<code class="font-mono">423</code>
+				{m.admin_instance_approval_subtitle_suffix()}
 				<a href="/admin/plugins" class="text-primary hover:underline">{m.admin_instance_plugins_link()}</a>.
 			</CardDescription>
 		</CardHeader>

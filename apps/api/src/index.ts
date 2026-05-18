@@ -62,7 +62,10 @@ export async function createApp() {
       if (url.pathname !== '/openapi/json') return
       if (!(response instanceof Response)) return
       try {
-        const spec = await response.clone().json() as { paths?: Record<string, unknown>; tags?: Array<{ name: string }> }
+        const spec = (await response.clone().json()) as {
+          paths?: Record<string, unknown>
+          tags?: Array<{ name: string }>
+        }
         const filteredPaths: Record<string, unknown> = {}
         for (const [p, v] of Object.entries(spec.paths ?? {})) {
           if (p.includes('/admin/') || p.includes('/init/') || p.includes('/uploads/') || p === '/*') continue
@@ -88,14 +91,23 @@ export async function createApp() {
     return base
       .use(staticPlugin({ assets: diskUploadsRoot(), prefix: '/uploads', alwaysStatic: false }))
       .use(staticPlugin({ assets: resolve('../frontend/dist'), prefix: '/' }))
-      .get('/*', ({ path, set }) => {
-        if (path.startsWith('/api') || path.startsWith('/auth') || path.startsWith('/openapi') || path.startsWith('/uploads')) {
-          set.status = 404
-          return { error: 'Not found' }
-        }
-        set.headers['content-type'] = 'text/html; charset=utf-8'
-        return Bun.file(resolve('../frontend/dist/index.html'))
-      }, { detail: { hide: true } })
+      .get(
+        '/*',
+        ({ path, set }) => {
+          if (
+            path.startsWith('/api') ||
+            path.startsWith('/auth') ||
+            path.startsWith('/openapi') ||
+            path.startsWith('/uploads')
+          ) {
+            set.status = 404
+            return { error: 'Not found' }
+          }
+          set.headers['content-type'] = 'text/html; charset=utf-8'
+          return Bun.file(resolve('../frontend/dist/index.html'))
+        },
+        { detail: { hide: true } },
+      )
   }
 
   return base
@@ -109,10 +121,14 @@ export async function createApp() {
       }
     })
     .use(staticPlugin({ assets: resolve('../frontend/dist'), prefix: '/' }))
-    .get('/*', ({ set }) => {
-      set.headers['content-type'] = 'text/html; charset=utf-8'
-      return Bun.file(resolve('../frontend/dist/index.html'))
-    }, { detail: { hide: true } })
+    .get(
+      '/*',
+      ({ set }) => {
+        set.headers['content-type'] = 'text/html; charset=utf-8'
+        return Bun.file(resolve('../frontend/dist/index.html'))
+      },
+      { detail: { hide: true } },
+    )
 }
 
 export type App = Awaited<ReturnType<typeof createApp>>
@@ -203,7 +219,10 @@ async function bootNormalMode() {
 
   const app = (await createApp()).listen(port)
   const runningPort = app.server?.port
-  logger.info({ module: 'boot', mode: 'normal', port: runningPort }, `registry running on http://localhost:${runningPort}`)
+  logger.info(
+    { module: 'boot', mode: 'normal', port: runningPort },
+    `registry running on http://localhost:${runningPort}`,
+  )
   logger.info({ module: 'boot' }, `OpenAPI spec: http://localhost:${runningPort}/openapi/json`)
   logger.info({ module: 'boot' }, `OpenAPI UI:   http://localhost:${runningPort}/openapi`)
 }

@@ -2,16 +2,18 @@ import { Elysia, t } from 'elysia'
 import { bootstrapAuthMiddleware } from '$middleware/bootstrap-auth'
 import { probeDatabase } from '$lib/db-probe'
 
-export default new Elysia()
-  .use(bootstrapAuthMiddleware)
-  .post('/', async ({ body }) => {
+export default new Elysia().use(bootstrapAuthMiddleware).post(
+  '/',
+  async ({ body }) => {
     const result = await probeDatabase(body.url)
     return result
-  }, {
+  },
+  {
     detail: {
       tags: ['Auth'],
       summary: 'Probe a database URL during install',
-      description: 'Tries to connect to the given URL and run SELECT 1. Reports the detected dialect either way. Bootstrap-only.',
+      description:
+        'Tries to connect to the given URL and run SELECT 1. Reports the detected dialect either way. Bootstrap-only.',
       operationId: 'initTestDb',
     },
     body: t.Object({
@@ -31,4 +33,5 @@ export default new Elysia()
       ]),
       401: t.Object({ error: t.String() }),
     },
-  })
+  },
+)

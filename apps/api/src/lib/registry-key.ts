@@ -57,12 +57,7 @@ async function generateNewKey(): Promise<{
   return { publicJwk, privateJwk, kid }
 }
 
-async function writeCurrentKey(
-  publicJwk: JWK,
-  privateJwk: JWK,
-  kid: string,
-  createdAt: number,
-): Promise<void> {
+async function writeCurrentKey(publicJwk: JWK, privateJwk: JWK, kid: string, createdAt: number): Promise<void> {
   await setSetting(KEYS.publicJwk, JSON.stringify(publicJwk))
   await setSetting(KEYS.privateJwk, JSON.stringify(privateJwk), { encrypted: true })
   await setSetting(KEYS.kid, kid)
@@ -150,7 +145,5 @@ export async function signPayload(payload: unknown): Promise<string> {
   const key = await importJWK(privateJwk, ALG)
   const canonical = canonicalize(payload)
   const bytes = new TextEncoder().encode(canonical)
-  return await new CompactSign(bytes)
-    .setProtectedHeader({ alg: ALG, kid })
-    .sign(key)
+  return await new CompactSign(bytes).setProtectedHeader({ alg: ALG, kid }).sign(key)
 }

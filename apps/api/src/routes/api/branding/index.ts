@@ -24,19 +24,24 @@ const brandingSchema = t.Object({
   allowIndexing: t.Boolean(),
 })
 
-export default new Elysia()
-  .get('/', ({ query }) => {
-    const locale = (typeof query.locale === 'string' && (SUPPORTED_LOCALES as readonly string[]).includes(query.locale))
-      ? (query.locale as Locale)
-      : undefined
+export default new Elysia().get(
+  '/',
+  ({ query }) => {
+    const locale =
+      typeof query.locale === 'string' && (SUPPORTED_LOCALES as readonly string[]).includes(query.locale)
+        ? (query.locale as Locale)
+        : undefined
     return getBranding(locale)
-  }, {
+  },
+  {
     detail: {
       tags: ['Plugins'],
       summary: 'Get instance branding (whitelabel)',
-      description: 'Public read-only endpoint. Pass `?locale=` to fetch the tagline/footer in a specific language (falls back to default locale).',
+      description:
+        'Public read-only endpoint. Pass `?locale=` to fetch the tagline/footer in a specific language (falls back to default locale).',
       operationId: 'getBranding',
     },
     query: t.Object({ locale: t.Optional(localeSchema) }),
     response: { 200: brandingSchema },
-  })
+  },
+)

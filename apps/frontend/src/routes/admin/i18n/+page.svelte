@@ -35,10 +35,13 @@
 			const cfg = data as I18nConfig
 			available = cfg.availableLocales
 			defaultLocale = cfg.defaultLocale
-			enabled = available.reduce((acc, l) => {
-				acc[l] = cfg.enabledLocales.includes(l)
-				return acc
-			}, {} as Record<Locale, boolean>)
+			enabled = available.reduce(
+				(acc, l) => {
+					acc[l] = cfg.enabledLocales.includes(l)
+					return acc
+				},
+				{} as Record<Locale, boolean>,
+			)
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : m.admin_i18n_load_failed())
 		} finally {
@@ -98,7 +101,9 @@
 				<Label for="default-locale">{m.admin_i18n_default_label()}</Label>
 				<Select id="default-locale" bind:value={defaultLocale}>
 					{#each available as l (l)}
-						<option value={l} disabled={!enabled[l]}>{LOCALE_LABELS[l] ?? l}{enabled[l] ? '' : m.admin_i18n_disabled_suffix()}</option>
+						<option value={l} disabled={!enabled[l]}
+							>{LOCALE_LABELS[l] ?? l}{enabled[l] ? '' : m.admin_i18n_disabled_suffix()}</option
+						>
 					{/each}
 				</Select>
 			</div>
@@ -126,7 +131,9 @@
 								disabled={l === defaultLocale}
 								aria-label={m.admin_i18n_enable_aria({ name: LOCALE_LABELS[l] ?? l })}
 							/>
-							<span class="text-muted-foreground">{enabled[l] ? m.admin_i18n_enabled_state() : m.admin_i18n_disabled_state()}</span>
+							<span class="text-muted-foreground"
+								>{enabled[l] ? m.admin_i18n_enabled_state() : m.admin_i18n_disabled_state()}</span
+							>
 						</label>
 					</li>
 				{/each}

@@ -19,11 +19,7 @@ export function inferPlatformKey(filename: string): string | null {
 
 const MIN_WEBHOOK_SECRET_LEN = 32
 
-export async function verifyGithubSignature(
-  secret: string,
-  body: Buffer,
-  signature: string,
-): Promise<boolean> {
+export async function verifyGithubSignature(secret: string, body: Buffer, signature: string): Promise<boolean> {
   if (!secret || secret.length < MIN_WEBHOOK_SECRET_LEN) return false
   if (!signature?.startsWith('sha256=')) return false
   const hasher = new Bun.CryptoHasher('sha256', secret)

@@ -145,7 +145,11 @@
 					<div class="flex items-center justify-between">
 						<Label>{m.admin_manifest_allowed_files()}</Label>
 						{#if filesOverridden}
-							<button type="button" class="text-xs text-muted-foreground hover:text-foreground underline" onclick={resetFilesToDefaults}>
+							<button
+								type="button"
+								class="text-xs text-muted-foreground hover:text-foreground underline"
+								onclick={resetFilesToDefaults}
+							>
 								{m.admin_manifest_reset_to_defaults()}
 							</button>
 						{/if}

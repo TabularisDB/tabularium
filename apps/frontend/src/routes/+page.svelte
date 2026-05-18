@@ -76,7 +76,9 @@
 	<section class="hero-grid border-b border-border">
 		<div class="mx-auto max-w-6xl px-6 py-24 sm:py-32 text-center">
 			{#if homeCopy.eyebrow.enabled}
-				<div class="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-xs text-muted-foreground mb-8">
+				<div
+					class="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-xs text-muted-foreground mb-8"
+				>
 					<Sparkles class="h-3 w-3 text-primary" />
 					{homeCopy.pick(homeCopy.eyebrow.text, i18n.current) ?? m.home_eyebrow()}
 				</div>
@@ -129,18 +131,30 @@
 			<div class="mx-auto max-w-6xl px-6 py-12 grid gap-8 md:grid-cols-3">
 				<div class="space-y-2">
 					<Cable class="h-5 w-5 text-primary" />
-					<h3 class="font-semibold tracking-tight">{homeCopy.pick(homeCopy.features.dropin.title, i18n.current) ?? m.home_feature_dropin_title()}</h3>
-					<p class="text-sm text-muted-foreground">{homeCopy.pick(homeCopy.features.dropin.body, i18n.current) ?? m.home_feature_dropin_body()}</p>
+					<h3 class="font-semibold tracking-tight">
+						{homeCopy.pick(homeCopy.features.dropin.title, i18n.current) ?? m.home_feature_dropin_title()}
+					</h3>
+					<p class="text-sm text-muted-foreground">
+						{homeCopy.pick(homeCopy.features.dropin.body, i18n.current) ?? m.home_feature_dropin_body()}
+					</p>
 				</div>
 				<div class="space-y-2">
 					<Boxes class="h-5 w-5 text-primary" />
-					<h3 class="font-semibold tracking-tight">{homeCopy.pick(homeCopy.features.providers.title, i18n.current) ?? m.home_feature_providers_title()}</h3>
-					<p class="text-sm text-muted-foreground">{homeCopy.pick(homeCopy.features.providers.body, i18n.current) ?? m.home_feature_providers_body()}</p>
+					<h3 class="font-semibold tracking-tight">
+						{homeCopy.pick(homeCopy.features.providers.title, i18n.current) ?? m.home_feature_providers_title()}
+					</h3>
+					<p class="text-sm text-muted-foreground">
+						{homeCopy.pick(homeCopy.features.providers.body, i18n.current) ?? m.home_feature_providers_body()}
+					</p>
 				</div>
 				<div class="space-y-2">
 					<Sparkles class="h-5 w-5 text-primary" />
-					<h3 class="font-semibold tracking-tight">{homeCopy.pick(homeCopy.features.release.title, i18n.current) ?? m.home_feature_release_title()}</h3>
-					<p class="text-sm text-muted-foreground">{homeCopy.pick(homeCopy.features.release.body, i18n.current) ?? m.home_feature_release_body()}</p>
+					<h3 class="font-semibold tracking-tight">
+						{homeCopy.pick(homeCopy.features.release.title, i18n.current) ?? m.home_feature_release_title()}
+					</h3>
+					<p class="text-sm text-muted-foreground">
+						{homeCopy.pick(homeCopy.features.release.body, i18n.current) ?? m.home_feature_release_body()}
+					</p>
 				</div>
 			</div>
 		</section>

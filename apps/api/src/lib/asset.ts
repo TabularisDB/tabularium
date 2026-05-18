@@ -83,7 +83,10 @@ export async function hashAsset(url: string): Promise<{ sha256?: string; size?: 
       if (done) break
       if (!value) continue
       total += value.byteLength
-      if (total > cap) return { reason: `asset exceeds ${cap}-byte hash budget — release ingests without an integrity entry for this asset` }
+      if (total > cap)
+        return {
+          reason: `asset exceeds ${cap}-byte hash budget — release ingests without an integrity entry for this asset`,
+        }
       hasher.update(value)
     }
     return { sha256: hasher.digest('hex'), size: total }

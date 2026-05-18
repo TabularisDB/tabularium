@@ -16,8 +16,9 @@ const signedAssetSchema = t.Object({
   attestation_bundle: t.Any(),
 })
 
-export default new Elysia()
-  .get('/', async ({ params, set }) => {
+export default new Elysia().get(
+  '/',
+  async ({ params, set }) => {
     const plugin = await db.query.plugins.findFirst({ where: { id: params.slug } })
     if (!plugin || plugin.status !== 'approved') {
       set.status = 404
@@ -49,7 +50,8 @@ export default new Elysia()
       version: release.version,
       assets: parseAssets(release.assets),
     }
-  }, {
+  },
+  {
     detail: {
       tags: ['Plugins'],
       summary: 'Asset integrity (sha256 + size) for a specific release',
@@ -74,4 +76,5 @@ export default new Elysia()
       ]),
       404: t.Object({ error: t.String() }),
     },
-  })
+  },
+)

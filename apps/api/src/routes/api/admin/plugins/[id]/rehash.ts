@@ -2,15 +2,15 @@ import { Elysia, t } from 'elysia'
 import { eq, and } from 'drizzle-orm'
 import { adminMiddleware } from '$middleware/admin'
 import { db } from '$db'
-import { plugins, releases } from '$db/schema'
+import { releases } from '$db/schema'
 import { parseAssets, serializeAssets, hashAsset, type AssetMap } from '$lib/asset'
 import { cache } from '$lib/cache'
 import { latestCacheKey } from '$routes/api/plugins/[slug]/latest'
 import { recordAudit, actorFromAdmin } from '$lib/audit'
 
-export default new Elysia()
-  .use(adminMiddleware)
-  .post('/', async ({ params, body, set, admin, request }) => {
+export default new Elysia().use(adminMiddleware).post(
+  '/',
+  async ({ params, body, set, admin, request }) => {
     const plugin = await db.query.plugins.findFirst({ where: { id: params.id } })
     if (!plugin) {
       set.status = 404
@@ -56,7 +56,8 @@ export default new Elysia()
     })
 
     return { ok: true, slug: plugin.id, version, results }
-  }, {
+  },
+  {
     detail: {
       tags: ['Admin'],
       summary: 'Re-hash release assets',
@@ -76,13 +77,17 @@ export default new Elysia()
         ok: t.Boolean(),
         slug: t.String(),
         version: t.String(),
-        results: t.Record(t.String(), t.Object({
-          sha256: t.Optional(t.String()),
-          size: t.Optional(t.Number()),
-          reason: t.Optional(t.String()),
-        })),
+        results: t.Record(
+          t.String(),
+          t.Object({
+            sha256: t.Optional(t.String()),
+            size: t.Optional(t.Number()),
+            reason: t.Optional(t.String()),
+          }),
+        ),
       }),
       400: t.Object({ error: t.String() }),
       404: t.Object({ error: t.String() }),
     },
-  })
+  },
+)

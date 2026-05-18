@@ -12,7 +12,9 @@ beforeAll(() => {
       if (url.pathname === '/manifest.schema.json') {
         const body = {
           $schema: 'https://json-schema.org/draft/2020-12/schema',
-          $id: 'https://test.local/manifest.schema.json' + (url.searchParams.get('kind') ? `?kind=${url.searchParams.get('kind')}` : ''),
+          $id:
+            'https://test.local/manifest.schema.json' +
+            (url.searchParams.get('kind') ? `?kind=${url.searchParams.get('kind')}` : ''),
           type: 'object',
           properties: { name: { type: 'string' } },
         }

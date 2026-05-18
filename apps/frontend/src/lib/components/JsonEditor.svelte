@@ -36,11 +36,7 @@
 	}
 </script>
 
-<div
-	class="json-editor-host"
-	class:jse-theme-dark={mode.current === 'dark'}
-	style="min-height: {minHeight};"
->
+<div class="json-editor-host" class:jse-theme-dark={mode.current === 'dark'} style="min-height: {minHeight};">
 	<JSONEditor
 		bind:content
 		{readOnly}

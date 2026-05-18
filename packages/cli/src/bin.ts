@@ -3,10 +3,7 @@ import { Command } from 'commander'
 import { runValidate } from './validate'
 
 const program = new Command()
-program
-  .name('tabularium')
-  .description('CLI for Tabularium plugin authors')
-  .version('0.0.0')
+program.name('tabularium').description('CLI for Tabularium plugin authors').version('0.0.0')
 
 program
   .command('validate <file>')

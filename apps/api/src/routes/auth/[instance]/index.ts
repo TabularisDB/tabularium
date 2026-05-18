@@ -26,7 +26,11 @@ async function s256Challenge(verifier: string): Promise<string> {
   return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
 }
 
-async function buildAuthUrl(inst: ProviderInstance, state: string, linking: boolean): Promise<{ url: URL; codeVerifier?: string }> {
+async function buildAuthUrl(
+  inst: ProviderInstance,
+  state: string,
+  linking: boolean,
+): Promise<{ url: URL; codeVerifier?: string }> {
   const callback = `${env.BASE_URL}/auth/${inst.id}/callback`
 
   if (inst.kind === 'github') {
@@ -56,8 +60,9 @@ async function buildAuthUrl(inst: ProviderInstance, state: string, linking: bool
   return { url, codeVerifier }
 }
 
-export default new Elysia()
-  .get('/', async ({ params, query, set, cookie, redirect }) => {
+export default new Elysia().get(
+  '/',
+  async ({ params, query, set, cookie, redirect }) => {
     const inst = getInstance(params.instance)
     if (!inst) {
       set.status = 404
@@ -92,11 +97,13 @@ export default new Elysia()
     })
 
     return redirect(url.toString(), 302)
-  }, {
+  },
+  {
     detail: {
       tags: ['Auth'],
       summary: 'Start OAuth flow for a provider instance',
-      description: 'Redirects to the provider instance\'s authorize page. Instance IDs are configured by the admin (e.g. `github`, `gitlab`, `forgejo-acme`). Set `link=1` to attach this identity to the currently signed-in user.',
+      description:
+        "Redirects to the provider instance's authorize page. Instance IDs are configured by the admin (e.g. `github`, `gitlab`, `forgejo-acme`). Set `link=1` to attach this identity to the currently signed-in user.",
       operationId: 'startOAuth',
     },
     params: t.Object({ instance: t.String() }),
@@ -104,4 +111,5 @@ export default new Elysia()
       link: t.Optional(t.String()),
       return_to: t.Optional(t.String()),
     }),
-  })
+  },
+)

@@ -58,7 +58,12 @@
 	async function load() {
 		try {
 			const { data, error } = await eden.api.admin.infra.cache.get()
-			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
+			if (error)
+				throw new Error(
+					typeof error.value === 'string'
+						? error.value
+						: ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`),
+				)
 			cacheState = data as CacheState
 			driver = cacheState.driver
 		} catch (e) {
@@ -71,7 +76,12 @@
 	async function loadStorage() {
 		try {
 			const { data, error } = await eden.api.admin.infra.storage.get()
-			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
+			if (error)
+				throw new Error(
+					typeof error.value === 'string'
+						? error.value
+						: ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`),
+				)
 			storageState = data as StorageState
 			storageDriver = storageState.driver
 		} catch (e) {
@@ -96,7 +106,12 @@
 				if (Object.keys(s3).length) body.s3 = s3
 			}
 			const { error } = await eden.api.admin.infra.storage.put(body)
-			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
+			if (error)
+				throw new Error(
+					typeof error.value === 'string'
+						? error.value
+						: ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`),
+				)
 			toast.success(m.admin_infra_storage_reconfigured({ driver: storageDriver }))
 			s3AccessKey = ''
 			s3SecretKey = ''
@@ -119,7 +134,12 @@
 			const body: { driver: typeof driver; redisUrl?: string } = { driver }
 			if (driver === 'redis' && redisUrl.trim()) body.redisUrl = redisUrl.trim()
 			const { error } = await eden.api.admin.infra.cache.put(body)
-			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
+			if (error)
+				throw new Error(
+					typeof error.value === 'string'
+						? error.value
+						: ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`),
+				)
 			toast.success(m.admin_infra_cache_reconfigured({ driver }))
 			redisUrl = ''
 			await load()
@@ -168,7 +188,7 @@
 						id="redis-url"
 						type="password"
 						placeholder={cacheState.redisUrlConfigured
-							? cacheState.redisUrlMasked ?? 'redis://… (configured)'
+							? (cacheState.redisUrlMasked ?? 'redis://… (configured)')
 							: 'redis://user:pass@host:6379'}
 						bind:value={redisUrl}
 					/>
@@ -233,16 +253,30 @@
 				</div>
 				<div class="grid gap-2 max-w-md">
 					<Label for="s3-base">{m.admin_infra_s3_public_base()}</Label>
-					<Input id="s3-base" bind:value={s3PublicBase} placeholder={storageState.s3.publicBaseUrl ?? 'https://cdn.example.com'} />
+					<Input
+						id="s3-base"
+						bind:value={s3PublicBase}
+						placeholder={storageState.s3.publicBaseUrl ?? 'https://cdn.example.com'}
+					/>
 				</div>
 				<div class="grid grid-cols-2 gap-3 max-w-md">
 					<div class="grid gap-2">
 						<Label for="s3-ak">{m.admin_infra_s3_access_key()}</Label>
-						<Input id="s3-ak" type="password" bind:value={s3AccessKey} placeholder={storageState.s3.accessKeyConfigured ? '••••' : 'AKIA…'} />
+						<Input
+							id="s3-ak"
+							type="password"
+							bind:value={s3AccessKey}
+							placeholder={storageState.s3.accessKeyConfigured ? '••••' : 'AKIA…'}
+						/>
 					</div>
 					<div class="grid gap-2">
 						<Label for="s3-sk">{m.admin_infra_s3_secret_key()}</Label>
-						<Input id="s3-sk" type="password" bind:value={s3SecretKey} placeholder={storageState.s3.secretKeyConfigured ? '••••' : ''} />
+						<Input
+							id="s3-sk"
+							type="password"
+							bind:value={s3SecretKey}
+							placeholder={storageState.s3.secretKeyConfigured ? '••••' : ''}
+						/>
 					</div>
 				</div>
 			{/if}

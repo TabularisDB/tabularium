@@ -22,7 +22,12 @@ const i18nResponse = t.Object({
 export default new Elysia()
   .use(adminMiddleware)
   .get('/', () => getI18nConfig(), {
-    detail: { tags: ['Admin'], summary: 'Get i18n config', operationId: 'adminGetI18n', security: [{ bearerAuth: [] }, { cookieAuth: [] }] },
+    detail: {
+      tags: ['Admin'],
+      summary: 'Get i18n config',
+      operationId: 'adminGetI18n',
+      security: [{ bearerAuth: [] }, { cookieAuth: [] }],
+    },
     response: { 200: i18nResponse },
   })
   .patch(
@@ -55,7 +60,12 @@ export default new Elysia()
       return getI18nConfig()
     },
     {
-      detail: { tags: ['Admin'], summary: 'Update i18n config', operationId: 'adminUpdateI18n', security: [{ bearerAuth: [] }, { cookieAuth: [] }] },
+      detail: {
+        tags: ['Admin'],
+        summary: 'Update i18n config',
+        operationId: 'adminUpdateI18n',
+        security: [{ bearerAuth: [] }, { cookieAuth: [] }],
+      },
       body: t.Object({
         defaultLocale: t.Optional(localeSchema),
         enabledLocales: t.Optional(t.Array(localeSchema)),

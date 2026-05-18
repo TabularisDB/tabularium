@@ -9,10 +9,15 @@
 
 <a
 	href={`/plugins/${plugin.id}`}
-	class={cn('group block rounded-lg border border-border bg-card p-5 transition-colors hover:border-primary/40', className)}
+	class={cn(
+		'group block rounded-lg border border-border bg-card p-5 transition-colors hover:border-primary/40',
+		className,
+	)}
 >
 	<div class="flex items-start gap-3">
-		<div class="h-10 w-10 rounded-md bg-primary/10 text-primary flex items-center justify-center overflow-hidden flex-shrink-0">
+		<div
+			class="h-10 w-10 rounded-md bg-primary/10 text-primary flex items-center justify-center overflow-hidden flex-shrink-0"
+		>
 			{#if plugin.iconUrl}
 				<img src={plugin.iconUrl} alt={plugin.name} class="h-10 w-10 object-contain" loading="lazy" decoding="async" />
 			{:else}

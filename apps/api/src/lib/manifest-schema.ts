@@ -1,4 +1,4 @@
-import { type TSchema } from '@sinclair/typebox'
+import type { TSchema } from '@sinclair/typebox'
 import { ManifestSchema } from '@tabularium/manifest'
 import { getManifestConfig } from './manifest-config'
 import { getSetting, setSetting, deleteSetting, hasSetting } from './settings'
@@ -44,13 +44,12 @@ function safetyCheck(node: unknown, depth: number, path: string): void {
 function unwrapRootSchema(input: Record<string, unknown>): Record<string, unknown> {
   const hasProperties = isPlainObject(input.properties)
   const looksLikeRoot =
-    hasProperties && (
-      '$schema' in input ||
+    hasProperties &&
+    ('$schema' in input ||
       '$id' in input ||
       input.type === 'object' ||
       'title' in input ||
-      'additionalProperties' in input
-    )
+      'additionalProperties' in input)
   if (looksLikeRoot) return input.properties as Record<string, unknown>
   return input
 }

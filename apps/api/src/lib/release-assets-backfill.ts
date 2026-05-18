@@ -38,9 +38,7 @@ export type BackfillOptions = {
  * to write the true filename and won't collide because the unique index is
  * on (release_id, name).
  */
-export async function backfillReleaseAssets(
-  options: BackfillOptions = {},
-): Promise<BackfillSummary> {
+export async function backfillReleaseAssets(options: BackfillOptions = {}): Promise<BackfillSummary> {
   const onlyMissing = options.onlyMissing ?? true
   const summary: BackfillSummary = { processed: 0, skipped: 0, errors: [] }
 

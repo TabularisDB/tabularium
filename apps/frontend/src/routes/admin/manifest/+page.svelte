@@ -245,7 +245,9 @@
 					{m.admin_manifest_preview_legend_ext()}
 				</p>
 			</div>
-			<div class="rounded-md border border-dashed border-border bg-card/30 p-3 space-y-1 text-[11px] text-muted-foreground">
+			<div
+				class="rounded-md border border-dashed border-border bg-card/30 p-3 space-y-1 text-[11px] text-muted-foreground"
+			>
 				<p class="font-medium text-foreground">{m.admin_manifest_preview_url_label()}</p>
 				<code class="block font-mono break-all">/manifest.schema.json</code>
 				<p>{m.admin_manifest_preview_url_hint()}</p>

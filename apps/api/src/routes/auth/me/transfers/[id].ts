@@ -8,9 +8,9 @@ import { expireStalePending } from '$lib/transfers'
 
 const TerminalStatus = t.Union([t.Literal('accepted'), t.Literal('rejected'), t.Literal('cancelled')])
 
-export default new Elysia()
-  .use(authMiddleware)
-  .post('/', async ({ user, params, body, set, request }) => {
+export default new Elysia().use(authMiddleware).post(
+  '/',
+  async ({ user, params, body, set, request }) => {
     await expireStalePending()
     const transfer = await db.query.pluginTransfers.findFirst({ where: { id: params.id } })
     if (!transfer) {
@@ -36,10 +36,7 @@ export default new Elysia()
 
     const status = body.action === 'accept' ? 'accepted' : body.action === 'reject' ? 'rejected' : 'cancelled'
     const now = Date.now()
-    await db
-      .update(pluginTransfers)
-      .set({ status, respondedAt: now })
-      .where(eq(pluginTransfers.id, params.id))
+    await db.update(pluginTransfers).set({ status, respondedAt: now }).where(eq(pluginTransfers.id, params.id))
 
     if (status === 'accepted') {
       await db
@@ -58,7 +55,8 @@ export default new Elysia()
     })
 
     return { ok: true, status }
-  }, {
+  },
+  {
     detail: {
       tags: ['Auth'],
       summary: 'Respond to a transfer (accept / reject / cancel)',
@@ -77,4 +75,5 @@ export default new Elysia()
       404: t.Object({ error: t.String() }),
       409: t.Object({ error: t.String() }),
     },
-  })
+  },
+)

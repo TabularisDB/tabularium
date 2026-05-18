@@ -3,7 +3,10 @@ import { parse as parseYaml } from 'yaml'
 export type ManifestSource = 'tabularium.yaml' | 'tabularium.json'
 
 export class ParseError extends Error {
-  constructor(message: string, public cause?: unknown) {
+  constructor(
+    message: string,
+    public cause?: unknown,
+  ) {
     super(message)
     this.name = 'ParseError'
   }
@@ -19,10 +22,7 @@ export function parseManifest(text: string, source: ManifestSource): Record<stri
   try {
     parsed = source === 'tabularium.json' ? JSON.parse(text) : parseYaml(text)
   } catch (err) {
-    throw new ParseError(
-      `Failed to parse ${source}: ${err instanceof Error ? err.message : String(err)}`,
-      err,
-    )
+    throw new ParseError(`Failed to parse ${source}: ${err instanceof Error ? err.message : String(err)}`, err)
   }
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
     throw new ParseError('Manifest root must be an object')

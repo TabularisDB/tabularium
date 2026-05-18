@@ -1,15 +1,11 @@
 import { detectDialect, sqlitePath, type Dialect } from '../db/dialect'
 
-export type ProbeResult =
-  | { ok: true; dialect: Dialect }
-  | { ok: false; dialect: Dialect; error: string }
+export type ProbeResult = { ok: true; dialect: Dialect } | { ok: false; dialect: Dialect; error: string }
 
 const TIMEOUT_MS = 5000
 
 function timeoutAfter(ms: number): Promise<never> {
-  return new Promise((_, reject) =>
-    setTimeout(() => reject(new Error(`connection timed out after ${ms}ms`)), ms),
-  )
+  return new Promise((_, reject) => setTimeout(() => reject(new Error(`connection timed out after ${ms}ms`)), ms))
 }
 
 async function probePostgres(url: string): Promise<void> {

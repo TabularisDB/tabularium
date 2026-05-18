@@ -38,45 +38,49 @@ export default new Elysia()
     },
     response: { 200: t.Object({ instances: t.Array(safeInstanceSchema) }) },
   })
-  .post('/', async ({ body, set, admin, request }) => {
-    if (getInstance(body.id)) {
-      set.status = 409
-      return { error: `Instance '${body.id}' already exists` }
-    }
-    try {
-      const inst = await createInstance(body)
-      await recordAudit({
-        ...actorFromAdmin(admin, request),
-        action: 'provider.create',
-        target: `provider:${inst.id}`,
-        meta: { kind: inst.kind, displayName: inst.displayName, baseUrl: inst.baseUrl },
-      })
-      set.status = 201
-      return toSafe(inst)
-    } catch (e) {
-      set.status = 400
-      return { error: e instanceof Error ? e.message : 'Failed to create instance' }
-    }
-  }, {
-    detail: {
-      tags: ['Admin'],
-      summary: 'Create a new provider instance',
-      operationId: 'createProviderInstance',
-      security: [{ bearerAuth: [] }, { cookieAuth: [] }],
+  .post(
+    '/',
+    async ({ body, set, admin, request }) => {
+      if (getInstance(body.id)) {
+        set.status = 409
+        return { error: `Instance '${body.id}' already exists` }
+      }
+      try {
+        const inst = await createInstance(body)
+        await recordAudit({
+          ...actorFromAdmin(admin, request),
+          action: 'provider.create',
+          target: `provider:${inst.id}`,
+          meta: { kind: inst.kind, displayName: inst.displayName, baseUrl: inst.baseUrl },
+        })
+        set.status = 201
+        return toSafe(inst)
+      } catch (e) {
+        set.status = 400
+        return { error: e instanceof Error ? e.message : 'Failed to create instance' }
+      }
     },
-    body: t.Object({
-      id: t.String({ minLength: 1, maxLength: 64 }),
-      kind: KIND,
-      displayName: t.String({ minLength: 1, maxLength: 80 }),
-      baseUrl: t.String({ minLength: 1 }),
-      clientId: t.String({ minLength: 1 }),
-      clientSecret: t.String({ minLength: 1 }),
-      logoUrl: t.Optional(t.Nullable(t.String())),
-      enabled: t.Optional(t.Boolean()),
-    }),
-    response: {
-      201: safeInstanceSchema,
-      400: t.Object({ error: t.String() }),
-      409: t.Object({ error: t.String() }),
+    {
+      detail: {
+        tags: ['Admin'],
+        summary: 'Create a new provider instance',
+        operationId: 'createProviderInstance',
+        security: [{ bearerAuth: [] }, { cookieAuth: [] }],
+      },
+      body: t.Object({
+        id: t.String({ minLength: 1, maxLength: 64 }),
+        kind: KIND,
+        displayName: t.String({ minLength: 1, maxLength: 80 }),
+        baseUrl: t.String({ minLength: 1 }),
+        clientId: t.String({ minLength: 1 }),
+        clientSecret: t.String({ minLength: 1 }),
+        logoUrl: t.Optional(t.Nullable(t.String())),
+        enabled: t.Optional(t.Boolean()),
+      }),
+      response: {
+        201: safeInstanceSchema,
+        400: t.Object({ error: t.String() }),
+        409: t.Object({ error: t.String() }),
+      },
     },
-  })
+  )

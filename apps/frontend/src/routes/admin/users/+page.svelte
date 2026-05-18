@@ -51,7 +51,12 @@
 	async function quickSetRole(user: AdminUser, role: 'user' | 'admin') {
 		try {
 			const { error } = await eden.api.admin.users({ id: user.id }).patch({ role })
-			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
+			if (error)
+				throw new Error(
+					typeof error.value === 'string'
+						? error.value
+						: ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`),
+				)
 			toast.success(m.admin_users_role_change({ name: user.displayName, role }))
 			await load()
 		} catch (e) {
@@ -71,7 +76,12 @@
 				return
 			}
 			const { error } = await eden.api.admin.users({ id: editing.id }).patch(patch)
-			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
+			if (error)
+				throw new Error(
+					typeof error.value === 'string'
+						? error.value
+						: ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`),
+				)
 			toast.success(m.admin_users_updated())
 			closeEdit()
 			await load()
@@ -105,9 +115,12 @@
 					<div class="flex items-center gap-2 flex-shrink-0">
 						<Badge variant={u.role === 'admin' ? 'default' : 'secondary'}>{u.role}</Badge>
 						{#if u.role === 'admin'}
-							<Button variant="ghost" size="sm" onclick={() => quickSetRole(u, 'user')}>{m.admin_users_demote()}</Button>
+							<Button variant="ghost" size="sm" onclick={() => quickSetRole(u, 'user')}>{m.admin_users_demote()}</Button
+							>
 						{:else}
-							<Button variant="ghost" size="sm" onclick={() => quickSetRole(u, 'admin')}>{m.admin_users_promote()}</Button>
+							<Button variant="ghost" size="sm" onclick={() => quickSetRole(u, 'admin')}
+								>{m.admin_users_promote()}</Button
+							>
 						{/if}
 						<Button variant="ghost" size="sm" onclick={() => openEdit(u)} aria-label={m.common_edit()}>
 							<Pencil class="h-3.5 w-3.5" />
@@ -120,7 +133,11 @@
 </Card>
 
 {#if editing}
-	<div class="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-6" role="dialog" aria-modal="true">
+	<div
+		class="fixed inset-0 z-50 bg-background/80 backdrop-blur-sm flex items-center justify-center p-6"
+		role="dialog"
+		aria-modal="true"
+	>
 		<button type="button" class="absolute inset-0" onclick={closeEdit} aria-label={m.common_close()}></button>
 		<div class="relative w-full max-w-md rounded-lg border border-border bg-background p-6 shadow-xl space-y-5">
 			<div class="flex items-center justify-between">
@@ -128,7 +145,12 @@
 					<h2 class="text-lg font-semibold tracking-tight">{m.admin_users_edit_title()}</h2>
 					<p class="text-xs text-muted-foreground font-mono">{editing.id}</p>
 				</div>
-				<button type="button" onclick={closeEdit} class="inline-flex h-8 w-8 items-center justify-center rounded-md hover:bg-accent" aria-label={m.common_close()}>
+				<button
+					type="button"
+					onclick={closeEdit}
+					class="inline-flex h-8 w-8 items-center justify-center rounded-md hover:bg-accent"
+					aria-label={m.common_close()}
+				>
 					<X class="h-4 w-4" />
 				</button>
 			</div>

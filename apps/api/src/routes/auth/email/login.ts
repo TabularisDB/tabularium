@@ -8,9 +8,9 @@ import { rateLimit } from '$middleware/rate-limit'
 
 const log = logger.child({ module: 'auth-email-login' })
 
-export default new Elysia()
-  .use(rateLimit({ bucket: 'auth-email-login', limit: 5, windowSeconds: 900 }))
-  .post('/', async ({ body, set, cookie }) => {
+export default new Elysia().use(rateLimit({ bucket: 'auth-email-login', limit: 5, windowSeconds: 900 })).post(
+  '/',
+  async ({ body, set, cookie }) => {
     const email = body.email.toLowerCase()
     const creds = await db.query.rootCredentials.findFirst({ where: { email } })
     const hash = creds?.passwordHash ?? '$argon2id$v=19$m=65536,t=3,p=4$invalid$invalid'
@@ -44,7 +44,8 @@ export default new Elysia()
     })
 
     return { ok: true, userId: userRow.id }
-  }, {
+  },
+  {
     detail: {
       tags: ['Auth'],
       summary: 'Bootstrap admin email + password sign-in',
@@ -59,4 +60,5 @@ export default new Elysia()
       200: t.Object({ ok: t.Boolean(), userId: t.String() }),
       401: t.Object({ error: t.String() }),
     },
-  })
+  },
+)

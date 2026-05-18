@@ -31,7 +31,7 @@ export default new Elysia()
       }
 
       const schema = buildMergedSchema({ kind: body.kind ?? null })
-      const result = validateManifest(parsed, schema)  // strict, no lenient
+      const result = validateManifest(parsed, schema) // strict, no lenient
       if (result.ok) {
         return { ok: true, normalized: result.normalized }
       }
@@ -46,7 +46,8 @@ export default new Elysia()
       detail: {
         tags: ['Plugins'],
         summary: 'Validate a manifest body against the registry schema',
-        description: 'Public validator for authoring tools / CI. Returns 200 + ok:false on validation failure so HTTP-status-branching tools always reach the body. 4xx is reserved for malformed requests and oversized bodies.',
+        description:
+          'Public validator for authoring tools / CI. Returns 200 + ok:false on validation failure so HTTP-status-branching tools always reach the body. 4xx is reserved for malformed requests and oversized bodies.',
         operationId: 'validateManifest',
       },
     },

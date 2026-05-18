@@ -47,7 +47,9 @@
 		const featuresRes = await eden.api.features.get()
 		if (featuresRes.data) requestsEnabled = (featuresRes.data as { requestsEnabled: boolean }).requestsEnabled
 		try {
-			const { data, error } = await eden.api.pages['by-path'].get({ query: { path: '/requests', locale: i18n.current } })
+			const { data, error } = await eden.api.pages['by-path'].get({
+				query: { path: '/requests', locale: i18n.current },
+			})
 			if (error) throw error
 			cmsOverride = data as PageRendered
 			cmsChecked = true
@@ -65,7 +67,12 @@
 		}
 		try {
 			const { data, error } = await eden.api.requests({ id: req.id }).upvote.post({})
-			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
+			if (error)
+				throw new Error(
+					typeof error.value === 'string'
+						? error.value
+						: ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`),
+				)
 			const result = data as { upvotes: number; voted: boolean }
 			requests = requests.map((r) => (r.id === req.id ? { ...r, upvotes: result.upvotes } : r))
 		} catch (e) {
@@ -86,7 +93,12 @@
 		)
 		try {
 			const { data, error } = await eden.api.requests({ id: req.id }).claim.post({})
-			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
+			if (error)
+				throw new Error(
+					typeof error.value === 'string'
+						? error.value
+						: ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`),
+				)
 			const result = data as { claimed: boolean; claims: number }
 			requests = requests.map((r) =>
 				r.id === req.id ? { ...r, claimedByMe: result.claimed, claims: result.claims } : r,
@@ -104,7 +116,12 @@
 		if (!confirm(m.requests_admin_delete_confirm())) return
 		try {
 			const { error } = await eden.api.admin.requests({ id: req.id }).delete()
-			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
+			if (error)
+				throw new Error(
+					typeof error.value === 'string'
+						? error.value
+						: ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`),
+				)
 			requests = requests.filter((r) => r.id !== req.id)
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : 'Delete failed')
@@ -120,7 +137,12 @@
 		creating = true
 		try {
 			const { error } = await eden.api.requests.post({ slug, name, description })
-			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
+			if (error)
+				throw new Error(
+					typeof error.value === 'string'
+						? error.value
+						: ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`),
+				)
 			slug = ''
 			name = ''
 			description = ''
@@ -146,103 +168,109 @@
 		<CmsPage html={cmsOverride.html} />
 	</div>
 {:else}
-<div class="mx-auto max-w-4xl px-6 py-12 space-y-10">
-	<header class="space-y-2">
-		<h1 class="text-3xl font-semibold tracking-tight">{m.requests_title()}</h1>
-		<p class="text-muted-foreground">{m.requests_subtitle()}</p>
-	</header>
+	<div class="mx-auto max-w-4xl px-6 py-12 space-y-10">
+		<header class="space-y-2">
+			<h1 class="text-3xl font-semibold tracking-tight">{m.requests_title()}</h1>
+			<p class="text-muted-foreground">{m.requests_subtitle()}</p>
+		</header>
 
-	{#if requestsEnabled}
-		<Card>
-			<CardContent class="pt-6">
-				<form onsubmit={createRequest} class="space-y-4">
-					<div class="grid gap-4 sm:grid-cols-2">
-						<div class="space-y-2">
-							<Label for="slug">{m.requests_slug()}</Label>
-							<Input id="slug" bind:value={slug} placeholder="awesome-plugin" pattern="[a-z0-9-]+" required />
-						</div>
-						<div class="space-y-2">
-							<Label for="name">{m.requests_name()}</Label>
-							<Input id="name" bind:value={name} placeholder="Awesome Plugin" required />
-						</div>
-					</div>
-					<div class="space-y-2">
-						<Label for="desc">{m.requests_description()}</Label>
-						<Textarea id="desc" bind:value={description} placeholder="What should this plugin do?" rows={3} required />
-					</div>
-					<Button type="submit" disabled={creating || !auth.user}>
-						<Plus class="h-4 w-4" />
-						{creating ? m.requests_creating() : auth.user ? m.requests_create() : m.requests_sign_in_to_create()}
-					</Button>
-				</form>
-			</CardContent>
-		</Card>
-	{:else}
-		<div class="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
-			{m.requests_disabled()}
-		</div>
-	{/if}
-
-	<section class="space-y-3">
-		<h2 class="text-xl font-semibold tracking-tight">{m.requests_open()}</h2>
-		{#if loading}
-			{#each Array(4) as _}
-				<Skeleton class="h-20 rounded-md" />
-			{/each}
-		{:else if requests.length === 0}
-			<div class="rounded-lg border border-dashed border-border p-8 text-center text-muted-foreground">
-				{m.requests_empty()}
-			</div>
-		{:else}
-			{#each requests as r (r.id)}
-				<Card>
-					<CardContent class="flex items-center gap-4 p-4">
-						<button
-							type="button"
-							onclick={() => vote(r)}
-							class="flex flex-col items-center justify-center min-w-14 rounded-md border border-border bg-card-foreground/5 px-3 py-1.5 hover:border-primary/40 hover:bg-primary/5"
-						>
-							<ArrowUp class="h-4 w-4" />
-							<span class="font-mono text-sm">{r.upvotes}</span>
-						</button>
-						<div class="flex-1 min-w-0 space-y-1">
-							<div class="flex items-center gap-2">
-								<h3 class="font-semibold tracking-tight">{r.name}</h3>
-								<span class="font-mono text-xs text-muted-foreground">{r.slug}</span>
+		{#if requestsEnabled}
+			<Card>
+				<CardContent class="pt-6">
+					<form onsubmit={createRequest} class="space-y-4">
+						<div class="grid gap-4 sm:grid-cols-2">
+							<div class="space-y-2">
+								<Label for="slug">{m.requests_slug()}</Label>
+								<Input id="slug" bind:value={slug} placeholder="awesome-plugin" pattern="[a-z0-9-]+" required />
 							</div>
-							<p class="text-sm text-muted-foreground">{r.description}</p>
-							{#if r.claims > 0}
-								<p class="text-xs text-muted-foreground">{m.requests_claim_count({ count: r.claims })}</p>
-							{/if}
+							<div class="space-y-2">
+								<Label for="name">{m.requests_name()}</Label>
+								<Input id="name" bind:value={name} placeholder="Awesome Plugin" required />
+							</div>
 						</div>
-						<div class="flex items-center gap-2">
-							<Button
+						<div class="space-y-2">
+							<Label for="desc">{m.requests_description()}</Label>
+							<Textarea
+								id="desc"
+								bind:value={description}
+								placeholder="What should this plugin do?"
+								rows={3}
+								required
+							/>
+						</div>
+						<Button type="submit" disabled={creating || !auth.user}>
+							<Plus class="h-4 w-4" />
+							{creating ? m.requests_creating() : auth.user ? m.requests_create() : m.requests_sign_in_to_create()}
+						</Button>
+					</form>
+				</CardContent>
+			</Card>
+		{:else}
+			<div class="rounded-lg border border-dashed border-border p-6 text-center text-sm text-muted-foreground">
+				{m.requests_disabled()}
+			</div>
+		{/if}
+
+		<section class="space-y-3">
+			<h2 class="text-xl font-semibold tracking-tight">{m.requests_open()}</h2>
+			{#if loading}
+				{#each Array(4) as _}
+					<Skeleton class="h-20 rounded-md" />
+				{/each}
+			{:else if requests.length === 0}
+				<div class="rounded-lg border border-dashed border-border p-8 text-center text-muted-foreground">
+					{m.requests_empty()}
+				</div>
+			{:else}
+				{#each requests as r (r.id)}
+					<Card>
+						<CardContent class="flex items-center gap-4 p-4">
+							<button
 								type="button"
-								variant={r.claimedByMe ? 'default' : 'outline'}
-								size="sm"
-								onclick={() => claim(r)}
-								disabled={!auth.user}
-								title={auth.user ? undefined : m.requests_sign_in_to_claim()}
+								onclick={() => vote(r)}
+								class="flex flex-col items-center justify-center min-w-14 rounded-md border border-border bg-card-foreground/5 px-3 py-1.5 hover:border-primary/40 hover:bg-primary/5"
 							>
-								<Hammer class="h-4 w-4" />
-								{r.claimedByMe ? m.requests_claimed() : m.requests_claim()}
-							</Button>
-							{#if auth.isAdmin}
+								<ArrowUp class="h-4 w-4" />
+								<span class="font-mono text-sm">{r.upvotes}</span>
+							</button>
+							<div class="flex-1 min-w-0 space-y-1">
+								<div class="flex items-center gap-2">
+									<h3 class="font-semibold tracking-tight">{r.name}</h3>
+									<span class="font-mono text-xs text-muted-foreground">{r.slug}</span>
+								</div>
+								<p class="text-sm text-muted-foreground">{r.description}</p>
+								{#if r.claims > 0}
+									<p class="text-xs text-muted-foreground">{m.requests_claim_count({ count: r.claims })}</p>
+								{/if}
+							</div>
+							<div class="flex items-center gap-2">
 								<Button
 									type="button"
-									variant="ghost"
-									size="icon"
-									onclick={() => deleteRequest(r)}
-									aria-label={m.requests_admin_delete_confirm()}
+									variant={r.claimedByMe ? 'default' : 'outline'}
+									size="sm"
+									onclick={() => claim(r)}
+									disabled={!auth.user}
+									title={auth.user ? undefined : m.requests_sign_in_to_claim()}
 								>
-									<Trash2 class="h-4 w-4" />
+									<Hammer class="h-4 w-4" />
+									{r.claimedByMe ? m.requests_claimed() : m.requests_claim()}
 								</Button>
-							{/if}
-						</div>
-					</CardContent>
-				</Card>
-			{/each}
-		{/if}
-	</section>
-</div>
+								{#if auth.isAdmin}
+									<Button
+										type="button"
+										variant="ghost"
+										size="icon"
+										onclick={() => deleteRequest(r)}
+										aria-label={m.requests_admin_delete_confirm()}
+									>
+										<Trash2 class="h-4 w-4" />
+									</Button>
+								{/if}
+							</div>
+						</CardContent>
+					</Card>
+				{/each}
+			{/if}
+		</section>
+	</div>
 {/if}

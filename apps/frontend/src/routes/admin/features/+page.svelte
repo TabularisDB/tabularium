@@ -37,7 +37,12 @@
 		saving = true
 		try {
 			const { error } = await eden.api.admin.features.patch({ submissionsEnabled, requestsEnabled })
-			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
+			if (error)
+				throw new Error(
+					typeof error.value === 'string'
+						? error.value
+						: ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`),
+				)
 			toast.success(m.admin_features_updated())
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : m.admin_branding_save_failed())
@@ -56,7 +61,9 @@
 		<CardHeader>
 			<CardTitle class="text-base">{m.admin_features_submissions()}</CardTitle>
 			<CardDescription>
-				{m.admin_features_submissions_subtitle_prefix()} <code class="font-mono">/submit</code> {m.admin_features_submissions_subtitle_middle()} <code class="font-mono">POST /api/submit/oauth</code> {m.admin_features_submissions_subtitle_suffix()}
+				{m.admin_features_submissions_subtitle_prefix()} <code class="font-mono">/submit</code>
+				{m.admin_features_submissions_subtitle_middle()} <code class="font-mono">POST /api/submit/oauth</code>
+				{m.admin_features_submissions_subtitle_suffix()}
 			</CardDescription>
 		</CardHeader>
 		<CardContent>
@@ -71,7 +78,9 @@
 		<CardHeader>
 			<CardTitle class="text-base">{m.admin_features_requests()}</CardTitle>
 			<CardDescription>
-				{m.admin_features_requests_subtitle_prefix()} <code class="font-mono">/requests</code> {m.admin_features_requests_subtitle_middle()} <code class="font-mono">POST /api/requests</code> {m.admin_features_requests_subtitle_suffix()}
+				{m.admin_features_requests_subtitle_prefix()} <code class="font-mono">/requests</code>
+				{m.admin_features_requests_subtitle_middle()} <code class="font-mono">POST /api/requests</code>
+				{m.admin_features_requests_subtitle_suffix()}
 			</CardDescription>
 		</CardHeader>
 		<CardContent>

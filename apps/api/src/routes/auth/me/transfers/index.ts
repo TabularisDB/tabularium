@@ -2,7 +2,7 @@ import { Elysia, t } from 'elysia'
 import { eq, or, desc } from 'drizzle-orm'
 import { authMiddleware } from '$middleware/auth'
 import { db } from '$db'
-import { pluginTransfers, plugins, users } from '$db/schema'
+import { pluginTransfers } from '$db/schema'
 import { expireStalePending } from '$lib/transfers'
 
 const STATUS = t.Union([
@@ -29,9 +29,9 @@ const transferRowSchema = t.Object({
   direction: t.Union([t.Literal('incoming'), t.Literal('outgoing')]),
 })
 
-export default new Elysia()
-  .use(authMiddleware)
-  .get('/', async ({ user }) => {
+export default new Elysia().use(authMiddleware).get(
+  '/',
+  async ({ user }) => {
     await expireStalePending()
     const rows = await db
       .select({
@@ -52,17 +52,14 @@ export default new Elysia()
     const pluginIds = [...new Set(rows.map((r) => r.pluginId))]
     const userIds = [...new Set(rows.flatMap((r) => [r.fromUserId, r.toUserId]))]
 
-    const pluginRows = pluginIds.length === 0
-      ? []
-      : await db.query.plugins.findMany({ where: { id: { in: pluginIds } } })
-    const userRows = userIds.length === 0
-      ? []
-      : await db.query.users.findMany({ where: { id: { in: userIds } } })
+    const pluginRows =
+      pluginIds.length === 0 ? [] : await db.query.plugins.findMany({ where: { id: { in: pluginIds } } })
+    const userRows = userIds.length === 0 ? [] : await db.query.users.findMany({ where: { id: { in: userIds } } })
     const pluginNames = new Map(pluginRows.map((p: { id: string; name: string }) => [p.id, p.name]))
     const userNames = new Map(userRows.map((u: { id: string; displayName: string }) => [u.id, u.displayName]))
 
     return {
-      transfers: rows.map((r: typeof rows[number]) => ({
+      transfers: rows.map((r: (typeof rows)[number]) => ({
         id: r.id,
         pluginId: r.pluginId,
         pluginName: pluginNames.get(r.pluginId) ?? r.pluginId,
@@ -78,13 +75,16 @@ export default new Elysia()
         direction: (r.toUserId === user.sub ? 'incoming' : 'outgoing') as 'incoming' | 'outgoing',
       })),
     }
-  }, {
+  },
+  {
     detail: {
       tags: ['Auth'],
       summary: 'List plugin transfers involving the current user',
-      description: 'Returns both incoming (you are the recipient) and outgoing (you initiated) transfers. Each row carries plugin + actor names already joined in.',
+      description:
+        'Returns both incoming (you are the recipient) and outgoing (you initiated) transfers. Each row carries plugin + actor names already joined in.',
       operationId: 'listTransfers',
       security: [{ bearerAuth: [] }, { cookieAuth: [] }],
     },
     response: { 200: t.Object({ transfers: t.Array(transferRowSchema) }) },
-  })
+  },
+)

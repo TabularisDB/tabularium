@@ -3,7 +3,10 @@
 	import type { HTMLSelectAttributes } from 'svelte/elements'
 	import type { Snippet } from 'svelte'
 
-	type Props = { class?: string; value?: string; children: Snippet } & Omit<HTMLSelectAttributes, 'class' | 'value' | 'children'>
+	type Props = { class?: string; value?: string; children: Snippet } & Omit<
+		HTMLSelectAttributes,
+		'class' | 'value' | 'children'
+	>
 	let { class: className, value = $bindable(''), children, ...rest }: Props = $props()
 </script>
 

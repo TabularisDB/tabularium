@@ -56,9 +56,7 @@ export function buildSchema(input: BuildSchemaInput): Record<string, unknown> {
   // `kinds.filter(k => k.extensionsSchema && Object.keys(...).length > 0)`
   // so a kind with an empty `{}` override doesn't produce a vacuous
   // `then` clause that tightens additionalProperties without adding fields.
-  const overrideKinds = Object.keys(kindOverrides).filter(
-    (k) => Object.keys(kindOverrides[k]).length > 0,
-  )
+  const overrideKinds = Object.keys(kindOverrides).filter((k) => Object.keys(kindOverrides[k]).length > 0)
   if (overrideKinds.length > 0) {
     schema.allOf = overrideKinds.map((kindKey) => ({
       if: { properties: { kind: { const: kindKey } }, required: ['kind'] },

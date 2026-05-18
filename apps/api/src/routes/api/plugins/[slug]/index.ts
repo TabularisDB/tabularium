@@ -22,12 +22,14 @@ const assetEntrySchema = t.Object({
 
 const integritySchema = t.Object({
   jws: t.String(),
-  assets: t.Array(t.Object({
-    name: t.String(),
-    sha256: t.String(),
-    size: t.Number(),
-    attestation_bundle: t.Any(),
-  })),
+  assets: t.Array(
+    t.Object({
+      name: t.String(),
+      sha256: t.String(),
+      size: t.Number(),
+      attestation_bundle: t.Any(),
+    }),
+  ),
 })
 
 const releaseSchema = t.Object({
@@ -71,7 +73,10 @@ const pluginDetailSchema = t.Object({
   releases: t.Array(releaseSchema),
 })
 
-function pickReadme(raw: string | null, preferredLocale: string | undefined): { markdown: string | null; locale: string | null; available: string[] } {
+function pickReadme(
+  raw: string | null,
+  preferredLocale: string | undefined,
+): { markdown: string | null; locale: string | null; available: string[] } {
   if (!raw) return { markdown: null, locale: null, available: [] }
   if (!raw.startsWith('{')) return { markdown: raw, locale: null, available: [] }
   try {
@@ -83,11 +88,7 @@ function pickReadme(raw: string | null, preferredLocale: string | undefined): { 
       return null
     }
     const baseLocale = preferredLocale?.split('-')[0]
-    const chosen =
-      pick(preferredLocale)
-      ?? pick(baseLocale)
-      ?? pick('en')
-      ?? available[0]
+    const chosen = pick(preferredLocale) ?? pick(baseLocale) ?? pick('en') ?? available[0]
     return { markdown: map[chosen] as string, locale: chosen, available }
   } catch {
     return { markdown: raw, locale: null, available: [] }
@@ -99,86 +100,99 @@ const errorSchema = t.Object({ error: t.String() })
 const README_TTL = 600
 
 export default new Elysia()
-  .get('/', async ({ params, query, set }) => {
-    const plugin = await db.query.plugins.findFirst({
-      where: { id: params.slug },
-      with: { releases: true },
-    })
+  .get(
+    '/',
+    async ({ params, query, set }) => {
+      const plugin = await db.query.plugins.findFirst({
+        where: { id: params.slug },
+        with: { releases: true },
+      })
 
-    if (!plugin || plugin.status !== 'approved') {
-      set.status = 404
-      return { error: 'Plugin not found' }
-    }
-
-    const detail = projectPluginDetail(plugin)
-    const picked = pickReadme(detail.readmeMarkdown, query.locale)
-    let readmeHtml: string | null = null
-    if (picked.markdown) {
-      const cacheKey = `plugin:readme:${plugin.id}:${plugin.updatedAt}:${picked.locale ?? 'default'}`
-      readmeHtml = await cache().get<string>(cacheKey, isString)
-      if (!readmeHtml) {
-        readmeHtml = renderMarkdown(picked.markdown)
-        await cache().set(cacheKey, readmeHtml, README_TTL)
+      if (!plugin || plugin.status !== 'approved') {
+        set.status = 404
+        // biome-ignore lint/suspicious/noExplicitAny: Elysia can't link `set.status = 404` to the 404 response-schema branch
+        return { error: 'Plugin not found' } as any
       }
-    }
 
-    const releasesWithIntegrity = await Promise.all(
-      detail.releases.map(async (r) => ({
-        ...r,
-        integrity: await buildIntegrity({ slug: plugin.id, version: r.version }),
-      })),
-    )
+      const detail = projectPluginDetail(plugin)
+      const picked = pickReadme(detail.readmeMarkdown, query.locale)
+      let readmeHtml: string | null = null
+      if (picked.markdown) {
+        const cacheKey = `plugin:readme:${plugin.id}:${plugin.updatedAt}:${picked.locale ?? 'default'}`
+        readmeHtml = await cache().get<string>(cacheKey, isString)
+        if (!readmeHtml) {
+          readmeHtml = renderMarkdown(picked.markdown)
+          await cache().set(cacheKey, readmeHtml, README_TTL)
+        }
+      }
 
-    return {
-      ...detail,
-      releases: releasesWithIntegrity,
-      readmeHtml,
-      readmeLocale: picked.locale,
-      readmeAvailableLocales: picked.available,
-      readmeMarkdown: undefined,
-    } as unknown as typeof detail & { readmeHtml: string | null; readmeLocale: string | null; readmeAvailableLocales: string[] }
-  }, {
-    detail: {
-      tags: ['Plugins'],
-      summary: 'Get plugin detail',
-      description:
-        'Full plugin record including release history and the rendered README HTML (sanitized via DOMPurify, cached 10 min). Public — no auth required. Pass `?locale=` to request a localized README; falls back to base language, then `en`, then the first available.',
-      operationId: 'getPlugin',
+      const releasesWithIntegrity = await Promise.all(
+        detail.releases.map(async (r) => ({
+          ...r,
+          integrity: await buildIntegrity({ slug: plugin.id, version: r.version }),
+        })),
+      )
+
+      return {
+        ...detail,
+        releases: releasesWithIntegrity,
+        readmeHtml,
+        readmeLocale: picked.locale,
+        readmeAvailableLocales: picked.available,
+        readmeMarkdown: undefined,
+      } as unknown as typeof detail & {
+        readmeHtml: string | null
+        readmeLocale: string | null
+        readmeAvailableLocales: string[]
+      }
     },
-    params: t.Object({ slug: t.String() }),
-    query: t.Object({ locale: t.Optional(t.String({ maxLength: 10 })) }),
-    response: {
-      200: pluginDetailSchema,
-      404: errorSchema,
+    {
+      detail: {
+        tags: ['Plugins'],
+        summary: 'Get plugin detail',
+        description:
+          'Full plugin record including release history and the rendered README HTML (sanitized via DOMPurify, cached 10 min). Public — no auth required. Pass `?locale=` to request a localized README; falls back to base language, then `en`, then the first available.',
+        operationId: 'getPlugin',
+      },
+      params: t.Object({ slug: t.String() }),
+      query: t.Object({ locale: t.Optional(t.String({ maxLength: 10 })) }),
+      response: {
+        200: pluginDetailSchema,
+        404: errorSchema,
+      },
     },
-  })
+  )
   .use(authMiddleware)
-  .delete('/', async ({ user, params, set }) => {
-    const plugin = await db.query.plugins.findFirst({
-      where: { id: params.slug },
-    })
-    if (!plugin) {
-      set.status = 404
-      return { error: 'Plugin not found' }
-    }
-    if (plugin.ownerId !== user.sub) {
-      set.status = 403
-      return { error: 'Only the owner can delete this plugin' }
-    }
+  .delete(
+    '/',
+    async ({ user, params, set }) => {
+      const plugin = await db.query.plugins.findFirst({
+        where: { id: params.slug },
+      })
+      if (!plugin) {
+        set.status = 404
+        return { error: 'Plugin not found' }
+      }
+      if (plugin.ownerId !== user.sub) {
+        set.status = 403
+        return { error: 'Only the owner can delete this plugin' }
+      }
 
-    await db.delete(releases).where(eq(releases.pluginId, plugin.id))
-    await db.delete(plugins).where(eq(plugins.id, plugin.id))
+      await db.delete(releases).where(eq(releases.pluginId, plugin.id))
+      await db.delete(plugins).where(eq(plugins.id, plugin.id))
 
-    return { ok: true, slug: plugin.id }
-  }, {
-    detail: {
-      tags: ['Plugins'],
-      summary: 'Delete plugin',
-      description:
-        'Removes the plugin and all of its releases from the registry. Requires auth and only the owner can perform it. ' +
-        'The upstream repo and the webhook on the repo are left untouched.',
-      operationId: 'deletePlugin',
-      security: [{ bearerAuth: [] }, { cookieAuth: [] }],
+      return { ok: true, slug: plugin.id }
     },
-    params: t.Object({ slug: t.String() }),
-  })
+    {
+      detail: {
+        tags: ['Plugins'],
+        summary: 'Delete plugin',
+        description:
+          'Removes the plugin and all of its releases from the registry. Requires auth and only the owner can perform it. ' +
+          'The upstream repo and the webhook on the repo are left untouched.',
+        operationId: 'deletePlugin',
+        security: [{ bearerAuth: [] }, { cookieAuth: [] }],
+      },
+      params: t.Object({ slug: t.String() }),
+    },
+  )

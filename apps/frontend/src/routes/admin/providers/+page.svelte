@@ -69,7 +69,12 @@
 				clientSecret: newClientSecret,
 				logoUrl: newLogoUrl.trim() ? newLogoUrl.trim() : null,
 			})
-			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
+			if (error)
+				throw new Error(
+					typeof error.value === 'string'
+						? error.value
+						: ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`),
+				)
 			toast.success(m.admin_providers_added({ name: newDisplayName }))
 			newId = ''
 			newDisplayName = ''
@@ -87,7 +92,12 @@
 	async function toggleInstance(inst: ProviderInstanceAdmin) {
 		try {
 			const { error } = await eden.api.admin['provider-instances']({ id: inst.id }).patch({ enabled: !inst.enabled })
-			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
+			if (error)
+				throw new Error(
+					typeof error.value === 'string'
+						? error.value
+						: ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`),
+				)
 			await load()
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : m.admin_providers_update_failed())
@@ -98,7 +108,12 @@
 		if (!confirm(m.admin_providers_confirm_delete({ id: inst.id }))) return
 		try {
 			const { error } = await eden.api.admin['provider-instances']({ id: inst.id }).delete()
-			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
+			if (error)
+				throw new Error(
+					typeof error.value === 'string'
+						? error.value
+						: ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`),
+				)
 			toast.success(m.admin_providers_deleted())
 			await load()
 		} catch (e) {
@@ -118,7 +133,7 @@
 				body: form,
 			})
 			if (!res.ok) {
-				const data = await res.json().catch(() => null) as { error?: string } | null
+				const data = (await res.json().catch(() => null)) as { error?: string } | null
 				throw new Error(data?.error ?? `Upload failed: ${res.status}`)
 			}
 			toast.success(m.admin_providers_logo_uploaded())
@@ -135,12 +150,14 @@
 		{#if !loading}
 			<span class="inline-flex items-center gap-1.5">
 				<span class="h-1.5 w-1.5 rounded-full bg-emerald-500" aria-hidden="true"></span>
-				{instances.filter((i) => i.enabled).length} {m.admin_providers_enabled().toLowerCase()}
+				{instances.filter((i) => i.enabled).length}
+				{m.admin_providers_enabled().toLowerCase()}
 			</span>
 			<span class="text-muted-foreground/60">·</span>
 			<span class="inline-flex items-center gap-1.5">
 				<span class="h-1.5 w-1.5 rounded-full bg-muted-foreground/40" aria-hidden="true"></span>
-				{instances.filter((i) => !i.enabled).length} {m.admin_providers_disabled().toLowerCase()}
+				{instances.filter((i) => !i.enabled).length}
+				{m.admin_providers_disabled().toLowerCase()}
 			</span>
 		{/if}
 	{/snippet}
@@ -158,14 +175,21 @@
 			<p class="text-sm text-muted-foreground">{m.admin_providers_empty()}</p>
 		{:else}
 			{#each instances as inst (inst.id)}
-				<div class="flex items-center justify-between gap-3 rounded-md border border-border bg-card/50 px-4 py-3 transition-colors hover:border-border/80">
+				<div
+					class="flex items-center justify-between gap-3 rounded-md border border-border bg-card/50 px-4 py-3 transition-colors hover:border-border/80"
+				>
 					<div class="flex items-center gap-3 min-w-0">
 						<span
 							class="h-2 w-2 rounded-full shrink-0 {inst.enabled ? 'bg-emerald-500' : 'bg-muted-foreground/40'}"
 							aria-hidden="true"
 							title={inst.enabled ? m.admin_providers_enabled() : m.admin_providers_disabled()}
 						></span>
-						<ProviderIcon kind={inst.kind} baseUrl={inst.baseUrl} logoUrl={inst.logoUrl} class="h-5 w-5 flex-shrink-0" />
+						<ProviderIcon
+							kind={inst.kind}
+							baseUrl={inst.baseUrl}
+							logoUrl={inst.logoUrl}
+							class="h-5 w-5 flex-shrink-0"
+						/>
 						<div class="space-y-1 min-w-0">
 							<div class="flex items-center gap-2 flex-wrap">
 								<span class="font-medium">{inst.displayName}</span>
@@ -202,7 +226,9 @@
 		<CardTitle class="text-base">{m.admin_providers_add_title()}</CardTitle>
 		<CardDescription>
 			{m.admin_providers_add_subtitle_prefix()}
-			<code class="font-mono">{`${typeof window !== 'undefined' ? window.location.origin : ''}/auth/<id>/callback`}</code>.
+			<code class="font-mono"
+				>{`${typeof window !== 'undefined' ? window.location.origin : ''}/auth/<id>/callback`}</code
+			>.
 		</CardDescription>
 	</CardHeader>
 	<CardContent>

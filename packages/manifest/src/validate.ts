@@ -39,9 +39,7 @@ export function validateManifest(
       return { ok: true, normalized: dataCopy as Record<string, unknown>, errors: [] }
     }
     // Filter out additionalProperties errors — those were handled by removeAdditional.
-    const errors = mapAjvErrors(validate.errors).filter(
-      (e) => e.code !== 'additionalProperties',
-    )
+    const errors = mapAjvErrors(validate.errors).filter((e) => e.code !== 'additionalProperties')
     if (errors.length === 0) {
       return { ok: true, normalized: dataCopy as Record<string, unknown>, errors: [] }
     }

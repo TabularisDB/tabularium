@@ -1,6 +1,6 @@
 import { resolve } from 'node:path'
 import { hashPassword, verifyPassword } from './password'
-import { isProd, env } from './env'
+import { env } from './env'
 
 export const BOOTSTRAP_EMAIL = 'admin@example.com'
 const ALPHABET = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789'

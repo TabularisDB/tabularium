@@ -6,9 +6,9 @@
  */
 
 export interface VerifyAssetHashResult {
-  ok: boolean;
-  sha256: string;
-  size: number;
+  ok: boolean
+  sha256: string
+  size: number
 }
 
 /**
@@ -23,43 +23,43 @@ export async function verifyAssetHash(
   stream: ReadableStream<Uint8Array>,
   expectedHex: string,
 ): Promise<VerifyAssetHashResult> {
-  const reader = stream.getReader();
-  const chunks: Uint8Array[] = [];
-  let size = 0;
+  const reader = stream.getReader()
+  const chunks: Uint8Array[] = []
+  let size = 0
   try {
     for (;;) {
-      const { done, value } = await reader.read();
-      if (done) break;
+      const { done, value } = await reader.read()
+      if (done) break
       if (value) {
-        chunks.push(value);
-        size += value.byteLength;
+        chunks.push(value)
+        size += value.byteLength
       }
     }
   } finally {
-    reader.releaseLock();
+    reader.releaseLock()
   }
 
-  const concatenated = new Uint8Array(size);
-  let offset = 0;
+  const concatenated = new Uint8Array(size)
+  let offset = 0
   for (const chunk of chunks) {
-    concatenated.set(chunk, offset);
-    offset += chunk.byteLength;
+    concatenated.set(chunk, offset)
+    offset += chunk.byteLength
   }
 
-  const digest = await crypto.subtle.digest("SHA-256", concatenated);
-  const sha256 = bytesToHex(new Uint8Array(digest));
+  const digest = await crypto.subtle.digest('SHA-256', concatenated)
+  const sha256 = bytesToHex(new Uint8Array(digest))
 
   return {
     ok: constantTimeEqualHex(sha256, expectedHex),
     sha256,
     size,
-  };
+  }
 }
 
 export interface VerifyRegistrySignatureInput {
-  payloadBytes: Uint8Array;
-  signature: Uint8Array;
-  publicKeyJwk: JsonWebKey;
+  payloadBytes: Uint8Array
+  signature: Uint8Array
+  publicKeyJwk: JsonWebKey
 }
 
 /**
@@ -67,26 +67,18 @@ export interface VerifyRegistrySignatureInput {
  * registry's public JWK. Throws if the JWK cannot be imported (e.g. wrong
  * curve / malformed); returns `false` for a well-formed but invalid signature.
  */
-export async function verifyRegistrySignature(
-  input: VerifyRegistrySignatureInput,
-): Promise<boolean> {
-  const { payloadBytes, signature, publicKeyJwk } = input;
-  const key = await crypto.subtle.importKey(
-    "jwk",
-    publicKeyJwk,
-    { name: "Ed25519" },
-    false,
-    ["verify"],
-  );
-  return crypto.subtle.verify("Ed25519", key, signature, payloadBytes);
+export async function verifyRegistrySignature(input: VerifyRegistrySignatureInput): Promise<boolean> {
+  const { payloadBytes, signature, publicKeyJwk } = input
+  const key = await crypto.subtle.importKey('jwk', publicKeyJwk, { name: 'Ed25519' }, false, ['verify'])
+  return crypto.subtle.verify('Ed25519', key, signature as BufferSource, payloadBytes as BufferSource)
 }
 
 function bytesToHex(bytes: Uint8Array): string {
-  let out = "";
+  let out = ''
   for (let i = 0; i < bytes.length; i++) {
-    out += bytes[i].toString(16).padStart(2, "0");
+    out += bytes[i].toString(16).padStart(2, '0')
   }
-  return out;
+  return out
 }
 
 /**
@@ -94,10 +86,10 @@ function bytesToHex(bytes: Uint8Array): string {
  * fast if lengths differ — the length itself is not secret.
  */
 function constantTimeEqualHex(a: string, b: string): boolean {
-  if (a.length !== b.length) return false;
-  let diff = 0;
+  if (a.length !== b.length) return false
+  let diff = 0
   for (let i = 0; i < a.length; i++) {
-    diff |= a.charCodeAt(i) ^ b.charCodeAt(i);
+    diff |= a.charCodeAt(i) ^ b.charCodeAt(i)
   }
-  return diff === 0;
+  return diff === 0
 }

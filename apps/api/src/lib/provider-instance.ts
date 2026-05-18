@@ -113,7 +113,11 @@ export async function updateInstance(id: string, patch: UpdateInstanceInput): Pr
   if (patch.displayName !== undefined) set.displayName = patch.displayName
   if (patch.baseUrl !== undefined) {
     let parsed: URL
-    try { parsed = new URL(patch.baseUrl) } catch { throw new Error('baseUrl must be a valid URL') }
+    try {
+      parsed = new URL(patch.baseUrl)
+    } catch {
+      throw new Error('baseUrl must be a valid URL')
+    }
     set.baseUrl = parsed.origin
   }
   if (patch.clientId !== undefined) set.clientId = patch.clientId

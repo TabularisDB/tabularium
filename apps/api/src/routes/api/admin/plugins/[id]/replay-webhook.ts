@@ -1,9 +1,9 @@
 import { Elysia, t } from 'elysia'
 import { ulid } from 'ulid'
-import { eq, and } from 'drizzle-orm'
+import { eq } from 'drizzle-orm'
 import { adminMiddleware } from '$middleware/admin'
 import { db } from '$db'
-import { plugins, releases, identities } from '$db/schema'
+import { plugins, releases } from '$db/schema'
 import { inferPlatformKey } from '$lib/webhook'
 import { parseRepoUrl } from '$lib/providers'
 import { decryptToken } from '$lib/crypto'
@@ -26,9 +26,9 @@ function compareSemver(a: string, b: string): number {
   return aPat - bPat
 }
 
-export default new Elysia()
-  .use(adminMiddleware)
-  .post('/', async ({ params, set, admin, request }) => {
+export default new Elysia().use(adminMiddleware).post(
+  '/',
+  async ({ params, set, admin, request }) => {
     const plugin = await db.query.plugins.findFirst({ where: { id: params.id } })
     if (!plugin) {
       set.status = 404
@@ -92,12 +92,13 @@ export default new Elysia()
     })
 
     return { ok: true, version, assets: Object.keys(assetMap) }
-  }, {
+  },
+  {
     detail: {
       tags: ['Admin'],
       summary: 'Manually replay the latest release ingest',
       description:
-        'Re-fetches the upstream latest release via the owner\'s stored OAuth token and runs the same ingest path the ' +
+        "Re-fetches the upstream latest release via the owner's stored OAuth token and runs the same ingest path the " +
         'webhook uses. Useful when the webhook never fired (initial setup) or upstream timed out. Skips signature verification.',
       operationId: 'replayWebhook',
       security: [{ bearerAuth: [] }, { cookieAuth: [] }],
@@ -116,4 +117,5 @@ export default new Elysia()
       422: t.Object({ error: t.String() }),
       423: t.Object({ error: t.String() }),
     },
-  })
+  },
+)

@@ -26,12 +26,15 @@ class NullStorage implements StorageStore {
   async put(): Promise<PutResult> {
     throw new Error('storage driver=off — set infra.storage.driver in /admin/infra')
   }
-  async del(): Promise<void> { }
+  async del(): Promise<void> {}
 }
 
 class DiskStorage implements StorageStore {
   driver: StorageDriver = 'disk'
-  constructor(private root: string, private publicPrefix: string) { }
+  constructor(
+    private root: string,
+    private publicPrefix: string,
+  ) {}
 
   private fsPath(key: string): string {
     return resolve(this.root, key)
@@ -58,7 +61,7 @@ class S3Storage implements StorageStore {
   constructor(
     private client: import('bun').S3Client,
     private publicBaseUrl: string,
-  ) { }
+  ) {}
 
   async put(key: string, body: Uint8Array | ArrayBuffer, contentType: string): Promise<PutResult> {
     const file = this.client.file(key)

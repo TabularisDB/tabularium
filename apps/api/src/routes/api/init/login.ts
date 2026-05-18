@@ -7,42 +7,40 @@ import { rateLimit } from '$middleware/rate-limit'
 
 const log = logger.child({ module: 'init-login' })
 
-export default new Elysia()
-  .use(rateLimit({ bucket: 'init-login', limit: 10, windowSeconds: 900 }))
-  .post(
-    '/',
-    async ({ body, set, cookie }) => {
-      if (!isBootstrapActive()) {
-        set.status = 410
-        return { error: 'setup_already_complete' }
-      }
-      const ok = await verifyBootstrap(body.email, body.password)
-      if (!ok) {
-        log.warn({ email: body.email }, 'bootstrap login failed')
-        set.status = 401
-        return { error: 'invalid_credentials' }
-      }
-      const jwt = await signBootstrapJwt()
-      cookie.auth.set({
-        value: jwt,
-        httpOnly: true,
-        secure: isProd(),
-        maxAge: 60 * 60 * 24 * 7,
-        sameSite: 'lax',
-        path: '/',
-      })
-      return { ok: true }
+export default new Elysia().use(rateLimit({ bucket: 'init-login', limit: 10, windowSeconds: 900 })).post(
+  '/',
+  async ({ body, set, cookie }) => {
+    if (!isBootstrapActive()) {
+      set.status = 410
+      return { error: 'setup_already_complete' }
+    }
+    const ok = await verifyBootstrap(body.email, body.password)
+    if (!ok) {
+      log.warn({ email: body.email }, 'bootstrap login failed')
+      set.status = 401
+      return { error: 'invalid_credentials' }
+    }
+    const jwt = await signBootstrapJwt()
+    cookie.auth.set({
+      value: jwt,
+      httpOnly: true,
+      secure: isProd(),
+      maxAge: 60 * 60 * 24 * 7,
+      sameSite: 'lax',
+      path: '/',
+    })
+    return { ok: true }
+  },
+  {
+    detail: { tags: ['Auth'], summary: 'Bootstrap sign-in for the install wizard', operationId: 'initLogin' },
+    body: t.Object({
+      email: t.String({ minLength: 3, maxLength: 254 }),
+      password: t.String({ minLength: 1, maxLength: 256 }),
+    }),
+    response: {
+      200: t.Object({ ok: t.Boolean() }),
+      401: t.Object({ error: t.String() }),
+      410: t.Object({ error: t.String() }),
     },
-    {
-      detail: { tags: ['Auth'], summary: 'Bootstrap sign-in for the install wizard', operationId: 'initLogin' },
-      body: t.Object({
-        email: t.String({ minLength: 3, maxLength: 254 }),
-        password: t.String({ minLength: 1, maxLength: 256 }),
-      }),
-      response: {
-        200: t.Object({ ok: t.Boolean() }),
-        401: t.Object({ error: t.String() }),
-        410: t.Object({ error: t.String() }),
-      },
-    },
-  )
+  },
+)

@@ -11,14 +11,10 @@ import { handleJwks } from './well-known/registry-key.json'
  * response is served at both the spec-correct `/.well-known/registry-key.json`
  * and the file-router-discoverable `/well-known/registry-key.json`.
  */
-export default new Elysia().get(
-  '/.well-known/registry-key.json',
-  async ({ set }) => handleJwks(set),
-  {
-    detail: {
-      tags: ['Plugins'],
-      summary: 'JWKS for registry release signatures',
-      operationId: 'getRegistryJwksWellKnown',
-    },
+export default new Elysia().get('/.well-known/registry-key.json', async ({ set }) => handleJwks(set), {
+  detail: {
+    tags: ['Plugins'],
+    summary: 'JWKS for registry release signatures',
+    operationId: 'getRegistryJwksWellKnown',
   },
-)
+})

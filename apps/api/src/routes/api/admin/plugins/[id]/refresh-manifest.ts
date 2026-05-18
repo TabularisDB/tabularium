@@ -1,8 +1,6 @@
 import { Elysia, t } from 'elysia'
-import { eq, and } from 'drizzle-orm'
 import { adminMiddleware } from '$middleware/admin'
 import { db } from '$db'
-import { plugins, identities } from '$db/schema'
 import { parseRepoUrl } from '$lib/providers'
 import { decryptToken } from '$lib/crypto'
 import { resolveManifest, rawContentBase } from '$lib/manifest'
@@ -11,9 +9,9 @@ import { cache } from '$lib/cache'
 import { latestCacheKey } from '$routes/api/plugins/[slug]/latest'
 import { recordAudit, actorFromAdmin } from '$lib/audit'
 
-export default new Elysia()
-  .use(adminMiddleware)
-  .post('/', async ({ params, body, set, admin, request }) => {
+export default new Elysia().use(adminMiddleware).post(
+  '/',
+  async ({ params, body, set, admin, request }) => {
     const plugin = await db.query.plugins.findFirst({ where: { id: params.id } })
     if (!plugin) {
       set.status = 404
@@ -51,11 +49,13 @@ export default new Elysia()
       meta: { ref: branch, source: manifest.source },
     })
     return { ok: true, slug: plugin.id, source: manifest.source, ref: branch }
-  }, {
+  },
+  {
     detail: {
       tags: ['Admin'],
       summary: 'Re-fetch the .tabularium manifest from the repo',
-      description: 'Pulls `.tabularium` (and the README) from the repo at the given ref (defaults to the latest released tag or HEAD).',
+      description:
+        'Pulls `.tabularium` (and the README) from the repo at the given ref (defaults to the latest released tag or HEAD).',
       operationId: 'refreshPluginManifest',
       security: [{ bearerAuth: [] }, { cookieAuth: [] }],
     },
@@ -67,4 +67,5 @@ export default new Elysia()
       412: t.Object({ error: t.String() }),
       422: t.Object({ error: t.String() }),
     },
-  })
+  },
+)

@@ -20,25 +20,21 @@ async function state(adminId: string) {
 
 export default new Elysia()
   .use(adminMiddleware)
-  .get(
-    '/',
-    async ({ admin }) => state(admin.id),
-    {
-      detail: {
-        tags: ['Admin'],
-        summary: 'Read email-recovery state for the current admin',
-        operationId: 'getAdminEmailRecovery',
-        security: [{ bearerAuth: [] }, { cookieAuth: [] }],
-      },
-      response: {
-        200: t.Object({
-          persist: t.Boolean(),
-          hasCredentials: t.Boolean(),
-          email: t.Nullable(t.String()),
-        }),
-      },
+  .get('/', async ({ admin }) => state(admin.id), {
+    detail: {
+      tags: ['Admin'],
+      summary: 'Read email-recovery state for the current admin',
+      operationId: 'getAdminEmailRecovery',
+      security: [{ bearerAuth: [] }, { cookieAuth: [] }],
     },
-  )
+    response: {
+      200: t.Object({
+        persist: t.Boolean(),
+        hasCredentials: t.Boolean(),
+        email: t.Nullable(t.String()),
+      }),
+    },
+  })
   .put(
     '/',
     async ({ body, set, admin, request }) => {
@@ -63,9 +59,7 @@ export default new Elysia()
         const email = body.email.toLowerCase()
         const existing = await db.query.rootCredentials.findFirst({ where: { userId: admin.id } })
         if (existing) {
-          await db.update(rootCredentials)
-            .set({ email, passwordHash })
-            .where(eq(rootCredentials.userId, admin.id))
+          await db.update(rootCredentials).set({ email, passwordHash }).where(eq(rootCredentials.userId, admin.id))
         } else {
           await db.insert(rootCredentials).values({ userId: admin.id, email, passwordHash })
         }

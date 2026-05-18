@@ -27,9 +27,7 @@ export type BuildIntegrityInput = {
 // release — only normalized projections — so for the first cut we hash the
 // canonical empty object. Consumers know the algorithm; the real value will
 // be plumbed once releases capture their source manifest.
-const PLACEHOLDER_MANIFEST_SHA256 = createHash('sha256')
-  .update(canonicalize({}))
-  .digest('hex')
+const PLACEHOLDER_MANIFEST_SHA256 = createHash('sha256').update(canonicalize({})).digest('hex')
 
 function parseAttestationBundle(raw: string | null): unknown {
   if (!raw) return null
@@ -51,9 +49,7 @@ function parseAttestationBundle(raw: string | null): unknown {
  * rows (legacy releases pre-backfill). The caller is responsible for
  * omitting or nulling the integrity field on its response in that case.
  */
-export async function buildIntegrity(
-  input: BuildIntegrityInput,
-): Promise<IntegrityResult | null> {
+export async function buildIntegrity(input: BuildIntegrityInput): Promise<IntegrityResult | null> {
   const release = await db.query.releases.findFirst({
     where: { pluginId: input.slug, version: input.version },
     with: { assetRows: true },

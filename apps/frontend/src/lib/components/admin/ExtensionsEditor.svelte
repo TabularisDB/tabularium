@@ -76,19 +76,19 @@
 
 	function nodeToForm(name: string, node: SchemaNode): FormProperty {
 		const t = node.type as FormProperty['type'] | undefined
-		const isSimple = (
+		const isSimple =
 			t === 'string' ||
 			t === 'number' ||
 			t === 'integer' ||
 			t === 'boolean' ||
 			(t === 'array' && isSimpleArray(node)) ||
 			(t === 'object' && Object.keys(node.properties ?? {}).length === 0)
-		)
 		const fp = emptyProperty(false)
 		fp.name = name
-		fp.type = t && ['string', 'number', 'integer', 'boolean', 'array', 'object'].includes(t)
-			? (t as FormProperty['type'])
-			: 'string'
+		fp.type =
+			t && ['string', 'number', 'integer', 'boolean', 'array', 'object'].includes(t)
+				? (t as FormProperty['type'])
+				: 'string'
 		fp.description = typeof node.description === 'string' ? node.description : ''
 		if (t === 'string' && Array.isArray(node.enum)) {
 			fp.stringEnum = (node.enum as string[]).join(', ')
@@ -433,11 +433,7 @@
 					{:else}
 						<div class="grid gap-1">
 							<Label class="text-xs">{m.admin_manifest_ext_advanced_json_label()}</Label>
-							<JsonEditor
-								bind:value={fp.advancedJson}
-								minHeight="10rem"
-								onchange={() => commit()}
-							/>
+							<JsonEditor bind:value={fp.advancedJson} minHeight="10rem" onchange={() => commit()} />
 							<button
 								type="button"
 								class="text-xs text-muted-foreground hover:text-foreground inline-flex items-center gap-1.5 transition-colors self-start"

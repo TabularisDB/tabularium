@@ -42,9 +42,7 @@
 	let budgetMb = $state<number>(Math.round(DEFAULT_BUDGET_BYTES / MB))
 	let initialBudgetMb = $state<number>(Math.round(DEFAULT_BUDGET_BYTES / MB))
 
-	const dirty = $derived(
-		Number.isFinite(budgetMb) && budgetMb > 0 && budgetMb !== initialBudgetMb,
-	)
+	const dirty = $derived(Number.isFinite(budgetMb) && budgetMb > 0 && budgetMb !== initialBudgetMb)
 
 	function extractError(error: unknown): string {
 		const e = error as { value?: unknown; status?: number }
@@ -79,9 +77,8 @@
 		const { data, error } = await eden.api.admin.instance.get()
 		if (error) throw new Error(extractError(error))
 		const res = data as { assetSizeCapBytes: number }
-		const bytes = Number.isFinite(res.assetSizeCapBytes) && res.assetSizeCapBytes > 0
-			? res.assetSizeCapBytes
-			: DEFAULT_BUDGET_BYTES
+		const bytes =
+			Number.isFinite(res.assetSizeCapBytes) && res.assetSizeCapBytes > 0 ? res.assetSizeCapBytes : DEFAULT_BUDGET_BYTES
 		const mb = Math.max(1, Math.round(bytes / MB))
 		budgetMb = mb
 		initialBudgetMb = mb

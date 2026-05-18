@@ -1,12 +1,7 @@
 import { Elysia, t } from 'elysia'
 import { adminMiddleware } from '$middleware/admin'
 import { recordAudit, actorFromAdmin } from '$lib/audit'
-import {
-  getExtensionsDelta,
-  setExtensionsDelta,
-  buildMergedSchema,
-  type ExtensionsDelta,
-} from '$lib/manifest-schema'
+import { getExtensionsDelta, setExtensionsDelta, buildMergedSchema, type ExtensionsDelta } from '$lib/manifest-schema'
 
 export default new Elysia()
   .use(adminMiddleware)

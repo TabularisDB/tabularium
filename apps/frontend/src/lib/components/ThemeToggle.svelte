@@ -6,11 +6,7 @@
 	import Button from '$components/ui/Button.svelte'
 
 	function cycle() {
-		const next = userPrefersMode.current === 'light'
-			? 'dark'
-			: userPrefersMode.current === 'dark'
-				? 'system'
-				: 'light'
+		const next = userPrefersMode.current === 'light' ? 'dark' : userPrefersMode.current === 'dark' ? 'system' : 'light'
 		setMode(next)
 	}
 

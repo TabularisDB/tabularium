@@ -20,9 +20,7 @@ export type FetchAttestationArgs = {
  * to retry vs. skip; the webhook hashing loop already swallows these into a
  * warn log.
  */
-export async function fetchAttestation(
-  args: FetchAttestationArgs,
-): Promise<unknown | null> {
+export async function fetchAttestation(args: FetchAttestationArgs): Promise<unknown | null> {
   const { apiBase, owner, repo, sha256, token } = args
   const url = `${apiBase}/repos/${owner}/${repo}/attestations/sha256:${sha256}`
   const res = await fetch(url, {

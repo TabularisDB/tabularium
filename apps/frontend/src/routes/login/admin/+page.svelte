@@ -32,7 +32,12 @@
 		submitting = true
 		try {
 			const { error } = await eden.auth.email.login.post({ email, password })
-			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
+			if (error)
+				throw new Error(
+					typeof error.value === 'string'
+						? error.value
+						: ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`),
+				)
 			await auth.refresh()
 			await goto('/admin')
 		} catch (e) {
@@ -88,7 +93,8 @@
 	</Card>
 
 	<p class="text-center text-xs text-muted-foreground">
-		{m.login_admin_disable_hint_prefix()} <a href="/settings" class="text-primary hover:underline">{m.login_admin_disable_hint_link()}</a>
+		{m.login_admin_disable_hint_prefix()}
+		<a href="/settings" class="text-primary hover:underline">{m.login_admin_disable_hint_link()}</a>
 		{m.login_admin_disable_hint_suffix()}
 	</p>
 </div>

@@ -16,7 +16,6 @@ import { cache } from '$lib/cache'
 import { latestCacheKey } from '$routes/api/plugins/[slug]/latest'
 import { hashAsset, serializeAssets, parseAssets, type AssetMap } from '$lib/asset'
 import { logger } from '$lib/logger'
-import { identities } from '$db/schema'
 import { decryptToken } from '$lib/crypto'
 import { resolveManifest, rawContentBase } from '$lib/manifest'
 import { manifestPatch, applyManifestToPlugin } from '$lib/manifest-apply'
@@ -36,8 +35,9 @@ function compareSemver(a: string, b: string): number {
   return aPat - bPat
 }
 
-export default new Elysia()
-  .post('/', async ({ request, set }) => {
+export default new Elysia().post(
+  '/',
+  async ({ request, set }) => {
     const rawBody = await request.arrayBuffer()
     const bodyBuffer = Buffer.from(rawBody)
 
@@ -219,9 +219,10 @@ export default new Elysia()
           })
           if (ownerIdentity?.accessToken) {
             const token = decryptToken(ownerIdentity.accessToken)
-            const apiBase = ref.instance.baseUrl === 'https://github.com'
-              ? 'https://api.github.com'
-              : `${ref.instance.baseUrl}/api/v3`
+            const apiBase =
+              ref.instance.baseUrl === 'https://github.com'
+                ? 'https://api.github.com'
+                : `${ref.instance.baseUrl}/api/v3`
             for (const [name, info] of hashed) {
               try {
                 const bundle = await fetchAttestation({
@@ -238,31 +239,28 @@ export default new Elysia()
                     .where(and(eq(releaseAssets.releaseId, current.id), eq(releaseAssets.name, name)))
                 }
               } catch (err) {
-                ingestLog.warn(
-                  { err, slug: plugin.id, version, name },
-                  'attestation relay failed',
-                )
+                ingestLog.warn({ err, slug: plugin.id, version, name }, 'attestation relay failed')
               }
             }
           }
         }
 
         await cache().del(latestCacheKey(plugin.id))
-        ingestLog.info(
-          { slug: plugin.id, version, hashed: hashed.size },
-          'release assets hashed',
-        )
+        ingestLog.info({ slug: plugin.id, version, hashed: hashed.size }, 'release assets hashed')
       } catch (err) {
         ingestLog.error({ err, slug: plugin.id, version }, 'asset hashing failed')
       }
     })
 
     return { ok: true, version, assets: Object.keys(assetMap) }
-  }, {
+  },
+  {
     detail: {
       tags: ['Webhooks'],
       summary: 'Release event ingestion',
-      description: 'GitHub / GitLab / Gitea (and Forgejo) post releases here. Signature scheme is picked per plugin\'s linked provider instance kind.',
+      description:
+        "GitHub / GitLab / Gitea (and Forgejo) post releases here. Signature scheme is picked per plugin's linked provider instance kind.",
       operationId: 'releaseWebhook',
     },
-  })
+  },
+)

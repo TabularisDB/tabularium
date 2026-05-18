@@ -140,7 +140,12 @@
 		deleting = true
 		try {
 			const { error } = await eden.api.plugins({ slug: plugin.id }).delete()
-			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
+			if (error)
+				throw new Error(
+					typeof error.value === 'string'
+						? error.value
+						: ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`),
+				)
 			toast.success(m.plugin_detail_deleted_toast())
 			goto('/plugins')
 		} catch (e) {
@@ -159,7 +164,12 @@
 				newOwnerId: newOwnerId.trim(),
 				message: message?.trim() || undefined,
 			})
-			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
+			if (error)
+				throw new Error(
+					typeof error.value === 'string'
+						? error.value
+						: ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`),
+				)
 			toast.success(m.plugin_detail_transfer_offered())
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : m.plugin_detail_transfer_failed())
@@ -269,7 +279,9 @@
 	{:else if plugin}
 		<!-- HERO -->
 		<header class="relative pt-14 pb-10">
-			<div class="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-br from-primary/10 via-transparent to-primary/[0.03]"></div>
+			<div
+				class="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-br from-primary/10 via-transparent to-primary/[0.03]"
+			></div>
 
 			<nav class="text-xs font-mono text-muted-foreground mb-6">
 				<a href="/plugins" class="hover:text-foreground transition-colors">/plugins</a>
@@ -278,7 +290,9 @@
 			</nav>
 
 			<div class="flex items-start gap-6 flex-wrap">
-				<div class="h-20 w-20 rounded-xl border border-border flex items-center justify-center overflow-hidden flex-shrink-0 bg-card">
+				<div
+					class="h-20 w-20 rounded-xl border border-border flex items-center justify-center overflow-hidden flex-shrink-0 bg-card"
+				>
 					{#if plugin.iconUrl}
 						<img src={plugin.iconUrl} alt={plugin.name} class="h-full w-full object-contain p-2" loading="eager" />
 					{:else}
@@ -290,7 +304,9 @@
 					<div class="flex items-center gap-3 flex-wrap">
 						<h1 class="text-5xl md:text-6xl leading-[0.95] tracking-tight font-semibold">{plugin.name}</h1>
 						{#if plugin.featured}
-							<span class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] tracking-[0.18em] uppercase font-mono bg-warning/10 text-warning border border-warning/25">
+							<span
+								class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] tracking-[0.18em] uppercase font-mono bg-warning/10 text-warning border border-warning/25"
+							>
 								<Sparkles class="h-3 w-3" />
 								{m.plugin_detail_featured()}
 							</span>
@@ -328,7 +344,10 @@
 			{#if plugin.tags.length > 0}
 				<div class="flex flex-wrap items-center gap-x-3 gap-y-1 mt-6">
 					{#each plugin.tags as tag (tag)}
-						<a href={`/plugins?tag=${encodeURIComponent(tag)}`} class="font-mono text-xs text-muted-foreground hover:text-foreground transition-colors">
+						<a
+							href={`/plugins?tag=${encodeURIComponent(tag)}`}
+							class="font-mono text-xs text-muted-foreground hover:text-foreground transition-colors"
+						>
 							<span class="opacity-50">#</span>{tag}
 						</a>
 					{/each}
@@ -390,7 +409,10 @@
 										loading="lazy"
 									/>
 									{#if shot.caption}
-										<span class="absolute inset-x-0 bottom-0 px-2.5 py-1.5 text-xs bg-gradient-to-t from-black/70 to-transparent text-white/90 text-left">{shot.caption}</span>
+										<span
+											class="absolute inset-x-0 bottom-0 px-2.5 py-1.5 text-xs bg-gradient-to-t from-black/70 to-transparent text-white/90 text-left"
+											>{shot.caption}</span
+										>
 									{/if}
 								</button>
 							{/each}
@@ -407,14 +429,20 @@
 								<Languages class="h-3.5 w-3.5" />
 								<div class="inline-flex gap-1">
 									{#each plugin.readmeAvailableLocales as loc (loc)}
-										<span class="font-mono text-[11px] px-2 py-0.5 rounded border {loc === plugin.readmeLocale ? 'text-foreground bg-primary/10 border-primary/30' : 'text-muted-foreground border-border'}">{LOCALE_LABELS[loc as Locale] ?? loc}</span>
+										<span
+											class="font-mono text-[11px] px-2 py-0.5 rounded border {loc === plugin.readmeLocale
+												? 'text-foreground bg-primary/10 border-primary/30'
+												: 'text-muted-foreground border-border'}">{LOCALE_LABELS[loc as Locale] ?? loc}</span
+										>
 									{/each}
 								</div>
 							</div>
 						{/if}
 					</div>
 					{#if plugin.readmeHtml}
-						<article class="prose prose-sm dark:prose-invert max-w-none rounded-xl border border-border bg-card px-9 py-8 prose-headings:font-semibold prose-headings:tracking-tight prose-pre:font-mono prose-pre:text-[12.5px] prose-pre:rounded-md prose-pre:border prose-pre:border-border prose-code:font-mono">
+						<article
+							class="prose prose-sm dark:prose-invert max-w-none rounded-xl border border-border bg-card px-9 py-8 prose-headings:font-semibold prose-headings:tracking-tight prose-pre:font-mono prose-pre:text-[12.5px] prose-pre:rounded-md prose-pre:border prose-pre:border-border prose-code:font-mono"
+						>
 							{@html plugin.readmeHtml}
 						</article>
 					{:else}
@@ -436,18 +464,31 @@
 								{@const totalSize = Object.values(release.assets).reduce((acc, a) => acc + (a.size ?? 0), 0)}
 								{@const platformCount = Object.keys(release.assets).length}
 								<details class="group border-b border-border [&_summary::-webkit-details-marker]:hidden">
-									<summary class="grid grid-cols-[auto_1fr_auto] gap-4 items-center py-4 cursor-pointer list-none transition-opacity hover:opacity-90">
+									<summary
+										class="grid grid-cols-[auto_1fr_auto] gap-4 items-center py-4 cursor-pointer list-none transition-opacity hover:opacity-90"
+									>
 										<span class="font-mono text-sm">v{release.version}</span>
 										<span class="inline-flex gap-2 flex-wrap">
-											<span class="font-mono text-[10px] px-2 py-0.5 rounded-full bg-foreground/5 text-muted-foreground tracking-wide">{platformCount} {platformCount === 1 ? 'platform' : 'platforms'}</span>
+											<span
+												class="font-mono text-[10px] px-2 py-0.5 rounded-full bg-foreground/5 text-muted-foreground tracking-wide"
+												>{platformCount} {platformCount === 1 ? 'platform' : 'platforms'}</span
+											>
 											{#if totalSize > 0}
-												<span class="font-mono text-[10px] px-2 py-0.5 rounded-full bg-foreground/5 text-muted-foreground tracking-wide">{formatBytes(totalSize)}</span>
+												<span
+													class="font-mono text-[10px] px-2 py-0.5 rounded-full bg-foreground/5 text-muted-foreground tracking-wide"
+													>{formatBytes(totalSize)}</span
+												>
 											{/if}
 											{#if release.minRuntimeVersion}
-												<span class="font-mono text-[10px] px-2 py-0.5 rounded-full bg-foreground/5 text-muted-foreground tracking-wide">runtime ≥ {release.minRuntimeVersion}</span>
+												<span
+													class="font-mono text-[10px] px-2 py-0.5 rounded-full bg-foreground/5 text-muted-foreground tracking-wide"
+													>runtime ≥ {release.minRuntimeVersion}</span
+												>
 											{/if}
 										</span>
-										<span class="font-mono text-[11px] text-muted-foreground whitespace-nowrap">{formatRelative(release.createdAt)}</span>
+										<span class="font-mono text-[11px] text-muted-foreground whitespace-nowrap"
+											>{formatRelative(release.createdAt)}</span
+										>
 									</summary>
 									<div class="pb-4">
 										<table class="w-full border-collapse">
@@ -456,10 +497,19 @@
 													{@const [os, arch] = key.split('-')}
 													<tr class="border-t border-dashed border-border/70 first:border-t-0">
 														<td class="px-2.5 py-2 font-mono text-xs">{platformLabel(key)}</td>
-														<td class="px-2.5 py-2 font-mono text-xs text-muted-foreground">{asset.size ? formatBytes(asset.size) : ''}</td>
-														<td class="px-2.5 py-2 font-mono text-[11px] text-muted-foreground truncate max-w-[280px]" title={asset.sha256 ?? ''}>{asset.sha256 ? asset.sha256.slice(0, 12) + '…' : ''}</td>
+														<td class="px-2.5 py-2 font-mono text-xs text-muted-foreground"
+															>{asset.size ? formatBytes(asset.size) : ''}</td
+														>
+														<td
+															class="px-2.5 py-2 font-mono text-[11px] text-muted-foreground truncate max-w-[280px]"
+															title={asset.sha256 ?? ''}>{asset.sha256 ? asset.sha256.slice(0, 12) + '…' : ''}</td
+														>
 														<td class="px-2.5 py-2 text-right">
-															<a href={`/api/plugins/${plugin.id}/latest?os=${encodeURIComponent(os ?? '')}&arch=${encodeURIComponent(arch ?? '')}&redirect=1`} class="font-mono text-[11px] text-primary hover:underline">↓ {m.plugin_detail_download()}</a>
+															<a
+																href={`/api/plugins/${plugin.id}/latest?os=${encodeURIComponent(os ?? '')}&arch=${encodeURIComponent(arch ?? '')}&redirect=1`}
+																class="font-mono text-[11px] text-primary hover:underline"
+																>↓ {m.plugin_detail_download()}</a
+															>
 														</td>
 													</tr>
 												{/each}
@@ -478,21 +528,27 @@
 				<!-- STATS -->
 				<div class="border border-border rounded-xl bg-card px-4">
 					<div class="flex items-center justify-between py-3 border-b border-dashed border-border/70">
-						<div class="inline-flex items-center gap-2 text-xs uppercase tracking-[0.06em] text-muted-foreground font-mono">
+						<div
+							class="inline-flex items-center gap-2 text-xs uppercase tracking-[0.06em] text-muted-foreground font-mono"
+						>
 							<Star class="h-3.5 w-3.5" />
 							<span>{m.plugin_detail_stat_stars()}</span>
 						</div>
 						<div class="text-2xl font-semibold leading-none">{formatNumber(stats?.stars)}</div>
 					</div>
 					<div class="flex items-center justify-between py-3 border-b border-dashed border-border/70">
-						<div class="inline-flex items-center gap-2 text-xs uppercase tracking-[0.06em] text-muted-foreground font-mono">
+						<div
+							class="inline-flex items-center gap-2 text-xs uppercase tracking-[0.06em] text-muted-foreground font-mono"
+						>
 							<Download class="h-3.5 w-3.5" />
 							<span>{m.plugin_detail_stat_downloads()}</span>
 						</div>
 						<div class="text-2xl font-semibold leading-none">{formatNumber(plugin.downloads)}</div>
 					</div>
 					<div class="flex items-center justify-between py-3 border-b border-dashed border-border/70">
-						<div class="inline-flex items-center gap-2 text-xs uppercase tracking-[0.06em] text-muted-foreground font-mono">
+						<div
+							class="inline-flex items-center gap-2 text-xs uppercase tracking-[0.06em] text-muted-foreground font-mono"
+						>
 							<Clock class="h-3.5 w-3.5" />
 							<span>{m.plugin_detail_stat_last_release()}</span>
 						</div>
@@ -500,7 +556,9 @@
 					</div>
 					{#if latestRelease}
 						<div class="flex items-center justify-between py-3 border-b border-dashed border-border/70">
-							<div class="inline-flex items-center gap-2 text-xs uppercase tracking-[0.06em] text-muted-foreground font-mono">
+							<div
+								class="inline-flex items-center gap-2 text-xs uppercase tracking-[0.06em] text-muted-foreground font-mono"
+							>
 								<HardDrive class="h-3.5 w-3.5" />
 								<span>{m.plugin_detail_stat_size()}</span>
 							</div>
@@ -509,7 +567,9 @@
 					{/if}
 					{#if latestRelease?.minRuntimeVersion}
 						<div class="flex items-center justify-between py-3">
-							<div class="inline-flex items-center gap-2 text-xs uppercase tracking-[0.06em] text-muted-foreground font-mono">
+							<div
+								class="inline-flex items-center gap-2 text-xs uppercase tracking-[0.06em] text-muted-foreground font-mono"
+							>
 								<Cpu class="h-3.5 w-3.5" />
 								<span>{m.plugin_detail_stat_runtime()}</span>
 							</div>
@@ -521,21 +581,36 @@
 				<!-- LINKS -->
 				<div class="flex flex-col border border-border rounded-xl overflow-hidden">
 					{#if plugin.homepage}
-						<a class="inline-flex items-center gap-2.5 px-3.5 py-2.5 text-sm bg-card hover:bg-foreground/[0.04] transition-colors border-b border-border last:border-b-0" href={plugin.homepage} target="_blank" rel="noreferrer">
+						<a
+							class="inline-flex items-center gap-2.5 px-3.5 py-2.5 text-sm bg-card hover:bg-foreground/[0.04] transition-colors border-b border-border last:border-b-0"
+							href={plugin.homepage}
+							target="_blank"
+							rel="noreferrer"
+						>
 							<Code2 class="h-4 w-4" />
 							<span class="capitalize">{provider}</span>
 							<ExternalLink class="h-3 w-3 ml-auto opacity-50" />
 						</a>
 					{/if}
 					{#if plugin.documentationUrl}
-						<a class="inline-flex items-center gap-2.5 px-3.5 py-2.5 text-sm bg-card hover:bg-foreground/[0.04] transition-colors border-b border-border last:border-b-0" href={plugin.documentationUrl} target="_blank" rel="noreferrer">
+						<a
+							class="inline-flex items-center gap-2.5 px-3.5 py-2.5 text-sm bg-card hover:bg-foreground/[0.04] transition-colors border-b border-border last:border-b-0"
+							href={plugin.documentationUrl}
+							target="_blank"
+							rel="noreferrer"
+						>
 							<BookOpen class="h-4 w-4" />
 							<span>{m.plugin_detail_docs()}</span>
 							<ExternalLink class="h-3 w-3 ml-auto opacity-50" />
 						</a>
 					{/if}
 					{#if plugin.issuesUrl}
-						<a class="inline-flex items-center gap-2.5 px-3.5 py-2.5 text-sm bg-card hover:bg-foreground/[0.04] transition-colors border-b border-border last:border-b-0" href={plugin.issuesUrl} target="_blank" rel="noreferrer">
+						<a
+							class="inline-flex items-center gap-2.5 px-3.5 py-2.5 text-sm bg-card hover:bg-foreground/[0.04] transition-colors border-b border-border last:border-b-0"
+							href={plugin.issuesUrl}
+							target="_blank"
+							rel="noreferrer"
+						>
 							<Bug class="h-4 w-4" />
 							<span>{m.plugin_detail_report_issue()}</span>
 							<ExternalLink class="h-3 w-3 ml-auto opacity-50" />

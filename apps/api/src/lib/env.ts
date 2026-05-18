@@ -19,10 +19,7 @@ const EnvSchema = Type.Object({
   NODE_ENV: Type.Optional(Type.Union([Type.Literal('development'), Type.Literal('production'), Type.Literal('test')])),
   LOG_LEVEL: Type.Optional(Type.String()),
 
-  CACHE_DRIVER: Type.Union(
-    [Type.Literal('off'), Type.Literal('memory'), Type.Literal('redis')],
-    { default: 'memory' },
-  ),
+  CACHE_DRIVER: Type.Union([Type.Literal('off'), Type.Literal('memory'), Type.Literal('redis')], { default: 'memory' }),
   REDIS_URL: Type.Optional(Type.String({ pattern: '^rediss?://.+' })),
 
   DATA_DIR: Type.String({ default: './data' }),
@@ -60,7 +57,10 @@ export function isProd(): boolean {
 }
 
 export function allowedOrigins(): string[] {
-  const fromList = env.ALLOWED_ORIGINS?.split(',').map((s) => s.trim()).filter(Boolean) ?? []
+  const fromList =
+    env.ALLOWED_ORIGINS?.split(',')
+      .map((s) => s.trim())
+      .filter(Boolean) ?? []
   const fromWeb = env.WEB_BASE_URL ? [env.WEB_BASE_URL] : []
   const fromBase = [env.BASE_URL]
   const dev = env.NODE_ENV === 'development' ? ['http://localhost:5180', 'http://127.0.0.1:5180'] : []

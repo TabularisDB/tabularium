@@ -10,8 +10,8 @@ import { getCurrentPublicJwk, getPreviousPublicJwk } from '$lib/registry-key'
  * below via the named export.
  */
 export async function handleJwks(set: {
-  status?: number
-  headers: Record<string, string>
+  status?: number | string
+  headers: Record<string, string | number>
 }): Promise<{ keys: unknown[] } | { error: string }> {
   const current = await getCurrentPublicJwk().catch(() => null)
   if (!current) {

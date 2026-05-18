@@ -7,14 +7,7 @@ export function resolveAbsolute(base: string, maybeRelative: string): string {
   }
 }
 
-const PRIVATE_V4 = [
-  /^10\./,
-  /^127\./,
-  /^192\.168\./,
-  /^169\.254\./,
-  /^0\./,
-  /^172\.(1[6-9]|2\d|3[01])\./,
-]
+const PRIVATE_V4 = [/^10\./, /^127\./, /^192\.168\./, /^169\.254\./, /^0\./, /^172\.(1[6-9]|2\d|3[01])\./]
 
 export function isPublicHttpUrl(raw: string): boolean {
   let u: URL

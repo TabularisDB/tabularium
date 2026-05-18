@@ -39,8 +39,9 @@ function checkStorage(setupMode: boolean): Check {
   }
 }
 
-export default new Elysia()
-  .get('/', async ({ set }) => {
+export default new Elysia().get(
+  '/',
+  async ({ set }) => {
     const setupMode = getServerMode() === 'setup'
     const checks: Record<string, Check> = {
       db: await checkDb(setupMode),
@@ -56,11 +57,13 @@ export default new Elysia()
       uptimeSeconds: Math.floor((Date.now() - startedAt) / 1000),
       checks,
     }
-  }, {
+  },
+  {
     detail: {
       tags: ['Plugins'],
       summary: 'Health check',
-      description: 'Pings the DB, cache, and storage adapters. Returns 503 if any check fails. Suitable for k8s/Docker liveness + readiness probes.',
+      description:
+        'Pings the DB, cache, and storage adapters. Returns 503 if any check fails. Suitable for k8s/Docker liveness + readiness probes.',
       operationId: 'healthz',
     },
     response: {
@@ -75,4 +78,5 @@ export default new Elysia()
         checks: t.Record(t.String(), t.Object({ ok: t.Boolean(), detail: t.Optional(t.String()) })),
       }),
     },
-  })
+  },
+)

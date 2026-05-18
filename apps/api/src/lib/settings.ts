@@ -54,11 +54,7 @@ export async function listSettings(): Promise<SettingEntry[]> {
   }))
 }
 
-export async function setSetting(
-  key: string,
-  value: string,
-  opts: { encrypted?: boolean } = {},
-): Promise<void> {
+export async function setSetting(key: string, value: string, opts: { encrypted?: boolean } = {}): Promise<void> {
   assertInit()
   const encrypted = opts.encrypted ?? false
   const stored = encrypted ? encryptToken(value) : value

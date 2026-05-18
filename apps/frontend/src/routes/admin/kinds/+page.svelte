@@ -165,7 +165,9 @@
 							{#snippet header()}
 								<span class="text-sm font-medium">{m.admin_kinds_ext_toggle()}</span>
 								{#if Object.keys(k.extensionsSchema).length > 0}
-									<span class="text-[10px] uppercase tracking-wide text-primary ml-2">{m.admin_kinds_ext_override_active()}</span>
+									<span class="text-[10px] uppercase tracking-wide text-primary ml-2"
+										>{m.admin_kinds_ext_override_active()}</span
+									>
 								{:else}
 									<span class="text-xs text-muted-foreground ml-2 truncate">{m.admin_kinds_ext_empty_reverts()}</span>
 								{/if}

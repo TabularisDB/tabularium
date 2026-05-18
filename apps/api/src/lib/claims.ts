@@ -17,12 +17,9 @@ export async function claimRequest(requestId: string, userId: string): Promise<v
 }
 
 export async function unclaimRequest(requestId: string, userId: string): Promise<void> {
-  await db.delete(pluginRequestClaims).where(
-    and(
-      eq(pluginRequestClaims.requestId, requestId),
-      eq(pluginRequestClaims.userId, userId),
-    ),
-  )
+  await db
+    .delete(pluginRequestClaims)
+    .where(and(eq(pluginRequestClaims.requestId, requestId), eq(pluginRequestClaims.userId, userId)))
 }
 
 export async function claimCount(requestId: string): Promise<number> {
@@ -37,12 +34,7 @@ export async function hasClaimedRequest(requestId: string, userId: string): Prom
   const rows = await db
     .select({ requestId: pluginRequestClaims.requestId })
     .from(pluginRequestClaims)
-    .where(
-      and(
-        eq(pluginRequestClaims.requestId, requestId),
-        eq(pluginRequestClaims.userId, userId),
-      ),
-    )
+    .where(and(eq(pluginRequestClaims.requestId, requestId), eq(pluginRequestClaims.userId, userId)))
     .limit(1)
   return rows.length > 0
 }

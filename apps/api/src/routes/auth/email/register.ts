@@ -13,9 +13,9 @@ const log = logger.child({ module: 'auth-email-register' })
 
 const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
 
-export default new Elysia()
-  .use(rateLimit({ bucket: 'auth-email-register', limit: 3, windowSeconds: 3600 }))
-  .post('/', async ({ body, set, cookie }) => {
+export default new Elysia().use(rateLimit({ bucket: 'auth-email-register', limit: 3, windowSeconds: 3600 })).post(
+  '/',
+  async ({ body, set, cookie }) => {
     const { email, password, displayName } = body
     const normalizedEmail = email.toLowerCase()
     if (!EMAIL_RE.test(normalizedEmail)) {
@@ -27,10 +27,7 @@ export default new Elysia()
       return { error: 'Password must be at least 8 characters' }
     }
 
-    const [{ adminCount }] = await db
-      .select({ adminCount: count() })
-      .from(users)
-      .where(eq(users.role, 'admin'))
+    const [{ adminCount }] = await db.select({ adminCount: count() }).from(users).where(eq(users.role, 'admin'))
     if (adminCount > 0) {
       set.status = 403
       return { error: 'Self-registration is disabled — instance is already initialized' }
@@ -76,7 +73,8 @@ export default new Elysia()
         identities: [] as const,
       },
     }
-  }, {
+  },
+  {
     detail: {
       tags: ['Auth'],
       summary: 'Register the bootstrap admin account',
@@ -105,4 +103,5 @@ export default new Elysia()
       403: t.Object({ error: t.String() }),
       409: t.Object({ error: t.String() }),
     },
-  })
+  },
+)
