@@ -35,7 +35,7 @@
 	let rawUrl = $state('')
 
 	let host = $state('localhost')
-	let port = $state<number>(5432)
+	let port = $state<string>('5432')
 	let dbName = $state('registry')
 	let dbUser = $state('registry')
 	let dbPass = $state('')
@@ -60,8 +60,8 @@
 	})
 
 	$effect(() => {
-		if (dialect === 'pg' && port === 3306) port = 5432
-		if (dialect === 'mysql' && port === 5432) port = 3306
+		if (dialect === 'pg' && port === '3306') port = '5432'
+		if (dialect === 'mysql' && port === '5432') port = '3306'
 	})
 
 	onMount(async () => {
@@ -107,7 +107,7 @@
 			const u = new URL(url.replace(/^postgresql:/, 'postgres:'))
 			dialect = u.protocol.startsWith('mysql') ? 'mysql' : 'pg'
 			host = u.hostname || 'localhost'
-			port = Number(u.port) || (dialect === 'pg' ? 5432 : 3306)
+			port = u.port || (dialect === 'pg' ? '5432' : '3306')
 			dbUser = decodeURIComponent(u.username || '')
 			dbPass = decodeURIComponent(u.password || '')
 			dbName = decodeURIComponent(u.pathname.replace(/^\//, '')) || 'registry'

@@ -12,10 +12,11 @@
 		"strict": true,
 		"moduleResolution": "bundler"
 	}
-	// NOTE: Frontend type-check has ~18 transitive-resolution errors from
-	// apps/api/src/index.ts (uses $lib/* aliases that the frontend tsconfig
-	// can't see). These don't affect runtime — the API + frontend each
-	// build correctly via their own tooling. Proper fix requires either
-	// TypeScript project references (composite mode) or extracting the
-	// App-defining chain into a file with relative imports.
+	// NOTE: `@tabularium/api` exposes its App type via `src/types.ts` (a
+	// hand-shaped placeholder) rather than `src/index.ts`. The actual app
+	// uses elysia-file-router with `types: false`, so routes aren't
+	// statically inferred — the placeholder keeps svelte-check from
+	// chasing the api's `$lib/*` path aliases (which the frontend can't
+	// resolve) while preserving runtime behavior. See
+	// `packages/client/src/index.ts` for the matching Eden Treaty cast.
 }
