@@ -1,8 +1,8 @@
 # Run bun:test across all workspaces that have a test script.
 #
-# Targets `runs-on: codeberg-small` which our lyna self-hosted runner also
-# claims, so jobs run on lyna when available and fall back to Codeberg's
-# shared runners otherwise.
+# Targets `runs-on: docker` — our lyna self-hosted runner registered with
+# label `docker:docker://node:24-bookworm-slim`. Jobs run in that container
+# image on lyna's docker daemon.
 
 name: Test
 
@@ -14,7 +14,7 @@ on:
 
 jobs:
   test:
-    runs-on: codeberg-small
+    runs-on: docker
     container:
       image: node:24-bookworm-slim
     steps:

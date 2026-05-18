@@ -10,7 +10,7 @@ on:
 
 jobs:
   frontend:
-    runs-on: codeberg-small
+    runs-on: docker
     container:
       image: node:24-bookworm-slim
     steps:
@@ -33,7 +33,7 @@ jobs:
         run: bun run check
 
   api:
-    runs-on: codeberg-small
+    runs-on: docker
     container:
       image: node:24-bookworm-slim
     steps:

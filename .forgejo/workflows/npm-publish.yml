@@ -33,7 +33,7 @@ on:
 
 jobs:
   publish:
-    runs-on: codeberg-small
+    runs-on: docker
     container:
       image: node:24-bookworm-slim
     permissions:
