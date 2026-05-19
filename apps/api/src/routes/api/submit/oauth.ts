@@ -13,6 +13,7 @@ import { getSetting } from '$lib/settings'
 import { resolveManifest, rawContentBase, ManifestValidationError } from '$lib/manifest'
 import { manifestPatch, applyManifestToPlugin } from '$lib/manifest-apply'
 import { fetchLatestRelease } from '$lib/release-fetch'
+import { persistRelease, hashReleaseAssetsAsync } from '$lib/release-ingest'
 import { getFeatures } from '$lib/features'
 import { logger } from '$lib/logger'
 
@@ -115,6 +116,23 @@ export default new Elysia()
           }
           if (!manifest) {
             log.info({ slug, tag }, 'no .tabularium manifest in latest release — using fallback metadata')
+          }
+          // Also ingest the release itself — without this, the plugin has no
+          // releases in the DB until the next webhook fires, which means the
+          // refresh button has nothing to re-hash. The webhook handler does
+          // the same work; persistRelease + hashReleaseAssetsAsync are
+          // factored out so both call sites stay in sync.
+          if (latestRelease.published) {
+            const { version, assetMap } = await persistRelease({ id: slug, latestVersion: null }, latestRelease)
+            queueMicrotask(() => {
+              void hashReleaseAssetsAsync(
+                { id: slug, ownerId: user.sub, repoUrl: body.repoUrl },
+                latestRelease,
+                assetMap,
+                version,
+              )
+            })
+            log.info({ slug, version, assets: Object.keys(assetMap) }, 'release ingested at submit')
           }
         }
       } catch (err) {

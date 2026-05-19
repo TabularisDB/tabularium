@@ -1,0 +1,173 @@
+import { ulid } from 'ulid'
+import { and, eq } from 'drizzle-orm'
+import { db } from '../db'
+import { plugins, releases, releaseAssets } from '../db/schema'
+import { inferPlatformKey, type NormalizedRelease } from './webhook'
+import { parseRepoUrl, type RepoRef } from './providers'
+import { decryptToken } from './crypto'
+import { hashAsset, serializeAssets, parseAssets, type AssetMap } from './asset'
+import { cache } from './cache'
+import { latestCacheKey } from '../routes/api/plugins/[slug]/latest'
+import { recordAudit } from './audit'
+import { fetchAttestation } from './attestation'
+import { logger } from './logger'
+
+const log = logger.child({ module: 'release-ingest' })
+
+function compareSemver(a: string, b: string): number {
+  const parse = (v: string) => v.split('.').map(Number)
+  const [aMaj, aMin, aPat] = parse(a)
+  const [bMaj, bMin, bPat] = parse(b)
+  if (Number.isNaN(aMaj + aMin + aPat) || Number.isNaN(bMaj + bMin + bPat)) return 0
+  if (aMaj !== bMaj) return aMaj - bMaj
+  if (aMin !== bMin) return aMin - bMin
+  return aPat - bPat
+}
+
+/**
+ * Insert/upsert a release row from a normalized payload, update the parent
+ * plugin's `latestVersion` when newer, and busts the latest-by-platform cache.
+ *
+ * Returns the canonical version (tag without `v` prefix) and the set of
+ * platform keys we recognised — fields callers may want to log or echo back.
+ *
+ * Does NOT hash the assets — that's the caller's job via `hashReleaseAssetsAsync`
+ * so the slow network work can run in the background.
+ */
+export async function persistRelease(
+  plugin: { id: string; latestVersion: string | null },
+  normalized: NormalizedRelease,
+): Promise<{ version: string; assetMap: AssetMap }> {
+  const version = normalized.tag.replace(/^v/, '')
+
+  const assetMap: AssetMap = {}
+  for (const asset of normalized.assets) {
+    const key = inferPlatformKey(asset.name)
+    if (key) assetMap[key] = { url: asset.url }
+  }
+
+  await db
+    .insert(releases)
+    .values({ id: ulid(), pluginId: plugin.id, version, assets: serializeAssets(assetMap) })
+    .onConflictDoUpdate({
+      target: [releases.pluginId, releases.version],
+      set: { assets: serializeAssets(assetMap) },
+    })
+
+  if (!plugin.latestVersion || compareSemver(version, plugin.latestVersion) > 0) {
+    await db.update(plugins).set({ latestVersion: version, updatedAt: Date.now() }).where(eq(plugins.id, plugin.id))
+  }
+
+  await cache().del(latestCacheKey(plugin.id))
+
+  return { version, assetMap }
+}
+
+/**
+ * Background job: fetch each asset, compute sha256 + size, write per-asset
+ * rows into `release_assets`, then mirror the hashes into the legacy
+ * `releases.assets` JSON blob. For GitHub-hosted releases, also pulls in
+ * sigstore attestation bundles.
+ *
+ * Intended to be called via `queueMicrotask(() => hashReleaseAssetsAsync(...))`
+ * — callers should not await it inside a request handler.
+ */
+export async function hashReleaseAssetsAsync(
+  plugin: { id: string; ownerId: string; repoUrl: string },
+  normalized: NormalizedRelease,
+  assetMap: AssetMap,
+  version: string,
+): Promise<void> {
+  try {
+    const fresh: AssetMap = { ...assetMap }
+    const hashed = new Map<string, { sha256: string; size: number; url: string }>()
+    const current = await db.query.releases.findFirst({
+      where: { pluginId: plugin.id, version },
+    })
+    if (!current) return
+
+    for (const asset of normalized.assets) {
+      const result = await hashAsset(asset.url)
+      if (!result.sha256 || typeof result.size !== 'number') {
+        if (result.reason && /exceeds.*hash budget/i.test(result.reason)) {
+          await recordAudit({
+            action: 'release.asset_skipped',
+            target: `release:${current.id}`,
+            meta: { reason: result.reason, url: asset.url, name: asset.name },
+          })
+        }
+        continue
+      }
+      hashed.set(asset.name, { sha256: result.sha256, size: result.size, url: asset.url })
+      const platform = inferPlatformKey(asset.name)
+      if (platform && fresh[platform]) {
+        fresh[platform] = { ...fresh[platform], sha256: result.sha256, size: result.size }
+      }
+    }
+
+    const merged = parseAssets(current.assets)
+    for (const [platform, entry] of Object.entries(fresh)) {
+      if (entry.sha256) merged[platform] = entry
+    }
+    await db
+      .update(releases)
+      .set({ assets: serializeAssets(merged) })
+      .where(and(eq(releases.pluginId, plugin.id), eq(releases.version, version)))
+
+    for (const [name, info] of hashed) {
+      await db
+        .insert(releaseAssets)
+        .values({
+          id: ulid(),
+          releaseId: current.id,
+          name,
+          url: info.url,
+          size: info.size,
+          sha256: info.sha256,
+        })
+        .onConflictDoUpdate({
+          target: [releaseAssets.releaseId, releaseAssets.name],
+          set: { url: info.url, size: info.size, sha256: info.sha256 },
+        })
+    }
+
+    const ref = parseRepoUrl(plugin.repoUrl)
+    if (ref && ref.instance.kind === 'github' && hashed.size > 0) {
+      const ownerIdentity = await db.query.identities.findFirst({
+        where: { userId: plugin.ownerId, providerInstanceId: ref.instance.id },
+      })
+      if (ownerIdentity?.accessToken) {
+        const token = decryptToken(ownerIdentity.accessToken)
+        const apiBase =
+          ref.instance.baseUrl === 'https://github.com' ? 'https://api.github.com' : `${ref.instance.baseUrl}/api/v3`
+        for (const [name, info] of hashed) {
+          try {
+            const bundle = await fetchAttestation({
+              apiBase,
+              owner: ref.owner,
+              repo: ref.repo,
+              sha256: info.sha256,
+              token,
+            })
+            if (bundle) {
+              await db
+                .update(releaseAssets)
+                .set({ attestationBundle: JSON.stringify(bundle) })
+                .where(and(eq(releaseAssets.releaseId, current.id), eq(releaseAssets.name, name)))
+            }
+          } catch (err) {
+            log.warn({ err, slug: plugin.id, version, name }, 'attestation relay failed')
+          }
+        }
+      }
+    }
+
+    await cache().del(latestCacheKey(plugin.id))
+    log.info({ slug: plugin.id, version, hashed: hashed.size }, 'release assets hashed')
+  } catch (err) {
+    log.error({ err, slug: plugin.id, version }, 'asset hashing failed')
+  }
+}
+
+// Re-export for callers that just need the type / RepoRef inference.
+export type { RepoRef }

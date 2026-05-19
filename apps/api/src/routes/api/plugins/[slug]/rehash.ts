@@ -8,6 +8,10 @@ import { parseAssets, serializeAssets, hashAsset, type AssetMap } from '$lib/ass
 import { cache } from '$lib/cache'
 import { latestCacheKey } from '$routes/api/plugins/[slug]/latest'
 import { recordAudit, actorFromUser } from '$lib/audit'
+import { parseRepoUrl } from '$lib/providers'
+import { decryptToken } from '$lib/crypto'
+import { fetchLatestRelease } from '$lib/release-fetch'
+import { persistRelease, hashReleaseAssetsAsync } from '$lib/release-ingest'
 
 export default new Elysia()
   .use(authMiddleware)
@@ -35,10 +39,52 @@ export default new Elysia()
         set.status = 403
         return { error: 'Only the plugin owner can re-hash this release' }
       }
+      // No version on disk yet → try to pull the latest release directly from
+      // the forge. Useful right after submit, when the webhook hasn't fired or
+      // the forge sent the release event before assets were uploaded.
       const version = body.version ?? plugin.latestVersion
       if (!version) {
-        set.status = 400
-        return { error: 'No version available — plugin has no releases' }
+        const ref = parseRepoUrl(plugin.repoUrl)
+        if (!ref) {
+          set.status = 422
+          return { error: 'Repo URL no longer parses to a configured provider instance' }
+        }
+        const ownerIdentity = await db.query.identities.findFirst({
+          where: { userId: plugin.ownerId, providerInstanceId: ref.instance.id },
+        })
+        if (!ownerIdentity?.accessToken) {
+          set.status = 412
+          return { error: 'No stored access token — re-link your provider account first' }
+        }
+        const token = decryptToken(ownerIdentity.accessToken)
+        const fetched = await fetchLatestRelease(token, ref).catch(() => null)
+        if (!fetched || !fetched.published) {
+          set.status = 404
+          return { error: 'No published release found on the forge yet' }
+        }
+        const { version: fetchedVersion, assetMap } = await persistRelease(
+          { id: plugin.id, latestVersion: plugin.latestVersion },
+          fetched,
+        )
+        queueMicrotask(() =>
+          hashReleaseAssetsAsync(
+            { id: plugin.id, ownerId: plugin.ownerId, repoUrl: plugin.repoUrl },
+            fetched,
+            assetMap,
+            fetchedVersion,
+          ),
+        )
+        await recordAudit({
+          ...actorFromUser(user, request),
+          action: 'plugin.rehash',
+          target: `plugin:${plugin.id}`,
+          meta: { version: fetchedVersion, by: 'author', source: 'forge-fetch' },
+        })
+        const results: Record<string, { sha256?: string; size?: number; reason?: string }> = {}
+        for (const [platform, entry] of Object.entries(assetMap)) {
+          results[platform] = { sha256: entry.sha256, size: entry.size }
+        }
+        return { ok: true, slug: plugin.id, version: fetchedVersion, results }
       }
       const release = await db.query.releases.findFirst({
         where: { pluginId: plugin.id, version },
@@ -107,6 +153,8 @@ export default new Elysia()
         400: t.Object({ error: t.String() }),
         403: t.Object({ error: t.String() }),
         404: t.Object({ error: t.String() }),
+        412: t.Object({ error: t.String() }),
+        422: t.Object({ error: t.String() }),
       },
     },
   )
