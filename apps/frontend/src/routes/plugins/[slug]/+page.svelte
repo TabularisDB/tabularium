@@ -24,6 +24,7 @@
 	import Badge from '$components/ui/Badge.svelte'
 	import Button from '$components/ui/Button.svelte'
 	import Skeleton from '$components/ui/Skeleton.svelte'
+	import ConfirmDialog from '$components/ui/ConfirmDialog.svelte'
 	import { eden } from '$lib/eden'
 	import { auth } from '$lib/stores/auth.svelte'
 	import { branding } from '$lib/stores/branding.svelte'
@@ -42,6 +43,7 @@
 	let notFound = $state(false)
 	let deleting = $state(false)
 	let refreshing = $state(false)
+	let deleteOpen = $state(false)
 	let activeScreenshot = $state<number | null>(null)
 	let selectedPlatform = $state<string | null>(null)
 	let copying = $state(false)
@@ -153,9 +155,12 @@
 		}
 	}
 
-	async function deletePlugin() {
+	function openDelete() {
+		deleteOpen = true
+	}
+
+	async function confirmDelete() {
 		if (!plugin) return
-		if (!confirm(m.plugin_detail_confirm_delete({ id: plugin.id }))) return
 		deleting = true
 		try {
 			const { error } = await eden.api.plugins({ slug: plugin.id }).delete()
@@ -166,6 +171,7 @@
 						: ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`),
 				)
 			toast.success(m.plugin_detail_deleted_toast())
+			deleteOpen = false
 			goto('/plugins')
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : m.plugin_detail_delete_failed())
@@ -378,7 +384,7 @@
 							<UserRoundCog class="h-3.5 w-3.5" />
 							{m.plugin_detail_transfer()}
 						</Button>
-						<Button variant="destructive" size="sm" onclick={deletePlugin} disabled={deleting}>
+						<Button variant="destructive" size="sm" onclick={openDelete} disabled={deleting}>
 							<Trash2 class="h-3.5 w-3.5" />
 							{deleting ? m.plugin_detail_deleting() : m.plugin_detail_delete()}
 						</Button>
@@ -703,4 +709,16 @@
 			class="max-h-full max-w-full rounded-lg shadow-2xl"
 		/>
 	</button>
+{/if}
+
+{#if plugin}
+	<ConfirmDialog
+		bind:open={deleteOpen}
+		title={m.plugin_detail_delete_title()}
+		description={m.plugin_detail_delete_description({ id: plugin.id })}
+		confirmWord={plugin.id}
+		confirmLabel={m.plugin_detail_delete()}
+		busy={deleting}
+		onConfirm={confirmDelete}
+	/>
 {/if}

@@ -18,6 +18,7 @@
 	import Badge from '$components/ui/Badge.svelte'
 	import Button from '$components/ui/Button.svelte'
 	import Input from '$components/ui/Input.svelte'
+	import ConfirmDialog from '$components/ui/ConfirmDialog.svelte'
 	import { eden } from '$lib/eden'
 	import { m } from '$lib/paraglide/messages'
 	import AdminPageHeader from '$components/admin/AdminPageHeader.svelte'
@@ -45,6 +46,8 @@
 	let busy = $state<Record<string, boolean>>({})
 	let selected = $state<Set<string>>(new Set())
 	let bulkBusy = $state(false)
+	let deleteTarget = $state<AdminPlugin | null>(null)
+	let bulkDeleteOpen = $state(false)
 
 	const counts = $derived.by(() => {
 		const c = { all: allPlugins.length, approved: 0, pending: 0, rejected: 0 }
@@ -103,8 +106,13 @@
 			if (r === null) return
 			rejectionReason = r || undefined
 		} else if (action === 'delete') {
-			if (!confirm(m.admin_plugins_bulk_delete_confirm({ count: selected.size }))) return
+			bulkDeleteOpen = true
+			return
 		}
+		await runBulk(action, rejectionReason)
+	}
+
+	async function runBulk(action: 'approve' | 'reject' | 'delete', rejectionReason?: string) {
 		bulkBusy = true
 		try {
 			const { data, error } = await eden.api.admin.plugins.bulk.post({ ids: [...selected], action, rejectionReason })
@@ -211,8 +219,13 @@
 		}
 	}
 
-	async function remove(p: AdminPlugin) {
-		if (!confirm(m.admin_plugins_confirm_delete({ name: p.name }))) return
+	function openRemove(p: AdminPlugin) {
+		deleteTarget = p
+	}
+
+	async function confirmRemove() {
+		const p = deleteTarget
+		if (!p) return
 		busy = { ...busy, [p.id]: true }
 		try {
 			const { error } = await eden.api.admin.plugins({ id: p.id }).delete()
@@ -223,6 +236,7 @@
 						: ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`),
 				)
 			toast.success(m.admin_plugins_deleted({ name: p.name }))
+			deleteTarget = null
 			await load()
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : m.admin_plugins_delete_failed())
@@ -399,7 +413,7 @@
 						<Button
 							variant="ghost"
 							size="sm"
-							onclick={() => remove(p)}
+							onclick={() => openRemove(p)}
 							disabled={busy[p.id]}
 							aria-label={m.admin_plugins_delete()}
 							title={m.admin_plugins_delete()}
@@ -412,3 +426,26 @@
 		{/if}
 	</CardContent>
 </Card>
+
+{#if deleteTarget}
+	<ConfirmDialog
+		open={deleteTarget !== null}
+		title={m.admin_plugins_delete()}
+		description={m.admin_plugins_confirm_delete({ name: deleteTarget.name })}
+		confirmWord={deleteTarget.id}
+		confirmLabel={m.admin_plugins_delete()}
+		busy={busy[deleteTarget.id] ?? false}
+		onConfirm={confirmRemove}
+		onCancel={() => (deleteTarget = null)}
+	/>
+{/if}
+
+<ConfirmDialog
+	bind:open={bulkDeleteOpen}
+	title={m.admin_plugins_bulk_delete_title({ count: selected.size })}
+	description={m.admin_plugins_bulk_delete_confirm({ count: selected.size })}
+	confirmWord="DELETE"
+	confirmLabel={m.admin_plugins_delete()}
+	busy={bulkBusy}
+	onConfirm={() => runBulk('delete')}
+/>

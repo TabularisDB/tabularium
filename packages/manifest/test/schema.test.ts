@@ -89,4 +89,51 @@ describe('buildSchema', () => {
     })
     expect(schema.$id).toBe('https://example.com/manifest.schema.json')
   })
+
+  it('promotes per-property `required: true` extension flags to the schema-level required array', () => {
+    const schema = buildSchema({
+      coreSchema: ManifestSchema as never,
+      extensions: {
+        'x-required-field': { type: 'string', required: true },
+        'x-optional-field': { type: 'string' },
+      },
+    })
+    const required = schema.required as string[]
+    expect(required).toContain('x-required-field')
+    expect(required).not.toContain('x-optional-field')
+    // The `required: true` flag is stripped from the emitted property schema
+    // because JSON Schema doesn't define `required` at the property level.
+    const props = schema.properties as Record<string, Record<string, unknown>>
+    expect(props['x-required-field'].required).toBeUndefined()
+  })
+
+  it('promotes required flags inside a kind-scoped schema', () => {
+    const schema = buildSchema({
+      coreSchema: ManifestSchema as never,
+      kind: 'theme',
+      kindOverrides: {
+        theme: { 'x-theme-api': { type: 'string', required: true } },
+      },
+    })
+    const required = schema.required as string[]
+    expect(required).toContain('x-theme-api')
+  })
+
+  it('promotes kind-override required flags in the merged unscoped schema', () => {
+    const schema = buildSchema({
+      coreSchema: ManifestSchema as never,
+      kindOverrides: {
+        theme: { 'x-theme-api': { type: 'string', required: true } },
+      },
+    })
+    // When unscoped, the kind override lives inside an allOf/if-then branch.
+    // The branch's required must include the flagged field so non-theme
+    // manifests aren't penalised but theme manifests are.
+    const allOf = schema.allOf as Array<{ then: { required?: string[] } }>
+    expect(allOf?.[0]?.then?.required).toContain('x-theme-api')
+    // Top-level required is just coreRequired (which can be undefined when
+    // empty) — no leakage of kind-scoped required.
+    const required = (schema.required ?? []) as string[]
+    expect(required).not.toContain('x-theme-api')
+  })
 })
