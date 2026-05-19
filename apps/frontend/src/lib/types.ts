@@ -84,10 +84,17 @@ export type PluginStats = {
   homepage: string | null
 }
 
+export type KindPublicPageCopy = {
+  hero: string | null
+  intro: string | null
+}
+
 export type Kind = {
   key: string
   label: string
   description: string | null
+  publicPageEnabled?: boolean
+  publicPageCopy?: KindPublicPageCopy | null
 }
 
 export type PluginListResponse = {
