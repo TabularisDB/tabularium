@@ -21,6 +21,7 @@
 	import Select from '$components/ui/Select.svelte'
 	import ProviderIcon from '$components/brand/ProviderIcon.svelte'
 	import AdminPageHeader from '$components/admin/AdminPageHeader.svelte'
+	import ConfirmDialog from '$components/ui/ConfirmDialog.svelte'
 	import { eden } from '$lib/eden'
 	import { toast } from 'svelte-sonner'
 	import type { ProviderInstanceAdmin, ProviderKind } from '$lib/types'
@@ -43,6 +44,7 @@
 	let bulkBusy = $state(false)
 	let testingId = $state<string | null>(null)
 	let busy = $state<Record<string, boolean>>({})
+	let deleteTarget = $state<ProviderInstanceAdmin | null>(null)
 
 	// Status threshold: anything older than 30 days OR never used is treated as
 	// "idle". Anything within the window is "healthy". 30d is the lowest value
@@ -164,8 +166,13 @@
 		}
 	}
 
-	async function deleteInstance(inst: ProviderInstanceAdmin) {
-		if (!confirm(m.admin_providers_confirm_delete({ id: inst.id }))) return
+	function openDeleteInstance(inst: ProviderInstanceAdmin) {
+		deleteTarget = inst
+	}
+
+	async function confirmDeleteInstance() {
+		const inst = deleteTarget
+		if (!inst) return
 		busy = { ...busy, [inst.id]: true }
 		try {
 			const { error } = await eden.api.admin['provider-instances']({ id: inst.id }).delete()
@@ -176,6 +183,7 @@
 						: ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`),
 				)
 			toast.success(m.admin_providers_deleted())
+			deleteTarget = null
 			await load()
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : m.admin_providers_delete_failed())
@@ -471,7 +479,7 @@
 					<Button
 						variant="ghost"
 						size="sm"
-						onclick={() => deleteInstance(inst)}
+						onclick={() => openDeleteInstance(inst)}
 						disabled={busy[inst.id]}
 						aria-label={m.common_remove()}
 						title={m.common_remove()}
@@ -544,3 +552,16 @@
 		</form>
 	</CardContent>
 </Card>
+
+{#if deleteTarget}
+	<ConfirmDialog
+		open={deleteTarget !== null}
+		title={m.common_remove()}
+		description={m.admin_providers_confirm_delete({ id: deleteTarget.id })}
+		confirmWord={deleteTarget.id}
+		confirmLabel={m.common_remove()}
+		busy={busy[deleteTarget.id] ?? false}
+		onConfirm={confirmDeleteInstance}
+		onCancel={() => (deleteTarget = null)}
+	/>
+{/if}

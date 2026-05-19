@@ -9,6 +9,7 @@
 	import CardHeader from '$components/ui/CardHeader.svelte'
 	import CardTitle from '$components/ui/CardTitle.svelte'
 	import Button from '$components/ui/Button.svelte'
+	import ConfirmDialog from '$components/ui/ConfirmDialog.svelte'
 	import Label from '$components/ui/Label.svelte'
 	import Badge from '$components/ui/Badge.svelte'
 	import StickySaveBar from '$components/admin/StickySaveBar.svelte'
@@ -34,6 +35,7 @@
 	let loading = $state(true)
 	let saving = $state(false)
 	let rotating = $state(false)
+	let rotateOpen = $state(false)
 	let backfilling = $state(false)
 
 	let current = $state<PublicJwk | null>(null)
@@ -130,13 +132,17 @@
 		budgetMb = initialBudgetMb
 	}
 
-	async function rotateKey() {
-		if (!confirm(m.admin_security_rotate_confirm())) return
+	function openRotate() {
+		rotateOpen = true
+	}
+
+	async function confirmRotate() {
 		rotating = true
 		try {
 			const { error } = await eden.api.admin.instance.security.rotate.post()
 			if (error) throw new Error(extractError(error))
 			toast.success(m.admin_security_rotate_success())
+			rotateOpen = false
 			await loadKeys()
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : m.admin_security_rotate_failed())
@@ -201,7 +207,7 @@
 				{/if}
 
 				<div class="flex justify-end">
-					<Button size="sm" variant="outline" onclick={rotateKey} disabled={rotating}>
+					<Button size="sm" variant="outline" onclick={openRotate} disabled={rotating}>
 						<RefreshCw class="h-3.5 w-3.5 {rotating ? 'animate-spin' : ''}" />
 						{m.admin_security_rotate_button()}
 					</Button>
@@ -256,3 +262,13 @@
 </div>
 
 <StickySaveBar {dirty} {saving} onSave={saveBudget} onDiscard={discardBudget} />
+
+<ConfirmDialog
+	bind:open={rotateOpen}
+	title={m.admin_security_rotate_button()}
+	description={m.admin_security_rotate_confirm()}
+	confirmWord="ROTATE"
+	confirmLabel={m.admin_security_rotate_button()}
+	busy={rotating}
+	onConfirm={confirmRotate}
+/>

@@ -11,6 +11,7 @@
 	import Label from '$components/ui/Label.svelte'
 	import Textarea from '$components/ui/Textarea.svelte'
 	import Skeleton from '$components/ui/Skeleton.svelte'
+	import ConfirmDialog from '$components/ui/ConfirmDialog.svelte'
 	import CmsPage from '$components/CmsPage.svelte'
 	import { eden } from '$lib/eden'
 	import { auth } from '$lib/stores/auth.svelte'
@@ -20,6 +21,8 @@
 	import type { PluginRequest, PageRendered } from '$lib/types'
 
 	let requests = $state<PluginRequest[]>([])
+	let deleteTarget = $state<PluginRequest | null>(null)
+	let deleting = $state(false)
 	let loading = $state(true)
 	let creating = $state(false)
 	let slug = $state('')
@@ -111,9 +114,15 @@
 		}
 	}
 
-	async function deleteRequest(req: PluginRequest) {
+	function openDeleteRequest(req: PluginRequest) {
 		if (!auth.isAdmin) return
-		if (!confirm(m.requests_admin_delete_confirm())) return
+		deleteTarget = req
+	}
+
+	async function confirmDeleteRequest() {
+		const req = deleteTarget
+		if (!req) return
+		deleting = true
 		try {
 			const { error } = await eden.api.admin.requests({ id: req.id }).delete()
 			if (error)
@@ -123,8 +132,11 @@
 						: ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`),
 				)
 			requests = requests.filter((r) => r.id !== req.id)
+			deleteTarget = null
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : 'Delete failed')
+		} finally {
+			deleting = false
 		}
 	}
 
@@ -260,7 +272,7 @@
 										type="button"
 										variant="ghost"
 										size="icon"
-										onclick={() => deleteRequest(r)}
+										onclick={() => openDeleteRequest(r)}
 										aria-label={m.requests_admin_delete_confirm()}
 									>
 										<Trash2 class="h-4 w-4" />
@@ -273,4 +285,16 @@
 			{/if}
 		</section>
 	</div>
+{/if}
+
+{#if deleteTarget}
+	<ConfirmDialog
+		open={deleteTarget !== null}
+		title={m.requests_admin_delete_confirm()}
+		description={deleteTarget.slug}
+		confirmWord="DELETE"
+		busy={deleting}
+		onConfirm={confirmDeleteRequest}
+		onCancel={() => (deleteTarget = null)}
+	/>
 {/if}

@@ -20,6 +20,7 @@
 	import { m } from '$lib/paraglide/messages'
 	import AdminPageHeader from '$components/admin/AdminPageHeader.svelte'
 	import TabBar from '$components/admin/TabBar.svelte'
+	import ConfirmDialog from '$components/ui/ConfirmDialog.svelte'
 
 	type AdminPage = {
 		slug: string
@@ -36,6 +37,8 @@
 	let allPages = $state<AdminPage[]>([])
 	let loading = $state(true)
 	let busy = $state(false)
+	let removing = $state(false)
+	let deleteTarget = $state<AdminPage | null>(null)
 	let filter = $state<'all' | 'published' | 'draft'>('all')
 	let search = $state('')
 
@@ -122,8 +125,14 @@
 		}
 	}
 
-	async function remove(p: AdminPage) {
-		if (!confirm(m.admin_pages_confirm_delete({ slug: p.slug }))) return
+	function openRemove(p: AdminPage) {
+		deleteTarget = p
+	}
+
+	async function confirmRemove() {
+		const p = deleteTarget
+		if (!p) return
+		removing = true
 		try {
 			const { error } = await eden.api.admin.pages({ slug: p.slug }).delete()
 			if (error)
@@ -133,9 +142,12 @@
 						: ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`),
 				)
 			toast.success(m.admin_pages_deleted())
+			deleteTarget = null
 			await load()
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : m.admin_pages_action_failed())
+		} finally {
+			removing = false
 		}
 	}
 </script>
@@ -201,7 +213,7 @@
 						<Button variant="ghost" size="sm" href={`/admin/pages/${p.slug}`} aria-label={m.admin_pages_edit()}>
 							<Edit class="h-3.5 w-3.5" />
 						</Button>
-						<Button variant="ghost" size="sm" onclick={() => remove(p)} aria-label={m.admin_pages_delete()}>
+						<Button variant="ghost" size="sm" onclick={() => openRemove(p)} aria-label={m.admin_pages_delete()}>
 							<Trash2 class="h-3.5 w-3.5" />
 						</Button>
 					</div>
@@ -244,3 +256,16 @@
 		</form>
 	</CardContent>
 </Card>
+
+{#if deleteTarget}
+	<ConfirmDialog
+		open={deleteTarget !== null}
+		title={m.admin_pages_delete()}
+		description={m.admin_pages_confirm_delete({ slug: deleteTarget.slug })}
+		confirmWord={deleteTarget.slug}
+		confirmLabel={m.admin_pages_delete()}
+		busy={removing}
+		onConfirm={confirmRemove}
+		onCancel={() => (deleteTarget = null)}
+	/>
+{/if}

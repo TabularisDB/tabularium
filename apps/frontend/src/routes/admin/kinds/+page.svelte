@@ -13,6 +13,7 @@
 	import Input from '$components/ui/Input.svelte'
 	import AdminPageHeader from '$components/admin/AdminPageHeader.svelte'
 	import CollapsibleRow from '$components/admin/CollapsibleRow.svelte'
+	import ConfirmDialog from '$components/ui/ConfirmDialog.svelte'
 	import ExtensionsEditor, { type ExtensionsDelta } from '$components/admin/ExtensionsEditor.svelte'
 	import { eden } from '$lib/eden'
 	import type { Kind } from '$lib/types'
@@ -34,6 +35,8 @@
 	let newDescription = $state('')
 	let creating = $state(false)
 	let savingKey = $state<string | null>(null)
+	let deleteTarget = $state<Kind | null>(null)
+	let deletingKey = $state<string | null>(null)
 
 	onMount(loadKinds)
 
@@ -116,8 +119,14 @@
 		}
 	}
 
-	async function deleteKind(k: Kind) {
-		if (!confirm(m.admin_kinds_delete_confirm())) return
+	function openDeleteKind(k: Kind) {
+		deleteTarget = k
+	}
+
+	async function confirmDeleteKind() {
+		const k = deleteTarget
+		if (!k) return
+		deletingKey = k.key
 		try {
 			const { error } = await eden.api.admin.kinds({ key: k.key }).delete()
 			if (error) {
@@ -125,9 +134,12 @@
 				return
 			}
 			toast.success(m.admin_kinds_deleted())
+			deleteTarget = null
 			await loadKinds()
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : m.admin_kinds_save_failed())
+		} finally {
+			deletingKey = null
 		}
 	}
 
@@ -220,7 +232,7 @@
 						</CollapsibleRow>
 
 						<div class="flex gap-2 justify-end">
-							<Button size="sm" variant="outline" onclick={() => deleteKind(k)}>
+							<Button size="sm" variant="outline" onclick={() => openDeleteKind(k)}>
 								<Trash2 class="h-3.5 w-3.5" />
 								{m.admin_kinds_delete_button()}
 							</Button>
@@ -261,4 +273,17 @@
 			</div>
 		</CardContent>
 	</Card>
+{/if}
+
+{#if deleteTarget}
+	<ConfirmDialog
+		open={deleteTarget !== null}
+		title={m.admin_kinds_delete_button()}
+		description={m.admin_kinds_delete_confirm()}
+		confirmWord={deleteTarget.key}
+		confirmLabel={m.admin_kinds_delete_button()}
+		busy={deletingKey === deleteTarget.key}
+		onConfirm={confirmDeleteKind}
+		onCancel={() => (deleteTarget = null)}
+	/>
 {/if}

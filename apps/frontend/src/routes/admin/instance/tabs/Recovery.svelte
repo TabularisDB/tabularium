@@ -9,6 +9,7 @@
 	import CardTitle from '$components/ui/CardTitle.svelte'
 	import Button from '$components/ui/Button.svelte'
 	import Input from '$components/ui/Input.svelte'
+	import ConfirmDialog from '$components/ui/ConfirmDialog.svelte'
 	import Label from '$components/ui/Label.svelte'
 	import Badge from '$components/ui/Badge.svelte'
 	import StickySaveBar from '$components/admin/StickySaveBar.svelte'
@@ -23,6 +24,7 @@
 	let newPassword = $state('')
 	let loading = $state(true)
 	let saving = $state(false)
+	let removeOpen = $state(false)
 
 	const dirty = $derived(persist !== initialPersist)
 	const canRotate = $derived(newEmail.trim().length > 0 && newPassword.length >= 8)
@@ -75,13 +77,17 @@
 		}
 	}
 
-	async function remove() {
-		if (!confirm(m.admin_recovery_delete_confirm())) return
+	function openRemove() {
+		removeOpen = true
+	}
+
+	async function confirmRemove() {
 		saving = true
 		try {
 			const { error } = await eden.api.admin.auth['email-recovery'].delete()
 			if (error) throw new Error(extractError(error))
 			toast.success(m.admin_recovery_deleted())
+			removeOpen = false
 			await load()
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : m.admin_recovery_save_failed())
@@ -152,7 +158,7 @@
 					</div>
 					<div class="flex flex-wrap gap-2 justify-end">
 						{#if hasCredentials}
-							<Button variant="ghost" size="sm" onclick={remove} disabled={saving}>
+							<Button variant="ghost" size="sm" onclick={openRemove} disabled={saving}>
 								{m.admin_recovery_delete_button()}
 							</Button>
 						{/if}
@@ -168,3 +174,12 @@
 </div>
 
 <StickySaveBar {dirty} {saving} onSave={() => save()} onDiscard={discard} />
+
+<ConfirmDialog
+	bind:open={removeOpen}
+	title={m.admin_recovery_delete_button()}
+	description={m.admin_recovery_delete_confirm()}
+	confirmWord="DELETE"
+	busy={saving}
+	onConfirm={confirmRemove}
+/>

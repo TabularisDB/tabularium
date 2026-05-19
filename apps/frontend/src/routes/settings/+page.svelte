@@ -11,6 +11,7 @@
 	import Button from '$components/ui/Button.svelte'
 	import Card from '$components/ui/Card.svelte'
 	import CardContent from '$components/ui/CardContent.svelte'
+	import ConfirmDialog from '$components/ui/ConfirmDialog.svelte'
 	import CardDescription from '$components/ui/CardDescription.svelte'
 	import CardHeader from '$components/ui/CardHeader.svelte'
 	import CardTitle from '$components/ui/CardTitle.svelte'
@@ -97,10 +98,21 @@
 	const linkedIds = $derived(new Set(auth.user?.identities.map((i) => i.providerInstanceId) ?? []))
 	const unlinked = $derived(providers.filter((p) => !linkedIds.has(p.id)))
 
-	async function unlink(identityId: string) {
-		if (!confirm(m.settings_confirm_unlink())) return
+	let unlinkTarget = $state<{ id: string; label: string } | null>(null)
+	let unlinking = $state(false)
+	let deleteAccountOpen = $state(false)
+	let deletingAccount = $state(false)
+
+	function openUnlink(identityId: string, label: string) {
+		unlinkTarget = { id: identityId, label }
+	}
+
+	async function confirmUnlink() {
+		const target = unlinkTarget
+		if (!target) return
+		unlinking = true
 		try {
-			const { error } = await eden.auth.me.identities({ id: identityId }).delete()
+			const { error } = await eden.auth.me.identities({ id: target.id }).delete()
 			if (error)
 				throw new Error(
 					typeof error.value === 'string'
@@ -109,8 +121,11 @@
 				)
 			await auth.refresh()
 			toast.success(m.settings_identity_unlinked())
+			unlinkTarget = null
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : m.settings_unlink_failed())
+		} finally {
+			unlinking = false
 		}
 	}
 
@@ -124,8 +139,12 @@
 		}
 	}
 
-	async function deleteAccount() {
-		if (!confirm(m.settings_confirm_delete_account())) return
+	function openDeleteAccount() {
+		deleteAccountOpen = true
+	}
+
+	async function confirmDeleteAccount() {
+		deletingAccount = true
 		try {
 			const { error } = await eden.auth.me.delete()
 			if (error)
@@ -136,9 +155,12 @@
 				)
 			auth.clear()
 			toast.success(m.settings_account_deleted())
+			deleteAccountOpen = false
 			goto('/')
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : m.settings_delete_account_failed())
+		} finally {
+			deletingAccount = false
 		}
 	}
 </script>
@@ -166,7 +188,7 @@
 					<Badge variant={auth.user.role === 'admin' ? 'default' : 'secondary'}>{auth.user.role}</Badge>
 				</div>
 				<div class="pt-3 border-t border-border flex justify-end gap-2">
-					<Button variant="destructive" size="sm" onclick={deleteAccount}>
+					<Button variant="destructive" size="sm" onclick={openDeleteAccount}>
 						<Trash2 class="h-3.5 w-3.5" />
 						{m.settings_delete_account()}
 					</Button>
@@ -245,7 +267,11 @@
 							<div class="text-sm font-medium">{id.providerDisplayName}</div>
 							<div class="text-xs text-muted-foreground font-mono">{id.username}</div>
 						</div>
-						<Button variant="ghost" size="sm" onclick={() => unlink(id.id)}>
+						<Button
+							variant="ghost"
+							size="sm"
+							onclick={() => openUnlink(id.id, `${id.providerDisplayName} · ${id.username}`)}
+						>
 							<Link2Off class="h-3.5 w-3.5" />
 							{m.settings_unlink()}
 						</Button>
@@ -272,3 +298,24 @@
 		</Card>
 	{/if}
 </div>
+
+{#if unlinkTarget}
+	<ConfirmDialog
+		open={unlinkTarget !== null}
+		title={m.settings_unlink()}
+		description={m.settings_confirm_unlink()}
+		confirmWord={unlinkTarget.label}
+		busy={unlinking}
+		onConfirm={confirmUnlink}
+		onCancel={() => (unlinkTarget = null)}
+	/>
+{/if}
+
+<ConfirmDialog
+	bind:open={deleteAccountOpen}
+	title={m.settings_delete_account()}
+	description={m.settings_confirm_delete_account()}
+	confirmWord={auth.user?.username ?? 'DELETE'}
+	busy={deletingAccount}
+	onConfirm={confirmDeleteAccount}
+/>
