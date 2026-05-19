@@ -1,8 +1,9 @@
 # Run bun:test across all workspaces that have a test script.
 #
-# Targets `runs-on: docker` — our lyna self-hosted runner registered with
-# label `docker:docker://node:24-bookworm-slim`. Jobs run in that container
-# image on lyna's docker daemon.
+# Runs on the lyna self-hosted runner in **host mode** (`runs-on: lyna`).
+# Containerd 2.2 + Go 1.24 path validation rejects absolute symlinks
+# inside container images (containerd#12683), which broke `runs-on: docker`
+# for any debian/alpine-based base. Bun + git are pre-installed on lyna.
 
 name: Test
 
@@ -14,18 +15,8 @@ on:
 
 jobs:
   test:
-    runs-on: docker
-    container:
-      image: node:24-bookworm-slim
+    runs-on: lyna
     steps:
-      - name: Install bun + git
-        run: |
-          apt-get update
-          apt-get install -y --no-install-recommends ca-certificates curl unzip git
-          curl -fsSL https://bun.sh/install | bash -s "bun-v1.3.12"
-          echo "$HOME/.bun/bin" >> "$GITHUB_PATH"
-          rm -rf /var/lib/apt/lists/*
-
       - name: Checkout
         uses: actions/checkout@v4
 
