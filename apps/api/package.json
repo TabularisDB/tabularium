@@ -36,15 +36,15 @@
     "typescript": "^5"
   },
   "dependencies": {
-    "@tabularium/manifest": "workspace:*",
     "@elysiajs/cors": "^1.4.2",
     "@elysiajs/openapi": "^1.4.5",
     "@elysiajs/static": "^1.4.10",
     "@sinclair/typebox": "^0.34.49",
+    "@tabularium/manifest": "workspace:*",
     "arctic": "^3.7.0",
     "drizzle-orm": "^1.0.0-rc.2",
     "elysia": "^1.4.28",
-    "elysia-file-router": "file:../../vendor/elysia-file-router/elysia-file-router-0.0.1.tgz",
+    "elysia-fsr": "^0.1.0",
     "isomorphic-dompurify": "^3.12.0",
     "jose": "^6.2.3",
     "marked": "^18.0.3",

@@ -5,7 +5,7 @@ export type { App }
 
 // The treaty proxy is intentionally typed loosely. The `App` type sourced from
 // `@tabularium/api` is a hand-shaped placeholder (see `apps/api/src/types.ts`):
-// the runtime app uses elysia-file-router with `types: false`, so its routes
+// the runtime app uses elysia-fsr with `types: false`, so its routes
 // aren't statically inferred and Eden Treaty cannot derive a meaningful proxy
 // shape. Consumers navigate the proxy by string path; the server enforces the
 // schema at request time.

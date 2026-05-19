@@ -2,7 +2,7 @@ import { Elysia } from 'elysia'
 import { openapi } from '@elysiajs/openapi'
 import staticPlugin from '@elysiajs/static'
 import { cors } from '@elysiajs/cors'
-import { fileRouter } from 'elysia-file-router'
+import { fsr } from 'elysia-fsr'
 import { resolve } from 'node:path'
 import { mkdir } from 'node:fs/promises'
 
@@ -16,7 +16,9 @@ const port = Number(env.PORT ?? 3000)
 const corsOrigins = allowedOrigins()
 
 export async function createApp() {
-  const router = await fileRouter({ dir: './src/routes', types: false })
+  // elysia-fsr resolves `dir` relative to `dirname(Bun.main)` (this file),
+  // not the process cwd. So `./routes` here = `apps/api/src/routes`.
+  const router = await fsr({ dir: './routes', types: false })
   const base = new Elysia({ systemRouter: false })
     .use(loggerMiddleware)
     .use(

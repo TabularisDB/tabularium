@@ -1,6 +1,6 @@
 // tests/helpers.ts
 import { Elysia } from 'elysia'
-import { fileRouter } from 'elysia-file-router'
+import { fsr, LogLevel } from 'elysia-fsr'
 import { resolve } from 'node:path'
 import { ulid } from 'ulid'
 import { db } from '../src/db'
@@ -114,10 +114,10 @@ let cachedApp: Elysia | null = null
 export async function buildApp() {
   if (cachedApp) return cachedApp
   cachedApp = new Elysia({ systemRouter: false }).use(
-    await fileRouter({
+    await fsr({
       dir: resolve(import.meta.dir, '../src/routes'),
       types: false,
-      logLevel: 'silent',
+      logLevel: LogLevel.Silent,
     }),
   )
   return cachedApp

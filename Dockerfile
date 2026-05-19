@@ -11,7 +11,6 @@ COPY packages/client/package.json ./packages/client/
 COPY packages/cli/package.json ./packages/cli/
 COPY packages/manifest/package.json ./packages/manifest/
 COPY packages/tsconfig/package.json ./packages/tsconfig/
-COPY vendor ./vendor
 
 RUN bun install --frozen-lockfile
 
@@ -28,7 +27,6 @@ COPY apps/api/package.json ./apps/api/
 COPY packages/client/package.json ./packages/client/
 COPY packages/manifest/package.json ./packages/manifest/
 COPY packages/tsconfig/package.json ./packages/tsconfig/
-COPY vendor ./vendor
 
 # Synthesize a slim root package.json that only references API + runtime
 # packages workspaces. Drop devDependencies, the frontend workspace, and the
@@ -69,7 +67,7 @@ RUN printf '%s\n' \
          d1 op-sqlite gel pg bun-sql node-postgres pglite \
          tidb-serverless || true; cd - >/dev/null; \
      done \
-  # Prettier is pulled in by elysia-file-router but only invoked when types: true.
+  # Prettier is pulled in by elysia-fsr but only invoked when types: true.
   # Drop the plugin bundles + standalone build — never loaded by index.mjs.
   && rm -rf node_modules/.bun/prettier@*/node_modules/prettier/plugins \
             node_modules/.bun/prettier@*/node_modules/prettier/standalone.js \
@@ -101,7 +99,6 @@ RUN apk add --no-cache tini ca-certificates wget
 COPY --from=prod-deps --chown=app:app /repo/node_modules ./node_modules
 COPY --from=prod-deps --chown=app:app /repo/package.json ./package.json
 COPY --from=prod-deps --chown=app:app /repo/packages ./packages
-COPY --from=prod-deps --chown=app:app /repo/vendor ./vendor
 COPY --from=prod-deps --chown=app:app /repo/apps/api ./apps/api
 
 COPY --from=build --chown=app:app /repo/apps/api/src ./apps/api/src
