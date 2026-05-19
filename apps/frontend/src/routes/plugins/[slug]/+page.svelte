@@ -14,6 +14,7 @@
 	import Clock from '@lucide/svelte/icons/clock'
 	import Download from '@lucide/svelte/icons/download'
 	import Rocket from '@lucide/svelte/icons/rocket'
+	import RefreshCw from '@lucide/svelte/icons/refresh-cw'
 	import Cpu from '@lucide/svelte/icons/cpu'
 	import HardDrive from '@lucide/svelte/icons/hard-drive'
 	import Languages from '@lucide/svelte/icons/languages'
@@ -40,6 +41,7 @@
 	let loading = $state(true)
 	let notFound = $state(false)
 	let deleting = $state(false)
+	let refreshing = $state(false)
 	let activeScreenshot = $state<number | null>(null)
 	let selectedPlatform = $state<string | null>(null)
 	let copying = $state(false)
@@ -168,6 +170,32 @@
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : m.plugin_detail_delete_failed())
 			deleting = false
+		}
+	}
+
+	async function refreshFromForge() {
+		if (!plugin || refreshing) return
+		refreshing = true
+		try {
+			const { error } = await eden.api.plugins({ slug: plugin.id }).rehash.post({})
+			if (error) {
+				if (error.status === 429) {
+					toast.error(m.plugin_detail_refresh_rate_limited())
+				} else {
+					throw new Error(
+						typeof error.value === 'string'
+							? error.value
+							: ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`),
+					)
+				}
+				return
+			}
+			toast.success(m.plugin_detail_refresh_done())
+			await load(locale)
+		} catch (e) {
+			toast.error(e instanceof Error ? e.message : m.plugin_detail_refresh_failed())
+		} finally {
+			refreshing = false
 		}
 	}
 
@@ -379,9 +407,17 @@
 				<section class="space-y-4">
 					<div class="flex items-baseline justify-between gap-3 flex-wrap">
 						<h2 class="text-2xl font-semibold tracking-tight">{m.plugin_detail_download_title()}</h2>
-						{#if latestRelease}
-							<span class="text-xs font-mono text-muted-foreground">v{latestRelease.version}</span>
-						{/if}
+						<div class="flex items-center gap-3">
+							{#if isOwner}
+								<Button variant="ghost" size="sm" onclick={refreshFromForge} disabled={refreshing}>
+									<RefreshCw class="h-3.5 w-3.5 {refreshing ? 'animate-spin' : ''}" />
+									{refreshing ? m.plugin_detail_refresh_running() : m.plugin_detail_refresh_button()}
+								</Button>
+							{/if}
+							{#if latestRelease}
+								<span class="text-xs font-mono text-muted-foreground">v{latestRelease.version}</span>
+							{/if}
+						</div>
 					</div>
 					{#if installDeepLink}
 						<a
