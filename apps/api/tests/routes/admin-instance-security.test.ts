@@ -56,17 +56,4 @@ describe('admin /api/admin/instance/security', () => {
     expect(rows.find((r) => r.action === 'registry.signing_key.rotate')).toBeTruthy()
   })
 
-  it('POST /backfill returns 202', async () => {
-    const app = await buildApp()
-    const res = await app.handle(
-      new Request('http://localhost/api/admin/instance/security/backfill', {
-        method: 'POST',
-        headers: await adminCookie(),
-      }),
-    )
-    expect(res.status).toBe(202)
-    const body = (await res.json()) as { ok: boolean; started: boolean }
-    expect(body.ok).toBe(true)
-    expect(body.started).toBe(true)
-  })
 })

@@ -1,7 +1,6 @@
 import { Elysia, t } from 'elysia'
 import { adminMiddleware } from '$middleware/admin'
 import { ensureSigningKey, getCurrentPublicJwk, getPreviousPublicJwk, rotateSigningKey } from '$lib/registry-key'
-import { backfillReleaseAssets } from '$lib/release-assets-backfill'
 import { recordAudit, actorFromAdmin } from '$lib/audit'
 
 const PublicJwkSchema = t.Object({
@@ -64,32 +63,6 @@ export default new Elysia()
       },
       response: {
         200: t.Object({ ok: t.Boolean(), oldKid: t.String(), newKid: t.String() }),
-      },
-    },
-  )
-  .post(
-    '/backfill',
-    ({ set }) => {
-      set.status = 202
-      queueMicrotask(() => {
-        backfillReleaseAssets({ onlyMissing: true }).catch(() => {
-          // Errors are surfaced via the per-release error log inside the backfill;
-          // swallow here so an unhandled rejection doesn't crash the worker.
-        })
-      })
-      return { ok: true, started: true }
-    },
-    {
-      detail: {
-        tags: ['Admin'],
-        summary: 'Trigger the release_assets backfill job',
-        description:
-          'Enqueues an idempotent backfill of release_assets rows for legacy releases. Returns immediately; progress is logged server-side.',
-        operationId: 'triggerReleaseAssetsBackfill',
-        security: [{ bearerAuth: [] }, { cookieAuth: [] }],
-      },
-      response: {
-        202: t.Object({ ok: t.Boolean(), started: t.Boolean() }),
       },
     },
   )

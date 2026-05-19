@@ -32,9 +32,9 @@ export default new Elysia().get(
       return { error: 'Release not found' }
     }
 
-    // Prefer the per-asset rows in `release_assets` (post-ingest /
-    // post-backfill) over the legacy JSON blob. When present, attach the
-    // signed JWS so verifiers can validate the registry's claim.
+    // Prefer the per-asset rows in `release_assets` over the legacy JSON blob.
+    // When present, attach the signed JWS so verifiers can validate the
+    // registry's claim.
     const signed = await buildIntegrity({ slug: plugin.id, version: release.version })
     if (signed) {
       return {
@@ -56,7 +56,7 @@ export default new Elysia().get(
       tags: ['Plugins'],
       summary: 'Asset integrity (sha256 + size) for a specific release',
       description:
-        'Lookup endpoint for `sum.<host>`-style verifiers. When `release_assets` rows are present (ingested or backfilled) the response includes the signed `jws` plus per-asset metadata (`name`, `sha256`, `size`, `attestation_bundle`). For legacy releases without per-asset rows yet, falls back to the platform-keyed JSON blob with `url`/`size`/`sha256`.',
+        'Lookup endpoint for `sum.<host>`-style verifiers. When `release_assets` rows are present (post-ingest) the response includes the signed `jws` plus per-asset metadata (`name`, `sha256`, `size`, `attestation_bundle`). For legacy releases without per-asset rows yet, falls back to the platform-keyed JSON blob with `url`/`size`/`sha256`.',
       operationId: 'getReleaseIntegrity',
     },
     params: t.Object({ slug: t.String(), version: t.String() }),

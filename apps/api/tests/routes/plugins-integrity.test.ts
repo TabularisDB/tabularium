@@ -27,7 +27,7 @@ describe('GET /api/plugins/:slug — integrity field', () => {
     expect(body.releases[0].integrity?.assets[0].name).toBe('p.zip')
   })
 
-  it('integrity is null when no release_assets rows yet (backfill pending)', async () => {
+  it('integrity is null when no release_assets rows yet (legacy release)', async () => {
     await ensureSigningKey()
     const user = await makeUser()
     const plugin = await makePlugin(user.id, { status: 'approved', latestVersion: '0.9.0' })

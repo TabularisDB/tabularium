@@ -46,7 +46,7 @@ function parseAttestationBundle(raw: string | null): unknown {
  * JWS plus the per-asset metadata callers expose on the release response.
  *
  * Returns `null` when the release is missing or has no `release_assets`
- * rows (legacy releases pre-backfill). The caller is responsible for
+ * rows (legacy releases). The caller is responsible for
  * omitting or nulling the integrity field on its response in that case.
  */
 export async function buildIntegrity(input: BuildIntegrityInput): Promise<IntegrityResult | null> {

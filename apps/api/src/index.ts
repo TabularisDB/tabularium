@@ -191,25 +191,6 @@ async function bootNormalMode() {
   const { ensureSigningKey } = await import('$lib/registry-key')
   await ensureSigningKey()
 
-  // Gate: only kick off the backfill when release_assets is behind releases.
-  // The admin "Run backfill" button (Task 14) calls backfillReleaseAssets()
-  // directly without this gate, so the gate is intentionally here at the
-  // boot site rather than inside the function.
-  queueMicrotask(async () => {
-    try {
-      const { count } = await import('drizzle-orm')
-      const { releases, releaseAssets } = await import('$db/schema')
-      const [releaseCount] = await db.select({ n: count() }).from(releases)
-      const [assetCount] = await db.select({ n: count() }).from(releaseAssets)
-      if ((assetCount?.n ?? 0) < (releaseCount?.n ?? 0)) {
-        const { backfillReleaseAssets } = await import('$lib/release-assets-backfill')
-        await backfillReleaseAssets()
-      }
-    } catch (err) {
-      logger.warn({ module: 'boot', err }, 'release_assets backfill failed')
-    }
-  })
-
   const { setServerMode } = await import('$lib/server-mode')
   setServerMode('normal')
 

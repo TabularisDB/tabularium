@@ -68,7 +68,7 @@ describe('buildIntegrity', () => {
     expect(body.assets).toEqual([{ name: 'p.zip', sha256: 'a'.repeat(64), size: 12345 }])
   })
 
-  it('returns null when no release_assets rows exist (backfill not yet run)', async () => {
+  it('returns null when no release_assets rows exist (legacy release)', async () => {
     await ensureSigningKey()
     const user = await makeUser()
     const plugin = await makePlugin(user.id)
