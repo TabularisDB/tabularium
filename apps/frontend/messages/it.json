@@ -590,7 +590,7 @@
 	"plugin_detail_deleting": "Eliminazione…",
 	"plugin_detail_docs": "Documentazione",
 	"plugin_detail_download": "download",
-	"plugin_detail_download_empty": "A questa release non sono ancora allegati artefatti per piattaforma. Allega file dall UI di release Codeberg o esegui fj release asset upload.",
+	"plugin_detail_download_empty": "A questa release non sono ancora allegati artefatti per piattaforma. Quando la release sul forge contiene file, aggiorna dalla pagina del plugin.",
 	"plugin_detail_download_title": "Download",
 	"plugin_detail_email_support": "Supporto via email",
 	"plugin_detail_featured": "In evidenza",
