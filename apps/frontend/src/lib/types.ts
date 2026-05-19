@@ -160,6 +160,8 @@ export type ProviderInstanceAdmin = {
   clientId: string
   logoUrl: string | null
   enabled: boolean
+  hasOAuthSecret: boolean
+  lastUsedAt: number | null
 }
 
 export type AdminUser = {

@@ -10,6 +10,7 @@ import { getInstance, type ProviderInstance } from '$lib/provider-instance'
 import { env, isProd } from '$lib/env'
 import { logger } from '$lib/logger'
 import { getSetting, setSetting, isSettingsInitialized } from '$lib/settings'
+import { recordAudit } from '$lib/audit'
 import { safeReturnTo } from './index'
 
 const log = logger.child({ module: 'auth-callback' })
@@ -123,7 +124,7 @@ async function resolveLinkUserId(authCookieValue: string | undefined): Promise<s
 
 export default new Elysia().get(
   '/',
-  async ({ params, query, cookie, set, redirect }) => {
+  async ({ params, query, cookie, set, redirect, request }) => {
     const raw = cookie.oauth_state?.value as StateData | string | undefined
     if (!raw) {
       set.status = 400
@@ -245,6 +246,18 @@ export default new Elysia().get(
         path: '/',
       })
       cookie.oauth_state.remove()
+
+      // Phase B.2: record OAuth callback so /admin/providers can show "last used".
+      // Target shape `provider_instance:<id>` is the canonical reference for
+      // anything that wants to derive last-traffic timestamps per provider.
+      await recordAudit({
+        actorId: userId!,
+        actorName: profile.username,
+        action: 'provider_instance.oauth_callback',
+        target: `provider_instance:${inst.id}`,
+        meta: { kind: inst.kind, linking: Boolean(linkUserId) },
+        ip: request.headers.get('x-forwarded-for') ?? request.headers.get('x-real-ip') ?? null,
+      })
 
       const webBase = env.WEB_BASE_URL ?? env.BASE_URL
       const safeTarget = safeReturnTo(stateData.returnTo ?? undefined)
