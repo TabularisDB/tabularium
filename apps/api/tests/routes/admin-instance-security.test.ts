@@ -55,5 +55,4 @@ describe('admin /api/admin/instance/security', () => {
     const rows = await db.select().from(auditLog)
     expect(rows.find((r) => r.action === 'registry.signing_key.rotate')).toBeTruthy()
   })
-
 })

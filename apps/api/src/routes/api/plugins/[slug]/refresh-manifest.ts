@@ -17,7 +17,6 @@ export default new Elysia()
       bucket: 'plugin.author.refresh-manifest',
       limit: 1,
       windowSeconds: 60,
-      // biome-ignore lint/suspicious/noExplicitAny: elysia params context inference here is too loose for a typed keyFn
       keyFn: ({ user, request }) => {
         const url = new URL(request.url)
         // /api/plugins/<slug>/refresh-manifest → segment [3] is the slug
