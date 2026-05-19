@@ -62,12 +62,22 @@ type GitlabPayload = {
   project: { web_url: string }
 }
 
+// Forge release events fire on multiple actions:
+//   GitHub:        published, edited, released, unpublished, deleted, prereleased, created
+//   Gitea/Forgejo: published, updated, deleted
+// We ingest on the "publish" actions plus subsequent edits so that asset
+// uploads arriving AFTER the initial `published` webhook still update the
+// registry (a common race when the publisher creates the release entity
+// before all artifacts are attached). `created` is excluded — on GitHub it
+// fires for drafts that aren't visible yet.
+const GITHUB_INGEST_ACTIONS = new Set(['published', 'released', 'edited', 'updated', 'prereleased'])
+
 export function parseGithubPayload(p: unknown): NormalizedRelease | null {
   const payload = p as GithubPayload
   if (!payload?.repository?.html_url || !payload.release?.tag_name) return null
   return {
     repoUrl: payload.repository.html_url,
-    published: payload.action === 'published',
+    published: GITHUB_INGEST_ACTIONS.has(payload.action),
     tag: payload.release.tag_name,
     assets: (payload.release.assets ?? []).map((a) => ({ name: a.name, url: a.browser_download_url })),
   }

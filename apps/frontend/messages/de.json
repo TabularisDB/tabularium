@@ -661,7 +661,7 @@
 	"plugin_detail_deleting": "Wird gelöscht …",
 	"plugin_detail_docs": "Doku",
 	"plugin_detail_download": "download",
-	"plugin_detail_download_empty": "Diesem Release sind noch keine Platform-Artifacts angehängt. Hänge Files über die Codeberg-Release-UI an oder nutze fj release asset upload.",
+	"plugin_detail_download_empty": "Diesem Release sind noch keine Plattform-Artefakte angehängt. Sobald dein Forge-Release Dateien enthält, kannst du es über die Plugin-Seite neu laden.",
 	"plugin_detail_download_title": "Download",
 	"plugin_detail_email_support": "Support per E-Mail",
 	"plugin_detail_featured": "Empfohlen",

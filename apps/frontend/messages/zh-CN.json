@@ -661,7 +661,7 @@
 	"plugin_detail_deleting": "删除中…",
 	"plugin_detail_docs": "文档",
 	"plugin_detail_download": "下载",
-	"plugin_detail_download_empty": "此发行版尚未附加平台构件。通过 Codeberg 发行界面附加文件，或运行 fj release asset upload。",
+	"plugin_detail_download_empty": "此发行版尚未附加平台构件。当 Forge 上的发行版附带文件后，从插件页面刷新即可。",
 	"plugin_detail_download_title": "下载",
 	"plugin_detail_email_support": "邮件支持",
 	"plugin_detail_featured": "精选",

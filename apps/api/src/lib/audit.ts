@@ -25,6 +25,17 @@ export function actorFromAdmin(
   }
 }
 
+export function actorFromUser(
+  user: { sub: string; username?: string },
+  request: Request,
+): Pick<AuditEntry, 'actorId' | 'actorName' | 'ip'> {
+  return {
+    actorId: user.sub,
+    actorName: user.username ?? null,
+    ip: request.headers.get('x-forwarded-for') ?? request.headers.get('x-real-ip') ?? null,
+  }
+}
+
 export async function recordAudit(entry: AuditEntry): Promise<void> {
   try {
     await db.insert(auditLog).values({

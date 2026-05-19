@@ -661,7 +661,7 @@
 	"plugin_detail_deleting": "Deleting…",
 	"plugin_detail_docs": "Docs",
 	"plugin_detail_download": "download",
-	"plugin_detail_download_empty": "No platform artifacts attached to this release yet. Attach files via the Codeberg release UI or run fj release asset upload.",
+	"plugin_detail_download_empty": "No platform artifacts attached to this release yet. Once your forge release has files attached, trigger a refresh from the plugin page.",
 	"plugin_detail_download_title": "Download",
 	"plugin_detail_email_support": "Email support",
 	"plugin_detail_featured": "Featured",

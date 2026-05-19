@@ -661,7 +661,7 @@
 	"plugin_detail_deleting": "Eliminando…",
 	"plugin_detail_docs": "Documentación",
 	"plugin_detail_download": "descarga",
-	"plugin_detail_download_empty": "Este release aún no tiene artefactos de plataforma adjuntos. Adjunta archivos vía la UI de Codeberg o ejecuta fj release asset upload.",
+	"plugin_detail_download_empty": "Este release aún no tiene artefactos de plataforma adjuntos. Cuando tu release en el forge tenga archivos, refresca desde la página del plugin.",
 	"plugin_detail_download_title": "Descargar",
 	"plugin_detail_email_support": "Soporte por email",
 	"plugin_detail_featured": "Destacado",

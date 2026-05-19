@@ -1,4 +1,4 @@
-CREATE TABLE IF NOT EXISTS "audit_log" (
+CREATE TABLE "audit_log" (
 	"id" text PRIMARY KEY,
 	"actor_id" text,
 	"actor_name" text,
@@ -9,7 +9,7 @@ CREATE TABLE IF NOT EXISTS "audit_log" (
 	"created_at" bigint NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE IF NOT EXISTS "download_events" (
+CREATE TABLE "download_events" (
 	"id" text PRIMARY KEY,
 	"plugin_id" text NOT NULL,
 	"version" text NOT NULL,
@@ -17,7 +17,7 @@ CREATE TABLE IF NOT EXISTS "download_events" (
 	"created_at" bigint NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE IF NOT EXISTS "identities" (
+CREATE TABLE "identities" (
 	"id" text PRIMARY KEY,
 	"user_id" text NOT NULL,
 	"provider_instance_id" text NOT NULL,
@@ -27,7 +27,7 @@ CREATE TABLE IF NOT EXISTS "identities" (
 	"created_at" bigint NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE IF NOT EXISTS "markdown_pages" (
+CREATE TABLE "markdown_pages" (
 	"slug" text,
 	"locale" text DEFAULT 'en',
 	"title" text NOT NULL,
@@ -41,20 +41,20 @@ CREATE TABLE IF NOT EXISTS "markdown_pages" (
 	CONSTRAINT "markdown_pages_pkey" PRIMARY KEY("slug","locale")
 );
 --> statement-breakpoint
-CREATE TABLE IF NOT EXISTS "plugin_request_claims" (
+CREATE TABLE "plugin_request_claims" (
 	"request_id" text,
 	"user_id" text,
 	"created_at" bigint NOT NULL,
 	CONSTRAINT "plugin_request_claims_pkey" PRIMARY KEY("request_id","user_id")
 );
 --> statement-breakpoint
-CREATE TABLE IF NOT EXISTS "plugin_request_votes" (
+CREATE TABLE "plugin_request_votes" (
 	"request_id" text,
 	"user_id" text,
 	CONSTRAINT "plugin_request_votes_pkey" PRIMARY KEY("request_id","user_id")
 );
 --> statement-breakpoint
-CREATE TABLE IF NOT EXISTS "plugin_requests" (
+CREATE TABLE "plugin_requests" (
 	"id" text PRIMARY KEY,
 	"slug" text NOT NULL UNIQUE,
 	"name" text NOT NULL,
@@ -64,7 +64,7 @@ CREATE TABLE IF NOT EXISTS "plugin_requests" (
 	"created_at" bigint NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE IF NOT EXISTS "plugin_transfers" (
+CREATE TABLE "plugin_transfers" (
 	"id" text PRIMARY KEY,
 	"plugin_id" text NOT NULL,
 	"from_user_id" text NOT NULL,
@@ -76,7 +76,7 @@ CREATE TABLE IF NOT EXISTS "plugin_transfers" (
 	"responded_at" bigint
 );
 --> statement-breakpoint
-CREATE TABLE IF NOT EXISTS "plugins" (
+CREATE TABLE "plugins" (
 	"id" text PRIMARY KEY,
 	"owner_id" text NOT NULL,
 	"provider_instance_id" text,
@@ -107,7 +107,7 @@ CREATE TABLE IF NOT EXISTS "plugins" (
 	"updated_at" bigint NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE IF NOT EXISTS "provider_instances" (
+CREATE TABLE "provider_instances" (
 	"id" text PRIMARY KEY,
 	"kind" text NOT NULL,
 	"display_name" text NOT NULL,
@@ -119,7 +119,21 @@ CREATE TABLE IF NOT EXISTS "provider_instances" (
 	"created_at" bigint NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE IF NOT EXISTS "releases" (
+CREATE TABLE "release_assets" (
+	"id" text PRIMARY KEY,
+	"release_id" text NOT NULL,
+	"name" text NOT NULL,
+	"url" text NOT NULL,
+	"size" bigint NOT NULL,
+	"sha256" text NOT NULL,
+	"content_type" text,
+	"arch" text,
+	"os" text,
+	"attestation_bundle" text,
+	"created_at" bigint NOT NULL
+);
+--> statement-breakpoint
+CREATE TABLE "releases" (
 	"id" text PRIMARY KEY,
 	"plugin_id" text NOT NULL,
 	"version" text NOT NULL,
@@ -128,31 +142,32 @@ CREATE TABLE IF NOT EXISTS "releases" (
 	"created_at" bigint NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE IF NOT EXISTS "root_credentials" (
+CREATE TABLE "root_credentials" (
 	"user_id" text PRIMARY KEY,
 	"email" text NOT NULL UNIQUE,
 	"password_hash" text NOT NULL,
 	"created_at" bigint NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE IF NOT EXISTS "settings" (
+CREATE TABLE "settings" (
 	"key" text PRIMARY KEY,
 	"value" text NOT NULL,
 	"encrypted" smallint DEFAULT 0 NOT NULL,
 	"updated_at" bigint NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE IF NOT EXISTS "users" (
+CREATE TABLE "users" (
 	"id" text PRIMARY KEY,
 	"display_name" text NOT NULL,
 	"role" text DEFAULT 'user' NOT NULL,
 	"created_at" bigint NOT NULL
 );
 --> statement-breakpoint
-CREATE UNIQUE INDEX IF NOT EXISTS "download_events_plugin_created" ON "download_events" ("plugin_id","created_at","id");--> statement-breakpoint
-CREATE UNIQUE INDEX IF NOT EXISTS "identities_instance_external_unique" ON "identities" ("provider_instance_id","external_id");--> statement-breakpoint
-CREATE UNIQUE INDEX IF NOT EXISTS "markdown_pages_path_locale" ON "markdown_pages" ("path","locale");--> statement-breakpoint
-CREATE UNIQUE INDEX IF NOT EXISTS "releases_plugin_version" ON "releases" ("plugin_id","version");--> statement-breakpoint
+CREATE UNIQUE INDEX "download_events_plugin_created" ON "download_events" ("plugin_id","created_at","id");--> statement-breakpoint
+CREATE UNIQUE INDEX "identities_instance_external_unique" ON "identities" ("provider_instance_id","external_id");--> statement-breakpoint
+CREATE UNIQUE INDEX "markdown_pages_path_locale" ON "markdown_pages" ("path","locale");--> statement-breakpoint
+CREATE UNIQUE INDEX "release_assets_release_name" ON "release_assets" ("release_id","name");--> statement-breakpoint
+CREATE UNIQUE INDEX "releases_plugin_version" ON "releases" ("plugin_id","version");--> statement-breakpoint
 ALTER TABLE "audit_log" ADD CONSTRAINT "audit_log_actor_id_users_id_fkey" FOREIGN KEY ("actor_id") REFERENCES "users"("id") ON DELETE SET NULL;--> statement-breakpoint
 ALTER TABLE "download_events" ADD CONSTRAINT "download_events_plugin_id_plugins_id_fkey" FOREIGN KEY ("plugin_id") REFERENCES "plugins"("id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "identities" ADD CONSTRAINT "identities_user_id_users_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE;--> statement-breakpoint
@@ -167,5 +182,6 @@ ALTER TABLE "plugin_transfers" ADD CONSTRAINT "plugin_transfers_from_user_id_use
 ALTER TABLE "plugin_transfers" ADD CONSTRAINT "plugin_transfers_to_user_id_users_id_fkey" FOREIGN KEY ("to_user_id") REFERENCES "users"("id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "plugins" ADD CONSTRAINT "plugins_owner_id_users_id_fkey" FOREIGN KEY ("owner_id") REFERENCES "users"("id");--> statement-breakpoint
 ALTER TABLE "plugins" ADD CONSTRAINT "plugins_provider_instance_id_provider_instances_id_fkey" FOREIGN KEY ("provider_instance_id") REFERENCES "provider_instances"("id");--> statement-breakpoint
+ALTER TABLE "release_assets" ADD CONSTRAINT "release_assets_release_id_releases_id_fkey" FOREIGN KEY ("release_id") REFERENCES "releases"("id") ON DELETE CASCADE;--> statement-breakpoint
 ALTER TABLE "releases" ADD CONSTRAINT "releases_plugin_id_plugins_id_fkey" FOREIGN KEY ("plugin_id") REFERENCES "plugins"("id");--> statement-breakpoint
 ALTER TABLE "root_credentials" ADD CONSTRAINT "root_credentials_user_id_users_id_fkey" FOREIGN KEY ("user_id") REFERENCES "users"("id") ON DELETE CASCADE;

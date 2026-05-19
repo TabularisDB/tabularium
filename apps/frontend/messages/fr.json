@@ -661,7 +661,7 @@
 	"plugin_detail_deleting": "Suppression…",
 	"plugin_detail_docs": "Docs",
 	"plugin_detail_download": "téléchargement",
-	"plugin_detail_download_empty": "Aucun artefact de plate-forme attaché à cette version pour l instant. Joignez des fichiers via l interface de release Codeberg ou exécutez fj release asset upload.",
+	"plugin_detail_download_empty": "Aucun artefact de plate-forme attaché à cette version pour l'instant. Une fois les fichiers ajoutés à la release sur votre forge, rafraîchissez depuis la page du plugin.",
 	"plugin_detail_download_title": "Télécharger",
 	"plugin_detail_email_support": "Support par e-mail",
 	"plugin_detail_featured": "Mis en avant",

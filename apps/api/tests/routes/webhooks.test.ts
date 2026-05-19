@@ -107,7 +107,7 @@ describe('POST /api/webhooks/release', () => {
     expect(updatedPlugin?.latestVersion).toBe('1.2.0')
   })
 
-  it('skips non-published actions', async () => {
+  it('skips non-published actions (created = draft on GitHub)', async () => {
     const user = await makeUser()
     const plugin = await makePlugin(user.id, {
       repoUrl: 'https://github.com/alice/my-plugin',
@@ -137,5 +137,54 @@ describe('POST /api/webhooks/release', () => {
     expect(res.status).toBe(200)
     const data = (await res.json()) as { skipped: boolean }
     expect(data.skipped).toBe(true)
+  })
+
+  it('updates assets on edited webhook (covers the publisher → asset-upload race)', async () => {
+    const user = await makeUser()
+    const plugin = await makePlugin(user.id, {
+      repoUrl: 'https://github.com/alice/my-plugin',
+      webhookSecret: 'test-secret-padded-to-thirty-two-chars',
+    })
+
+    const initial = JSON.stringify({
+      action: 'published',
+      release: { tag_name: 'v1.3.0', assets: [] },
+      repository: { html_url: plugin.repoUrl },
+    })
+    const app = await buildApp()
+    await app.handle(
+      new Request('http://localhost/api/webhooks/release', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-hub-signature-256': await signPayload('test-secret-padded-to-thirty-two-chars', initial),
+          'x-github-event': 'release',
+        },
+        body: initial,
+      }),
+    )
+
+    const edited = JSON.stringify(makeGithubReleasePayload(plugin.repoUrl, 'v1.3.0', 'my-plugin-linux-x64.zip'))
+    const editedPayload = JSON.parse(edited) as { action: string }
+    editedPayload.action = 'edited'
+    const editedBody = JSON.stringify(editedPayload)
+    const res = await app.handle(
+      new Request('http://localhost/api/webhooks/release', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'x-hub-signature-256': await signPayload('test-secret-padded-to-thirty-two-chars', editedBody),
+          'x-github-event': 'release',
+        },
+        body: editedBody,
+      }),
+    )
+    expect(res.status).toBe(200)
+
+    const release = await db.query.releases.findFirst({
+      where: { pluginId: plugin.id, version: '1.3.0' },
+    })
+    const assets = JSON.parse(release!.assets) as Record<string, { url: string }>
+    expect(assets['linux-x64'].url).toContain('my-plugin-linux-x64.zip')
   })
 })

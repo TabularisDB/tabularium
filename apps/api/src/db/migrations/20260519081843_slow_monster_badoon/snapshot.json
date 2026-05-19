@@ -1,1862 +1,1494 @@
 {
-  "version": "8",
-  "dialect": "postgres",
-  "id": "b16762fd-38a0-47b3-aa19-4614b8bc36d2",
+  "version": "7",
+  "dialect": "sqlite",
+  "id": "f5e88f64-c13f-4af0-b425-af036e65e1c3",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
   "ddl": [
     {
-      "isRlsEnabled": false,
       "name": "audit_log",
-      "entityType": "tables",
-      "schema": "public"
+      "entityType": "tables"
     },
     {
-      "isRlsEnabled": false,
       "name": "download_events",
-      "entityType": "tables",
-      "schema": "public"
+      "entityType": "tables"
     },
     {
-      "isRlsEnabled": false,
       "name": "identities",
-      "entityType": "tables",
-      "schema": "public"
+      "entityType": "tables"
     },
     {
-      "isRlsEnabled": false,
       "name": "markdown_pages",
-      "entityType": "tables",
-      "schema": "public"
+      "entityType": "tables"
     },
     {
-      "isRlsEnabled": false,
       "name": "plugin_request_claims",
-      "entityType": "tables",
-      "schema": "public"
+      "entityType": "tables"
     },
     {
-      "isRlsEnabled": false,
       "name": "plugin_request_votes",
-      "entityType": "tables",
-      "schema": "public"
+      "entityType": "tables"
     },
     {
-      "isRlsEnabled": false,
       "name": "plugin_requests",
-      "entityType": "tables",
-      "schema": "public"
+      "entityType": "tables"
     },
     {
-      "isRlsEnabled": false,
       "name": "plugin_transfers",
-      "entityType": "tables",
-      "schema": "public"
+      "entityType": "tables"
     },
     {
-      "isRlsEnabled": false,
       "name": "plugins",
-      "entityType": "tables",
-      "schema": "public"
+      "entityType": "tables"
     },
     {
-      "isRlsEnabled": false,
       "name": "provider_instances",
-      "entityType": "tables",
-      "schema": "public"
+      "entityType": "tables"
     },
     {
-      "isRlsEnabled": false,
+      "name": "release_assets",
+      "entityType": "tables"
+    },
+    {
       "name": "releases",
-      "entityType": "tables",
-      "schema": "public"
+      "entityType": "tables"
     },
     {
-      "isRlsEnabled": false,
       "name": "root_credentials",
-      "entityType": "tables",
-      "schema": "public"
+      "entityType": "tables"
     },
     {
-      "isRlsEnabled": false,
       "name": "settings",
-      "entityType": "tables",
-      "schema": "public"
+      "entityType": "tables"
     },
     {
-      "isRlsEnabled": false,
       "name": "users",
-      "entityType": "tables",
-      "schema": "public"
+      "entityType": "tables"
     },
     {
       "type": "text",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
+      "notNull": false,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "id",
       "entityType": "columns",
-      "schema": "public",
       "table": "audit_log"
     },
     {
       "type": "text",
-      "typeSchema": null,
       "notNull": false,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "actor_id",
       "entityType": "columns",
-      "schema": "public",
       "table": "audit_log"
     },
     {
       "type": "text",
-      "typeSchema": null,
       "notNull": false,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "actor_name",
       "entityType": "columns",
-      "schema": "public",
       "table": "audit_log"
     },
     {
       "type": "text",
-      "typeSchema": null,
       "notNull": true,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "action",
       "entityType": "columns",
-      "schema": "public",
       "table": "audit_log"
     },
     {
       "type": "text",
-      "typeSchema": null,
       "notNull": false,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "target",
       "entityType": "columns",
-      "schema": "public",
       "table": "audit_log"
     },
     {
       "type": "text",
-      "typeSchema": null,
       "notNull": false,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "meta",
       "entityType": "columns",
-      "schema": "public",
       "table": "audit_log"
     },
     {
       "type": "text",
-      "typeSchema": null,
       "notNull": false,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "ip",
       "entityType": "columns",
-      "schema": "public",
       "table": "audit_log"
     },
     {
-      "type": "bigint",
-      "typeSchema": null,
+      "type": "integer",
       "notNull": true,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "created_at",
       "entityType": "columns",
-      "schema": "public",
       "table": "audit_log"
     },
     {
       "type": "text",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
+      "notNull": false,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "id",
       "entityType": "columns",
-      "schema": "public",
       "table": "download_events"
     },
     {
       "type": "text",
-      "typeSchema": null,
       "notNull": true,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "plugin_id",
       "entityType": "columns",
-      "schema": "public",
       "table": "download_events"
     },
     {
       "type": "text",
-      "typeSchema": null,
       "notNull": true,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "version",
       "entityType": "columns",
-      "schema": "public",
       "table": "download_events"
     },
     {
       "type": "text",
-      "typeSchema": null,
       "notNull": true,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "platform",
       "entityType": "columns",
-      "schema": "public",
       "table": "download_events"
     },
     {
-      "type": "bigint",
-      "typeSchema": null,
+      "type": "integer",
       "notNull": true,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "created_at",
       "entityType": "columns",
-      "schema": "public",
       "table": "download_events"
     },
     {
       "type": "text",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
+      "notNull": false,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "id",
       "entityType": "columns",
-      "schema": "public",
       "table": "identities"
     },
     {
       "type": "text",
-      "typeSchema": null,
       "notNull": true,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "user_id",
       "entityType": "columns",
-      "schema": "public",
       "table": "identities"
     },
     {
       "type": "text",
-      "typeSchema": null,
       "notNull": true,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "provider_instance_id",
       "entityType": "columns",
-      "schema": "public",
       "table": "identities"
     },
     {
       "type": "text",
-      "typeSchema": null,
       "notNull": true,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "external_id",
       "entityType": "columns",
-      "schema": "public",
       "table": "identities"
     },
     {
       "type": "text",
-      "typeSchema": null,
       "notNull": true,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "username",
       "entityType": "columns",
-      "schema": "public",
       "table": "identities"
     },
     {
       "type": "text",
-      "typeSchema": null,
       "notNull": false,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "access_token",
       "entityType": "columns",
-      "schema": "public",
       "table": "identities"
     },
     {
-      "type": "bigint",
-      "typeSchema": null,
+      "type": "integer",
       "notNull": true,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "created_at",
       "entityType": "columns",
-      "schema": "public",
       "table": "identities"
     },
     {
       "type": "text",
-      "typeSchema": null,
       "notNull": true,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "slug",
       "entityType": "columns",
-      "schema": "public",
       "table": "markdown_pages"
     },
     {
       "type": "text",
-      "typeSchema": null,
       "notNull": true,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": "'en'",
       "generated": null,
-      "identity": null,
       "name": "locale",
       "entityType": "columns",
-      "schema": "public",
       "table": "markdown_pages"
     },
     {
       "type": "text",
-      "typeSchema": null,
       "notNull": true,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "title",
       "entityType": "columns",
-      "schema": "public",
       "table": "markdown_pages"
     },
     {
       "type": "text",
-      "typeSchema": null,
       "notNull": true,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "content",
       "entityType": "columns",
-      "schema": "public",
       "table": "markdown_pages"
     },
     {
-      "type": "smallint",
-      "typeSchema": null,
+      "type": "integer",
       "notNull": true,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": "1",
       "generated": null,
-      "identity": null,
       "name": "published",
       "entityType": "columns",
-      "schema": "public",
       "table": "markdown_pages"
     },
     {
       "type": "text",
-      "typeSchema": null,
       "notNull": true,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "path",
       "entityType": "columns",
-      "schema": "public",
       "table": "markdown_pages"
     },
     {
       "type": "integer",
-      "typeSchema": null,
       "notNull": false,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "nav_order",
       "entityType": "columns",
-      "schema": "public",
       "table": "markdown_pages"
     },
     {
-      "type": "smallint",
-      "typeSchema": null,
+      "type": "integer",
       "notNull": true,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": "0",
       "generated": null,
-      "identity": null,
       "name": "show_in_footer",
       "entityType": "columns",
-      "schema": "public",
       "table": "markdown_pages"
     },
     {
-      "type": "bigint",
-      "typeSchema": null,
+      "type": "integer",
       "notNull": true,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "created_at",
       "entityType": "columns",
-      "schema": "public",
       "table": "markdown_pages"
     },
     {
-      "type": "bigint",
-      "typeSchema": null,
+      "type": "integer",
       "notNull": true,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "updated_at",
       "entityType": "columns",
-      "schema": "public",
       "table": "markdown_pages"
     },
     {
       "type": "text",
-      "typeSchema": null,
       "notNull": true,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "request_id",
       "entityType": "columns",
-      "schema": "public",
       "table": "plugin_request_claims"
     },
     {
       "type": "text",
-      "typeSchema": null,
       "notNull": true,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "user_id",
       "entityType": "columns",
-      "schema": "public",
       "table": "plugin_request_claims"
     },
     {
-      "type": "bigint",
-      "typeSchema": null,
+      "type": "integer",
       "notNull": true,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "created_at",
       "entityType": "columns",
-      "schema": "public",
       "table": "plugin_request_claims"
     },
     {
       "type": "text",
-      "typeSchema": null,
       "notNull": true,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "request_id",
       "entityType": "columns",
-      "schema": "public",
       "table": "plugin_request_votes"
     },
     {
       "type": "text",
-      "typeSchema": null,
       "notNull": true,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "user_id",
       "entityType": "columns",
-      "schema": "public",
       "table": "plugin_request_votes"
     },
     {
       "type": "text",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
+      "notNull": false,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "id",
       "entityType": "columns",
-      "schema": "public",
       "table": "plugin_requests"
     },
     {
       "type": "text",
-      "typeSchema": null,
       "notNull": true,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "slug",
       "entityType": "columns",
-      "schema": "public",
       "table": "plugin_requests"
     },
     {
       "type": "text",
-      "typeSchema": null,
       "notNull": true,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "name",
       "entityType": "columns",
-      "schema": "public",
       "table": "plugin_requests"
     },
     {
       "type": "text",
-      "typeSchema": null,
       "notNull": true,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "description",
       "entityType": "columns",
-      "schema": "public",
       "table": "plugin_requests"
     },
     {
       "type": "text",
-      "typeSchema": null,
       "notNull": true,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "requester_id",
       "entityType": "columns",
-      "schema": "public",
       "table": "plugin_requests"
     },
     {
       "type": "integer",
-      "typeSchema": null,
       "notNull": true,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": "0",
       "generated": null,
-      "identity": null,
       "name": "upvotes",
       "entityType": "columns",
-      "schema": "public",
       "table": "plugin_requests"
     },
     {
-      "type": "bigint",
-      "typeSchema": null,
+      "type": "integer",
       "notNull": true,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "created_at",
       "entityType": "columns",
-      "schema": "public",
       "table": "plugin_requests"
     },
     {
       "type": "text",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
+      "notNull": false,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "id",
       "entityType": "columns",
-      "schema": "public",
       "table": "plugin_transfers"
     },
     {
       "type": "text",
-      "typeSchema": null,
       "notNull": true,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "plugin_id",
       "entityType": "columns",
-      "schema": "public",
       "table": "plugin_transfers"
     },
     {
       "type": "text",
-      "typeSchema": null,
       "notNull": true,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "from_user_id",
       "entityType": "columns",
-      "schema": "public",
       "table": "plugin_transfers"
     },
     {
       "type": "text",
-      "typeSchema": null,
       "notNull": true,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "to_user_id",
       "entityType": "columns",
-      "schema": "public",
       "table": "plugin_transfers"
     },
     {
       "type": "text",
-      "typeSchema": null,
       "notNull": true,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": "'pending'",
       "generated": null,
-      "identity": null,
       "name": "status",
       "entityType": "columns",
-      "schema": "public",
       "table": "plugin_transfers"
     },
     {
       "type": "text",
-      "typeSchema": null,
       "notNull": false,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "message",
       "entityType": "columns",
-      "schema": "public",
       "table": "plugin_transfers"
     },
     {
-      "type": "bigint",
-      "typeSchema": null,
+      "type": "integer",
       "notNull": true,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "created_at",
       "entityType": "columns",
-      "schema": "public",
       "table": "plugin_transfers"
     },
     {
-      "type": "bigint",
-      "typeSchema": null,
+      "type": "integer",
       "notNull": true,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "expires_at",
       "entityType": "columns",
-      "schema": "public",
       "table": "plugin_transfers"
     },
     {
-      "type": "bigint",
-      "typeSchema": null,
+      "type": "integer",
       "notNull": false,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "responded_at",
       "entityType": "columns",
-      "schema": "public",
       "table": "plugin_transfers"
     },
     {
       "type": "text",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
+      "notNull": false,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "id",
       "entityType": "columns",
-      "schema": "public",
       "table": "plugins"
     },
     {
       "type": "text",
-      "typeSchema": null,
       "notNull": true,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "owner_id",
       "entityType": "columns",
-      "schema": "public",
       "table": "plugins"
     },
     {
       "type": "text",
-      "typeSchema": null,
       "notNull": false,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "provider_instance_id",
       "entityType": "columns",
-      "schema": "public",
       "table": "plugins"
     },
     {
       "type": "text",
-      "typeSchema": null,
       "notNull": true,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "name",
       "entityType": "columns",
-      "schema": "public",
       "table": "plugins"
     },
     {
       "type": "text",
-      "typeSchema": null,
       "notNull": true,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "description",
       "entityType": "columns",
-      "schema": "public",
       "table": "plugins"
     },
     {
       "type": "text",
-      "typeSchema": null,
       "notNull": true,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "author",
       "entityType": "columns",
-      "schema": "public",
       "table": "plugins"
     },
     {
       "type": "text",
-      "typeSchema": null,
       "notNull": true,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "repo_url",
       "entityType": "columns",
-      "schema": "public",
       "table": "plugins"
     },
     {
       "type": "text",
-      "typeSchema": null,
       "notNull": true,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "homepage",
       "entityType": "columns",
-      "schema": "public",
       "table": "plugins"
     },
     {
       "type": "text",
-      "typeSchema": null,
       "notNull": false,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "latest_version",
       "entityType": "columns",
-      "schema": "public",
       "table": "plugins"
     },
     {
       "type": "text",
-      "typeSchema": null,
       "notNull": true,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "webhook_secret",
       "entityType": "columns",
-      "schema": "public",
       "table": "plugins"
     },
     {
       "type": "text",
-      "typeSchema": null,
       "notNull": true,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": "'approved'",
       "generated": null,
-      "identity": null,
       "name": "status",
       "entityType": "columns",
-      "schema": "public",
       "table": "plugins"
     },
     {
       "type": "text",
-      "typeSchema": null,
       "notNull": false,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "rejection_reason",
       "entityType": "columns",
-      "schema": "public",
       "table": "plugins"
     },
     {
       "type": "text",
-      "typeSchema": null,
       "notNull": false,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "category",
       "entityType": "columns",
-      "schema": "public",
       "table": "plugins"
     },
     {
       "type": "text",
-      "typeSchema": null,
       "notNull": false,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "tags",
       "entityType": "columns",
-      "schema": "public",
       "table": "plugins"
     },
     {
       "type": "text",
-      "typeSchema": null,
       "notNull": false,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "license",
       "entityType": "columns",
-      "schema": "public",
       "table": "plugins"
     },
     {
       "type": "text",
-      "typeSchema": null,
       "notNull": false,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "icon_url",
       "entityType": "columns",
-      "schema": "public",
       "table": "plugins"
     },
     {
       "type": "text",
-      "typeSchema": null,
       "notNull": false,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "screenshots",
       "entityType": "columns",
-      "schema": "public",
       "table": "plugins"
     },
     {
       "type": "text",
-      "typeSchema": null,
       "notNull": false,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "readme",
       "entityType": "columns",
-      "schema": "public",
       "table": "plugins"
     },
     {
       "type": "text",
-      "typeSchema": null,
       "notNull": false,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "documentation_url",
       "entityType": "columns",
-      "schema": "public",
       "table": "plugins"
     },
     {
       "type": "text",
-      "typeSchema": null,
       "notNull": false,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "support_email",
       "entityType": "columns",
-      "schema": "public",
       "table": "plugins"
     },
     {
       "type": "text",
-      "typeSchema": null,
       "notNull": false,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "issues_url",
       "entityType": "columns",
-      "schema": "public",
       "table": "plugins"
     },
     {
-      "type": "bigint",
-      "typeSchema": null,
+      "type": "integer",
       "notNull": false,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "manifest_fetched_at",
       "entityType": "columns",
-      "schema": "public",
       "table": "plugins"
     },
     {
       "type": "text",
-      "typeSchema": null,
       "notNull": false,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "manifest_version",
       "entityType": "columns",
-      "schema": "public",
       "table": "plugins"
     },
     {
-      "type": "smallint",
-      "typeSchema": null,
+      "type": "integer",
       "notNull": true,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": "0",
       "generated": null,
-      "identity": null,
       "name": "featured",
       "entityType": "columns",
-      "schema": "public",
       "table": "plugins"
     },
     {
       "type": "integer",
-      "typeSchema": null,
       "notNull": false,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "featured_order",
       "entityType": "columns",
-      "schema": "public",
       "table": "plugins"
     },
     {
       "type": "integer",
-      "typeSchema": null,
       "notNull": true,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": "0",
       "generated": null,
-      "identity": null,
       "name": "downloads",
       "entityType": "columns",
-      "schema": "public",
       "table": "plugins"
     },
     {
-      "type": "bigint",
-      "typeSchema": null,
+      "type": "integer",
       "notNull": true,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "created_at",
       "entityType": "columns",
-      "schema": "public",
       "table": "plugins"
     },
     {
-      "type": "bigint",
-      "typeSchema": null,
+      "type": "integer",
       "notNull": true,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "updated_at",
       "entityType": "columns",
-      "schema": "public",
       "table": "plugins"
     },
     {
       "type": "text",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
+      "notNull": false,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "id",
       "entityType": "columns",
-      "schema": "public",
       "table": "provider_instances"
     },
     {
       "type": "text",
-      "typeSchema": null,
       "notNull": true,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "kind",
       "entityType": "columns",
-      "schema": "public",
       "table": "provider_instances"
     },
     {
       "type": "text",
-      "typeSchema": null,
       "notNull": true,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "display_name",
       "entityType": "columns",
-      "schema": "public",
       "table": "provider_instances"
     },
     {
       "type": "text",
-      "typeSchema": null,
       "notNull": true,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "base_url",
       "entityType": "columns",
-      "schema": "public",
       "table": "provider_instances"
     },
     {
       "type": "text",
-      "typeSchema": null,
       "notNull": true,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "client_id",
       "entityType": "columns",
-      "schema": "public",
       "table": "provider_instances"
     },
     {
       "type": "text",
-      "typeSchema": null,
       "notNull": true,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "client_secret",
       "entityType": "columns",
-      "schema": "public",
       "table": "provider_instances"
     },
     {
       "type": "text",
-      "typeSchema": null,
       "notNull": false,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "logo_url",
       "entityType": "columns",
-      "schema": "public",
       "table": "provider_instances"
     },
     {
-      "type": "smallint",
-      "typeSchema": null,
+      "type": "integer",
       "notNull": true,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": "1",
       "generated": null,
-      "identity": null,
       "name": "enabled",
       "entityType": "columns",
-      "schema": "public",
       "table": "provider_instances"
     },
     {
-      "type": "bigint",
-      "typeSchema": null,
+      "type": "integer",
       "notNull": true,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "created_at",
       "entityType": "columns",
-      "schema": "public",
       "table": "provider_instances"
     },
     {
       "type": "text",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
+      "notNull": false,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "id",
       "entityType": "columns",
-      "schema": "public",
+      "table": "release_assets"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "release_id",
+      "entityType": "columns",
+      "table": "release_assets"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "name",
+      "entityType": "columns",
+      "table": "release_assets"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "url",
+      "entityType": "columns",
+      "table": "release_assets"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "size",
+      "entityType": "columns",
+      "table": "release_assets"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "sha256",
+      "entityType": "columns",
+      "table": "release_assets"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "content_type",
+      "entityType": "columns",
+      "table": "release_assets"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "arch",
+      "entityType": "columns",
+      "table": "release_assets"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "os",
+      "entityType": "columns",
+      "table": "release_assets"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "attestation_bundle",
+      "entityType": "columns",
+      "table": "release_assets"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "created_at",
+      "entityType": "columns",
+      "table": "release_assets"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "id",
+      "entityType": "columns",
       "table": "releases"
     },
     {
       "type": "text",
-      "typeSchema": null,
       "notNull": true,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "plugin_id",
       "entityType": "columns",
-      "schema": "public",
       "table": "releases"
     },
     {
       "type": "text",
-      "typeSchema": null,
       "notNull": true,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "version",
       "entityType": "columns",
-      "schema": "public",
       "table": "releases"
     },
     {
       "type": "text",
-      "typeSchema": null,
       "notNull": false,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "min_runtime_version",
       "entityType": "columns",
-      "schema": "public",
       "table": "releases"
     },
     {
       "type": "text",
-      "typeSchema": null,
       "notNull": true,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "assets",
       "entityType": "columns",
-      "schema": "public",
       "table": "releases"
     },
     {
-      "type": "bigint",
-      "typeSchema": null,
+      "type": "integer",
       "notNull": true,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "created_at",
       "entityType": "columns",
-      "schema": "public",
       "table": "releases"
     },
     {
       "type": "text",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
+      "notNull": false,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "user_id",
       "entityType": "columns",
-      "schema": "public",
       "table": "root_credentials"
     },
     {
       "type": "text",
-      "typeSchema": null,
       "notNull": true,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "email",
       "entityType": "columns",
-      "schema": "public",
       "table": "root_credentials"
     },
     {
       "type": "text",
-      "typeSchema": null,
       "notNull": true,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "password_hash",
       "entityType": "columns",
-      "schema": "public",
       "table": "root_credentials"
     },
     {
-      "type": "bigint",
-      "typeSchema": null,
+      "type": "integer",
       "notNull": true,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "created_at",
       "entityType": "columns",
-      "schema": "public",
       "table": "root_credentials"
     },
     {
       "type": "text",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
+      "notNull": false,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "key",
       "entityType": "columns",
-      "schema": "public",
       "table": "settings"
     },
     {
       "type": "text",
-      "typeSchema": null,
       "notNull": true,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "value",
       "entityType": "columns",
-      "schema": "public",
       "table": "settings"
     },
     {
-      "type": "smallint",
-      "typeSchema": null,
+      "type": "integer",
       "notNull": true,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": "0",
       "generated": null,
-      "identity": null,
       "name": "encrypted",
       "entityType": "columns",
-      "schema": "public",
       "table": "settings"
     },
     {
-      "type": "bigint",
-      "typeSchema": null,
+      "type": "integer",
       "notNull": true,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "updated_at",
       "entityType": "columns",
-      "schema": "public",
       "table": "settings"
     },
     {
       "type": "text",
-      "typeSchema": null,
-      "notNull": true,
-      "dimensions": 0,
+      "notNull": false,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "id",
       "entityType": "columns",
-      "schema": "public",
       "table": "users"
     },
     {
       "type": "text",
-      "typeSchema": null,
       "notNull": true,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "display_name",
       "entityType": "columns",
-      "schema": "public",
       "table": "users"
     },
     {
       "type": "text",
-      "typeSchema": null,
       "notNull": true,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": "'user'",
       "generated": null,
-      "identity": null,
       "name": "role",
       "entityType": "columns",
-      "schema": "public",
       "table": "users"
     },
     {
-      "type": "bigint",
-      "typeSchema": null,
+      "type": "integer",
       "notNull": true,
-      "dimensions": 0,
+      "autoincrement": false,
       "default": null,
       "generated": null,
-      "identity": null,
       "name": "created_at",
       "entityType": "columns",
-      "schema": "public",
       "table": "users"
     },
     {
-      "nameExplicit": true,
-      "columns": [
-        {
-          "value": "plugin_id",
-          "isExpression": false,
-          "asc": true,
-          "nullsFirst": false,
-          "opclass": null
-        },
-        {
-          "value": "created_at",
-          "isExpression": false,
-          "asc": true,
-          "nullsFirst": false,
-          "opclass": null
-        },
-        {
-          "value": "id",
-          "isExpression": false,
-          "asc": true,
-          "nullsFirst": false,
-          "opclass": null
-        }
-      ],
-      "isUnique": true,
-      "where": null,
-      "with": "",
-      "method": "btree",
-      "concurrently": false,
-      "name": "download_events_plugin_created",
-      "entityType": "indexes",
-      "schema": "public",
-      "table": "download_events"
-    },
-    {
-      "nameExplicit": true,
-      "columns": [
-        {
-          "value": "provider_instance_id",
-          "isExpression": false,
-          "asc": true,
-          "nullsFirst": false,
-          "opclass": null
-        },
-        {
-          "value": "external_id",
-          "isExpression": false,
-          "asc": true,
-          "nullsFirst": false,
-          "opclass": null
-        }
-      ],
-      "isUnique": true,
-      "where": null,
-      "with": "",
-      "method": "btree",
-      "concurrently": false,
-      "name": "identities_instance_external_unique",
-      "entityType": "indexes",
-      "schema": "public",
-      "table": "identities"
-    },
-    {
-      "nameExplicit": true,
-      "columns": [
-        {
-          "value": "path",
-          "isExpression": false,
-          "asc": true,
-          "nullsFirst": false,
-          "opclass": null
-        },
-        {
-          "value": "locale",
-          "isExpression": false,
-          "asc": true,
-          "nullsFirst": false,
-          "opclass": null
-        }
-      ],
-      "isUnique": true,
-      "where": null,
-      "with": "",
-      "method": "btree",
-      "concurrently": false,
-      "name": "markdown_pages_path_locale",
-      "entityType": "indexes",
-      "schema": "public",
-      "table": "markdown_pages"
-    },
-    {
-      "nameExplicit": true,
-      "columns": [
-        {
-          "value": "plugin_id",
-          "isExpression": false,
-          "asc": true,
-          "nullsFirst": false,
-          "opclass": null
-        },
-        {
-          "value": "version",
-          "isExpression": false,
-          "asc": true,
-          "nullsFirst": false,
-          "opclass": null
-        }
-      ],
-      "isUnique": true,
-      "where": null,
-      "with": "",
-      "method": "btree",
-      "concurrently": false,
-      "name": "releases_plugin_version",
-      "entityType": "indexes",
-      "schema": "public",
-      "table": "releases"
-    },
-    {
-      "nameExplicit": false,
       "columns": [
         "actor_id"
       ],
-      "schemaTo": "public",
       "tableTo": "users",
       "columnsTo": [
         "id"
       ],
       "onUpdate": "NO ACTION",
       "onDelete": "SET NULL",
-      "name": "audit_log_actor_id_users_id_fkey",
+      "nameExplicit": false,
+      "name": "fk_audit_log_actor_id_users_id_fk",
       "entityType": "fks",
-      "schema": "public",
       "table": "audit_log"
     },
     {
-      "nameExplicit": false,
       "columns": [
         "plugin_id"
       ],
-      "schemaTo": "public",
       "tableTo": "plugins",
       "columnsTo": [
         "id"
       ],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
-      "name": "download_events_plugin_id_plugins_id_fkey",
+      "nameExplicit": false,
+      "name": "fk_download_events_plugin_id_plugins_id_fk",
       "entityType": "fks",
-      "schema": "public",
       "table": "download_events"
     },
     {
-      "nameExplicit": false,
       "columns": [
         "user_id"
       ],
-      "schemaTo": "public",
       "tableTo": "users",
       "columnsTo": [
         "id"
       ],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
-      "name": "identities_user_id_users_id_fkey",
+      "nameExplicit": false,
+      "name": "fk_identities_user_id_users_id_fk",
       "entityType": "fks",
-      "schema": "public",
       "table": "identities"
     },
     {
-      "nameExplicit": false,
       "columns": [
         "provider_instance_id"
       ],
-      "schemaTo": "public",
       "tableTo": "provider_instances",
       "columnsTo": [
         "id"
       ],
       "onUpdate": "NO ACTION",
       "onDelete": "NO ACTION",
-      "name": "identities_provider_instance_id_provider_instances_id_fkey",
+      "nameExplicit": false,
+      "name": "fk_identities_provider_instance_id_provider_instances_id_fk",
       "entityType": "fks",
-      "schema": "public",
       "table": "identities"
     },
     {
-      "nameExplicit": false,
       "columns": [
         "request_id"
       ],
-      "schemaTo": "public",
       "tableTo": "plugin_requests",
       "columnsTo": [
         "id"
       ],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
-      "name": "plugin_request_claims_request_id_plugin_requests_id_fkey",
+      "nameExplicit": false,
+      "name": "fk_plugin_request_claims_request_id_plugin_requests_id_fk",
       "entityType": "fks",
-      "schema": "public",
       "table": "plugin_request_claims"
     },
     {
-      "nameExplicit": false,
       "columns": [
         "user_id"
       ],
-      "schemaTo": "public",
       "tableTo": "users",
       "columnsTo": [
         "id"
       ],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
-      "name": "plugin_request_claims_user_id_users_id_fkey",
+      "nameExplicit": false,
+      "name": "fk_plugin_request_claims_user_id_users_id_fk",
       "entityType": "fks",
-      "schema": "public",
       "table": "plugin_request_claims"
     },
     {
-      "nameExplicit": false,
       "columns": [
         "request_id"
       ],
-      "schemaTo": "public",
       "tableTo": "plugin_requests",
       "columnsTo": [
         "id"
       ],
       "onUpdate": "NO ACTION",
       "onDelete": "NO ACTION",
-      "name": "plugin_request_votes_request_id_plugin_requests_id_fkey",
+      "nameExplicit": false,
+      "name": "fk_plugin_request_votes_request_id_plugin_requests_id_fk",
       "entityType": "fks",
-      "schema": "public",
       "table": "plugin_request_votes"
     },
     {
-      "nameExplicit": false,
       "columns": [
         "user_id"
       ],
-      "schemaTo": "public",
       "tableTo": "users",
       "columnsTo": [
         "id"
       ],
       "onUpdate": "NO ACTION",
       "onDelete": "NO ACTION",
-      "name": "plugin_request_votes_user_id_users_id_fkey",
+      "nameExplicit": false,
+      "name": "fk_plugin_request_votes_user_id_users_id_fk",
       "entityType": "fks",
-      "schema": "public",
       "table": "plugin_request_votes"
     },
     {
-      "nameExplicit": false,
       "columns": [
         "requester_id"
       ],
-      "schemaTo": "public",
       "tableTo": "users",
       "columnsTo": [
         "id"
       ],
       "onUpdate": "NO ACTION",
       "onDelete": "NO ACTION",
-      "name": "plugin_requests_requester_id_users_id_fkey",
+      "nameExplicit": false,
+      "name": "fk_plugin_requests_requester_id_users_id_fk",
       "entityType": "fks",
-      "schema": "public",
       "table": "plugin_requests"
     },
     {
-      "nameExplicit": false,
       "columns": [
         "plugin_id"
       ],
-      "schemaTo": "public",
       "tableTo": "plugins",
       "columnsTo": [
         "id"
       ],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
-      "name": "plugin_transfers_plugin_id_plugins_id_fkey",
+      "nameExplicit": false,
+      "name": "fk_plugin_transfers_plugin_id_plugins_id_fk",
       "entityType": "fks",
-      "schema": "public",
       "table": "plugin_transfers"
     },
     {
-      "nameExplicit": false,
       "columns": [
         "from_user_id"
       ],
-      "schemaTo": "public",
       "tableTo": "users",
       "columnsTo": [
         "id"
       ],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
-      "name": "plugin_transfers_from_user_id_users_id_fkey",
+      "nameExplicit": false,
+      "name": "fk_plugin_transfers_from_user_id_users_id_fk",
       "entityType": "fks",
-      "schema": "public",
       "table": "plugin_transfers"
     },
     {
-      "nameExplicit": false,
       "columns": [
         "to_user_id"
       ],
-      "schemaTo": "public",
       "tableTo": "users",
       "columnsTo": [
         "id"
       ],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
-      "name": "plugin_transfers_to_user_id_users_id_fkey",
+      "nameExplicit": false,
+      "name": "fk_plugin_transfers_to_user_id_users_id_fk",
       "entityType": "fks",
-      "schema": "public",
       "table": "plugin_transfers"
     },
     {
-      "nameExplicit": false,
       "columns": [
         "owner_id"
       ],
-      "schemaTo": "public",
       "tableTo": "users",
       "columnsTo": [
         "id"
       ],
       "onUpdate": "NO ACTION",
       "onDelete": "NO ACTION",
-      "name": "plugins_owner_id_users_id_fkey",
+      "nameExplicit": false,
+      "name": "fk_plugins_owner_id_users_id_fk",
       "entityType": "fks",
-      "schema": "public",
       "table": "plugins"
     },
     {
-      "nameExplicit": false,
       "columns": [
         "provider_instance_id"
       ],
-      "schemaTo": "public",
       "tableTo": "provider_instances",
       "columnsTo": [
         "id"
       ],
       "onUpdate": "NO ACTION",
       "onDelete": "NO ACTION",
-      "name": "plugins_provider_instance_id_provider_instances_id_fkey",
+      "nameExplicit": false,
+      "name": "fk_plugins_provider_instance_id_provider_instances_id_fk",
       "entityType": "fks",
-      "schema": "public",
       "table": "plugins"
     },
     {
+      "columns": [
+        "release_id"
+      ],
+      "tableTo": "releases",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
       "nameExplicit": false,
+      "name": "fk_release_assets_release_id_releases_id_fk",
+      "entityType": "fks",
+      "table": "release_assets"
+    },
+    {
       "columns": [
         "plugin_id"
       ],
-      "schemaTo": "public",
       "tableTo": "plugins",
       "columnsTo": [
         "id"
       ],
       "onUpdate": "NO ACTION",
       "onDelete": "NO ACTION",
-      "name": "releases_plugin_id_plugins_id_fkey",
+      "nameExplicit": false,
+      "name": "fk_releases_plugin_id_plugins_id_fk",
       "entityType": "fks",
-      "schema": "public",
       "table": "releases"
     },
     {
-      "nameExplicit": false,
       "columns": [
         "user_id"
       ],
-      "schemaTo": "public",
       "tableTo": "users",
       "columnsTo": [
         "id"
       ],
       "onUpdate": "NO ACTION",
       "onDelete": "CASCADE",
-      "name": "root_credentials_user_id_users_id_fkey",
+      "nameExplicit": false,
+      "name": "fk_root_credentials_user_id_users_id_fk",
       "entityType": "fks",
-      "schema": "public",
       "table": "root_credentials"
     },
     {
@@ -1865,9 +1497,8 @@
         "locale"
       ],
       "nameExplicit": false,
-      "name": "markdown_pages_pkey",
+      "name": "markdown_pages_pk",
       "entityType": "pks",
-      "schema": "public",
       "table": "markdown_pages"
     },
     {
@@ -1876,9 +1507,8 @@
         "user_id"
       ],
       "nameExplicit": false,
-      "name": "plugin_request_claims_pkey",
+      "name": "plugin_request_claims_pk",
       "entityType": "pks",
-      "schema": "public",
       "table": "plugin_request_claims"
     },
     {
@@ -1887,9 +1517,8 @@
         "user_id"
       ],
       "nameExplicit": false,
-      "name": "plugin_request_votes_pkey",
+      "name": "plugin_request_votes_pk",
       "entityType": "pks",
-      "schema": "public",
       "table": "plugin_request_votes"
     },
     {
@@ -1897,8 +1526,7 @@
         "id"
       ],
       "nameExplicit": false,
-      "name": "audit_log_pkey",
-      "schema": "public",
+      "name": "audit_log_pk",
       "table": "audit_log",
       "entityType": "pks"
     },
@@ -1907,8 +1535,7 @@
         "id"
       ],
       "nameExplicit": false,
-      "name": "download_events_pkey",
-      "schema": "public",
+      "name": "download_events_pk",
       "table": "download_events",
       "entityType": "pks"
     },
@@ -1917,8 +1544,7 @@
         "id"
       ],
       "nameExplicit": false,
-      "name": "identities_pkey",
-      "schema": "public",
+      "name": "identities_pk",
       "table": "identities",
       "entityType": "pks"
     },
@@ -1927,8 +1553,7 @@
         "id"
       ],
       "nameExplicit": false,
-      "name": "plugin_requests_pkey",
-      "schema": "public",
+      "name": "plugin_requests_pk",
       "table": "plugin_requests",
       "entityType": "pks"
     },
@@ -1937,8 +1562,7 @@
         "id"
       ],
       "nameExplicit": false,
-      "name": "plugin_transfers_pkey",
-      "schema": "public",
+      "name": "plugin_transfers_pk",
       "table": "plugin_transfers",
       "entityType": "pks"
     },
@@ -1947,8 +1571,7 @@
         "id"
       ],
       "nameExplicit": false,
-      "name": "plugins_pkey",
-      "schema": "public",
+      "name": "plugins_pk",
       "table": "plugins",
       "entityType": "pks"
     },
@@ -1957,8 +1580,7 @@
         "id"
       ],
       "nameExplicit": false,
-      "name": "provider_instances_pkey",
-      "schema": "public",
+      "name": "provider_instances_pk",
       "table": "provider_instances",
       "entityType": "pks"
     },
@@ -1967,8 +1589,16 @@
         "id"
       ],
       "nameExplicit": false,
-      "name": "releases_pkey",
-      "schema": "public",
+      "name": "release_assets_pk",
+      "table": "release_assets",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "name": "releases_pk",
       "table": "releases",
       "entityType": "pks"
     },
@@ -1977,8 +1607,7 @@
         "user_id"
       ],
       "nameExplicit": false,
-      "name": "root_credentials_pkey",
-      "schema": "public",
+      "name": "root_credentials_pk",
       "table": "root_credentials",
       "entityType": "pks"
     },
@@ -1987,8 +1616,7 @@
         "key"
       ],
       "nameExplicit": false,
-      "name": "settings_pkey",
-      "schema": "public",
+      "name": "settings_pk",
       "table": "settings",
       "entityType": "pks"
     },
@@ -1997,32 +1625,121 @@
         "id"
       ],
       "nameExplicit": false,
-      "name": "users_pkey",
-      "schema": "public",
+      "name": "users_pk",
       "table": "users",
       "entityType": "pks"
     },
     {
-      "nameExplicit": false,
+      "columns": [
+        {
+          "value": "plugin_id",
+          "isExpression": false
+        },
+        {
+          "value": "created_at",
+          "isExpression": false
+        },
+        {
+          "value": "id",
+          "isExpression": false
+        }
+      ],
+      "isUnique": true,
+      "where": null,
+      "origin": "manual",
+      "name": "download_events_plugin_created",
+      "entityType": "indexes",
+      "table": "download_events"
+    },
+    {
+      "columns": [
+        {
+          "value": "provider_instance_id",
+          "isExpression": false
+        },
+        {
+          "value": "external_id",
+          "isExpression": false
+        }
+      ],
+      "isUnique": true,
+      "where": null,
+      "origin": "manual",
+      "name": "identities_instance_external_unique",
+      "entityType": "indexes",
+      "table": "identities"
+    },
+    {
+      "columns": [
+        {
+          "value": "path",
+          "isExpression": false
+        },
+        {
+          "value": "locale",
+          "isExpression": false
+        }
+      ],
+      "isUnique": true,
+      "where": null,
+      "origin": "manual",
+      "name": "markdown_pages_path_locale",
+      "entityType": "indexes",
+      "table": "markdown_pages"
+    },
+    {
+      "columns": [
+        {
+          "value": "release_id",
+          "isExpression": false
+        },
+        {
+          "value": "name",
+          "isExpression": false
+        }
+      ],
+      "isUnique": true,
+      "where": null,
+      "origin": "manual",
+      "name": "release_assets_release_name",
+      "entityType": "indexes",
+      "table": "release_assets"
+    },
+    {
+      "columns": [
+        {
+          "value": "plugin_id",
+          "isExpression": false
+        },
+        {
+          "value": "version",
+          "isExpression": false
+        }
+      ],
+      "isUnique": true,
+      "where": null,
+      "origin": "manual",
+      "name": "releases_plugin_version",
+      "entityType": "indexes",
+      "table": "releases"
+    },
+    {
       "columns": [
         "slug"
       ],
-      "nullsNotDistinct": false,
-      "name": "plugin_requests_slug_key",
-      "schema": "public",
-      "table": "plugin_requests",
-      "entityType": "uniques"
+      "nameExplicit": false,
+      "name": "plugin_requests_slug_unique",
+      "entityType": "uniques",
+      "table": "plugin_requests"
     },
     {
-      "nameExplicit": false,
       "columns": [
         "email"
       ],
-      "nullsNotDistinct": false,
-      "name": "root_credentials_email_key",
-      "schema": "public",
-      "table": "root_credentials",
-      "entityType": "uniques"
+      "nameExplicit": false,
+      "name": "root_credentials_email_unique",
+      "entityType": "uniques",
+      "table": "root_credentials"
     }
   ],
   "renames": []
