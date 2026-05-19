@@ -24,6 +24,10 @@ function generateWebhookSecret(): string {
   return Buffer.from(bytes).toString('hex')
 }
 
+function humanize(s: string): string {
+  return s.replace(/[-_]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
+}
+
 export default new Elysia()
   .use(authMiddleware)
   .use(rateLimit({ bucket: 'submit', limit: 10, windowSeconds: 3600 }))
@@ -70,12 +74,19 @@ export default new Elysia()
       const requireApproval = getSetting('instance.require_approval') === '1'
       const status = requireApproval ? 'pending' : 'approved'
 
+      // Manifest will overwrite name/description if it exists; these are only
+      // displayed until the first release webhook lands. So we accept empty
+      // input and synthesise a name from the repo slug, with an empty
+      // description as the inert placeholder.
+      const fallbackName = body.name?.trim() ? body.name.trim() : humanize(ref.repo)
+      const fallbackDescription = body.description?.trim() ?? ''
+
       await db.insert(plugins).values({
         id: slug,
         ownerId: user.sub,
         providerInstanceId: ref.instance.id,
-        name: body.name,
-        description: body.description,
+        name: fallbackName,
+        description: fallbackDescription,
         author: `${identity.username} <${body.repoUrl}>`,
         repoUrl: body.repoUrl,
         homepage: body.repoUrl,
@@ -152,8 +163,8 @@ export default new Elysia()
       },
       body: t.Object({
         repoUrl: t.String(),
-        name: t.String(),
-        description: t.String(),
+        name: t.Optional(t.String()),
+        description: t.Optional(t.String()),
       }),
       response: {
         200: t.Object({

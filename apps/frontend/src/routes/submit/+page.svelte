@@ -7,6 +7,9 @@
 	import Search from '@lucide/svelte/icons/search'
 	import Lock from '@lucide/svelte/icons/lock'
 	import Globe from '@lucide/svelte/icons/globe'
+	import FileWarning from '@lucide/svelte/icons/file-warning'
+	import FileCheck from '@lucide/svelte/icons/file-check'
+	import Image from '@lucide/svelte/icons/image'
 	import Button from '$components/ui/Button.svelte'
 	import Card from '$components/ui/Card.svelte'
 	import CardContent from '$components/ui/CardContent.svelte'
@@ -16,6 +19,8 @@
 	import Input from '$components/ui/Input.svelte'
 	import Label from '$components/ui/Label.svelte'
 	import Textarea from '$components/ui/Textarea.svelte'
+	import Badge from '$components/ui/Badge.svelte'
+	import Skeleton from '$components/ui/Skeleton.svelte'
 	import CodeBlock from '$components/ui/CodeBlock.svelte'
 	import Select from '$components/ui/Select.svelte'
 	import ProviderIcon from '$components/brand/ProviderIcon.svelte'
@@ -27,6 +32,42 @@
 	import { m } from '$lib/paraglide/messages'
 	import type { RepoGroup, SubmittableRepo, SubmitSuccess } from '$lib/types'
 
+	type ManifestPreview = {
+		name: string | null
+		description: string | null
+		category: string | null
+		kind: string | null
+		tags: string[]
+		license: string | null
+		icon: string | null
+		screenshots: Array<{ url: string; caption: string | null; alt: string | null }>
+		homepage: string | null
+		documentationUrl: string | null
+		minRuntimeVersion: string | null
+		source: string
+		readmeLocales: string[]
+	}
+
+	type PreviewResult =
+		| {
+				ok: true
+				slug: string
+				slugTaken: boolean
+				fromManifest: true
+				version: string
+				preview: ManifestPreview
+		  }
+		| {
+				ok: true
+				slug: string
+				slugTaken: boolean
+				fromManifest: false
+				suggestedName: string
+				message: string
+				validationErrors?: unknown[]
+		  }
+		| { ok: false; error: string }
+
 	let groups = $state<RepoGroup[] | null>(null)
 	let loading = $state(true)
 	let submissionsEnabled = $state(true)
@@ -37,6 +78,8 @@
 	let description = $state('')
 	let submitting = $state(false)
 	let success = $state<SubmitSuccess | null>(null)
+	let preview = $state<PreviewResult | null>(null)
+	let previewing = $state(false)
 
 	onMount(async () => {
 		await auth.refresh()
@@ -87,8 +130,43 @@
 	})
 
 	$effect(() => {
-		if (selectedRepo && !name) name = humanize(selectedRepo.name)
+		const repo = selectedRepo
+		if (!repo) {
+			preview = null
+			previewing = false
+			name = ''
+			description = ''
+			return
+		}
+		void loadPreview(repo.url)
 	})
+
+	async function loadPreview(repoUrl: string) {
+		previewing = true
+		preview = null
+		try {
+			const { data, error } = await eden.api.submit.preview.post({ repoUrl })
+			if (error) {
+				const errBody = (error.value ?? { error: 'Preview failed' }) as { error?: string }
+				preview = { ok: false, error: errBody.error ?? 'Preview failed' }
+				return
+			}
+			preview = data as PreviewResult
+			// Pre-fill manual fields with manifest values (or suggested name) so the
+			// form is ready if the user wants to override or if there's no manifest.
+			if (preview.ok && preview.fromManifest) {
+				name = preview.preview.name ?? humanize(selectedRepo?.name ?? '')
+				description = preview.preview.description ?? ''
+			} else if (preview.ok && !preview.fromManifest) {
+				name = preview.suggestedName
+				description = ''
+			}
+		} catch {
+			preview = { ok: false, error: 'Preview failed' }
+		} finally {
+			previewing = false
+		}
+	}
 
 	function humanize(s: string) {
 		return s.replace(/[-_]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
@@ -102,11 +180,9 @@
 		}
 		submitting = true
 		try {
-			const { data, error } = await eden.api.submit.oauth.post({
-				repoUrl: selectedRepo.url,
-				name,
-				description,
-			})
+			const usingManifest = preview?.ok && preview.fromManifest
+			const body = usingManifest ? { repoUrl: selectedRepo.url } : { repoUrl: selectedRepo.url, name, description }
+			const { data, error } = await eden.api.submit.oauth.post(body)
 			if (error)
 				throw new Error(
 					typeof error.value === 'string'
@@ -285,17 +361,115 @@
 							</a>
 						</CardDescription>
 					</CardHeader>
-					<CardContent>
+					<CardContent class="space-y-4">
+						{#if previewing}
+							<div class="space-y-3">
+								<Skeleton class="h-5 w-1/2 rounded" />
+								<Skeleton class="h-4 w-3/4 rounded" />
+								<Skeleton class="h-4 w-2/3 rounded" />
+							</div>
+						{:else if preview && !preview.ok}
+							<div
+								class="flex items-start gap-3 rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2.5 text-sm"
+							>
+								<FileWarning class="h-4 w-4 text-destructive mt-0.5 shrink-0" />
+								<div>
+									<div class="font-medium text-destructive">{m.submit_preview_failed_title()}</div>
+									<div class="text-xs text-muted-foreground mt-1">{preview.error}</div>
+								</div>
+							</div>
+						{:else if preview?.ok && preview.fromManifest}
+							<div class="rounded-md border border-primary/30 bg-primary/[0.04] px-4 py-3 space-y-3">
+								<div class="flex items-start gap-3">
+									<FileCheck class="h-4 w-4 text-primary mt-0.5 shrink-0" />
+									<div class="flex-1 min-w-0">
+										<div class="text-xs uppercase tracking-wider text-primary/80">
+											{m.submit_preview_from_manifest({ version: preview.version })}
+										</div>
+										<div class="mt-1 text-base font-semibold truncate">
+											{preview.preview.name ?? humanize(selectedRepo.name)}
+										</div>
+										{#if preview.preview.description}
+											<p class="text-sm text-muted-foreground mt-1">{preview.preview.description}</p>
+										{/if}
+									</div>
+								</div>
+								<div class="flex flex-wrap gap-1.5 pl-7">
+									{#if preview.preview.kind}
+										<Badge variant="default" class="text-[10px]">{preview.preview.kind}</Badge>
+									{/if}
+									{#if preview.preview.category}
+										<Badge variant="outline" class="text-[10px]">{preview.preview.category}</Badge>
+									{/if}
+									{#if preview.preview.license}
+										<Badge variant="outline" class="text-[10px]">{preview.preview.license}</Badge>
+									{/if}
+									{#each preview.preview.tags.slice(0, 6) as t (t)}
+										<Badge variant="outline" class="text-[10px]">#{t}</Badge>
+									{/each}
+									{#if preview.preview.tags.length > 6}
+										<Badge variant="outline" class="text-[10px]">+{preview.preview.tags.length - 6}</Badge>
+									{/if}
+								</div>
+								<div class="flex flex-wrap gap-3 pl-7 text-[11px] text-muted-foreground">
+									{#if preview.preview.screenshots.length > 0}
+										<span class="inline-flex items-center gap-1">
+											<Image class="h-3 w-3" />
+											{m.submit_preview_screenshots({ count: preview.preview.screenshots.length })}
+										</span>
+									{/if}
+									{#if preview.preview.readmeLocales.length > 0}
+										<span>{m.submit_preview_readme_locales({ locales: preview.preview.readmeLocales.join(', ') })}</span
+										>
+									{/if}
+									{#if preview.preview.minRuntimeVersion}
+										<span>runtime ≥ {preview.preview.minRuntimeVersion}</span>
+									{/if}
+								</div>
+							</div>
+						{:else if preview?.ok && !preview.fromManifest}
+							<div class="rounded-md border border-amber-500/30 bg-amber-500/5 px-3 py-2.5 text-sm space-y-2">
+								<div class="flex items-start gap-3">
+									<FileWarning class="h-4 w-4 text-amber-600 dark:text-amber-400 mt-0.5 shrink-0" />
+									<div class="flex-1">
+										<div class="font-medium">{m.submit_preview_no_manifest_title()}</div>
+										<div class="text-xs text-muted-foreground mt-1">{preview.message}</div>
+									</div>
+								</div>
+								{#if preview.validationErrors && preview.validationErrors.length > 0}
+									<details class="text-xs">
+										<summary class="cursor-pointer text-muted-foreground hover:text-foreground">
+											{m.submit_preview_validation_errors({ count: preview.validationErrors.length })}
+										</summary>
+										<pre
+											class="mt-2 rounded bg-card/60 p-2 font-mono text-[11px] whitespace-pre-wrap break-words">{JSON.stringify(
+												preview.validationErrors,
+												null,
+												2,
+											)}</pre>
+									</details>
+								{/if}
+							</div>
+						{/if}
+
+						{#if preview?.ok && preview.slugTaken}
+							<div class="rounded-md border border-destructive/40 bg-destructive/5 px-3 py-2 text-xs text-destructive">
+								{m.submit_slug_taken({ slug: preview.slug })}
+							</div>
+						{/if}
+
 						<form onsubmit={submit} class="space-y-4">
-							<div class="space-y-2">
-								<Label for="name">{m.submit_display_name()}</Label>
-								<Input id="name" bind:value={name} required maxlength={80} />
-							</div>
-							<div class="space-y-2">
-								<Label for="desc">{m.submit_description()}</Label>
-								<Textarea id="desc" bind:value={description} required minlength={10} maxlength={300} rows={3} />
-							</div>
-							<Button type="submit" disabled={submitting}>
+							{#if preview?.ok && !preview.fromManifest}
+								<div class="space-y-2">
+									<Label for="name">{m.submit_display_name()}</Label>
+									<Input id="name" bind:value={name} required maxlength={80} />
+								</div>
+								<div class="space-y-2">
+									<Label for="desc">{m.submit_description()}</Label>
+									<Textarea id="desc" bind:value={description} required minlength={10} maxlength={300} rows={3} />
+								</div>
+							{/if}
+							<Button type="submit" disabled={submitting || previewing || (preview?.ok && preview.slugTaken)}>
 								{submitting ? m.submit_submitting() : m.submit_button()}
 							</Button>
 						</form>
