@@ -6,6 +6,7 @@
 	import FileCode2 from '@lucide/svelte/icons/file-code-2'
 	import KeyRound from '@lucide/svelte/icons/key-round'
 	import ShieldCheck from '@lucide/svelte/icons/shield-check'
+	import Rocket from '@lucide/svelte/icons/rocket'
 	import AdminPageHeader from '$components/admin/AdminPageHeader.svelte'
 	import TabBar from '$components/admin/TabBar.svelte'
 	import { m } from '$lib/paraglide/messages'
@@ -14,10 +15,11 @@
 	import Manifest from './tabs/Manifest.svelte'
 	import Recovery from './tabs/Recovery.svelte'
 	import Security from './tabs/Security.svelte'
+	import AppHandoff from './tabs/AppHandoff.svelte'
 
-	type TabId = 'general' | 'rate-limits' | 'manifest' | 'recovery' | 'security'
+	type TabId = 'general' | 'rate-limits' | 'manifest' | 'recovery' | 'security' | 'app-handoff'
 
-	const VALID: TabId[] = ['general', 'rate-limits', 'manifest', 'recovery', 'security']
+	const VALID: TabId[] = ['general', 'rate-limits', 'manifest', 'recovery', 'security', 'app-handoff']
 
 	function fromUrl(): TabId {
 		const t = page.url.searchParams.get('tab') as TabId | null
@@ -44,6 +46,7 @@
 		{ id: 'manifest' as const, label: m.admin_instance_tab_manifest(), icon: FileCode2 },
 		{ id: 'recovery' as const, label: m.admin_instance_tab_recovery(), icon: KeyRound },
 		{ id: 'security' as const, label: m.admin_instance_tab_security(), icon: ShieldCheck },
+		{ id: 'app-handoff' as const, label: m.admin_instance_tab_app_handoff(), icon: Rocket },
 	])
 </script>
 
@@ -63,4 +66,6 @@
 	<Recovery />
 {:else if active === 'security'}
 	<Security />
+{:else if active === 'app-handoff'}
+	<AppHandoff />
 {/if}

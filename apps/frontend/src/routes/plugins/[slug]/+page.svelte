@@ -13,6 +13,7 @@
 	import Star from '@lucide/svelte/icons/star'
 	import Clock from '@lucide/svelte/icons/clock'
 	import Download from '@lucide/svelte/icons/download'
+	import Rocket from '@lucide/svelte/icons/rocket'
 	import Cpu from '@lucide/svelte/icons/cpu'
 	import HardDrive from '@lucide/svelte/icons/hard-drive'
 	import Languages from '@lucide/svelte/icons/languages'
@@ -25,6 +26,7 @@
 	import { eden } from '$lib/eden'
 	import { auth } from '$lib/stores/auth.svelte'
 	import { branding } from '$lib/stores/branding.svelte'
+	import { instanceInfo, buildInstallDeepLink } from '$lib/stores/instance-info.svelte'
 	import { i18n, LOCALE_LABELS, type Locale } from '$lib/stores/i18n.svelte'
 	import { toast } from 'svelte-sonner'
 	import type { Plugin, PluginStats } from '$lib/types'
@@ -70,6 +72,7 @@
 	onMount(() => {
 		void load(locale)
 		void loadStats()
+		if (!instanceInfo.loaded) void instanceInfo.refresh()
 	})
 
 	$effect(() => {
@@ -89,6 +92,20 @@
 	const platformList = $derived.by(() => {
 		if (!latestRelease) return [] as Array<{ key: string; url: string; size?: number; sha256?: string }>
 		return Object.entries(latestRelease.assets).map(([key, entry]) => ({ key, ...entry }))
+	})
+
+	const installDeepLink = $derived.by(() => {
+		if (!plugin || !latestRelease) return null
+		const scheme = instanceInfo.pickSchemeForKind(null)
+		if (!scheme) return null
+		return {
+			scheme,
+			href: buildInstallDeepLink(scheme, {
+				registry: baseUrl,
+				slug: plugin.id,
+				version: latestRelease.version,
+			}),
+		}
 	})
 
 	$effect(() => {
@@ -366,6 +383,21 @@
 							<span class="text-xs font-mono text-muted-foreground">v{latestRelease.version}</span>
 						{/if}
 					</div>
+					{#if installDeepLink}
+						<a
+							href={installDeepLink.href}
+							class="group flex items-center gap-3 px-4 py-3 rounded-lg border border-primary/30 bg-primary/[0.04] hover:bg-primary/[0.07] hover:border-primary/50 transition-colors"
+						>
+							<Rocket class="h-4 w-4 text-primary" />
+							<div class="flex-1 min-w-0">
+								<div class="text-sm font-medium">
+									{m.plugin_detail_open_in_app({ app: installDeepLink.scheme.name })}
+								</div>
+								<div class="text-[11px] text-muted-foreground">{m.plugin_detail_open_in_app_subtitle()}</div>
+							</div>
+							<span class="font-mono text-[11px] text-muted-foreground">{installDeepLink.scheme.scheme}://</span>
+						</a>
+					{/if}
 					{#if latestRelease && platformList.length > 0}
 						<div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
 							{#each platformList as p (p.key)}
