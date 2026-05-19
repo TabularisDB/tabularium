@@ -3,11 +3,18 @@ import { adminMiddleware } from '$middleware/admin'
 import { getKind, updateKind, deleteKind, KindError } from '$lib/kinds'
 import { recordAudit, actorFromAdmin } from '$lib/audit'
 
+const publicPageCopySchema = t.Object({
+  hero: t.Nullable(t.String({ maxLength: 80 })),
+  intro: t.Nullable(t.String({ maxLength: 600 })),
+})
+
 const kindSchema = t.Object({
   key: t.String(),
   label: t.String(),
   description: t.Nullable(t.String()),
   extensionsSchema: t.Optional(t.Nullable(t.Record(t.String(), t.Any()))),
+  publicPageEnabled: t.Optional(t.Boolean()),
+  publicPageCopy: t.Optional(t.Nullable(publicPageCopySchema)),
 })
 
 const putBodySchema = t.Object({
@@ -15,6 +22,8 @@ const putBodySchema = t.Object({
   label: t.String({ minLength: 1, maxLength: 60 }),
   description: t.Optional(t.Nullable(t.String({ maxLength: 280 }))),
   extensionsSchema: t.Optional(t.Nullable(t.Record(t.String(), t.Any()))),
+  publicPageEnabled: t.Optional(t.Boolean()),
+  publicPageCopy: t.Optional(t.Nullable(publicPageCopySchema)),
 })
 
 function statusFor(err: KindError, body?: { key: string }, path?: string): number {
@@ -59,6 +68,8 @@ export default new Elysia()
           label: body.label,
           description: body.description ?? null,
           ...(body.extensionsSchema !== undefined ? { extensionsSchema: body.extensionsSchema } : {}),
+          ...(body.publicPageEnabled !== undefined ? { publicPageEnabled: body.publicPageEnabled } : {}),
+          ...(body.publicPageCopy !== undefined ? { publicPageCopy: body.publicPageCopy } : {}),
         })
         await recordAudit({
           ...actorFromAdmin(admin, request),

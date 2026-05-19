@@ -1,11 +1,22 @@
 import { getSetting, setSetting } from './settings'
 import { validateExtensionsDelta, type ExtensionsDelta } from './manifest-schema'
 
+export type KindPublicPageCopy = {
+  hero: string | null
+  intro: string | null
+}
+
 export type KindDef = {
   key: string
   label: string
   description: string | null
   extensionsSchema?: ExtensionsDelta | null
+  /**
+   * When true the registry serves a dedicated catalogue page at /c/:key
+   * pre-filtered to plugins of this kind. Defaults to false.
+   */
+  publicPageEnabled?: boolean
+  publicPageCopy?: KindPublicPageCopy | null
 }
 
 export type KindErrorCode = 'invalid' | 'duplicate' | 'not_found'
@@ -26,6 +37,13 @@ const KEY_RE = /^[a-z0-9][a-z0-9-]*$/
 const KEY_MAX = 40
 const LABEL_MAX = 60
 const DESC_MAX = 280
+const HERO_MAX = 80
+const INTRO_MAX = 600
+
+// Kind keys that would shadow an existing top-level public route.
+// /:key is mounted under /c/ so this list is short — only the immediate
+// children of /c (none yet) would collide.
+const RESERVED_KIND_KEYS = new Set<string>([])
 
 export function validateKindDef(input: unknown): KindDef {
   if (!input || typeof input !== 'object' || Array.isArray(input)) {
@@ -64,7 +82,48 @@ export function validateKindDef(input: unknown): KindDef {
       }
     }
   }
-  return { key, label, description, ...(extensionsSchema !== undefined ? { extensionsSchema } : {}) }
+
+  if (RESERVED_KIND_KEYS.has(key)) {
+    throw new KindError('invalid', `"${key}" is a reserved route — pick a different key`)
+  }
+
+  const publicPageEnabled = o.publicPageEnabled === true
+
+  let publicPageCopy: KindPublicPageCopy | null | undefined
+  if (o.publicPageCopy !== undefined) {
+    if (o.publicPageCopy === null) {
+      publicPageCopy = null
+    } else if (!o.publicPageCopy || typeof o.publicPageCopy !== 'object' || Array.isArray(o.publicPageCopy)) {
+      throw new KindError('invalid', 'publicPageCopy must be object or null')
+    } else {
+      const copy = o.publicPageCopy as Record<string, unknown>
+      const hero = trimOrNull(copy.hero, HERO_MAX, 'publicPageCopy.hero')
+      const intro = trimOrNull(copy.intro, INTRO_MAX, 'publicPageCopy.intro')
+      publicPageCopy = hero || intro ? { hero, intro } : null
+    }
+  }
+
+  return {
+    key,
+    label,
+    description,
+    ...(extensionsSchema !== undefined ? { extensionsSchema } : {}),
+    ...(publicPageEnabled ? { publicPageEnabled } : {}),
+    ...(publicPageCopy !== undefined ? { publicPageCopy } : {}),
+  }
+}
+
+function trimOrNull(value: unknown, max: number, field: string): string | null {
+  if (value === undefined || value === null || value === '') return null
+  if (typeof value !== 'string') {
+    throw new KindError('invalid', `${field} must be string or null`)
+  }
+  const trimmed = value.trim()
+  if (trimmed.length === 0) return null
+  if (trimmed.length > max) {
+    throw new KindError('invalid', `${field} max ${max} chars`)
+  }
+  return trimmed
 }
 
 export function getKinds(): KindDef[] {

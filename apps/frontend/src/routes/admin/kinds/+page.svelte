@@ -21,6 +21,10 @@
 	type KindRow = Kind & {
 		extensionsSchema: ExtensionsDelta
 		extOpen: boolean
+		publicPageOpen: boolean
+		publicPageEnabled: boolean
+		publicPageHero: string
+		publicPageIntro: string
 	}
 
 	let kinds = $state<KindRow[]>([])
@@ -50,6 +54,10 @@
 				...k,
 				extensionsSchema: (k.extensionsSchema as ExtensionsDelta | null) ?? {},
 				extOpen: false,
+				publicPageOpen: false,
+				publicPageEnabled: k.publicPageEnabled === true,
+				publicPageHero: k.publicPageCopy?.hero ?? '',
+				publicPageIntro: k.publicPageCopy?.intro ?? '',
 			}))
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : m.admin_kinds_load_failed())
@@ -86,11 +94,16 @@
 		savingKey = k.key
 		try {
 			const payload = Object.keys(k.extensionsSchema).length === 0 ? null : k.extensionsSchema
+			const heroTrim = k.publicPageHero.trim()
+			const introTrim = k.publicPageIntro.trim()
+			const publicPageCopy = heroTrim || introTrim ? { hero: heroTrim || null, intro: introTrim || null } : null
 			const { error } = await eden.api.admin.kinds({ key: k.key }).put({
 				key: k.key,
 				label: k.label,
 				description: k.description,
 				extensionsSchema: payload,
+				publicPageEnabled: k.publicPageEnabled,
+				publicPageCopy,
 			})
 			if (error) {
 				toast.error(extractError(error))
@@ -174,6 +187,36 @@
 							{/snippet}
 							<p class="text-xs text-muted-foreground">{m.admin_kinds_ext_hint()}</p>
 							<ExtensionsEditor bind:value={k.extensionsSchema} templates={false} minHeight="14rem" />
+						</CollapsibleRow>
+
+						<CollapsibleRow bind:expanded={k.publicPageOpen} name={m.admin_kinds_public_page_toggle()}>
+							{#snippet header()}
+								<span class="text-sm font-medium">{m.admin_kinds_public_page_toggle()}</span>
+								{#if k.publicPageEnabled}
+									<span class="text-[10px] uppercase tracking-wide text-primary ml-2"
+										>{m.admin_kinds_public_page_enabled_pill()}</span
+									>
+								{:else}
+									<span class="text-xs text-muted-foreground ml-2 truncate"
+										>{m.admin_kinds_public_page_disabled_hint()}</span
+									>
+								{/if}
+							{/snippet}
+							<p class="text-xs text-muted-foreground">{m.admin_kinds_public_page_hint({ key: k.key })}</p>
+							<label class="flex items-center gap-2 text-sm cursor-pointer">
+								<input type="checkbox" bind:checked={k.publicPageEnabled} class="h-4 w-4 rounded border-input" />
+								<span>{m.admin_kinds_public_page_enable({ key: k.key })}</span>
+							</label>
+							{#if k.publicPageEnabled}
+								<label class="block space-y-1 mt-3">
+									<span class="text-xs font-medium text-muted-foreground">{m.admin_kinds_public_page_hero()}</span>
+									<Input bind:value={k.publicPageHero} placeholder={k.label} maxlength={80} />
+								</label>
+								<label class="block space-y-1 mt-3">
+									<span class="text-xs font-medium text-muted-foreground">{m.admin_kinds_public_page_intro()}</span>
+									<Input bind:value={k.publicPageIntro} placeholder={k.description ?? ''} maxlength={600} />
+								</label>
+							{/if}
 						</CollapsibleRow>
 
 						<div class="flex gap-2 justify-end">

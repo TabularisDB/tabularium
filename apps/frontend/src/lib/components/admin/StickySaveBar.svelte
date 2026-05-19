@@ -8,6 +8,7 @@
 	type Props = {
 		dirty: boolean
 		saving?: boolean
+		disabled?: boolean
 		onSave: () => void
 		onDiscard?: () => void
 		message?: string
@@ -16,7 +17,17 @@
 		class?: string
 	}
 
-	let { dirty, saving = false, onSave, onDiscard, message, saveLabel, discardLabel, class: className }: Props = $props()
+	let {
+		dirty,
+		saving = false,
+		disabled = false,
+		onSave,
+		onDiscard,
+		message,
+		saveLabel,
+		discardLabel,
+		class: className,
+	}: Props = $props()
 
 	const visible = $derived(dirty || saving)
 </script>
@@ -40,7 +51,7 @@
 				{discardLabel ?? m.admin_common_discard()}
 			</Button>
 		{/if}
-		<Button size="sm" onclick={onSave} disabled={saving}>
+		<Button size="sm" onclick={onSave} disabled={saving || disabled}>
 			<Save class="h-3.5 w-3.5" />
 			{saving ? m.common_saving() : (saveLabel ?? m.common_save())}
 		</Button>

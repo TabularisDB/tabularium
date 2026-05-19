@@ -3,10 +3,17 @@ import { adminMiddleware } from '$middleware/admin'
 import { getKinds, createKind, KindError } from '$lib/kinds'
 import { recordAudit, actorFromAdmin } from '$lib/audit'
 
+const publicPageCopySchema = t.Object({
+  hero: t.Nullable(t.String({ maxLength: 80 })),
+  intro: t.Nullable(t.String({ maxLength: 600 })),
+})
+
 const kindBodySchema = t.Object({
   key: t.String({ minLength: 1, maxLength: 40 }),
   label: t.String({ minLength: 1, maxLength: 60 }),
   description: t.Optional(t.Nullable(t.String({ maxLength: 280 }))),
+  publicPageEnabled: t.Optional(t.Boolean()),
+  publicPageCopy: t.Optional(t.Nullable(publicPageCopySchema)),
 })
 
 const kindSchema = t.Object({
@@ -14,6 +21,8 @@ const kindSchema = t.Object({
   label: t.String(),
   description: t.Nullable(t.String()),
   extensionsSchema: t.Optional(t.Nullable(t.Record(t.String(), t.Any()))),
+  publicPageEnabled: t.Optional(t.Boolean()),
+  publicPageCopy: t.Optional(t.Nullable(publicPageCopySchema)),
 })
 
 export default new Elysia()
@@ -35,6 +44,8 @@ export default new Elysia()
           key: body.key,
           label: body.label,
           description: body.description ?? null,
+          ...(body.publicPageEnabled !== undefined ? { publicPageEnabled: body.publicPageEnabled } : {}),
+          ...(body.publicPageCopy !== undefined ? { publicPageCopy: body.publicPageCopy } : {}),
         })
         await recordAudit({
           ...actorFromAdmin(admin, request),

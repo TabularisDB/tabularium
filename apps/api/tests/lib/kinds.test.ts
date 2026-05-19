@@ -18,6 +18,41 @@ describe('validateKindDef', () => {
     expect(out).toEqual({ key: 'theme', label: 'Themes', description: null })
   })
 
+  it('accepts publicPageEnabled + publicPageCopy', () => {
+    const out = validateKindDef({
+      key: 'theme',
+      label: 'Themes',
+      publicPageEnabled: true,
+      publicPageCopy: { hero: 'Themes for everyone', intro: 'A curated set of theme plugins.' },
+    })
+    expect(out.publicPageEnabled).toBe(true)
+    expect(out.publicPageCopy).toEqual({ hero: 'Themes for everyone', intro: 'A curated set of theme plugins.' })
+  })
+
+  it('omits publicPageEnabled when falsy', () => {
+    const out = validateKindDef({ key: 'theme', label: 'Themes', publicPageEnabled: false })
+    expect(out.publicPageEnabled).toBeUndefined()
+  })
+
+  it('normalises empty publicPageCopy to null', () => {
+    const out = validateKindDef({
+      key: 'theme',
+      label: 'Themes',
+      publicPageCopy: { hero: '', intro: '   ' },
+    })
+    expect(out.publicPageCopy).toBeNull()
+  })
+
+  it('rejects publicPageCopy.hero over 80 chars', () => {
+    expect(() =>
+      validateKindDef({
+        key: 'theme',
+        label: 'Themes',
+        publicPageCopy: { hero: 'x'.repeat(81), intro: null },
+      }),
+    ).toThrow(KindError)
+  })
+
   it('accepts description as string or null', () => {
     expect(validateKindDef({ key: 'a', label: 'A', description: 'd' }).description).toBe('d')
     expect(validateKindDef({ key: 'a', label: 'A', description: null }).description).toBeNull()
