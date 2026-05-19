@@ -9,9 +9,9 @@ import { cache } from '$lib/cache'
 import { latestCacheKey } from '$routes/api/plugins/[slug]/latest'
 import { recordAudit, actorFromUser } from '$lib/audit'
 import { parseRepoUrl } from '$lib/providers'
-import { decryptToken } from '$lib/crypto'
 import { fetchLatestRelease } from '$lib/release-fetch'
 import { persistRelease, hashReleaseAssetsAsync } from '$lib/release-ingest'
+import { getValidAccessToken, OAuthExpiredError, reauthErrorBody } from '$lib/oauth-tokens'
 
 export default new Elysia()
   .use(authMiddleware)
@@ -56,7 +56,16 @@ export default new Elysia()
           set.status = 412
           return { error: 'No stored access token — re-link your provider account first' }
         }
-        const token = decryptToken(ownerIdentity.accessToken)
+        let token: string
+        try {
+          token = await getValidAccessToken(ownerIdentity, ref.instance)
+        } catch (e) {
+          if (e instanceof OAuthExpiredError) {
+            set.status = 401
+            return reauthErrorBody(e)
+          }
+          throw e
+        }
         const fetched = await fetchLatestRelease(token, ref).catch(() => null)
         if (!fetched || !fetched.published) {
           set.status = 404
@@ -151,6 +160,7 @@ export default new Elysia()
           ),
         }),
         400: t.Object({ error: t.String() }),
+        401: t.Object({ error: t.String(), reauthFor: t.String() }),
         403: t.Object({ error: t.String() }),
         404: t.Object({ error: t.String() }),
         412: t.Object({ error: t.String() }),

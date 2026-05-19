@@ -4,7 +4,7 @@ import { db } from '../db'
 import { plugins, releases, releaseAssets } from '../db/schema'
 import { inferPlatformKey, type NormalizedRelease } from './webhook'
 import { parseRepoUrl, type RepoRef } from './providers'
-import { decryptToken } from './crypto'
+import { getValidAccessToken, OAuthExpiredError } from './oauth-tokens'
 import { hashAsset, serializeAssets, parseAssets, type AssetMap } from './asset'
 import { cache } from './cache'
 import { latestCacheKey } from '../routes/api/plugins/[slug]/latest'
@@ -137,7 +137,16 @@ export async function hashReleaseAssetsAsync(
         where: { userId: plugin.ownerId, providerInstanceId: ref.instance.id },
       })
       if (ownerIdentity?.accessToken) {
-        const token = decryptToken(ownerIdentity.accessToken)
+        let token: string
+        try {
+          token = await getValidAccessToken(ownerIdentity, ref.instance)
+        } catch (e) {
+          if (e instanceof OAuthExpiredError) {
+            log.warn({ slug: plugin.id, version }, 'attestation skipped — token refresh failed')
+            return
+          }
+          throw e
+        }
         const apiBase =
           ref.instance.baseUrl === 'https://github.com' ? 'https://api.github.com' : `${ref.instance.baseUrl}/api/v3`
         for (const [name, info] of hashed) {

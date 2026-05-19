@@ -7,7 +7,7 @@ import { plugins, pluginRequests, pluginRequestVotes, pluginRequestClaims } from
 import { deriveSlug } from '$lib/slug'
 import { parseRepoUrl, checkOwnership } from '$lib/providers'
 import { setupWebhook } from '$lib/setup-webhook'
-import { decryptToken } from '$lib/crypto'
+import { getValidAccessToken, OAuthExpiredError } from '$lib/oauth-tokens'
 import { env } from '$lib/env'
 import { getSetting } from '$lib/settings'
 import { resolveManifest, rawContentBase, ManifestValidationError } from '$lib/manifest'
@@ -56,7 +56,16 @@ export default new Elysia()
         }
       }
 
-      const accessToken = decryptToken(identity.accessToken)
+      let accessToken: string
+      try {
+        accessToken = await getValidAccessToken(identity, ref.instance)
+      } catch (e) {
+        if (e instanceof OAuthExpiredError) {
+          set.status = 401
+          return { error: 'OAuth token expired', reauthFor: e.providerInstanceId }
+        }
+        throw e
+      }
       const ownership = await checkOwnership(accessToken, ref, identity.username)
 
       if (!ownership.owned) {
@@ -197,6 +206,7 @@ export default new Elysia()
           providerKind: t.String(),
         }),
         400: t.Object({ error: t.String() }),
+        401: t.Object({ error: t.String(), reauthFor: t.String() }),
         403: t.Object({ error: t.String() }),
         409: t.Object({ error: t.String() }),
         412: t.Object({ error: t.String() }),

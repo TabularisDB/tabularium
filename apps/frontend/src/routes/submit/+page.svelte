@@ -147,13 +147,16 @@
 		try {
 			const { data, error } = await eden.api.submit.preview.post({ repoUrl })
 			if (error) {
-				const errBody = (error.value ?? { error: 'Preview failed' }) as { error?: string }
+				const errBody = (error.value ?? { error: 'Preview failed' }) as { error?: string; reauthFor?: string }
+				if (errBody.reauthFor) {
+					toast.info(m.submit_reauth_redirect())
+					window.location.href = `/auth/${errBody.reauthFor}?link=1&return_to=${encodeURIComponent(window.location.pathname)}`
+					return
+				}
 				preview = { ok: false, error: errBody.error ?? 'Preview failed' }
 				return
 			}
 			preview = data as PreviewResult
-			// Pre-fill manual fields with manifest values (or suggested name) so the
-			// form is ready if the user wants to override or if there's no manifest.
 			if (preview.ok && preview.fromManifest) {
 				name = preview.preview.name ?? humanize(selectedRepo?.name ?? '')
 				description = preview.preview.description ?? ''
@@ -183,12 +186,17 @@
 			const usingManifest = preview?.ok && preview.fromManifest
 			const body = usingManifest ? { repoUrl: selectedRepo.url } : { repoUrl: selectedRepo.url, name, description }
 			const { data, error } = await eden.api.submit.oauth.post(body)
-			if (error)
+			if (error) {
+				const errBody = error.value as { error?: string; reauthFor?: string } | undefined
+				if (errBody?.reauthFor) {
+					toast.info(m.submit_reauth_redirect())
+					window.location.href = `/auth/${errBody.reauthFor}?link=1&return_to=${encodeURIComponent(window.location.pathname)}`
+					return
+				}
 				throw new Error(
-					typeof error.value === 'string'
-						? error.value
-						: ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`),
+					typeof error.value === 'string' ? error.value : (errBody?.error ?? `Request failed (${error.status})`),
 				)
+			}
 			success = data as SubmitSuccess
 			toast.success(m.submit_success_title())
 		} catch (e) {

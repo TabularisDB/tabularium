@@ -4,7 +4,7 @@ import { rateLimit } from '$middleware/rate-limit'
 import { db } from '$db'
 import { deriveSlug } from '$lib/slug'
 import { parseRepoUrl, checkOwnership } from '$lib/providers'
-import { decryptToken } from '$lib/crypto'
+import { getValidAccessToken, OAuthExpiredError } from '$lib/oauth-tokens'
 import { resolveManifest, ManifestValidationError } from '$lib/manifest'
 import { fetchLatestRelease } from '$lib/release-fetch'
 import { getFeatures } from '$lib/features'
@@ -61,7 +61,16 @@ export default new Elysia()
         }
       }
 
-      const accessToken = decryptToken(identity.accessToken)
+      let accessToken: string
+      try {
+        accessToken = await getValidAccessToken(identity, ref.instance)
+      } catch (e) {
+        if (e instanceof OAuthExpiredError) {
+          set.status = 401
+          return { ok: false as const, error: 'OAuth token expired', reauthFor: e.providerInstanceId }
+        }
+        throw e
+      }
       const ownership = await checkOwnership(accessToken, ref, identity.username)
       if (!ownership.owned) {
         set.status = 403
@@ -200,6 +209,7 @@ export default new Elysia()
           }),
         ]),
         400: t.Object({ ok: t.Literal(false), error: t.String() }),
+        401: t.Object({ ok: t.Literal(false), error: t.String(), reauthFor: t.String() }),
         403: t.Object({ ok: t.Literal(false), error: t.String() }),
         412: t.Object({ ok: t.Literal(false), error: t.String() }),
         500: t.Object({ ok: t.Literal(false), error: t.String() }),

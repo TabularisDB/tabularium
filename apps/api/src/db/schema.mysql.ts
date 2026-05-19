@@ -53,6 +53,8 @@ export const identities = mysqlTable(
     externalId: varchar('external_id', { length: 120 }).notNull(),
     username: varchar('username', { length: 120 }).notNull(),
     accessToken: text('access_token'),
+    refreshToken: text('refresh_token'),
+    accessTokenExpiresAt: ts('access_token_expires_at'),
     createdAt: ts('created_at').notNull().$defaultFn(now),
   },
   (t) => ({

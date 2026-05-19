@@ -21,6 +21,8 @@ type ProviderProfile = {
   externalId: string
   username: string
   accessToken: string
+  refreshToken: string | null
+  accessTokenExpiresAt: number | null
 }
 
 const DISPLAY_NAME_RE = /^[\p{L}\p{N}._\-\s]{1,60}$/u
@@ -65,49 +67,73 @@ async function exchangeGithubPkce(inst: ProviderInstance, code: string, codeVeri
   return data.access_token
 }
 
+function tokensToProfileFields(tokens: {
+  accessToken(): string
+  hasRefreshToken(): boolean
+  refreshToken(): string
+  accessTokenExpiresAt(): Date
+}): {
+  accessToken: string
+  refreshToken: string | null
+  accessTokenExpiresAt: number | null
+} {
+  let expiresAt: number | null = null
+  try {
+    expiresAt = tokens.accessTokenExpiresAt().getTime()
+  } catch {
+    expiresAt = null
+  }
+  return {
+    accessToken: tokens.accessToken(),
+    refreshToken: tokens.hasRefreshToken() ? tokens.refreshToken() : null,
+    accessTokenExpiresAt: expiresAt,
+  }
+}
+
 async function exchangeGithub(inst: ProviderInstance, code: string, state: StateData): Promise<ProviderProfile> {
-  let accessToken: string
+  let tokenFields: { accessToken: string; refreshToken: string | null; accessTokenExpiresAt: number | null }
   if (inst.baseUrl === 'https://github.com' && state.codeVerifier) {
-    accessToken = await exchangeGithubPkce(inst, code, state.codeVerifier)
+    const accessToken = await exchangeGithubPkce(inst, code, state.codeVerifier)
+    tokenFields = { accessToken, refreshToken: null, accessTokenExpiresAt: null }
   } else {
     const callback = `${env.BASE_URL}/auth/${inst.id}/callback`
     const gh = new GitHub(inst.clientId, inst.clientSecret, callback)
     const tokens = await gh.validateAuthorizationCode(code)
-    accessToken = tokens.accessToken()
+    tokenFields = tokensToProfileFields(tokens)
   }
   log.info({ instance: inst.id }, 'github token issued')
   const apiBase = inst.baseUrl === 'https://github.com' ? 'https://api.github.com' : `${inst.baseUrl}/api/v3`
   const profileRes = await fetch(`${apiBase}/user`, {
-    headers: { Authorization: `Bearer ${accessToken}`, 'User-Agent': 'tabularium/1.0' },
+    headers: { Authorization: `Bearer ${tokenFields.accessToken}`, 'User-Agent': 'tabularium/1.0' },
   })
   const profile = (await profileRes.json()) as { id: number; login: string }
-  return { externalId: String(profile.id), username: profile.login, accessToken }
+  return { externalId: String(profile.id), username: profile.login, ...tokenFields }
 }
 
 async function exchangeGitlab(inst: ProviderInstance, code: string): Promise<ProviderProfile> {
   const callback = `${env.BASE_URL}/auth/${inst.id}/callback`
   const gl = new GitLab(inst.baseUrl, inst.clientId, inst.clientSecret, callback)
   const tokens = await gl.validateAuthorizationCode(code)
-  const accessToken = tokens.accessToken()
+  const tokenFields = tokensToProfileFields(tokens)
   log.info({ instance: inst.id }, 'gitlab token issued')
   const profileRes = await fetch(`${inst.baseUrl}/api/v4/user`, {
-    headers: { Authorization: `Bearer ${accessToken}` },
+    headers: { Authorization: `Bearer ${tokenFields.accessToken}` },
   })
   const profile = (await profileRes.json()) as { id: number; username: string }
-  return { externalId: String(profile.id), username: profile.username, accessToken }
+  return { externalId: String(profile.id), username: profile.username, ...tokenFields }
 }
 
 async function exchangeGitea(inst: ProviderInstance, code: string, state: StateData): Promise<ProviderProfile> {
   const callback = `${env.BASE_URL}/auth/${inst.id}/callback`
   const gt = new Gitea(inst.baseUrl, inst.clientId, inst.clientSecret, callback)
   const tokens = await gt.validateAuthorizationCode(code, state.codeVerifier!)
-  const accessToken = tokens.accessToken()
+  const tokenFields = tokensToProfileFields(tokens)
   log.info({ instance: inst.id }, 'gitea token issued')
   const profileRes = await fetch(`${inst.baseUrl}/api/v1/user`, {
-    headers: { Authorization: `Bearer ${accessToken}` },
+    headers: { Authorization: `Bearer ${tokenFields.accessToken}` },
   })
   const profile = (await profileRes.json()) as { id: number; login: string }
-  return { externalId: String(profile.id), username: profile.login, accessToken }
+  return { externalId: String(profile.id), username: profile.login, ...tokenFields }
 }
 
 async function exchange(inst: ProviderInstance, code: string, state: StateData): Promise<ProviderProfile> {
@@ -170,6 +196,7 @@ export default new Elysia().get(
       }
 
       const encryptedToken = encryptToken(profile.accessToken)
+      const encryptedRefresh = profile.refreshToken ? encryptToken(profile.refreshToken) : null
       let userId: string
       let identityId: string
 
@@ -178,7 +205,12 @@ export default new Elysia().get(
         identityId = existingIdentity.id
         await db
           .update(identities)
-          .set({ username: profile.username, accessToken: encryptedToken })
+          .set({
+            username: profile.username,
+            accessToken: encryptedToken,
+            refreshToken: encryptedRefresh,
+            accessTokenExpiresAt: profile.accessTokenExpiresAt,
+          })
           .where(eq(identities.id, identityId))
       }
 
@@ -212,6 +244,8 @@ export default new Elysia().get(
           externalId: profile.externalId,
           username: profile.username,
           accessToken: encryptedToken,
+          refreshToken: encryptedRefresh,
+          accessTokenExpiresAt: profile.accessTokenExpiresAt,
         })
 
         if (linkUserId) {

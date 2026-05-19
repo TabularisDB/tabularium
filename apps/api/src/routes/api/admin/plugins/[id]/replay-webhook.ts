@@ -6,7 +6,7 @@ import { db } from '$db'
 import { plugins, releases } from '$db/schema'
 import { inferPlatformKey } from '$lib/webhook'
 import { parseRepoUrl } from '$lib/providers'
-import { decryptToken } from '$lib/crypto'
+import { getValidAccessToken, OAuthExpiredError, reauthErrorBody } from '$lib/oauth-tokens'
 import { fetchLatestRelease } from '$lib/release-fetch'
 import { serializeAssets, type AssetMap } from '$lib/asset'
 import { cache } from '$lib/cache'
@@ -50,7 +50,16 @@ export default new Elysia().use(adminMiddleware).post(
       set.status = 412
       return { error: 'No stored access token for owner — owner must re-link their provider account' }
     }
-    const token = decryptToken(ownerIdentity.accessToken)
+    let token: string
+    try {
+      token = await getValidAccessToken(ownerIdentity, ref.instance)
+    } catch (e) {
+      if (e instanceof OAuthExpiredError) {
+        set.status = 401
+        return reauthErrorBody(e)
+      }
+      throw e
+    }
 
     const normalized = await fetchLatestRelease(token, ref).catch((err) => {
       log.warn({ err, slug: plugin.id }, 'fetch latest release failed')
@@ -112,6 +121,7 @@ export default new Elysia().use(adminMiddleware).post(
         skipped: t.Optional(t.Boolean()),
         reason: t.Optional(t.String()),
       }),
+      401: t.Object({ error: t.String(), reauthFor: t.String() }),
       404: t.Object({ error: t.String() }),
       412: t.Object({ error: t.String() }),
       422: t.Object({ error: t.String() }),

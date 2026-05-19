@@ -3,7 +3,7 @@ import { authMiddleware } from '$middleware/auth'
 import { db } from '$db'
 import type { identities } from '$db/schema'
 import { listReposFor, type SubmittableRepo } from '$lib/list-repos'
-import { decryptToken } from '$lib/crypto'
+import { getValidAccessToken, OAuthExpiredError } from '$lib/oauth-tokens'
 import { getInstance } from '$lib/provider-instance'
 import { logger } from '$lib/logger'
 
@@ -35,7 +35,7 @@ async function reposForIdentity(id: typeof identities.$inferSelect): Promise<Sub
   if (!id.accessToken) return []
   const inst = getInstance(id.providerInstanceId)
   if (!inst) return []
-  const token = decryptToken(id.accessToken)
+  const token = await getValidAccessToken(id, inst)
   const raw = await listReposFor(inst, token)
   return raw.map((r) => ({ ...r, identityId: id.id }))
 }
@@ -53,8 +53,12 @@ export default new Elysia().use(authMiddleware).get(
         try {
           repos = await reposForIdentity(id)
         } catch (e) {
-          log.error({ err: e, identityId: id.id, instance: id.providerInstanceId }, 'failed to list repos')
-          error = e instanceof Error ? e.message : 'Failed to list repos'
+          if (e instanceof OAuthExpiredError) {
+            error = 'reauth_required'
+          } else {
+            log.error({ err: e, identityId: id.id, instance: id.providerInstanceId }, 'failed to list repos')
+            error = e instanceof Error ? e.message : 'Failed to list repos'
+          }
         }
         return {
           identityId: id.id,

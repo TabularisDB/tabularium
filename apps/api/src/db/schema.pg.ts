@@ -53,6 +53,8 @@ export const identities = pgTable(
     externalId: text('external_id').notNull(),
     username: text('username').notNull(),
     accessToken: text('access_token'),
+    refreshToken: text('refresh_token'),
+    accessTokenExpiresAt: ts('access_token_expires_at'),
     createdAt: ts('created_at').notNull().$defaultFn(now),
   },
   (t) => ({

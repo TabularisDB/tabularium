@@ -185,13 +185,17 @@
 		try {
 			const { error } = await eden.api.plugins({ slug: plugin.id }).rehash.post({})
 			if (error) {
+				const body = error.value as { error?: string; reauthFor?: string } | undefined
+				if (body?.reauthFor) {
+					toast.info(m.plugin_detail_refresh_reauth_redirect())
+					window.location.href = `/auth/${body.reauthFor}?link=1&return_to=${encodeURIComponent(window.location.pathname)}`
+					return
+				}
 				if (error.status === 429) {
 					toast.error(m.plugin_detail_refresh_rate_limited())
 				} else {
 					throw new Error(
-						typeof error.value === 'string'
-							? error.value
-							: ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`),
+						typeof error.value === 'string' ? error.value : (body?.error ?? `Request failed (${error.status})`),
 					)
 				}
 				return

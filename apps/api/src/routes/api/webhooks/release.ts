@@ -16,7 +16,7 @@ import { cache } from '$lib/cache'
 import { latestCacheKey } from '$routes/api/plugins/[slug]/latest'
 import { hashAsset, serializeAssets, parseAssets, type AssetMap } from '$lib/asset'
 import { logger } from '$lib/logger'
-import { decryptToken } from '$lib/crypto'
+import { getValidAccessToken, OAuthExpiredError } from '$lib/oauth-tokens'
 import { resolveManifest, rawContentBase } from '$lib/manifest'
 import { manifestPatch, applyManifestToPlugin } from '$lib/manifest-apply'
 import { parseRepoUrl } from '$lib/providers'
@@ -129,7 +129,16 @@ export default new Elysia().post(
           where: { userId: plugin.ownerId, providerInstanceId: ref.instance.id },
         })
         if (!ownerIdentity?.accessToken) return
-        const token = decryptToken(ownerIdentity.accessToken)
+        let token: string
+        try {
+          token = await getValidAccessToken(ownerIdentity, ref.instance)
+        } catch (e) {
+          if (e instanceof OAuthExpiredError) {
+            ingestLog.warn({ slug: plugin.id }, 'manifest refresh skipped — owner OAuth token expired')
+            return
+          }
+          throw e
+        }
         const manifest = await resolveManifest(token, ref, { ref: normalized.tag })
         if (!manifest) return
         const patch = manifestPatch(manifest, {
@@ -218,7 +227,16 @@ export default new Elysia().post(
             where: { userId: plugin.ownerId, providerInstanceId: ref.instance.id },
           })
           if (ownerIdentity?.accessToken) {
-            const token = decryptToken(ownerIdentity.accessToken)
+            let token: string
+            try {
+              token = await getValidAccessToken(ownerIdentity, ref.instance)
+            } catch (e) {
+              if (e instanceof OAuthExpiredError) {
+                ingestLog.warn({ slug: plugin.id, version }, 'attestation skipped — owner OAuth token expired')
+                return
+              }
+              throw e
+            }
             const apiBase =
               ref.instance.baseUrl === 'https://github.com'
                 ? 'https://api.github.com'

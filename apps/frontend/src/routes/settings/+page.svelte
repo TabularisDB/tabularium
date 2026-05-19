@@ -3,7 +3,6 @@
 	import { goto } from '$app/navigation'
 	import Link2Off from '@lucide/svelte/icons/link-2-off'
 	import LogOut from '@lucide/svelte/icons/log-out'
-	import RefreshCw from '@lucide/svelte/icons/refresh-cw'
 	import Trash2 from '@lucide/svelte/icons/trash-2'
 	import Plus from '@lucide/svelte/icons/plus'
 	import Check from '@lucide/svelte/icons/check'
@@ -268,25 +267,14 @@
 							<div class="text-sm font-medium">{id.providerDisplayName}</div>
 							<div class="text-xs text-muted-foreground font-mono">{id.username}</div>
 						</div>
-						<div class="flex items-center gap-1">
-							<Button
-								variant="ghost"
-								size="sm"
-								onclick={() => (window.location.href = `/auth/${id.providerInstanceId}?link=1`)}
-								title={m.settings_reauth_hint()}
-							>
-								<RefreshCw class="h-3.5 w-3.5" />
-								{m.settings_reauth()}
-							</Button>
-							<Button
-								variant="ghost"
-								size="sm"
-								onclick={() => openUnlink(id.id, `${id.providerDisplayName} · ${id.username}`)}
-							>
-								<Link2Off class="h-3.5 w-3.5" />
-								{m.settings_unlink()}
-							</Button>
-						</div>
+						<Button
+							variant="ghost"
+							size="sm"
+							onclick={() => openUnlink(id.id, `${id.providerDisplayName} · ${id.username}`)}
+						>
+							<Link2Off class="h-3.5 w-3.5" />
+							{m.settings_unlink()}
+						</Button>
 					</div>
 				{/each}
 

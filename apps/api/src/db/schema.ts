@@ -45,7 +45,9 @@ export const identities = sqliteTable(
       .references(() => providerInstances.id),
     externalId: text('external_id').notNull(),
     username: text('username').notNull(),
-    accessToken: text('access_token'), // encrypted at rest
+    accessToken: text('access_token'),
+    refreshToken: text('refresh_token'),
+    accessTokenExpiresAt: integer('access_token_expires_at'),
     createdAt: integer('created_at').notNull().$defaultFn(now),
   },
   (t) => ({

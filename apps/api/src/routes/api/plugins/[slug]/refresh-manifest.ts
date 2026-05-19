@@ -3,7 +3,7 @@ import { authMiddleware } from '$middleware/auth'
 import { rateLimit } from '$middleware/rate-limit'
 import { db } from '$db'
 import { parseRepoUrl } from '$lib/providers'
-import { decryptToken } from '$lib/crypto'
+import { getValidAccessToken, OAuthExpiredError, reauthErrorBody } from '$lib/oauth-tokens'
 import { resolveManifest, rawContentBase } from '$lib/manifest'
 import { manifestPatch, applyManifestToPlugin } from '$lib/manifest-apply'
 import { cache } from '$lib/cache'
@@ -49,7 +49,16 @@ export default new Elysia()
         set.status = 412
         return { error: 'No stored access token — re-link your provider account' }
       }
-      const token = decryptToken(ownerIdentity.accessToken)
+      let token: string
+      try {
+        token = await getValidAccessToken(ownerIdentity, ref.instance)
+      } catch (e) {
+        if (e instanceof OAuthExpiredError) {
+          set.status = 401
+          return reauthErrorBody(e)
+        }
+        throw e
+      }
       const branch = body?.ref ?? plugin.latestVersion ?? 'HEAD'
       const manifest = await resolveManifest(token, ref, { ref: branch })
       if (!manifest) {
@@ -83,6 +92,7 @@ export default new Elysia()
       body: t.Optional(t.Object({ ref: t.Optional(t.String()) })),
       response: {
         200: t.Object({ ok: t.Boolean(), slug: t.String(), source: t.String(), ref: t.String() }),
+        401: t.Object({ error: t.String(), reauthFor: t.String() }),
         403: t.Object({ error: t.String() }),
         404: t.Object({ error: t.String() }),
         412: t.Object({ error: t.String() }),
