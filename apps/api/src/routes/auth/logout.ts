@@ -1,8 +1,9 @@
 import { Elysia, t } from 'elysia'
 import { isProd } from '$lib/env'
 
-export default new Elysia()
-  .post('/', ({ cookie }) => {
+export default new Elysia().post(
+  '/',
+  ({ cookie }) => {
     cookie.auth.set({
       value: '',
       httpOnly: true,
@@ -12,7 +13,8 @@ export default new Elysia()
       path: '/',
     })
     return { ok: true }
-  }, {
+  },
+  {
     detail: {
       tags: ['Auth'],
       summary: 'Clear the session cookie',
@@ -22,4 +24,5 @@ export default new Elysia()
     response: {
       200: t.Object({ ok: t.Boolean() }),
     },
-  })
+  },
+)

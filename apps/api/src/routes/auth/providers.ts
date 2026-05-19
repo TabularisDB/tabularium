@@ -9,8 +9,9 @@ const providerSchema = t.Object({
   logoUrl: t.Nullable(t.String()),
 })
 
-export default new Elysia()
-  .get('/', () => {
+export default new Elysia().get(
+  '/',
+  () => {
     const instances = listEnabledInstances()
     return {
       providers: instances.map((i) => ({
@@ -21,11 +22,13 @@ export default new Elysia()
         logoUrl: i.logoUrl,
       })),
     }
-  }, {
+  },
+  {
     detail: {
       tags: ['Auth'],
       summary: 'List enabled OAuth provider instances',
       operationId: 'listProviders',
     },
     response: { 200: t.Object({ providers: t.Array(providerSchema) }) },
-  })
+  },
+)

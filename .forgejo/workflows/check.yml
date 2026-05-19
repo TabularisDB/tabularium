@@ -1,0 +1,39 @@
+# Type-check: frontend (svelte-check) and api (tsc --noEmit) run in parallel.
+#
+# Runs on lyna in host mode — see .forgejo/workflows/test.yml for the reason
+# we don't use `runs-on: docker`.
+
+name: Check
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  frontend:
+    runs-on: lyna
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install deps
+        run: bun install --frozen-lockfile
+
+      - name: Svelte-check
+        working-directory: apps/frontend
+        run: bun run check
+
+  api:
+    runs-on: lyna
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install deps
+        run: bun install --frozen-lockfile
+
+      - name: Tsc --noEmit
+        working-directory: apps/api
+        run: bun run check

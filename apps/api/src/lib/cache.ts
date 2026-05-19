@@ -23,9 +23,11 @@ export const isString = (v: unknown): v is string => typeof v === 'string'
 
 class NullCache implements CacheStore {
   driver: CacheDriver = 'off'
-  async get<T>(_key: string, _validate?: CacheValidator<T>): Promise<T | null> { return null }
-  async set(): Promise<void> { }
-  async del(): Promise<void> { }
+  async get<T>(_key: string, _validate?: CacheValidator<T>): Promise<T | null> {
+    return null
+  }
+  async set(): Promise<void> {}
+  async del(): Promise<void> {}
   async incr(): Promise<number> {
     throw new Error('cache driver=off does not support incr — rate-limit needs memory or redis')
   }
@@ -85,7 +87,7 @@ class MemoryCache implements CacheStore {
 
 class RedisCache implements CacheStore {
   driver: CacheDriver = 'redis'
-  constructor(private client: import('bun').RedisClient) { }
+  constructor(private client: import('bun').RedisClient) {}
 
   async get<T>(key: string, validate?: CacheValidator<T>): Promise<T | null> {
     const raw = await this.client.get(key)

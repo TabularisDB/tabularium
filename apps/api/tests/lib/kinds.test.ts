@@ -92,17 +92,13 @@ describe('reads', () => {
   })
 
   it('getKind returns the matching def or null', async () => {
-    await setSetting('plugin_kinds', JSON.stringify([
-      { key: 'theme', label: 'Themes', description: null },
-    ]))
+    await setSetting('plugin_kinds', JSON.stringify([{ key: 'theme', label: 'Themes', description: null }]))
     expect(getKind('theme')?.label).toBe('Themes')
     expect(getKind('nope')).toBeNull()
   })
 
   it('isKindKey matches active keys', async () => {
-    await setSetting('plugin_kinds', JSON.stringify([
-      { key: 'theme', label: 'Themes', description: null },
-    ]))
+    await setSetting('plugin_kinds', JSON.stringify([{ key: 'theme', label: 'Themes', description: null }]))
     expect(isKindKey('theme')).toBe(true)
     expect(isKindKey('snippet')).toBe(false)
   })

@@ -5,12 +5,14 @@ import { initCache, resetCacheForTests } from '../../src/lib/cache'
 
 function buildApp(limit: number, windowSeconds: number) {
   return new Elysia()
-    .use(rateLimit({
-      bucket: 'test',
-      limit,
-      windowSeconds,
-      keyFn: ({ request }) => request.headers.get('x-test-subject') ?? 'shared',
-    }))
+    .use(
+      rateLimit({
+        bucket: 'test',
+        limit,
+        windowSeconds,
+        keyFn: ({ request }) => request.headers.get('x-test-subject') ?? 'shared',
+      }),
+    )
     .post('/p', () => ({ ok: true }))
 }
 

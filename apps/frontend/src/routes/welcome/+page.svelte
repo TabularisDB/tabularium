@@ -71,7 +71,12 @@
 				tagline: brandTagline,
 				primaryHex: brandPrimary,
 			})
-			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
+			if (error)
+				throw new Error(
+					typeof error.value === 'string'
+						? error.value
+						: ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`),
+				)
 			const res = data as { ok: boolean; branding: Branding }
 			branding.set(res.branding)
 			step = 2
@@ -95,7 +100,12 @@
 				clientSecret: provClientSecret,
 				logoUrl: null,
 			})
-			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
+			if (error)
+				throw new Error(
+					typeof error.value === 'string'
+						? error.value
+						: ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`),
+				)
 			step = 3
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : m.welcome_provider_failed())
@@ -113,7 +123,12 @@
 		busy = true
 		try {
 			const { error } = await eden.api.admin.setup.complete.post({})
-			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
+			if (error)
+				throw new Error(
+					typeof error.value === 'string'
+						? error.value
+						: ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`),
+				)
 			toast.success(m.welcome_setup_complete())
 			goto('/admin')
 		} catch (e) {
@@ -131,14 +146,26 @@
 			<div class="inline-flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary mx-auto">
 				<Sparkles class="h-6 w-6" />
 			</div>
-			<h1 class="text-3xl font-semibold tracking-tight">{m.welcome_greeting({ name: auth.user?.displayName ?? '' })}</h1>
-			<p class="text-muted-foreground">{m.welcome_intro_prefix()} <a href="/admin" class="text-primary hover:underline">{m.welcome_intro_link()}</a>{m.welcome_intro_suffix()}</p>
+			<h1 class="text-3xl font-semibold tracking-tight">
+				{m.welcome_greeting({ name: auth.user?.displayName ?? '' })}
+			</h1>
+			<p class="text-muted-foreground">
+				{m.welcome_intro_prefix()}
+				<a href="/admin" class="text-primary hover:underline">{m.welcome_intro_link()}</a>{m.welcome_intro_suffix()}
+			</p>
 		</div>
 
 		<div class="flex items-center justify-center gap-2 text-sm">
 			{#each [1, 2, 3] as n (n)}
 				<div class="flex items-center gap-2">
-					<div class={'h-7 w-7 rounded-full grid place-items-center text-xs font-semibold ' + (n < step ? 'bg-primary text-primary-foreground' : n === step ? 'bg-accent text-foreground border border-border' : 'bg-card text-muted-foreground border border-border')}>
+					<div
+						class={'h-7 w-7 rounded-full grid place-items-center text-xs font-semibold ' +
+							(n < step
+								? 'bg-primary text-primary-foreground'
+								: n === step
+									? 'bg-accent text-foreground border border-border'
+									: 'bg-card text-muted-foreground border border-border')}
+					>
 						{#if n < step}<Check class="h-3.5 w-3.5" />{:else}{n}{/if}
 					</div>
 					{#if n < 3}
@@ -166,7 +193,12 @@
 					<div class="grid gap-2 max-w-xs">
 						<Label for="brand-primary">{m.welcome_field_primary()}</Label>
 						<div class="flex gap-2 items-center">
-							<input id="brand-primary" type="color" bind:value={brandPrimary} class="h-9 w-12 rounded-md border border-input bg-card cursor-pointer" />
+							<input
+								id="brand-primary"
+								type="color"
+								bind:value={brandPrimary}
+								class="h-9 w-12 rounded-md border border-input bg-card cursor-pointer"
+							/>
 							<Input bind:value={brandPrimary} placeholder="#3b82f6" />
 						</div>
 					</div>
@@ -219,7 +251,9 @@
 							</div>
 						</div>
 						<div class="flex justify-between pt-2">
-							<Button type="button" variant="ghost" onclick={skipProvider} disabled={busy}>{m.welcome_skip_for_now()}</Button>
+							<Button type="button" variant="ghost" onclick={skipProvider} disabled={busy}
+								>{m.welcome_skip_for_now()}</Button
+							>
 							<Button type="submit" disabled={busy}>
 								<Plus class="h-3.5 w-3.5" />
 								{busy ? m.welcome_adding() : m.welcome_add_provider()}
@@ -234,7 +268,9 @@
 					<CardTitle class="text-base">{m.welcome_step3_title()}</CardTitle>
 					<CardDescription>
 						{#if providerSkipped}
-							{m.welcome_step3_skipped_prefix()} <a href="/admin/providers" class="text-primary hover:underline">{m.welcome_step3_skipped_link()}</a> {m.welcome_step3_skipped_suffix()}
+							{m.welcome_step3_skipped_prefix()}
+							<a href="/admin/providers" class="text-primary hover:underline">{m.welcome_step3_skipped_link()}</a>
+							{m.welcome_step3_skipped_suffix()}
 						{:else}
 							{m.welcome_step3_done()}
 						{/if}
@@ -244,16 +280,22 @@
 					<ul class="space-y-2">
 						<li class="flex items-center gap-2">
 							<Check class="h-4 w-4 text-primary" />
-							{m.welcome_branding_set_to()} <Badge variant="secondary">{branding.name}</Badge>
+							{m.welcome_branding_set_to()}
+							<Badge variant="secondary">{branding.name}</Badge>
 						</li>
 						<li class="flex items-center gap-2">
 							<Check class="h-4 w-4 text-primary" />
-							{providerSkipped ? m.welcome_provider_skipped_summary() : m.welcome_provider_added_summary({ name: provDisplayName })}
+							{providerSkipped
+								? m.welcome_provider_skipped_summary()
+								: m.welcome_provider_added_summary({ name: provDisplayName })}
 						</li>
 					</ul>
 					<p class="text-xs text-muted-foreground pt-2">
-						{m.welcome_next_steps_prefix()} <a href="/admin/infra" class="text-primary hover:underline">{m.welcome_next_steps_infra_link()}</a> {m.welcome_next_steps_middle()}
-						<a href="/admin/branding" class="text-primary hover:underline">{m.welcome_next_steps_branding_link()}</a> {m.welcome_next_steps_suffix()}
+						{m.welcome_next_steps_prefix()}
+						<a href="/admin/infra" class="text-primary hover:underline">{m.welcome_next_steps_infra_link()}</a>
+						{m.welcome_next_steps_middle()}
+						<a href="/admin/branding" class="text-primary hover:underline">{m.welcome_next_steps_branding_link()}</a>
+						{m.welcome_next_steps_suffix()}
 					</p>
 					<div class="flex justify-end pt-2">
 						<Button onclick={finish} disabled={busy}>

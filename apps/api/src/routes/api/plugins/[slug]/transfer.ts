@@ -6,9 +6,9 @@ import { pluginTransfers } from '$db/schema'
 import { recordAudit } from '$lib/audit'
 import { TRANSFER_TTL_MS, expireStalePending } from '$lib/transfers'
 
-export default new Elysia()
-  .use(authMiddleware)
-  .post('/', async ({ user, params, body, set, request }) => {
+export default new Elysia().use(authMiddleware).post(
+  '/',
+  async ({ user, params, body, set, request }) => {
     const plugin = await db.query.plugins.findFirst({ where: { id: params.slug } })
     if (!plugin) {
       set.status = 404
@@ -65,7 +65,8 @@ export default new Elysia()
       toUserId: body.newOwnerId,
       expiresAt: now + TRANSFER_TTL_MS,
     }
-  }, {
+  },
+  {
     detail: {
       tags: ['Plugins'],
       summary: 'Initiate a plugin ownership transfer',
@@ -93,4 +94,5 @@ export default new Elysia()
       404: t.Object({ error: t.String() }),
       409: t.Object({ error: t.String() }),
     },
-  })
+  },
+)

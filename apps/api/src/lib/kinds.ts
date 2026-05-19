@@ -11,7 +11,10 @@ export type KindDef = {
 export type KindErrorCode = 'invalid' | 'duplicate' | 'not_found'
 
 export class KindError extends Error {
-  constructor(public code: KindErrorCode, message: string) {
+  constructor(
+    public code: KindErrorCode,
+    message: string,
+  ) {
     super(message)
     this.name = 'KindError'
   }
@@ -72,7 +75,11 @@ export function getKinds(): KindDef[] {
     if (!Array.isArray(parsed)) return []
     return parsed
       .map((item) => {
-        try { return validateKindDef(item) } catch { return null }
+        try {
+          return validateKindDef(item)
+        } catch {
+          return null
+        }
       })
       .filter((x): x is KindDef => x !== null)
   } catch {

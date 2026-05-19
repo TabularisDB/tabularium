@@ -52,7 +52,10 @@
 			for (const l of i18n.availableLocales) out[l] = src[l] ?? ''
 			return out
 		}
-		const section = (s: { title: Partial<Record<Locale, string>>; body: Partial<Record<Locale, string>> }): FeatureSection => ({
+		const section = (s: {
+			title: Partial<Record<Locale, string>>
+			body: Partial<Record<Locale, string>>
+		}): FeatureSection => ({
 			title: fill(s.title),
 			body: fill(s.body),
 		})
@@ -92,15 +95,18 @@
 	let activeLocale = $state<Locale>(i18n.defaultLocale)
 
 	const DEFAULT_BY_LOCALE = $derived.by(() => {
-		const out: Record<Locale, {
-			eyebrow: string
-			dropinTitle: string
-			dropinBody: string
-			providersTitle: string
-			providersBody: string
-			releaseTitle: string
-			releaseBody: string
-		}> = {} as never
+		const out: Record<
+			Locale,
+			{
+				eyebrow: string
+				dropinTitle: string
+				dropinBody: string
+				providersTitle: string
+				providersBody: string
+				releaseTitle: string
+				releaseBody: string
+			}
+		> = {} as never
 		for (const l of i18n.availableLocales) {
 			out[l] = {
 				eyebrow: m.home_eyebrow({}, { locale: l }),
@@ -118,7 +124,12 @@
 	async function load() {
 		try {
 			const { data, error } = await eden.api['home-copy'].get()
-			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
+			if (error)
+				throw new Error(
+					typeof error.value === 'string'
+						? error.value
+						: ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`),
+				)
 			form = fromHomeCopy(data as HomeCopy)
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : m.admin_home_load_failed())
@@ -134,7 +145,12 @@
 		try {
 			const body = toHomeCopy(form)
 			const { data, error } = await eden.api.admin['home-copy'].put(body)
-			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
+			if (error)
+				throw new Error(
+					typeof error.value === 'string'
+						? error.value
+						: ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`),
+				)
 			const saved = data as HomeCopy
 			homeCopy.setLocal(saved)
 			form = fromHomeCopy(saved)
@@ -167,8 +183,12 @@
 		{#each i18n.availableLocales as l (l)}
 			<button
 				type="button"
-				class={['rounded-md border px-2.5 py-1 text-xs transition-colors',
-					activeLocale === l ? 'border-primary text-foreground bg-primary/10' : 'border-border text-muted-foreground hover:bg-accent/50'].join(' ')}
+				class={[
+					'rounded-md border px-2.5 py-1 text-xs transition-colors',
+					activeLocale === l
+						? 'border-primary text-foreground bg-primary/10'
+						: 'border-border text-muted-foreground hover:bg-accent/50',
+				].join(' ')}
 				onclick={() => (activeLocale = l)}
 			>
 				{LOCALE_LABELS[l] ?? l}
@@ -196,13 +216,22 @@
 			<div class="grid gap-2">
 				<Label for="eyebrow-text">
 					{m.admin_home_field_text()}
-					<span class="ml-1 text-[10px] uppercase tracking-wider text-muted-foreground">{LOCALE_LABELS[activeLocale] ?? activeLocale}</span>
+					<span class="ml-1 text-[10px] uppercase tracking-wider text-muted-foreground"
+						>{LOCALE_LABELS[activeLocale] ?? activeLocale}</span
+					>
 					{#if isFilled(form.eyebrowText, activeLocale)}
 						<span class="ml-1 text-[10px] uppercase tracking-wider text-success">·</span>
 					{/if}
 				</Label>
-				<Input id="eyebrow-text" bind:value={form.eyebrowText[activeLocale]} maxlength={280} placeholder={DEFAULT_BY_LOCALE[activeLocale].eyebrow} />
-				<p class="text-xs text-muted-foreground">{m.admin_home_default_hint({ value: DEFAULT_BY_LOCALE[activeLocale].eyebrow })}</p>
+				<Input
+					id="eyebrow-text"
+					bind:value={form.eyebrowText[activeLocale]}
+					maxlength={280}
+					placeholder={DEFAULT_BY_LOCALE[activeLocale].eyebrow}
+				/>
+				<p class="text-xs text-muted-foreground">
+					{m.admin_home_default_hint({ value: DEFAULT_BY_LOCALE[activeLocale].eyebrow })}
+				</p>
 			</div>
 		</CardContent>
 	</Card>
@@ -230,13 +259,28 @@
 				</div>
 				<div class="grid gap-2">
 					<Label for="dropin-title">{m.admin_home_field_title()}</Label>
-					<Input id="dropin-title" bind:value={form.dropin.title[activeLocale]} maxlength={280} placeholder={DEFAULT_BY_LOCALE[activeLocale].dropinTitle} />
-					<p class="text-xs text-muted-foreground">{m.admin_home_default_hint({ value: DEFAULT_BY_LOCALE[activeLocale].dropinTitle })}</p>
+					<Input
+						id="dropin-title"
+						bind:value={form.dropin.title[activeLocale]}
+						maxlength={280}
+						placeholder={DEFAULT_BY_LOCALE[activeLocale].dropinTitle}
+					/>
+					<p class="text-xs text-muted-foreground">
+						{m.admin_home_default_hint({ value: DEFAULT_BY_LOCALE[activeLocale].dropinTitle })}
+					</p>
 				</div>
 				<div class="grid gap-2">
 					<Label for="dropin-body">{m.admin_home_field_body()}</Label>
-					<Textarea id="dropin-body" bind:value={form.dropin.body[activeLocale]} maxlength={280} rows={3} placeholder={DEFAULT_BY_LOCALE[activeLocale].dropinBody} />
-					<p class="text-xs text-muted-foreground">{m.admin_home_default_hint({ value: DEFAULT_BY_LOCALE[activeLocale].dropinBody })}</p>
+					<Textarea
+						id="dropin-body"
+						bind:value={form.dropin.body[activeLocale]}
+						maxlength={280}
+						rows={3}
+						placeholder={DEFAULT_BY_LOCALE[activeLocale].dropinBody}
+					/>
+					<p class="text-xs text-muted-foreground">
+						{m.admin_home_default_hint({ value: DEFAULT_BY_LOCALE[activeLocale].dropinBody })}
+					</p>
 				</div>
 			</div>
 
@@ -249,13 +293,28 @@
 				</div>
 				<div class="grid gap-2">
 					<Label for="providers-title">{m.admin_home_field_title()}</Label>
-					<Input id="providers-title" bind:value={form.providers.title[activeLocale]} maxlength={280} placeholder={DEFAULT_BY_LOCALE[activeLocale].providersTitle} />
-					<p class="text-xs text-muted-foreground">{m.admin_home_default_hint({ value: DEFAULT_BY_LOCALE[activeLocale].providersTitle })}</p>
+					<Input
+						id="providers-title"
+						bind:value={form.providers.title[activeLocale]}
+						maxlength={280}
+						placeholder={DEFAULT_BY_LOCALE[activeLocale].providersTitle}
+					/>
+					<p class="text-xs text-muted-foreground">
+						{m.admin_home_default_hint({ value: DEFAULT_BY_LOCALE[activeLocale].providersTitle })}
+					</p>
 				</div>
 				<div class="grid gap-2">
 					<Label for="providers-body">{m.admin_home_field_body()}</Label>
-					<Textarea id="providers-body" bind:value={form.providers.body[activeLocale]} maxlength={280} rows={3} placeholder={DEFAULT_BY_LOCALE[activeLocale].providersBody} />
-					<p class="text-xs text-muted-foreground">{m.admin_home_default_hint({ value: DEFAULT_BY_LOCALE[activeLocale].providersBody })}</p>
+					<Textarea
+						id="providers-body"
+						bind:value={form.providers.body[activeLocale]}
+						maxlength={280}
+						rows={3}
+						placeholder={DEFAULT_BY_LOCALE[activeLocale].providersBody}
+					/>
+					<p class="text-xs text-muted-foreground">
+						{m.admin_home_default_hint({ value: DEFAULT_BY_LOCALE[activeLocale].providersBody })}
+					</p>
 				</div>
 			</div>
 
@@ -268,13 +327,28 @@
 				</div>
 				<div class="grid gap-2">
 					<Label for="release-title">{m.admin_home_field_title()}</Label>
-					<Input id="release-title" bind:value={form.release.title[activeLocale]} maxlength={280} placeholder={DEFAULT_BY_LOCALE[activeLocale].releaseTitle} />
-					<p class="text-xs text-muted-foreground">{m.admin_home_default_hint({ value: DEFAULT_BY_LOCALE[activeLocale].releaseTitle })}</p>
+					<Input
+						id="release-title"
+						bind:value={form.release.title[activeLocale]}
+						maxlength={280}
+						placeholder={DEFAULT_BY_LOCALE[activeLocale].releaseTitle}
+					/>
+					<p class="text-xs text-muted-foreground">
+						{m.admin_home_default_hint({ value: DEFAULT_BY_LOCALE[activeLocale].releaseTitle })}
+					</p>
 				</div>
 				<div class="grid gap-2">
 					<Label for="release-body">{m.admin_home_field_body()}</Label>
-					<Textarea id="release-body" bind:value={form.release.body[activeLocale]} maxlength={280} rows={3} placeholder={DEFAULT_BY_LOCALE[activeLocale].releaseBody} />
-					<p class="text-xs text-muted-foreground">{m.admin_home_default_hint({ value: DEFAULT_BY_LOCALE[activeLocale].releaseBody })}</p>
+					<Textarea
+						id="release-body"
+						bind:value={form.release.body[activeLocale]}
+						maxlength={280}
+						rows={3}
+						placeholder={DEFAULT_BY_LOCALE[activeLocale].releaseBody}
+					/>
+					<p class="text-xs text-muted-foreground">
+						{m.admin_home_default_hint({ value: DEFAULT_BY_LOCALE[activeLocale].releaseBody })}
+					</p>
 				</div>
 			</div>
 		</CardContent>

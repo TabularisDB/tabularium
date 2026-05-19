@@ -1,0 +1,5 @@
+{
+  "extends": "@tabularium/tsconfig/base.json",
+  "compilerOptions": { "outDir": "dist", "rootDir": "src" },
+  "include": ["src/**/*", "test/**/*"]
+}

@@ -2,11 +2,10 @@ import { Elysia } from 'elysia'
 import { verifyJwt } from '$lib/jwt'
 import { isBootstrapActive } from '$lib/bootstrap'
 
-export const bootstrapAuthMiddleware = new Elysia({ name: 'bootstrap-auth' })
-  .derive({ as: 'scoped' }, async ({ headers, cookie, set }) => {
-    const bearer = headers.authorization?.startsWith('Bearer ')
-      ? headers.authorization.slice(7)
-      : undefined
+export const bootstrapAuthMiddleware = new Elysia({ name: 'bootstrap-auth' }).derive(
+  { as: 'scoped' },
+  async ({ headers, cookie, set }) => {
+    const bearer = headers.authorization?.startsWith('Bearer ') ? headers.authorization.slice(7) : undefined
     const cookieToken = typeof cookie.auth?.value === 'string' ? cookie.auth.value : undefined
     const token = bearer ?? cookieToken
 
@@ -20,4 +19,5 @@ export const bootstrapAuthMiddleware = new Elysia({ name: 'bootstrap-auth' })
       throw new Error('Unauthorized')
     }
     return { bootstrap: true as const }
-  })
+  },
+)

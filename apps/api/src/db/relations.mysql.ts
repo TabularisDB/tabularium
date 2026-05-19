@@ -18,6 +18,10 @@ export const relations = defineRelations(schema, (r) => ({
   },
   releases: {
     plugin: r.one.plugins({ from: r.releases.pluginId, to: r.plugins.id }),
+    assetRows: r.many.releaseAssets(),
+  },
+  releaseAssets: {
+    release: r.one.releases({ from: r.releaseAssets.releaseId, to: r.releases.id }),
   },
   pluginRequests: {
     votes: r.many.pluginRequestVotes(),

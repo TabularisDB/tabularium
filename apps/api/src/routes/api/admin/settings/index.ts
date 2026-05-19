@@ -9,14 +9,12 @@ const settingEntrySchema = t.Object({
   updatedAt: t.Number(),
 })
 
-export default new Elysia()
-  .use(adminMiddleware)
-  .get('/', async () => ({ settings: await listSettings() }), {
-    detail: {
-      tags: ['Admin'],
-      summary: 'List all settings (encrypted values masked)',
-      operationId: 'listSettings',
-      security: [{ bearerAuth: [] }, { cookieAuth: [] }],
-    },
-    response: { 200: t.Object({ settings: t.Array(settingEntrySchema) }) },
-  })
+export default new Elysia().use(adminMiddleware).get('/', async () => ({ settings: await listSettings() }), {
+  detail: {
+    tags: ['Admin'],
+    summary: 'List all settings (encrypted values masked)',
+    operationId: 'listSettings',
+    security: [{ bearerAuth: [] }, { cookieAuth: [] }],
+  },
+  response: { 200: t.Object({ settings: t.Array(settingEntrySchema) }) },
+})

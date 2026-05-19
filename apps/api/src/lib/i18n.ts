@@ -27,7 +27,7 @@ function parseDefault(raw: string | undefined, enabled: Locale[]): Locale {
   if (raw && (SUPPORTED_LOCALES as readonly string[]).includes(raw) && enabled.includes(raw as Locale)) {
     return raw as Locale
   }
-  return enabled.includes(DEFAULT_LOCALE) ? DEFAULT_LOCALE : enabled[0] ?? DEFAULT_LOCALE
+  return enabled.includes(DEFAULT_LOCALE) ? DEFAULT_LOCALE : (enabled[0] ?? DEFAULT_LOCALE)
 }
 
 export function getI18nConfig(): I18nConfig {

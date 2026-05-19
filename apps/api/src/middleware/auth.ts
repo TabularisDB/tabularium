@@ -4,12 +4,11 @@ import { logger } from '../lib/logger'
 
 const log = logger.child({ module: 'auth-middleware' })
 
-export const authMiddleware = new Elysia({ name: 'auth-middleware' })
-  .derive({ as: 'scoped' }, async ({ headers, cookie, set }) => {
+export const authMiddleware = new Elysia({ name: 'auth-middleware' }).derive(
+  { as: 'scoped' },
+  async ({ headers, cookie, set }) => {
     const authHeader = headers.authorization
-    const bearerToken = authHeader?.startsWith('Bearer ')
-      ? authHeader.slice(7)
-      : undefined
+    const bearerToken = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined
     const rawCookieValue = cookie.auth?.value
     const cookieToken = typeof rawCookieValue === 'string' ? rawCookieValue : undefined
 
@@ -34,4 +33,5 @@ export const authMiddleware = new Elysia({ name: 'auth-middleware' })
     }
 
     return { user }
-  })
+  },
+)

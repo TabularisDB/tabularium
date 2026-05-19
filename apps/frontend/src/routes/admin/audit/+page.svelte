@@ -62,7 +62,9 @@
 					<tbody>
 						{#each entries as e (e.id)}
 							<tr class="border-b border-border/50 last:border-0">
-								<td class="px-3 py-2 text-xs text-muted-foreground whitespace-nowrap">{new Date(e.createdAt).toLocaleString()}</td>
+								<td class="px-3 py-2 text-xs text-muted-foreground whitespace-nowrap"
+									>{new Date(e.createdAt).toLocaleString()}</td
+								>
 								<td class="px-3 py-2 text-xs">{e.actorName ?? '—'}</td>
 								<td class="px-3 py-2 font-mono text-xs">{e.action}</td>
 								<td class="px-3 py-2 text-xs text-muted-foreground">{e.target ?? '—'}</td>

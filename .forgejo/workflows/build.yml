@@ -1,0 +1,28 @@
+# Vite production build for the frontend — catches build-time errors that
+# svelte-check doesn't see (asset resolution, CSS bundling, route generation).
+# API has no build step (Bun runs TS directly), so this is frontend-only.
+#
+# Runs on lyna in host mode — see .forgejo/workflows/test.yml for the reason
+# we don't use `runs-on: docker`.
+
+name: Build
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  frontend:
+    runs-on: lyna
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install deps
+        run: bun install --frozen-lockfile
+
+      - name: Vite build
+        working-directory: apps/frontend
+        run: bun run build

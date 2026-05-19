@@ -124,7 +124,9 @@
 						</div>
 						<div class="grid grid-cols-[1fr_1fr_auto] gap-2 items-end">
 							<div class="grid gap-1">
-								<Label for={`${bucket.id}-limit`} class="text-xs">{m.admin_instance_limit_label({ value: bucket.defaultLimit })}</Label>
+								<Label for={`${bucket.id}-limit`} class="text-xs"
+									>{m.admin_instance_limit_label({ value: bucket.defaultLimit })}</Label
+								>
 								<input
 									id={`${bucket.id}-limit`}
 									type="number"
@@ -134,7 +136,9 @@
 								/>
 							</div>
 							<div class="grid gap-1">
-								<Label for={`${bucket.id}-window`} class="text-xs">{m.admin_instance_window_label({ value: bucket.defaultWindowSeconds })}</Label>
+								<Label for={`${bucket.id}-window`} class="text-xs"
+									>{m.admin_instance_window_label({ value: bucket.defaultWindowSeconds })}</Label
+								>
 								<input
 									id={`${bucket.id}-window`}
 									type="number"
@@ -143,7 +147,13 @@
 									bind:value={bucket.windowSeconds}
 								/>
 							</div>
-							<Button variant="ghost" size="sm" onclick={() => resetBucket(bucket)} aria-label={m.common_reset()} title={m.common_reset()}>
+							<Button
+								variant="ghost"
+								size="sm"
+								onclick={() => resetBucket(bucket)}
+								aria-label={m.common_reset()}
+								title={m.common_reset()}
+							>
 								<RotateCcw class="h-3.5 w-3.5" />
 							</Button>
 						</div>

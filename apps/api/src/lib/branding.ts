@@ -38,12 +38,14 @@ function readBool(key: string, fallback: boolean): boolean {
   return v === '1' || v === 'true'
 }
 
-function readLocalizedString(baseKey: string, locale: Locale, fallback: Locale, defaultValue: string | null): string | null {
+function readLocalizedString(
+  baseKey: string,
+  locale: Locale,
+  fallback: Locale,
+  defaultValue: string | null,
+): string | null {
   return (
-    getSetting(`${baseKey}.${locale}`) ??
-    getSetting(`${baseKey}.${fallback}`) ??
-    getSetting(baseKey) ??
-    defaultValue
+    getSetting(`${baseKey}.${locale}`) ?? getSetting(`${baseKey}.${fallback}`) ?? getSetting(baseKey) ?? defaultValue
   )
 }
 

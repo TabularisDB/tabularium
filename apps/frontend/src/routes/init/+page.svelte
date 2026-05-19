@@ -35,7 +35,7 @@
 	let rawUrl = $state('')
 
 	let host = $state('localhost')
-	let port = $state<number>(5432)
+	let port = $state<string>('5432')
 	let dbName = $state('registry')
 	let dbUser = $state('registry')
 	let dbPass = $state('')
@@ -60,8 +60,8 @@
 	})
 
 	$effect(() => {
-		if (dialect === 'pg' && port === 3306) port = 5432
-		if (dialect === 'mysql' && port === 5432) port = 3306
+		if (dialect === 'pg' && port === '3306') port = '5432'
+		if (dialect === 'mysql' && port === '5432') port = '3306'
 	})
 
 	onMount(async () => {
@@ -84,9 +84,20 @@
 		formError = null
 		try {
 			const loginRes = await eden.api.init.login.post({ email: bootEmail, password: bootPassword })
-			if (loginRes.error) throw new Error(typeof loginRes.error.value === 'string' ? loginRes.error.value : ((loginRes.error.value as { error?: string })?.error ?? `Request failed (${loginRes.error.status})`))
+			if (loginRes.error)
+				throw new Error(
+					typeof loginRes.error.value === 'string'
+						? loginRes.error.value
+						: ((loginRes.error.value as { error?: string })?.error ?? `Request failed (${loginRes.error.status})`),
+				)
 			const defaultsRes = await eden.api.init.defaults.get()
-			if (defaultsRes.error) throw new Error(typeof defaultsRes.error.value === 'string' ? defaultsRes.error.value : ((defaultsRes.error.value as { error?: string })?.error ?? `Request failed (${defaultsRes.error.status})`))
+			if (defaultsRes.error)
+				throw new Error(
+					typeof defaultsRes.error.value === 'string'
+						? defaultsRes.error.value
+						: ((defaultsRes.error.value as { error?: string })?.error ??
+								`Request failed (${defaultsRes.error.status})`),
+				)
 			const defaults = defaultsRes.data as InitDefaults
 			seedFromDefaults(defaults.database.url)
 			phase = 'wizard'
@@ -107,7 +118,7 @@
 			const u = new URL(url.replace(/^postgresql:/, 'postgres:'))
 			dialect = u.protocol.startsWith('mysql') ? 'mysql' : 'pg'
 			host = u.hostname || 'localhost'
-			port = Number(u.port) || (dialect === 'pg' ? 5432 : 3306)
+			port = u.port || (dialect === 'pg' ? '5432' : '3306')
 			dbUser = decodeURIComponent(u.username || '')
 			dbPass = decodeURIComponent(u.password || '')
 			dbName = decodeURIComponent(u.pathname.replace(/^\//, '')) || 'registry'
@@ -123,7 +134,10 @@
 			const { data, error } = await eden.api.init['test-db'].post({ url: computedUrl })
 			if (error) {
 				probeState = 'failed'
-				probeError = typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `HTTP ${error.status}`)
+				probeError =
+					typeof error.value === 'string'
+						? error.value
+						: ((error.value as { error?: string })?.error ?? `HTTP ${error.status}`)
 				return
 			}
 			const result = data as { ok: boolean; dialect: string; error?: string }
@@ -146,7 +160,8 @@
 		const { error } = await eden.api.init.complete.post({ database: { url: computedUrl } })
 		if (error) {
 			const v = error.value as { error?: string; detail?: string } | string | null
-			formError = (typeof v === 'object' && v?.detail) ? v.detail : (typeof v === 'string' ? v : (v?.error ?? m.init_setup_failed()))
+			formError =
+				typeof v === 'object' && v?.detail ? v.detail : typeof v === 'string' ? v : (v?.error ?? m.init_setup_failed())
 			phase = 'wizard'
 			return
 		}
@@ -162,7 +177,7 @@
 			try {
 				const res = await fetch('/api/init/status', { cache: 'no-store' })
 				if (res.ok) {
-					const status = await res.json() as { setupCompleted: boolean; mode?: 'setup' | 'normal' }
+					const status = (await res.json()) as { setupCompleted: boolean; mode?: 'setup' | 'normal' }
 					if (status.setupCompleted && status.mode === 'normal') {
 						await auth.refresh()
 						goto('/admin')
@@ -245,13 +260,25 @@
 						{#if dialect === 'sqlite'}
 							<div class="space-y-2">
 								<Label for="sqlitePath">{m.init_db_file_path()}</Label>
-								<Input id="sqlitePath" bind:value={sqlitePath} placeholder="./data/registry.sqlite" required disabled={phase === 'submitting'} />
+								<Input
+									id="sqlitePath"
+									bind:value={sqlitePath}
+									placeholder="./data/registry.sqlite"
+									required
+									disabled={phase === 'submitting'}
+								/>
 							</div>
 						{:else}
 							<div class="grid grid-cols-3 gap-2">
 								<div class="col-span-2 space-y-2">
 									<Label for="dbHost">{m.init_db_host()}</Label>
-									<Input id="dbHost" bind:value={host} placeholder="localhost" required disabled={phase === 'submitting'} />
+									<Input
+										id="dbHost"
+										bind:value={host}
+										placeholder="localhost"
+										required
+										disabled={phase === 'submitting'}
+									/>
 								</div>
 								<div class="space-y-2">
 									<Label for="dbPort">{m.init_db_port()}</Label>
@@ -260,53 +287,96 @@
 							</div>
 							<div class="space-y-2">
 								<Label for="dbName">{m.init_db_name()}</Label>
-								<Input id="dbName" bind:value={dbName} placeholder="registry" required disabled={phase === 'submitting'} />
+								<Input
+									id="dbName"
+									bind:value={dbName}
+									placeholder="registry"
+									required
+									disabled={phase === 'submitting'}
+								/>
 							</div>
 							<div class="grid grid-cols-2 gap-2">
 								<div class="space-y-2">
 									<Label for="dbUser">{m.init_db_user()}</Label>
-									<Input id="dbUser" bind:value={dbUser} placeholder="registry" required disabled={phase === 'submitting'} />
+									<Input
+										id="dbUser"
+										bind:value={dbUser}
+										placeholder="registry"
+										required
+										disabled={phase === 'submitting'}
+									/>
 								</div>
 								<div class="space-y-2">
 									<Label for="dbPass">{m.init_db_password()}</Label>
-									<Input id="dbPass" type="password" bind:value={dbPass} autocomplete="off" disabled={phase === 'submitting'} />
+									<Input
+										id="dbPass"
+										type="password"
+										bind:value={dbPass}
+										autocomplete="off"
+										disabled={phase === 'submitting'}
+									/>
 								</div>
 							</div>
 						{/if}
 					{:else}
 						<div class="space-y-2">
 							<Label for="rawUrl">{m.init_connection_url()}</Label>
-							<Input id="rawUrl" bind:value={rawUrl} placeholder="postgres://user:pass@host:5432/db" required disabled={phase === 'submitting'} />
+							<Input
+								id="rawUrl"
+								bind:value={rawUrl}
+								placeholder="postgres://user:pass@host:5432/db"
+								required
+								disabled={phase === 'submitting'}
+							/>
 						</div>
 					{/if}
 
 					<div class="flex items-center justify-between text-xs text-muted-foreground">
-						<button type="button" class="text-primary hover:underline" onclick={() => (useUrlInput = !useUrlInput)} disabled={phase === 'submitting'}>
+						<button
+							type="button"
+							class="text-primary hover:underline"
+							onclick={() => (useUrlInput = !useUrlInput)}
+							disabled={phase === 'submitting'}
+						>
 							{useUrlInput ? m.init_db_use_form() : m.init_db_use_url()}
 						</button>
 						<code class="font-mono text-[10px] opacity-70 truncate max-w-[60%]" title={computedUrl}>{computedUrl}</code>
 					</div>
 
 					<div class="flex items-center gap-2">
-						<Button type="button" variant="outline" size="sm" onclick={testConnection} disabled={phase === 'submitting' || probeState === 'probing' || !computedUrl}>
+						<Button
+							type="button"
+							variant="outline"
+							size="sm"
+							onclick={testConnection}
+							disabled={phase === 'submitting' || probeState === 'probing' || !computedUrl}
+						>
 							<Plug class="h-3.5 w-3.5" />
 							{probeState === 'probing' ? m.init_db_testing() : m.init_db_test()}
 						</Button>
 						{#if probeState === 'ok'}
-							<span class="inline-flex items-center gap-1 text-xs text-success"><Check class="h-3.5 w-3.5" />{m.init_db_test_ok()}</span>
+							<span class="inline-flex items-center gap-1 text-xs text-success"
+								><Check class="h-3.5 w-3.5" />{m.init_db_test_ok()}</span
+							>
 						{:else if probeState === 'failed'}
-							<span class="inline-flex items-center gap-1 text-xs text-destructive"><X class="h-3.5 w-3.5" />{m.init_db_test_failed()}</span>
+							<span class="inline-flex items-center gap-1 text-xs text-destructive"
+								><X class="h-3.5 w-3.5" />{m.init_db_test_failed()}</span
+							>
 						{/if}
 					</div>
 
 					{#if probeError}
-						<div class="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive break-all">
+						<div
+							class="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive break-all"
+						>
 							{probeError}
 						</div>
 					{/if}
 
 					{#if formError}
-						<div class="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive break-all">
+						<div
+							class="rounded-md border border-destructive/40 bg-destructive/10 px-3 py-2 text-xs text-destructive break-all"
+						>
 							{formError}
 						</div>
 					{/if}
@@ -319,7 +389,9 @@
 		</Card>
 	{:else if phase === 'waiting'}
 		<div class="text-center space-y-4">
-			<div class="inline-flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary animate-pulse">
+			<div
+				class="inline-flex h-12 w-12 items-center justify-center rounded-full bg-primary/10 text-primary animate-pulse"
+			>
 				<ShieldCheck class="h-6 w-6" />
 			</div>
 			<h1 class="text-3xl font-semibold tracking-tight">{m.init_waiting_title()}</h1>
@@ -332,7 +404,9 @@
 			</div>
 			<h1 class="text-3xl font-semibold tracking-tight">{m.init_done_title()}</h1>
 			<p class="text-sm text-muted-foreground">
-				{m.init_done_body_prefix()} <a href="/login/admin" class="text-primary hover:underline">/login/admin</a> {m.init_done_body_middle()} <code class="text-foreground">admin@example.com</code> {m.init_done_body_suffix()}
+				{m.init_done_body_prefix()} <a href="/login/admin" class="text-primary hover:underline">/login/admin</a>
+				{m.init_done_body_middle()} <code class="text-foreground">admin@example.com</code>
+				{m.init_done_body_suffix()}
 			</p>
 		</div>
 	{/if}

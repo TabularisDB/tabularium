@@ -5,6 +5,7 @@
 	import Gauge from '@lucide/svelte/icons/gauge'
 	import FileCode2 from '@lucide/svelte/icons/file-code-2'
 	import KeyRound from '@lucide/svelte/icons/key-round'
+	import ShieldCheck from '@lucide/svelte/icons/shield-check'
 	import AdminPageHeader from '$components/admin/AdminPageHeader.svelte'
 	import TabBar from '$components/admin/TabBar.svelte'
 	import { m } from '$lib/paraglide/messages'
@@ -12,10 +13,11 @@
 	import RateLimits from './tabs/RateLimits.svelte'
 	import Manifest from './tabs/Manifest.svelte'
 	import Recovery from './tabs/Recovery.svelte'
+	import Security from './tabs/Security.svelte'
 
-	type TabId = 'general' | 'rate-limits' | 'manifest' | 'recovery'
+	type TabId = 'general' | 'rate-limits' | 'manifest' | 'recovery' | 'security'
 
-	const VALID: TabId[] = ['general', 'rate-limits', 'manifest', 'recovery']
+	const VALID: TabId[] = ['general', 'rate-limits', 'manifest', 'recovery', 'security']
 
 	function fromUrl(): TabId {
 		const t = page.url.searchParams.get('tab') as TabId | null
@@ -41,6 +43,7 @@
 		{ id: 'rate-limits' as const, label: m.admin_instance_tab_rate_limits(), icon: Gauge },
 		{ id: 'manifest' as const, label: m.admin_instance_tab_manifest(), icon: FileCode2 },
 		{ id: 'recovery' as const, label: m.admin_instance_tab_recovery(), icon: KeyRound },
+		{ id: 'security' as const, label: m.admin_instance_tab_security(), icon: ShieldCheck },
 	])
 </script>
 
@@ -58,4 +61,6 @@
 	<Manifest />
 {:else if active === 'recovery'}
 	<Recovery />
+{:else if active === 'security'}
+	<Security />
 {/if}

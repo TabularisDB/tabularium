@@ -53,7 +53,12 @@
 		loading = true
 		try {
 			const { data, error } = await eden.api.admin.pages({ slug }).get()
-			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
+			if (error)
+				throw new Error(
+					typeof error.value === 'string'
+						? error.value
+						: ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`),
+				)
 			const res = data as AdminPage
 			title = res.title
 			path = res.path
@@ -102,7 +107,12 @@
 			}
 			if (!pathLocked) body.path = path
 			const { error } = await eden.api.admin.pages({ slug }).patch(body)
-			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
+			if (error)
+				throw new Error(
+					typeof error.value === 'string'
+						? error.value
+						: ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`),
+				)
 			toast.success(m.admin_page_edit_saved())
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : m.admin_page_edit_save_failed())
@@ -120,7 +130,9 @@
 	<div class="flex gap-2">
 		{#if !loading}
 			<Button variant="ghost" size="sm" onclick={() => (preview = !preview)}>
-				{#if preview}<EyeOff class="h-3.5 w-3.5" />{m.admin_page_edit_hide_preview()}{:else}<Eye class="h-3.5 w-3.5" />{m.admin_page_edit_show_preview()}{/if}
+				{#if preview}<EyeOff class="h-3.5 w-3.5" />{m.admin_page_edit_hide_preview()}{:else}<Eye
+						class="h-3.5 w-3.5"
+					/>{m.admin_page_edit_show_preview()}{/if}
 			</Button>
 			<Button size="sm" onclick={save} disabled={saving}>
 				<Save class="h-3.5 w-3.5" />

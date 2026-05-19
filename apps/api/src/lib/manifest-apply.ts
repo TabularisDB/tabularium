@@ -39,11 +39,12 @@ export function manifestPatch(
   const readmePayload = readmeLocales ? JSON.stringify(readmeLocales) : (readmeMarkdown ?? null)
 
   const iconUrl = parsed.icon ? resolveAbsolute(opts.repoBase, parsed.icon) : null
-  const screenshots = parsed.screenshots?.map((s) => ({
-    url: resolveAbsolute(opts.repoBase, s.url),
-    caption: s.caption ?? null,
-    alt: s.alt ?? null,
-  })) ?? []
+  const screenshots =
+    parsed.screenshots?.map((s) => ({
+      url: resolveAbsolute(opts.repoBase, s.url),
+      caption: s.caption ?? null,
+      alt: s.alt ?? null,
+    })) ?? []
 
   const tagList = (parsed.tags ?? []).slice()
   if (parsed.kind && !tagList.includes(parsed.kind)) {

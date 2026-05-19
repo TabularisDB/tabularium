@@ -13,9 +13,9 @@ const ALLOWED_MIMES: Record<string, string> = {
 
 const MAX_BYTES = 512 * 1024
 
-export default new Elysia()
-  .use(adminMiddleware)
-  .post('/', async ({ params, body, set, admin, request }) => {
+export default new Elysia().use(adminMiddleware).post(
+  '/',
+  async ({ params, body, set, admin, request }) => {
     const inst = getInstance(params.id)
     if (!inst) {
       set.status = 404
@@ -56,7 +56,8 @@ export default new Elysia()
       set.status = 500
       return { error: err instanceof Error ? err.message : 'Upload failed' }
     }
-  }, {
+  },
+  {
     detail: {
       tags: ['Admin'],
       summary: 'Upload a logo for a provider instance',
@@ -77,4 +78,5 @@ export default new Elysia()
       415: t.Object({ error: t.String() }),
       500: t.Object({ error: t.String() }),
     },
-  })
+  },
+)

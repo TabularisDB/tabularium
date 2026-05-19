@@ -1,7 +1,16 @@
 import { logger } from './logger'
+import { getSetting } from './settings'
 import { isPublicHttpUrl } from './url'
 
 const log = logger.child({ module: 'asset' })
+
+const DEFAULT_ASSET_SIZE_CAP_BYTES = 500 * 1024 * 1024
+
+export function getAssetSizeCap(): number {
+  const raw = getSetting('registry.asset_size_cap_bytes')
+  const n = raw ? Number(raw) : NaN
+  return Number.isFinite(n) && n > 0 ? n : DEFAULT_ASSET_SIZE_CAP_BYTES
+}
 
 export type AssetEntry = {
   url: string
@@ -36,7 +45,6 @@ export function serializeAssets(map: AssetMap): string {
   return JSON.stringify(map)
 }
 
-const MAX_BYTES = 200 * 1024 * 1024
 const MAX_REDIRECTS = 3
 const FETCH_TIMEOUT_MS = 30_000
 
@@ -68,13 +76,17 @@ export async function hashAsset(url: string): Promise<{ sha256?: string; size?: 
 
     const hasher = new Bun.CryptoHasher('sha256')
     let total = 0
+    const cap = getAssetSizeCap()
     const reader = body.getReader()
     while (true) {
       const { done, value } = await reader.read()
       if (done) break
       if (!value) continue
       total += value.byteLength
-      if (total > MAX_BYTES) return { reason: 'asset exceeds 200MB cap' }
+      if (total > cap)
+        return {
+          reason: `asset exceeds ${cap}-byte hash budget — release ingests without an integrity entry for this asset`,
+        }
       hasher.update(value)
     }
     return { sha256: hasher.digest('hex'), size: total }

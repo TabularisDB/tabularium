@@ -10,13 +10,18 @@
     "dev": "turbo run dev",
     "build": "turbo run build",
     "test": "turbo run test",
-    "lint": "turbo run lint",
+    "check": "turbo run check",
+    "lint": "biome check && prettier --check \"apps/frontend/**/*.svelte\"",
+    "format": "biome format --write && prettier --write \"apps/frontend/**/*.svelte\"",
     "migrate": "bun --cwd apps/api run migrate",
     "generate": "bun --cwd apps/api run generate",
     "seed": "bun --cwd apps/api run seed"
   },
   "devDependencies": {
+    "@biomejs/biome": "^2.4.15",
     "@types/bun": "latest",
+    "prettier": "^3.8.3",
+    "prettier-plugin-svelte": "^3.5.2",
     "turbo": "^2.5.6",
     "typescript": "^5.7.0"
   },

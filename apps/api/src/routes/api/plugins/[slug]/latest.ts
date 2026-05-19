@@ -9,9 +9,12 @@ import { parseAssets, type AssetMap } from '../../../../lib/asset'
 function isLatestResolved(v: unknown): v is LatestResolved {
   if (!v || typeof v !== 'object') return false
   const o = v as Record<string, unknown>
-  return typeof o.version === 'string'
-    && (o.minRuntimeVersion === null || typeof o.minRuntimeVersion === 'string')
-    && typeof o.assets === 'object' && o.assets !== null
+  return (
+    typeof o.version === 'string' &&
+    (o.minRuntimeVersion === null || typeof o.minRuntimeVersion === 'string') &&
+    typeof o.assets === 'object' &&
+    o.assets !== null
+  )
 }
 
 const platformEntrySchema = t.Object({
@@ -60,8 +63,9 @@ function detectFromUserAgent(ua: string | undefined): { os?: string; arch?: stri
   return { os, arch }
 }
 
-export default new Elysia()
-  .get('/', async ({ params, query, headers, set }) => {
+export default new Elysia().get(
+  '/',
+  async ({ params, query, headers, set }) => {
     const key = latestCacheKey(params.slug)
     let resolved = await cache().get<LatestResolved>(key, isLatestResolved)
 
@@ -104,11 +108,13 @@ export default new Elysia()
     }
 
     // Best-effort tracking — failures don't break the resolve.
-    const resolvedPlatform = platformKey && resolved.assets[platformKey]
-      ? platformKey
-      : (resolved.assets.universal ? 'universal' : 'unknown')
+    const resolvedPlatform =
+      platformKey && resolved.assets[platformKey] ? platformKey : resolved.assets.universal ? 'universal' : 'unknown'
     Promise.allSettled([
-      db.update(plugins).set({ downloads: sql`${plugins.downloads} + 1` }).where(eq(plugins.id, params.slug)),
+      db
+        .update(plugins)
+        .set({ downloads: sql`${plugins.downloads} + 1` })
+        .where(eq(plugins.id, params.slug)),
       db.insert(downloadEvents).values({
         id: ulid(),
         pluginId: params.slug,
@@ -127,13 +133,15 @@ export default new Elysia()
     return {
       version: resolved.version,
       min_runtime_version: resolved.minRuntimeVersion,
-      platform: platformKey && resolved.assets[platformKey] ? platformKey : (resolved.assets.universal ? 'universal' : null),
+      platform:
+        platformKey && resolved.assets[platformKey] ? platformKey : resolved.assets.universal ? 'universal' : null,
       download_url: entry.url,
       size: entry.size,
       sha256: entry.sha256,
       platforms: resolved.assets,
     }
-  }, {
+  },
+  {
     detail: {
       tags: ['Plugins'],
       summary: 'Resolve latest release for a platform',
@@ -145,7 +153,9 @@ export default new Elysia()
     query: t.Object({
       os: t.Optional(t.String({ description: '`linux`, `darwin`, or `win`.' })),
       arch: t.Optional(t.String({ description: '`x64` or `arm64`.' })),
-      redirect: t.Optional(t.String({ description: 'Pass `1` to 302-redirect to the download URL instead of returning JSON.' })),
+      redirect: t.Optional(
+        t.String({ description: 'Pass `1` to 302-redirect to the download URL instead of returning JSON.' }),
+      ),
     }),
     response: {
       200: latestSuccessSchema,
@@ -153,4 +163,5 @@ export default new Elysia()
       404: errorSchema,
       422: errorSchema,
     },
-  })
+  },
+)

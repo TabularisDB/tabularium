@@ -1,6 +1,6 @@
 import type { SQLiteBunDatabase } from 'drizzle-orm/bun-sqlite'
 import { detectDialect, sqlitePath, type Dialect } from './dialect'
-import * as schema from './schema'
+import type * as schema from './schema'
 import { relations } from './relations'
 
 export type DB = SQLiteBunDatabase<typeof schema, typeof relations>

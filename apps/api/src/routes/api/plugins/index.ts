@@ -61,8 +61,9 @@ function clampInt(raw: unknown, def: number, min: number, max: number): number {
 
 type RelationalFilter = Record<string, unknown>
 
-export default new Elysia()
-  .get('/', async ({ query }) => {
+export default new Elysia().get(
+  '/',
+  async ({ query }) => {
     const page = clampInt(query.page, 1, 1, 10_000)
     const limit = clampInt(query.limit, 20, 1, 100)
     const offset = (page - 1) * limit
@@ -72,19 +73,19 @@ export default new Elysia()
     const kindParam = query.kind?.trim()
     const kindFilterActive = kindParam !== undefined && kindParam.length > 0
     const kindValid = kindFilterActive && isKindKey(kindParam!)
-    const orderBy: Record<string, 'asc' | 'desc'> = query.sort === 'new' ? { createdAt: 'desc' }
-      : query.sort === 'name' ? { name: 'asc' }
-      : query.sort === 'featured' ? { featuredOrder: 'asc' }
-      : { updatedAt: 'desc' }
+    const orderBy: Record<string, 'asc' | 'desc'> =
+      query.sort === 'new'
+        ? { createdAt: 'desc' }
+        : query.sort === 'name'
+          ? { name: 'asc' }
+          : query.sort === 'featured'
+            ? { featuredOrder: 'asc' }
+            : { updatedAt: 'desc' }
 
     const where: RelationalFilter = { status: 'approved' }
     if (search) {
       const term = `%${escapeLike(search)}%`
-      where.OR = [
-        { name: { like: term } },
-        { description: { like: term } },
-        { id: { like: term } },
-      ]
+      where.OR = [{ name: { like: term } }, { description: { like: term } }, { id: { like: term } }]
     }
     if (category) where.category = category
     if (tag) where.tags = { like: `%"${escapeLike(tag)}"%` }
@@ -136,15 +137,16 @@ export default new Elysia()
     const kinds = getKinds()
     let kindFacet: Array<{ key: string; label: string; count: number }> = []
     if (kinds.length > 0) {
-      const tagRows = await db
-        .select({ tags: plugins.tags })
-        .from(plugins)
-        .where(eq(plugins.status, 'approved'))
+      const tagRows = await db.select({ tags: plugins.tags }).from(plugins).where(eq(plugins.status, 'approved'))
       const counts = new Map<string, number>()
       for (const row of tagRows) {
         if (!row.tags) continue
         let arr: unknown
-        try { arr = JSON.parse(row.tags) } catch { continue }
+        try {
+          arr = JSON.parse(row.tags)
+        } catch {
+          continue
+        }
         if (!Array.isArray(arr)) continue
         const seen = new Set<string>()
         for (const t of arr) {
@@ -161,10 +163,11 @@ export default new Elysia()
       total,
       page,
       limit,
-      plugins: rows.map((p: typeof rows[number]) => projectPlugin(p)),
+      plugins: rows.map((p: (typeof rows)[number]) => projectPlugin(p)),
       facets: { categories, kinds: kindFacet },
     }
-  }, {
+  },
+  {
     detail: {
       tags: ['Plugins'],
       summary: 'List plugins',
@@ -184,4 +187,5 @@ export default new Elysia()
       limit: t.Optional(t.String()),
     }),
     response: { 200: pluginListResponseSchema },
-  })
+  },
+)

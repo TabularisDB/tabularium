@@ -10,7 +10,7 @@ import { setupWebhook } from '$lib/setup-webhook'
 import { decryptToken } from '$lib/crypto'
 import { env } from '$lib/env'
 import { getSetting } from '$lib/settings'
-import { resolveManifest, rawContentBase } from '$lib/manifest'
+import { resolveManifest, rawContentBase, ManifestValidationError } from '$lib/manifest'
 import { manifestPatch, applyManifestToPlugin } from '$lib/manifest-apply'
 import { fetchLatestRelease } from '$lib/release-fetch'
 import { getFeatures } from '$lib/features'
@@ -27,142 +27,150 @@ function generateWebhookSecret(): string {
 export default new Elysia()
   .use(authMiddleware)
   .use(rateLimit({ bucket: 'submit', limit: 10, windowSeconds: 3600 }))
-  .post('/', async ({ user, body, set }) => {
-    if (!getFeatures().submissionsEnabled) {
-      set.status = 403
-      return { error: 'Plugin submissions are disabled on this instance.' }
-    }
-    const ref = parseRepoUrl(body.repoUrl)
-    if (!ref) {
-      set.status = 400
-      return { error: 'Invalid repo URL — must match a configured provider instance' }
-    }
+  .post(
+    '/',
+    async ({ user, body, set }) => {
+      if (!getFeatures().submissionsEnabled) {
+        set.status = 403
+        return { error: 'Plugin submissions are disabled on this instance.' }
+      }
+      const ref = parseRepoUrl(body.repoUrl)
+      if (!ref) {
+        set.status = 400
+        return { error: 'Invalid repo URL — must match a configured provider instance' }
+      }
 
-    const identity = await db.query.identities.findFirst({
-      where: { userId: user.sub, providerInstanceId: ref.instance.id },
-    })
+      const identity = await db.query.identities.findFirst({
+        where: { userId: user.sub, providerInstanceId: ref.instance.id },
+      })
 
-    if (!identity?.accessToken) {
-      set.status = 412
+      if (!identity?.accessToken) {
+        set.status = 412
+        return {
+          error: `No linked ${ref.instance.displayName} account. Link one in /settings before submitting.`,
+        }
+      }
+
+      const accessToken = decryptToken(identity.accessToken)
+      const ownership = await checkOwnership(accessToken, ref, identity.username)
+
+      if (!ownership.owned) {
+        set.status = 403
+        return { error: ownership.reason }
+      }
+
+      const slug = deriveSlug(ref.repo)
+      const existing = await db.query.plugins.findFirst({ where: { id: slug } })
+      if (existing) {
+        set.status = 409
+        return { error: `Plugin slug '${slug}' is already taken` }
+      }
+
+      const webhookSecret = generateWebhookSecret()
+      const requireApproval = getSetting('instance.require_approval') === '1'
+      const status = requireApproval ? 'pending' : 'approved'
+
+      await db.insert(plugins).values({
+        id: slug,
+        ownerId: user.sub,
+        providerInstanceId: ref.instance.id,
+        name: body.name,
+        description: body.description,
+        author: `${identity.username} <${body.repoUrl}>`,
+        repoUrl: body.repoUrl,
+        homepage: body.repoUrl,
+        webhookSecret,
+        status,
+      })
+
+      try {
+        const latestRelease = await fetchLatestRelease(accessToken, ref).catch((err) => {
+          log.warn({ err, slug }, 'latest-release lookup failed at submit')
+          return null
+        })
+        if (!latestRelease) {
+          log.info({ slug }, 'no release yet — skipping manifest fetch, waiting for webhook')
+        }
+        if (latestRelease) {
+          const tag = latestRelease.tag
+          const manifest = await resolveManifest(accessToken, ref, { ref: tag })
+          if (manifest) {
+            const patch = manifestPatch(manifest, {
+              repoBase: rawContentBase(ref, tag),
+              version: tag,
+            })
+            await applyManifestToPlugin(slug, patch)
+            log.info({ slug, source: manifest.source, tag }, 'manifest applied at submit (from latest release)')
+          }
+          if (!manifest) {
+            log.info({ slug, tag }, 'no .tabularium manifest in latest release — using fallback metadata')
+          }
+        }
+      } catch (err) {
+        if (err instanceof ManifestValidationError) {
+          log.warn({ slug, errors: err.errors }, 'manifest invalid at submit — continuing without it')
+        } else {
+          log.warn({ err, slug }, 'manifest fetch failed at submit — continuing without it')
+        }
+      }
+
+      try {
+        const matching = await db.query.pluginRequests.findFirst({
+          where: { slug },
+          columns: { id: true },
+        })
+        if (matching) {
+          await db.delete(pluginRequestVotes).where(eq(pluginRequestVotes.requestId, matching.id))
+          await db.delete(pluginRequestClaims).where(eq(pluginRequestClaims.requestId, matching.id))
+          await db.delete(pluginRequests).where(eq(pluginRequests.id, matching.id))
+        }
+      } catch (err) {
+        log.warn({ err, slug }, 'failed to clean up matching plugin request')
+      }
+
+      const webhookUrl = `${env.BASE_URL}/api/webhooks/release`
+      const setup = await setupWebhook(accessToken, ref, webhookUrl, webhookSecret)
+
       return {
-        error: `No linked ${ref.instance.displayName} account. Link one in /settings before submitting.`,
+        slug,
+        status,
+        webhookSecret,
+        webhookUrl,
+        webhookInstalled: setup.installed,
+        webhookSetupReason: setup.installed ? null : setup.reason,
+        repoUrl: body.repoUrl,
+        providerInstanceId: ref.instance.id,
+        providerKind: ref.instance.kind,
       }
-    }
-
-    const accessToken = decryptToken(identity.accessToken)
-    const ownership = await checkOwnership(accessToken, ref, identity.username)
-
-    if (!ownership.owned) {
-      set.status = 403
-      return { error: ownership.reason }
-    }
-
-    const slug = deriveSlug(ref.repo)
-    const existing = await db.query.plugins.findFirst({ where: { id: slug } })
-    if (existing) {
-      set.status = 409
-      return { error: `Plugin slug '${slug}' is already taken` }
-    }
-
-    const webhookSecret = generateWebhookSecret()
-    const requireApproval = getSetting('instance.require_approval') === '1'
-    const status = requireApproval ? 'pending' : 'approved'
-
-    await db.insert(plugins).values({
-      id: slug,
-      ownerId: user.sub,
-      providerInstanceId: ref.instance.id,
-      name: body.name,
-      description: body.description,
-      author: `${identity.username} <${body.repoUrl}>`,
-      repoUrl: body.repoUrl,
-      homepage: body.repoUrl,
-      webhookSecret,
-      status,
-    })
-
-    try {
-      const latestRelease = await fetchLatestRelease(accessToken, ref).catch((err) => {
-        log.warn({ err, slug }, 'latest-release lookup failed at submit')
-        return null
-      })
-      if (!latestRelease) {
-        log.info({ slug }, 'no release yet — skipping manifest fetch, waiting for webhook')
-      }
-      if (latestRelease) {
-        const tag = latestRelease.tag
-        const manifest = await resolveManifest(accessToken, ref, { ref: tag })
-        if (manifest) {
-          const patch = manifestPatch(manifest, {
-            repoBase: rawContentBase(ref, tag),
-            version: tag,
-          })
-          await applyManifestToPlugin(slug, patch)
-          log.info({ slug, source: manifest.source, tag }, 'manifest applied at submit (from latest release)')
-        }
-        if (!manifest) {
-          log.info({ slug, tag }, 'no .tabularium manifest in latest release — using fallback metadata')
-        }
-      }
-    } catch (err) {
-      log.warn({ err, slug }, 'manifest fetch failed at submit — continuing without it')
-    }
-
-    try {
-      const matching = await db.query.pluginRequests.findFirst({
-        where: { slug },
-        columns: { id: true },
-      })
-      if (matching) {
-        await db.delete(pluginRequestVotes).where(eq(pluginRequestVotes.requestId, matching.id))
-        await db.delete(pluginRequestClaims).where(eq(pluginRequestClaims.requestId, matching.id))
-        await db.delete(pluginRequests).where(eq(pluginRequests.id, matching.id))
-      }
-    } catch (err) {
-      log.warn({ err, slug }, 'failed to clean up matching plugin request')
-    }
-
-    const webhookUrl = `${env.BASE_URL}/api/webhooks/release`
-    const setup = await setupWebhook(accessToken, ref, webhookUrl, webhookSecret)
-
-    return {
-      slug,
-      status,
-      webhookSecret,
-      webhookUrl,
-      webhookInstalled: setup.installed,
-      webhookSetupReason: setup.installed ? null : setup.reason,
-      repoUrl: body.repoUrl,
-      providerInstanceId: ref.instance.id,
-      providerKind: ref.instance.kind,
-    }
-  }, {
-    detail: {
-      tags: ['Submit'],
-      summary: 'Submit plugin via OAuth-verified ownership',
-      operationId: 'submitOAuth',
-      security: [{ bearerAuth: [] }, { cookieAuth: [] }],
     },
-    body: t.Object({
-      repoUrl: t.String(),
-      name: t.String(),
-      description: t.String(),
-    }),
-    response: {
-      200: t.Object({
-        slug: t.String(),
-        status: t.Union([t.Literal('approved'), t.Literal('pending'), t.Literal('rejected')]),
-        webhookSecret: t.String(),
-        webhookUrl: t.String(),
-        webhookInstalled: t.Boolean(),
-        webhookSetupReason: t.Nullable(t.String()),
+    {
+      detail: {
+        tags: ['Submit'],
+        summary: 'Submit plugin via OAuth-verified ownership',
+        operationId: 'submitOAuth',
+        security: [{ bearerAuth: [] }, { cookieAuth: [] }],
+      },
+      body: t.Object({
         repoUrl: t.String(),
-        providerInstanceId: t.String(),
-        providerKind: t.String(),
+        name: t.String(),
+        description: t.String(),
       }),
-      400: t.Object({ error: t.String() }),
-      403: t.Object({ error: t.String() }),
-      409: t.Object({ error: t.String() }),
-      412: t.Object({ error: t.String() }),
+      response: {
+        200: t.Object({
+          slug: t.String(),
+          status: t.Union([t.Literal('approved'), t.Literal('pending'), t.Literal('rejected')]),
+          webhookSecret: t.String(),
+          webhookUrl: t.String(),
+          webhookInstalled: t.Boolean(),
+          webhookSetupReason: t.Nullable(t.String()),
+          repoUrl: t.String(),
+          providerInstanceId: t.String(),
+          providerKind: t.String(),
+        }),
+        400: t.Object({ error: t.String() }),
+        403: t.Object({ error: t.String() }),
+        409: t.Object({ error: t.String() }),
+        412: t.Object({ error: t.String() }),
+      },
     },
-  })
+  )

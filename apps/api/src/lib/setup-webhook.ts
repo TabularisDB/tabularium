@@ -3,9 +3,7 @@ import type { RepoRef } from './providers'
 
 const log = logger.child({ module: 'setup-webhook' })
 
-export type WebhookSetupResult =
-  | { installed: true; hookId: number }
-  | { installed: false; reason: string }
+export type WebhookSetupResult = { installed: true; hookId: number } | { installed: false; reason: string }
 
 async function setupGithubFlavored(
   apiBase: string,
@@ -22,9 +20,15 @@ async function setupGithubFlavored(
   }
   if (kind === 'github') headers['User-Agent'] = 'tabularium/1.0'
 
-  const body = kind === 'github'
-    ? { name: 'web', active: true, events: ['release'], config: { url: webhookUrl, content_type: 'json', secret, insecure_ssl: '0' } }
-    : { type: 'gitea', active: true, events: ['release'], config: { url: webhookUrl, content_type: 'json', secret } }
+  const body =
+    kind === 'github'
+      ? {
+          name: 'web',
+          active: true,
+          events: ['release'],
+          config: { url: webhookUrl, content_type: 'json', secret, insecure_ssl: '0' },
+        }
+      : { type: 'gitea', active: true, events: ['release'], config: { url: webhookUrl, content_type: 'json', secret } }
 
   const res = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body) })
   if (res.status === 201) {
@@ -71,9 +75,7 @@ export async function setupWebhook(
 ): Promise<WebhookSetupResult> {
   const { instance } = ref
   if (instance.kind === 'github') {
-    const apiBase = instance.baseUrl === 'https://github.com'
-      ? 'https://api.github.com'
-      : `${instance.baseUrl}/api/v3`
+    const apiBase = instance.baseUrl === 'https://github.com' ? 'https://api.github.com' : `${instance.baseUrl}/api/v3`
     return setupGithubFlavored(apiBase, accessToken, ref, webhookUrl, secret, 'github')
   }
   if (instance.kind === 'gitea') {

@@ -29,7 +29,7 @@ describe('admin email-recovery', () => {
       }),
     )
     expect(res.status).toBe(200)
-    const body = await res.json() as { persist: boolean; hasCredentials: boolean; email: string | null }
+    const body = (await res.json()) as { persist: boolean; hasCredentials: boolean; email: string | null }
     expect(body).toEqual({ persist: false, hasCredentials: false, email: null })
   })
 
@@ -45,7 +45,7 @@ describe('admin email-recovery', () => {
     )
     expect(res.status).toBe(200)
     expect(getSetting('auth.email_recovery_persist')).toBe('1')
-    const body = await res.json() as { persist: boolean }
+    const body = (await res.json()) as { persist: boolean }
     expect(body.persist).toBe(true)
   })
 
@@ -60,7 +60,7 @@ describe('admin email-recovery', () => {
       }),
     )
     expect(res.status).toBe(200)
-    const body = await res.json() as { hasCredentials: boolean; email: string | null }
+    const body = (await res.json()) as { hasCredentials: boolean; email: string | null }
     expect(body.hasCredentials).toBe(true)
     expect(body.email).toBe('recovery@example.com')
     const row = await db.query.rootCredentials.findFirst()
@@ -121,7 +121,12 @@ describe('admin email-recovery', () => {
 
   it('DELETE removes the rootCredentials row', async () => {
     const u = await makeUser({ role: 'admin', username: 'admin' })
-    const token = await signJwt({ sub: u.id, identityId: u.identityId, username: u.username, providerInstanceId: 'github' })
+    const token = await signJwt({
+      sub: u.id,
+      identityId: u.identityId,
+      username: u.username,
+      providerInstanceId: 'github',
+    })
     await db.insert(rootCredentials).values({
       userId: u.id,
       email: 'gone@example.com',
@@ -135,7 +140,7 @@ describe('admin email-recovery', () => {
       }),
     )
     expect(res.status).toBe(200)
-    const body = await res.json() as { hasCredentials: boolean }
+    const body = (await res.json()) as { hasCredentials: boolean }
     expect(body.hasCredentials).toBe(false)
     const row = await db.query.rootCredentials.findFirst()
     expect(row).toBeUndefined()

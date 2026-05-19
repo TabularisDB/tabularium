@@ -12,15 +12,7 @@
 		subtitleSnippet?: Snippet
 	}
 
-	let {
-		title,
-		subtitle,
-		icon: Icon,
-		class: className,
-		actions,
-		meta,
-		subtitleSnippet,
-	}: Props = $props()
+	let { title, subtitle, icon: Icon, class: className, actions, meta, subtitleSnippet }: Props = $props()
 </script>
 
 <header class={cn('flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between', className)}>

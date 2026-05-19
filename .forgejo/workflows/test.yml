@@ -1,0 +1,27 @@
+# Run bun:test across all workspaces that have a test script.
+#
+# Runs on the lyna self-hosted runner in **host mode** (`runs-on: lyna`).
+# Containerd 2.2 + Go 1.24 path validation rejects absolute symlinks
+# inside container images (containerd#12683), which broke `runs-on: docker`
+# for any debian/alpine-based base. Bun + git are pre-installed on lyna.
+
+name: Test
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  test:
+    runs-on: lyna
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install deps
+        run: bun install --frozen-lockfile
+
+      - name: Run tests
+        run: bun run test

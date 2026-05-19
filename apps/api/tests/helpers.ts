@@ -1,6 +1,6 @@
 // tests/helpers.ts
 import { Elysia } from 'elysia'
-import { fileRouter } from 'elysia-file-router'
+import { fsr, LogLevel } from 'elysia-fsr'
 import { resolve } from 'node:path'
 import { ulid } from 'ulid'
 import { db } from '../src/db'
@@ -33,6 +33,7 @@ export async function clearDb() {
   await db.delete(schema.pluginRequestClaims)
   await db.delete(schema.pluginRequestVotes)
   await db.delete(schema.pluginRequests)
+  await db.delete(schema.releaseAssets)
   await db.delete(schema.releases)
   await db.delete(schema.plugins)
   await db.delete(schema.identities)
@@ -90,10 +91,7 @@ export async function makeUser(overrides: Partial<TestUser> = {}): Promise<TestU
   return user
 }
 
-export async function makePlugin(
-  ownerId: string,
-  overrides: Partial<typeof schema.plugins.$inferInsert> = {}
-) {
+export async function makePlugin(ownerId: string, overrides: Partial<typeof schema.plugins.$inferInsert> = {}) {
   const plugin = {
     id: 'test-plugin',
     ownerId,
@@ -116,10 +114,10 @@ let cachedApp: Elysia | null = null
 export async function buildApp() {
   if (cachedApp) return cachedApp
   cachedApp = new Elysia({ systemRouter: false }).use(
-    await fileRouter({
+    await fsr({
       dir: resolve(import.meta.dir, '../src/routes'),
       types: false,
-      logLevel: 'silent',
+      logLevel: LogLevel.Silent,
     }),
   )
   return cachedApp

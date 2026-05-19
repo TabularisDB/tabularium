@@ -60,11 +60,7 @@
 				if (filter === 'published' && !p.published) return false
 				if (filter === 'draft' && p.published) return false
 				if (!q) return true
-				return (
-					p.title.toLowerCase().includes(q) ||
-					p.slug.toLowerCase().includes(q) ||
-					p.path.toLowerCase().includes(q)
-				)
+				return p.title.toLowerCase().includes(q) || p.slug.toLowerCase().includes(q) || p.path.toLowerCase().includes(q)
 			})
 			.sort((a, b) => b.updatedAt - a.updatedAt)
 	})
@@ -93,7 +89,12 @@
 				content: `# ${newTitle}\n\nWrite your page in Markdown.\n`,
 				published: false,
 			})
-			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
+			if (error)
+				throw new Error(
+					typeof error.value === 'string'
+						? error.value
+						: ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`),
+				)
 			toast.success(m.admin_pages_created())
 			newSlug = ''
 			newTitle = ''
@@ -109,7 +110,12 @@
 	async function togglePublish(p: AdminPage) {
 		try {
 			const { error } = await eden.api.admin.pages({ slug: p.slug }).patch({ published: !p.published })
-			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
+			if (error)
+				throw new Error(
+					typeof error.value === 'string'
+						? error.value
+						: ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`),
+				)
 			await load()
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : m.admin_pages_action_failed())
@@ -120,7 +126,12 @@
 		if (!confirm(m.admin_pages_confirm_delete({ slug: p.slug }))) return
 		try {
 			const { error } = await eden.api.admin.pages({ slug: p.slug }).delete()
-			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
+			if (error)
+				throw new Error(
+					typeof error.value === 'string'
+						? error.value
+						: ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`),
+				)
 			toast.success(m.admin_pages_deleted())
 			await load()
 		} catch (e) {
@@ -147,11 +158,7 @@
 	/>
 	<div class="relative w-full sm:w-72">
 		<Search class="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground" />
-		<Input
-			bind:value={search}
-			class="pl-9"
-			placeholder={m.admin_pages_search_placeholder()}
-		/>
+		<Input bind:value={search} class="pl-9" placeholder={m.admin_pages_search_placeholder()} />
 	</div>
 </div>
 
@@ -171,7 +178,9 @@
 					<div class="min-w-0 space-y-0.5 flex-1">
 						<div class="flex items-center gap-2 flex-wrap">
 							<span class="font-medium truncate">{p.title}</span>
-							<Badge variant={p.published ? 'default' : 'secondary'} class="text-[10px]">{p.published ? m.admin_pages_published() : m.admin_pages_draft()}</Badge>
+							<Badge variant={p.published ? 'default' : 'secondary'} class="text-[10px]"
+								>{p.published ? m.admin_pages_published() : m.admin_pages_draft()}</Badge
+							>
 							{#if p.showInFooter}<Badge variant="outline" class="text-[10px]">{m.admin_pages_footer()}</Badge>{/if}
 							{#if p.path === '/'}<Badge variant="default" class="text-[10px]">{m.admin_pages_homepage()}</Badge>{/if}
 						</div>
@@ -181,7 +190,12 @@
 						</div>
 					</div>
 					<div class="flex items-center gap-1 flex-shrink-0">
-						<Button variant="ghost" size="sm" onclick={() => togglePublish(p)} aria-label={p.published ? m.admin_pages_unpublish() : m.admin_pages_publish()}>
+						<Button
+							variant="ghost"
+							size="sm"
+							onclick={() => togglePublish(p)}
+							aria-label={p.published ? m.admin_pages_unpublish() : m.admin_pages_publish()}
+						>
 							{#if p.published}<EyeOff class="h-3.5 w-3.5" />{:else}<Eye class="h-3.5 w-3.5" />{/if}
 						</Button>
 						<Button variant="ghost" size="sm" href={`/admin/pages/${p.slug}`} aria-label={m.admin_pages_edit()}>
@@ -217,7 +231,10 @@
 				<Label for="new-path">{m.admin_pages_public_path()}</Label>
 				<Input id="new-path" bind:value={newPath} placeholder="/about" />
 				<p class="text-xs text-muted-foreground">
-					{m.admin_pages_public_path_note_prefix()} <code class="font-mono">/pages/&lt;slug&gt;</code>{m.admin_pages_public_path_note_middle()} <code class="font-mono">/</code> {m.admin_pages_public_path_note_suffix()}
+					{m.admin_pages_public_path_note_prefix()}
+					<code class="font-mono">/pages/&lt;slug&gt;</code>{m.admin_pages_public_path_note_middle()}
+					<code class="font-mono">/</code>
+					{m.admin_pages_public_path_note_suffix()}
 				</p>
 			</div>
 			<Button type="submit" disabled={busy} size="sm">

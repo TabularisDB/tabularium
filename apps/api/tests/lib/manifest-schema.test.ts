@@ -71,9 +71,9 @@ describe('validateExtensionsDelta', () => {
   })
 
   it('rejects $ref', () => {
-    expect(() =>
-      validateExtensionsDelta({ x: { type: 'object', $ref: 'http://evil/schema' } }),
-    ).toThrow(/\$ref is not allowed/)
+    expect(() => validateExtensionsDelta({ x: { type: 'object', $ref: 'http://evil/schema' } })).toThrow(
+      /\$ref is not allowed/,
+    )
   })
 
   it('rejects invalid property names at the top level', () => {
@@ -88,9 +88,7 @@ describe('validateExtensionsDelta', () => {
 
   it('rejects excessive nesting', () => {
     const deep = (level: number): Record<string, unknown> =>
-      level === 0
-        ? { type: 'string' }
-        : { type: 'object', properties: { x: deep(level - 1) } }
+      level === 0 ? { type: 'string' } : { type: 'object', properties: { x: deep(level - 1) } }
     expect(() => validateExtensionsDelta({ x: deep(9) })).toThrow(/nesting exceeds max depth/)
   })
 
@@ -137,9 +135,7 @@ describe('getExtensionsDelta / setExtensionsDelta', () => {
   })
 
   it('throws only on hard safety violations ($ref)', async () => {
-    await expect(
-      setExtensionsDelta({ 'x-bad': { $ref: 'http://evil/schema' } }),
-    ).rejects.toThrow(/\$ref/)
+    await expect(setExtensionsDelta({ 'x-bad': { $ref: 'http://evil/schema' } })).rejects.toThrow(/\$ref/)
   })
 })
 

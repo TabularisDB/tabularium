@@ -5,9 +5,9 @@ import { db } from '$db'
 import { pluginRequests, pluginRequestVotes, pluginRequestClaims } from '$db/schema'
 import { recordAudit, actorFromAdmin } from '$lib/audit'
 
-export default new Elysia()
-  .use(adminMiddleware)
-  .delete('/', async ({ params, set, admin, request }) => {
+export default new Elysia().use(adminMiddleware).delete(
+  '/',
+  async ({ params, set, admin, request }) => {
     const row = await db.query.pluginRequests.findFirst({
       where: { id: params.id },
       columns: { id: true, slug: true },
@@ -27,7 +27,8 @@ export default new Elysia()
     })
     set.status = 204
     return null
-  }, {
+  },
+  {
     detail: {
       tags: ['Admin'],
       summary: 'Delete a plugin request',
@@ -39,4 +40,5 @@ export default new Elysia()
       204: t.Null(),
       404: t.Object({ error: t.String() }),
     },
-  })
+  },
+)

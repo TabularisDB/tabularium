@@ -1,0 +1,26 @@
+# Lint + format check via Biome (.ts/.js/.json) and Prettier (.svelte).
+# Auto-fix locally with `bun run format`.
+#
+# Runs on lyna in host mode — see .forgejo/workflows/test.yml for the reason
+# we don't use `runs-on: docker`.
+
+name: Lint
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  lint:
+    runs-on: lyna
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Install deps
+        run: bun install --frozen-lockfile
+
+      - name: Lint
+        run: bun run lint

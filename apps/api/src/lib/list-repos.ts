@@ -115,13 +115,15 @@ export async function listReposFor(
   token: string,
 ): Promise<Omit<SubmittableRepo, 'identityId'>[]> {
   if (instance.kind === 'github') {
-    const apiBase = instance.baseUrl === 'https://github.com'
-      ? 'https://api.github.com'
-      : `${instance.baseUrl}/api/v3`
+    const apiBase = instance.baseUrl === 'https://github.com' ? 'https://api.github.com' : `${instance.baseUrl}/api/v3`
     return listGithubFlavored(
-      apiBase, token,
+      apiBase,
+      token,
       '/user/repos?affiliation=owner,organization_member,collaborator&sort=pushed',
-      100, 3, 'tabularium/1.0', instance.id,
+      100,
+      3,
+      'tabularium/1.0',
+      instance.id,
     )
   }
   if (instance.kind === 'gitea') {

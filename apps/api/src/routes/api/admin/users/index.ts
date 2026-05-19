@@ -12,9 +12,9 @@ const userSchema = t.Object({
   createdAt: t.Number(),
 })
 
-export default new Elysia()
-  .use(adminMiddleware)
-  .get('/', async ({ query }) => {
+export default new Elysia().use(adminMiddleware).get(
+  '/',
+  async ({ query }) => {
     const limit = Math.min(Math.max(Number(query.limit ?? 50), 1), 200)
     const rows = await db
       .select({
@@ -37,7 +37,8 @@ export default new Elysia()
         createdAt: Number(u.createdAt),
       })),
     }
-  }, {
+  },
+  {
     detail: {
       tags: ['Admin'],
       summary: 'List users (most recent first)',
@@ -46,4 +47,5 @@ export default new Elysia()
     },
     query: t.Object({ limit: t.Optional(t.String()) }),
     response: { 200: t.Object({ users: t.Array(userSchema) }) },
-  })
+  },
+)

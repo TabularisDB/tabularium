@@ -7,7 +7,12 @@ import { recordAudit, actorFromAdmin } from '$lib/audit'
 export default new Elysia()
   .use(adminMiddleware)
   .get('/', () => getFeatures(), {
-    detail: { tags: ['Admin'], summary: 'Get feature flags', operationId: 'adminGetFeatures', security: [{ bearerAuth: [] }, { cookieAuth: [] }] },
+    detail: {
+      tags: ['Admin'],
+      summary: 'Get feature flags',
+      operationId: 'adminGetFeatures',
+      security: [{ bearerAuth: [] }, { cookieAuth: [] }],
+    },
     response: { 200: t.Object({ submissionsEnabled: t.Boolean(), requestsEnabled: t.Boolean() }) },
   })
   .patch(
@@ -28,7 +33,12 @@ export default new Elysia()
       return getFeatures()
     },
     {
-      detail: { tags: ['Admin'], summary: 'Toggle feature flags', operationId: 'adminUpdateFeatures', security: [{ bearerAuth: [] }, { cookieAuth: [] }] },
+      detail: {
+        tags: ['Admin'],
+        summary: 'Toggle feature flags',
+        operationId: 'adminUpdateFeatures',
+        security: [{ bearerAuth: [] }, { cookieAuth: [] }],
+      },
       body: t.Object({
         submissionsEnabled: t.Optional(t.Boolean()),
         requestsEnabled: t.Optional(t.Boolean()),

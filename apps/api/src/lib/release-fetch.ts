@@ -8,9 +8,7 @@ import type { RepoRef } from './providers'
 export async function fetchLatestRelease(accessToken: string, ref: RepoRef): Promise<NormalizedRelease | null> {
   const { instance } = ref
   if (instance.kind === 'github') {
-    const apiBase = instance.baseUrl === 'https://github.com'
-      ? 'https://api.github.com'
-      : `${instance.baseUrl}/api/v3`
+    const apiBase = instance.baseUrl === 'https://github.com' ? 'https://api.github.com' : `${instance.baseUrl}/api/v3`
     return fetchGithubFlavored(apiBase, accessToken, ref, 'tabularium/1.0')
   }
   if (instance.kind === 'gitea') {
@@ -25,12 +23,15 @@ async function fetchGithubFlavored(
   ref: RepoRef,
   userAgent: string | null,
 ): Promise<NormalizedRelease | null> {
-  const headers: Record<string, string> = { Authorization: `Bearer ${accessToken}`, Accept: 'application/vnd.github+json' }
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${accessToken}`,
+    Accept: 'application/vnd.github+json',
+  }
   if (userAgent) headers['User-Agent'] = userAgent
   const res = await fetch(`${apiBase}/repos/${ref.owner}/${ref.repo}/releases/latest`, { headers })
   if (res.status === 404) return null
   if (!res.ok) throw new Error(`Provider API ${res.status}`)
-  const data = await res.json() as {
+  const data = (await res.json()) as {
     tag_name?: string
     draft?: boolean
     prerelease?: boolean
@@ -52,7 +53,7 @@ async function fetchGitlab(baseUrl: string, accessToken: string, ref: RepoRef): 
     headers: { Authorization: `Bearer ${accessToken}` },
   })
   if (!res.ok) throw new Error(`GitLab API ${res.status}`)
-  const list = await res.json() as Array<{
+  const list = (await res.json()) as Array<{
     tag_name?: string
     upcoming_release?: boolean
     assets?: { links?: Array<{ name: string; url: string }> }

@@ -65,7 +65,12 @@
 	async function respond(transferId: string, action: 'accept' | 'reject' | 'cancel') {
 		try {
 			const { error } = await eden.auth.me.transfers({ id: transferId }).post({ action })
-			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
+			if (error)
+				throw new Error(
+					typeof error.value === 'string'
+						? error.value
+						: ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`),
+				)
 			toast.success(m.settings_transfer_action_done({ action }))
 			await loadTransfers()
 		} catch (e) {
@@ -77,9 +82,11 @@
 		const diff = ts - Date.now()
 		const abs = Math.abs(diff)
 		const minutes = Math.floor(abs / 60_000)
-		if (minutes < 60) return diff < 0 ? m.settings_time_ago_minutes({ count: minutes }) : m.settings_time_in_minutes({ count: minutes })
+		if (minutes < 60)
+			return diff < 0 ? m.settings_time_ago_minutes({ count: minutes }) : m.settings_time_in_minutes({ count: minutes })
 		const hours = Math.floor(minutes / 60)
-		if (hours < 24) return diff < 0 ? m.settings_time_ago_hours({ count: hours }) : m.settings_time_in_hours({ count: hours })
+		if (hours < 24)
+			return diff < 0 ? m.settings_time_ago_hours({ count: hours }) : m.settings_time_in_hours({ count: hours })
 		const days = Math.floor(hours / 24)
 		return diff < 0 ? m.settings_time_ago_days({ count: days }) : m.settings_time_in_days({ count: days })
 	}
@@ -94,7 +101,12 @@
 		if (!confirm(m.settings_confirm_unlink())) return
 		try {
 			const { error } = await eden.auth.me.identities({ id: identityId }).delete()
-			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
+			if (error)
+				throw new Error(
+					typeof error.value === 'string'
+						? error.value
+						: ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`),
+				)
 			await auth.refresh()
 			toast.success(m.settings_identity_unlinked())
 		} catch (e) {
@@ -116,7 +128,12 @@
 		if (!confirm(m.settings_confirm_delete_account())) return
 		try {
 			const { error } = await eden.auth.me.delete()
-			if (error) throw new Error(typeof error.value === 'string' ? error.value : ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`))
+			if (error)
+				throw new Error(
+					typeof error.value === 'string'
+						? error.value
+						: ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`),
+				)
 			auth.clear()
 			toast.success(m.settings_account_deleted())
 			goto('/')
@@ -139,7 +156,11 @@
 				<CardDescription>{m.settings_logged_in_as({ name: auth.user.displayName })}</CardDescription>
 			</CardHeader>
 			<CardContent class="space-y-2 text-sm">
-				<div class="flex items-center gap-2"><span class="text-muted-foreground w-24">{m.settings_user_id()}</span><code class="font-mono text-xs">{auth.user.id}</code></div>
+				<div class="flex items-center gap-2">
+					<span class="text-muted-foreground w-24">{m.settings_user_id()}</span><code class="font-mono text-xs"
+						>{auth.user.id}</code
+					>
+				</div>
 				<div class="flex items-center gap-2">
 					<span class="text-muted-foreground w-24">{m.settings_role()}</span>
 					<Badge variant={auth.user.role === 'admin' ? 'default' : 'secondary'}>{auth.user.role}</Badge>
@@ -176,9 +197,13 @@
 									</div>
 									<div class="text-xs text-muted-foreground">
 										{#if t.direction === 'incoming'}
-											{m.settings_from()} <span class="text-foreground">{t.fromName}</span> · {m.settings_expires({ when: relative(t.expiresAt) })}
+											{m.settings_from()} <span class="text-foreground">{t.fromName}</span> · {m.settings_expires({
+												when: relative(t.expiresAt),
+											})}
 										{:else}
-											{m.settings_to()} <span class="text-foreground">{t.toName}</span> · {m.settings_expires({ when: relative(t.expiresAt) })}
+											{m.settings_to()} <span class="text-foreground">{t.toName}</span> · {m.settings_expires({
+												when: relative(t.expiresAt),
+											})}
 										{/if}
 									</div>
 								</div>
@@ -193,7 +218,9 @@
 											{m.settings_reject()}
 										</Button>
 									{:else}
-										<Button size="sm" variant="ghost" onclick={() => respond(t.id, 'cancel')}>{m.settings_cancel_transfer()}</Button>
+										<Button size="sm" variant="ghost" onclick={() => respond(t.id, 'cancel')}
+											>{m.settings_cancel_transfer()}</Button
+										>
 									{/if}
 								</div>
 							</div>

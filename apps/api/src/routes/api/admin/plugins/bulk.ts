@@ -1,5 +1,5 @@
 import { Elysia, t } from 'elysia'
-import { eq, inArray } from 'drizzle-orm'
+import { inArray } from 'drizzle-orm'
 import { adminMiddleware } from '$middleware/admin'
 import { db } from '$db'
 import { plugins, releases } from '$db/schema'
@@ -9,9 +9,9 @@ import { recordAudit, actorFromAdmin } from '$lib/audit'
 
 const actionEnum = t.Union([t.Literal('approve'), t.Literal('reject'), t.Literal('delete')])
 
-export default new Elysia()
-  .use(adminMiddleware)
-  .post('/', async ({ body, set, admin, request }) => {
+export default new Elysia().use(adminMiddleware).post(
+  '/',
+  async ({ body, set, admin, request }) => {
     if (body.ids.length === 0) {
       set.status = 400
       return { error: 'ids must contain at least one slug' }
@@ -51,7 +51,8 @@ export default new Elysia()
     })
 
     return { ok: true, action: body.action, affected, missing }
-  }, {
+  },
+  {
     detail: {
       tags: ['Admin'],
       summary: 'Bulk-approve / reject / delete plugins',
@@ -74,4 +75,5 @@ export default new Elysia()
       }),
       400: t.Object({ error: t.String() }),
     },
-  })
+  },
+)

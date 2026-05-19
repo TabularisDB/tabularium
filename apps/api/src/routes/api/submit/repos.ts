@@ -1,7 +1,7 @@
 import { Elysia, t } from 'elysia'
 import { authMiddleware } from '$middleware/auth'
 import { db } from '$db'
-import { identities } from '$db/schema'
+import type { identities } from '$db/schema'
 import { listReposFor, type SubmittableRepo } from '$lib/list-repos'
 import { decryptToken } from '$lib/crypto'
 import { getInstance } from '$lib/provider-instance'
@@ -40,9 +40,9 @@ async function reposForIdentity(id: typeof identities.$inferSelect): Promise<Sub
   return raw.map((r) => ({ ...r, identityId: id.id }))
 }
 
-export default new Elysia()
-  .use(authMiddleware)
-  .get('/', async ({ user }) => {
+export default new Elysia().use(authMiddleware).get(
+  '/',
+  async ({ user }) => {
     const userIdentities = await db.query.identities.findMany({ where: { userId: user.sub } })
 
     const groups = await Promise.all(
@@ -70,7 +70,8 @@ export default new Elysia()
     )
 
     return { groups }
-  }, {
+  },
+  {
     detail: {
       tags: ['Submit'],
       summary: 'List submittable repos across linked identities',
@@ -78,4 +79,5 @@ export default new Elysia()
       security: [{ bearerAuth: [] }, { cookieAuth: [] }],
     },
     response: { 200: t.Object({ groups: t.Array(groupSchema) }) },
-  })
+  },
+)

@@ -15,12 +15,7 @@
 	let { icon: Icon, title, body, actions, templates, templatesLabel, class: className }: Props = $props()
 </script>
 
-<div
-	class={cn(
-		'rounded-lg border border-dashed border-border bg-card/30 p-8 text-center space-y-4',
-		className,
-	)}
->
+<div class={cn('rounded-lg border border-dashed border-border bg-card/30 p-8 text-center space-y-4', className)}>
 	{#if Icon}
 		<div class="mx-auto h-10 w-10 rounded-full bg-primary/10 text-primary flex items-center justify-center">
 			<Icon class="h-5 w-5" />

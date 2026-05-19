@@ -89,63 +89,73 @@ async function writeTranslations(baseKey: string, map: Partial<Record<Locale, st
 export default new Elysia()
   .use(adminMiddleware)
   .get('/', () => ({ current: getLocalizedBranding(), defaults: defaultBranding() }), {
-    detail: { tags: ['Admin'], summary: 'Get current + default branding (with translation maps)', operationId: 'getAdminBranding', security: [{ bearerAuth: [] }, { cookieAuth: [] }] },
-    response: { 200: t.Object({ current: localizedBrandingSchema, defaults: brandingSchema }) },
-  })
-  .put('/', async ({ body, set, admin, request }) => {
-    for (const hex of ['primaryHex', 'accentHex', 'successHex'] as const) {
-      const value = body[hex]
-      if (value !== undefined && !HEX_RE.test(value)) {
-        set.status = 400
-        return { error: `${hex} must be #RRGGBB` }
-      }
-    }
-    const patch = body as BrandingPatch
-    for (const { input, setting } of STRING_FIELDS) {
-      const value = patch[input as keyof BrandingPatch]
-      if (value === undefined || typeof value === 'object') continue
-      if (value === null || value === '') {
-        if (hasSetting(setting)) await deleteSetting(setting)
-        continue
-      }
-      await setSetting(setting, String(value))
-    }
-    if (body.allowIndexing !== undefined) {
-      await setSetting('branding.allow_indexing', body.allowIndexing ? '1' : '0')
-    }
-    if (patch.taglineTranslations) await writeTranslations('branding.tagline', patch.taglineTranslations)
-    if (patch.footerTextTranslations) await writeTranslations('branding.footer_text', patch.footerTextTranslations)
-    await recordAudit({
-      ...actorFromAdmin(admin, request),
-      action: 'branding.update',
-      target: 'branding',
-      meta: { fields: Object.keys(body) },
-    })
-    return { ok: true, branding: getLocalizedBranding() }
-  }, {
     detail: {
       tags: ['Admin'],
-      summary: 'Update branding (whitelabel)',
-      description: 'Partial update. `tagline` and `footerText` set the default-locale value; `taglineTranslations` / `footerTextTranslations` set per-locale overrides (pass null/empty to clear).',
-      operationId: 'updateBranding',
+      summary: 'Get current + default branding (with translation maps)',
+      operationId: 'getAdminBranding',
       security: [{ bearerAuth: [] }, { cookieAuth: [] }],
     },
-    body: t.Object({
-      name: t.Optional(t.String({ minLength: 1, maxLength: 60 })),
-      tagline: t.Optional(t.String({ maxLength: 200 })),
-      primaryHex: t.Optional(t.String()),
-      accentHex: t.Optional(t.String()),
-      successHex: t.Optional(t.String()),
-      logoUrl: t.Optional(t.Nullable(t.String())),
-      faviconUrl: t.Optional(t.Nullable(t.String())),
-      footerText: t.Optional(t.Nullable(t.String({ maxLength: 1000 }))),
-      analyticsScript: t.Optional(t.Nullable(t.String({ maxLength: 4000 }))),
-      allowIndexing: t.Optional(t.Boolean()),
-      taglineTranslations: t.Optional(translationMapSchema),
-      footerTextTranslations: t.Optional(translationMapSchema),
-    }),
-    response: {
-      200: t.Object({ ok: t.Boolean(), branding: localizedBrandingSchema }),
-      400: t.Object({ error: t.String() }),
-    },
+    response: { 200: t.Object({ current: localizedBrandingSchema, defaults: brandingSchema }) },
   })
+  .put(
+    '/',
+    async ({ body, set, admin, request }) => {
+      for (const hex of ['primaryHex', 'accentHex', 'successHex'] as const) {
+        const value = body[hex]
+        if (value !== undefined && !HEX_RE.test(value)) {
+          set.status = 400
+          return { error: `${hex} must be #RRGGBB` }
+        }
+      }
+      const patch = body as BrandingPatch
+      for (const { input, setting } of STRING_FIELDS) {
+        const value = patch[input as keyof BrandingPatch]
+        if (value === undefined || typeof value === 'object') continue
+        if (value === null || value === '') {
+          if (hasSetting(setting)) await deleteSetting(setting)
+          continue
+        }
+        await setSetting(setting, String(value))
+      }
+      if (body.allowIndexing !== undefined) {
+        await setSetting('branding.allow_indexing', body.allowIndexing ? '1' : '0')
+      }
+      if (patch.taglineTranslations) await writeTranslations('branding.tagline', patch.taglineTranslations)
+      if (patch.footerTextTranslations) await writeTranslations('branding.footer_text', patch.footerTextTranslations)
+      await recordAudit({
+        ...actorFromAdmin(admin, request),
+        action: 'branding.update',
+        target: 'branding',
+        meta: { fields: Object.keys(body) },
+      })
+      return { ok: true, branding: getLocalizedBranding() }
+    },
+    {
+      detail: {
+        tags: ['Admin'],
+        summary: 'Update branding (whitelabel)',
+        description:
+          'Partial update. `tagline` and `footerText` set the default-locale value; `taglineTranslations` / `footerTextTranslations` set per-locale overrides (pass null/empty to clear).',
+        operationId: 'updateBranding',
+        security: [{ bearerAuth: [] }, { cookieAuth: [] }],
+      },
+      body: t.Object({
+        name: t.Optional(t.String({ minLength: 1, maxLength: 60 })),
+        tagline: t.Optional(t.String({ maxLength: 200 })),
+        primaryHex: t.Optional(t.String()),
+        accentHex: t.Optional(t.String()),
+        successHex: t.Optional(t.String()),
+        logoUrl: t.Optional(t.Nullable(t.String())),
+        faviconUrl: t.Optional(t.Nullable(t.String())),
+        footerText: t.Optional(t.Nullable(t.String({ maxLength: 1000 }))),
+        analyticsScript: t.Optional(t.Nullable(t.String({ maxLength: 4000 }))),
+        allowIndexing: t.Optional(t.Boolean()),
+        taglineTranslations: t.Optional(translationMapSchema),
+        footerTextTranslations: t.Optional(translationMapSchema),
+      }),
+      response: {
+        200: t.Object({ ok: t.Boolean(), branding: localizedBrandingSchema }),
+        400: t.Object({ error: t.String() }),
+      },
+    },
+  )

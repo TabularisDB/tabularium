@@ -13,114 +13,132 @@ import { logger } from '$lib/logger'
 
 const log = logger.child({ module: 'init-complete' })
 
-export default new Elysia()
-  .use(bootstrapAuthMiddleware)
-  .post(
-    '/',
-    async ({ body, set, cookie }) => {
-      const boot = getBootstrap()
-      if (!boot) {
-        set.status = 410
-        return { error: 'bootstrap_inactive' }
-      }
+export default new Elysia().use(bootstrapAuthMiddleware).post(
+  '/',
+  async ({ body, set, cookie }) => {
+    const boot = getBootstrap()
+    if (!boot) {
+      set.status = 410
+      return { error: 'bootstrap_inactive' }
+    }
 
-      try {
-        await connectDB(body.database.url)
-      } catch (e) {
-        log.error({ err: String(e) }, 'failed to connect to provided database')
-        set.status = 400
-        return { error: 'database_connect_failed', detail: String(e) }
-      }
+    try {
+      await connectDB(body.database.url)
+    } catch (e) {
+      log.error({ err: String(e) }, 'failed to connect to provided database')
+      set.status = 400
+      return { error: 'database_connect_failed', detail: String(e) }
+    }
 
-      const dialect = getDialect()
-      const migrationsFolder = resolve(
-        dialect === 'sqlite' ? './src/db/migrations' : `./src/db/migrations.${dialect}`,
-      )
+    const dialect = getDialect()
+    const migrationsFolder = resolve(dialect === 'sqlite' ? './src/db/migrations' : `./src/db/migrations.${dialect}`)
+    try {
+      if (dialect === 'pg') {
+        const { migrate } = await import('drizzle-orm/postgres-js/migrator')
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await migrate(db as any, { migrationsFolder })
+      } else if (dialect === 'mysql') {
+        const { migrate } = await import('drizzle-orm/mysql2/migrator')
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        await migrate(db as any, { migrationsFolder })
+      } else {
+        const { migrate } = await import('drizzle-orm/bun-sqlite/migrator')
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        migrate(db as any, { migrationsFolder })
+      }
+    } catch (e) {
+      log.error({ err: String(e) }, 'migration failed')
+      set.status = 500
+      return { error: 'migration_failed', detail: String(e) }
+    }
+
+    const bootEmail = boot.email.toLowerCase()
+    const existing = await db.query.rootCredentials.findFirst({ where: { email: bootEmail } })
+    const userId = existing ? existing.userId : ulid()
+    if (existing) {
+      log.info({ userId }, 'admin already in DB from earlier partial install — resuming')
+    }
+    if (!existing) {
       try {
-        if (dialect === 'pg') {
-          const { migrate } = await import('drizzle-orm/postgres-js/migrator')
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          await migrate(db as any, { migrationsFolder })
-        } else if (dialect === 'mysql') {
-          const { migrate } = await import('drizzle-orm/mysql2/migrator')
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          await migrate(db as any, { migrationsFolder })
-        } else {
-          const { migrate } = await import('drizzle-orm/bun-sqlite/migrator')
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          migrate(db as any, { migrationsFolder })
-        }
+        await db.insert(users).values({ id: userId, displayName: 'Admin', role: 'admin' })
+        await db.insert(rootCredentials).values({
+          userId,
+          email: bootEmail,
+          passwordHash: boot.passwordHash,
+        })
       } catch (e) {
-        log.error({ err: String(e) }, 'migration failed')
+        log.error({ err: String(e) }, 'admin user creation failed')
         set.status = 500
-        return { error: 'migration_failed', detail: String(e) }
+        return { error: 'admin_create_failed', detail: String(e) }
       }
+    }
 
-      const bootEmail = boot.email.toLowerCase()
-      const existing = await db.query.rootCredentials.findFirst({ where: { email: bootEmail } })
-      const userId = existing ? existing.userId : ulid()
-      if (existing) {
-        log.info({ userId }, 'admin already in DB from earlier partial install — resuming')
-      }
-      if (!existing) {
-        try {
-          await db.insert(users).values({ id: userId, displayName: 'Admin', role: 'admin' })
-          await db.insert(rootCredentials).values({
-            userId,
-            email: bootEmail,
-            passwordHash: boot.passwordHash,
-          })
-        } catch (e) {
-          log.error({ err: String(e) }, 'admin user creation failed')
-          set.status = 500
-          return { error: 'admin_create_failed', detail: String(e) }
-        }
-      }
+    try {
+      await seedDefaultPages()
+    } catch (e) {
+      log.warn({ err: String(e) }, 'page seed failed — continuing')
+    }
 
-      try {
-        await seedDefaultPages()
-      } catch (e) {
-        log.warn({ err: String(e) }, 'page seed failed — continuing')
-      }
+    try {
+      await saveConfig({ installed: true, database: { url: body.database.url } })
+    } catch (e) {
+      log.error({ err: String(e) }, 'config save failed')
+      set.status = 500
+      return { error: 'config_save_failed', detail: String(e) }
+    }
 
-      try {
-        await saveConfig({ installed: true, database: { url: body.database.url } })
-      } catch (e) {
-        log.error({ err: String(e) }, 'config save failed')
-        set.status = 500
-        return { error: 'config_save_failed', detail: String(e) }
-      }
-      clearBootstrap()
+    // Seed the registry signing keypair before the post-install restart, so
+    // the very first webhook ingest after the user finishes the wizard can
+    // sign release-integrity payloads without waiting for the next boot.
+    // `bootNormalMode()` also calls `ensureSigningKey()` on every start (for
+    // upgrades from pre-Phase-2 installs), so this is the install-time
+    // counterpart for fresh deployments.
+    try {
+      const { initSettings } = await import('$lib/settings')
+      await initSettings()
+      const { ensureSigningKey } = await import('$lib/registry-key')
+      await ensureSigningKey()
+    } catch (e) {
+      log.error({ err: String(e) }, 'signing key seed failed')
+      set.status = 500
+      return { error: 'signing_key_seed_failed', detail: String(e) }
+    }
 
-      const jwt = await signJwt({
-        sub: userId,
-        identityId: null,
-        username: 'Admin',
-        providerInstanceId: null,
-      })
-      cookie.auth.set({
-        value: jwt,
-        httpOnly: true,
-        secure: isProd(),
-        maxAge: 60 * 60 * 24 * 7,
-        sameSite: 'lax',
-        path: '/',
-      })
+    clearBootstrap()
 
-      log.info({ adminId: userId, email: boot.email }, 'install complete — admin cookie set, exiting for restart')
-      setTimeout(() => process.exit(0), 500)
-      return { ok: true }
+    const jwt = await signJwt({
+      sub: userId,
+      identityId: null,
+      username: 'Admin',
+      providerInstanceId: null,
+    })
+    cookie.auth.set({
+      value: jwt,
+      httpOnly: true,
+      secure: isProd(),
+      maxAge: 60 * 60 * 24 * 7,
+      sameSite: 'lax',
+      path: '/',
+    })
+
+    log.info({ adminId: userId, email: boot.email }, 'install complete — admin cookie set, exiting for restart')
+    setTimeout(() => process.exit(0), 500)
+    return { ok: true }
+  },
+  {
+    detail: {
+      tags: ['Auth'],
+      summary: 'Finalize install: connect DB, migrate, promote bootstrap admin, exit',
+      operationId: 'initComplete',
     },
-    {
-      detail: { tags: ['Auth'], summary: 'Finalize install: connect DB, migrate, promote bootstrap admin, exit', operationId: 'initComplete' },
-      body: t.Object({
-        database: t.Object({ url: t.String({ minLength: 1 }) }),
-      }),
-      response: {
-        200: t.Object({ ok: t.Boolean() }),
-        400: t.Object({ error: t.String(), detail: t.Optional(t.String()) }),
-        410: t.Object({ error: t.String() }),
-        500: t.Object({ error: t.String(), detail: t.Optional(t.String()) }),
-      },
+    body: t.Object({
+      database: t.Object({ url: t.String({ minLength: 1 }) }),
+    }),
+    response: {
+      200: t.Object({ ok: t.Boolean() }),
+      400: t.Object({ error: t.String(), detail: t.Optional(t.String()) }),
+      410: t.Object({ error: t.String() }),
+      500: t.Object({ error: t.String(), detail: t.Optional(t.String()) }),
     },
-  )
+  },
+)

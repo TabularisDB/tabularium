@@ -42,9 +42,7 @@
 			class={cn(
 				'inline-flex items-center gap-1.5 rounded transition-colors',
 				size === 'sm' ? 'px-2.5 py-1' : 'px-3 py-1.5',
-				active === tab.id
-					? 'bg-accent text-foreground'
-					: 'text-muted-foreground hover:text-foreground',
+				active === tab.id ? 'bg-accent text-foreground' : 'text-muted-foreground hover:text-foreground',
 			)}
 			onclick={() => pick(tab.id)}
 		>

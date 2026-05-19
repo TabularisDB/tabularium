@@ -1,7 +1,7 @@
 import { Elysia, t } from 'elysia'
 import { GitHub, GitLab, Gitea, OAuth2RequestError } from 'arctic'
 import { ulid } from 'ulid'
-import { count, eq, and } from 'drizzle-orm'
+import { count, eq } from 'drizzle-orm'
 import { db } from '$db'
 import { users, identities, rootCredentials } from '$db/schema'
 import { signJwt, verifyJwt } from '$lib/jwt'
@@ -57,7 +57,7 @@ async function exchangeGithubPkce(inst: ProviderInstance, code: string, codeVeri
     body,
   })
   if (!res.ok) throw new Error(`GitHub token endpoint ${res.status}`)
-  const data = await res.json() as { access_token?: string; error?: string; error_description?: string }
+  const data = (await res.json()) as { access_token?: string; error?: string; error_description?: string }
   if (data.error || !data.access_token) {
     throw new Error(`GitHub OAuth: ${data.error_description ?? data.error ?? 'no access_token'}`)
   }
@@ -79,7 +79,7 @@ async function exchangeGithub(inst: ProviderInstance, code: string, state: State
   const profileRes = await fetch(`${apiBase}/user`, {
     headers: { Authorization: `Bearer ${accessToken}`, 'User-Agent': 'tabularium/1.0' },
   })
-  const profile = await profileRes.json() as { id: number; login: string }
+  const profile = (await profileRes.json()) as { id: number; login: string }
   return { externalId: String(profile.id), username: profile.login, accessToken }
 }
 
@@ -92,7 +92,7 @@ async function exchangeGitlab(inst: ProviderInstance, code: string): Promise<Pro
   const profileRes = await fetch(`${inst.baseUrl}/api/v4/user`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   })
-  const profile = await profileRes.json() as { id: number; username: string }
+  const profile = (await profileRes.json()) as { id: number; username: string }
   return { externalId: String(profile.id), username: profile.username, accessToken }
 }
 
@@ -105,7 +105,7 @@ async function exchangeGitea(inst: ProviderInstance, code: string, state: StateD
   const profileRes = await fetch(`${inst.baseUrl}/api/v1/user`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   })
-  const profile = await profileRes.json() as { id: number; login: string }
+  const profile = (await profileRes.json()) as { id: number; login: string }
   return { externalId: String(profile.id), username: profile.login, accessToken }
 }
 
@@ -121,8 +121,9 @@ async function resolveLinkUserId(authCookieValue: string | undefined): Promise<s
   return payload?.sub ?? null
 }
 
-export default new Elysia()
-  .get('/', async ({ params, query, cookie, set, redirect }) => {
+export default new Elysia().get(
+  '/',
+  async ({ params, query, cookie, set, redirect }) => {
     const raw = cookie.oauth_state?.value as StateData | string | undefined
     if (!raw) {
       set.status = 400
@@ -146,9 +147,7 @@ export default new Elysia()
       return { error: `Unknown provider instance: ${params.instance}` }
     }
 
-    const linkUserId = stateData.linking
-      ? await resolveLinkUserId(cookie.auth?.value as string | undefined)
-      : null
+    const linkUserId = stateData.linking ? await resolveLinkUserId(cookie.auth?.value as string | undefined) : null
     if (stateData.linking && !linkUserId) {
       set.status = 401
       return { error: 'Linking session expired — sign in and try again' }
@@ -164,7 +163,9 @@ export default new Elysia()
 
       if (existingIdentity && linkUserId && existingIdentity.userId !== linkUserId) {
         set.status = 409
-        return { error: `This ${inst.displayName} account is already linked to a different user. Sign in with it instead.` }
+        return {
+          error: `This ${inst.displayName} account is already linked to a different user. Sign in with it instead.`,
+        }
       }
 
       const encryptedToken = encryptToken(profile.accessToken)
@@ -174,7 +175,8 @@ export default new Elysia()
       if (existingIdentity) {
         userId = existingIdentity.userId
         identityId = existingIdentity.id
-        await db.update(identities)
+        await db
+          .update(identities)
           .set({ username: profile.username, accessToken: encryptedToken })
           .where(eq(identities.id, identityId))
       }
@@ -184,13 +186,13 @@ export default new Elysia()
         identityId = ulid()
 
         if (!linkUserId) {
-          const [{ adminCount }] = await db
-            .select({ adminCount: count() })
-            .from(users)
-            .where(eq(users.role, 'admin'))
+          const [{ adminCount }] = await db.select({ adminCount: count() }).from(users).where(eq(users.role, 'admin'))
           const fuseBlown = isSettingsInitialized() && getSetting(AUTO_ADMIN_FUSE_KEY) === '1'
           if (adminCount === 0 && fuseBlown) {
-            log.error({ username: profile.username }, 'auto-admin fuse already consumed but adminCount=0 — refusing silent promotion')
+            log.error(
+              { username: profile.username },
+              'auto-admin fuse already consumed but adminCount=0 — refusing silent promotion',
+            )
             set.status = 503
             return { error: 'Instance state inconsistent — restore admin via email recovery instead' }
           }
@@ -257,7 +259,8 @@ export default new Elysia()
       set.status = 500
       return { error: 'Internal error during auth' }
     }
-  }, {
+  },
+  {
     detail: {
       tags: ['Auth'],
       summary: 'OAuth callback for a provider instance',
@@ -268,4 +271,5 @@ export default new Elysia()
       code: t.String(),
       state: t.String(),
     }),
-  })
+  },
+)

@@ -16,16 +16,7 @@
 		class?: string
 	}
 
-	let {
-		dirty,
-		saving = false,
-		onSave,
-		onDiscard,
-		message,
-		saveLabel,
-		discardLabel,
-		class: className,
-	}: Props = $props()
+	let { dirty, saving = false, onSave, onDiscard, message, saveLabel, discardLabel, class: className }: Props = $props()
 
 	const visible = $derived(dirty || saving)
 </script>

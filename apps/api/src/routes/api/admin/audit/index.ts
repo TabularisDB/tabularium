@@ -10,9 +10,9 @@ function clampInt(raw: unknown, def: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, Math.trunc(n)))
 }
 
-export default new Elysia()
-  .use(adminMiddleware)
-  .get('/', async ({ query }) => {
+export default new Elysia().use(adminMiddleware).get(
+  '/',
+  async ({ query }) => {
     const page = clampInt(query.page, 1, 1, 10_000)
     const limit = clampInt(query.limit, 50, 1, 200)
     const offset = (page - 1) * limit
@@ -45,7 +45,8 @@ export default new Elysia()
         createdAt: r.createdAt,
       })),
     }
-  }, {
+  },
+  {
     detail: {
       tags: ['Admin'],
       summary: 'List audit log entries',
@@ -63,16 +64,19 @@ export default new Elysia()
         total: t.Number(),
         page: t.Number(),
         limit: t.Number(),
-        entries: t.Array(t.Object({
-          id: t.String(),
-          actorId: t.Nullable(t.String()),
-          actorName: t.Nullable(t.String()),
-          action: t.String(),
-          target: t.Nullable(t.String()),
-          meta: t.Nullable(t.String()),
-          ip: t.Nullable(t.String()),
-          createdAt: t.Number(),
-        })),
+        entries: t.Array(
+          t.Object({
+            id: t.String(),
+            actorId: t.Nullable(t.String()),
+            actorName: t.Nullable(t.String()),
+            action: t.String(),
+            target: t.Nullable(t.String()),
+            meta: t.Nullable(t.String()),
+            ip: t.Nullable(t.String()),
+            createdAt: t.Number(),
+          }),
+        ),
       }),
     },
-  })
+  },
+)

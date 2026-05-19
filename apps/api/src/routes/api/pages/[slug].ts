@@ -22,8 +22,9 @@ function pickLocale(input: unknown): Locale {
   return getI18nConfig().defaultLocale
 }
 
-export default new Elysia()
-  .get('/', async ({ params, query, set }) => {
+export default new Elysia().get(
+  '/',
+  async ({ params, query, set }) => {
     const requested = pickLocale(query.locale)
     const fallback = getI18nConfig().defaultLocale
     let row = await db.query.markdownPages.findFirst({
@@ -56,17 +57,26 @@ export default new Elysia()
       html,
       updatedAt: Number(row.updatedAt),
     }
-  }, {
+  },
+  {
     detail: {
       tags: ['Plugins'],
       summary: 'Render a published markdown page',
-      description: 'Returns sanitized HTML for a page in the requested locale, falling back to the default locale if missing.',
+      description:
+        'Returns sanitized HTML for a page in the requested locale, falling back to the default locale if missing.',
       operationId: 'getPage',
     },
     params: t.Object({ slug: t.String() }),
     query: t.Object({ locale: t.Optional(localeSchema) }),
     response: {
-      200: t.Object({ slug: t.String(), locale: localeSchema, title: t.String(), html: t.String(), updatedAt: t.Number() }),
+      200: t.Object({
+        slug: t.String(),
+        locale: localeSchema,
+        title: t.String(),
+        html: t.String(),
+        updatedAt: t.Number(),
+      }),
       404: t.Object({ error: t.String() }),
     },
-  })
+  },
+)

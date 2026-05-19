@@ -77,9 +77,7 @@
 		return repos.filter((r) => r.fullName.toLowerCase().includes(q) || (r.description ?? '').toLowerCase().includes(q))
 	})
 
-	const selectedRepo = $derived<SubmittableRepo | null>(
-		selectedGroup?.repos.find((r) => r.url === selectedUrl) ?? null,
-	)
+	const selectedRepo = $derived<SubmittableRepo | null>(selectedGroup?.repos.find((r) => r.url === selectedUrl) ?? null)
 
 	$effect(() => {
 		// reset repo selection when switching identities
@@ -135,7 +133,9 @@
 		<Card>
 			<CardHeader>
 				<CardTitle class="text-base">{m.submit_success_slug_label()}</CardTitle>
-				<CardDescription>{m.submit_success_slug_live_at()} <code class="font-mono">/plugins/{success.slug}</code></CardDescription>
+				<CardDescription
+					>{m.submit_success_slug_live_at()} <code class="font-mono">/plugins/{success.slug}</code></CardDescription
+				>
 			</CardHeader>
 		</Card>
 
@@ -242,12 +242,7 @@
 												)}
 											>
 												<span class="mt-0.5 inline-flex h-5 w-5 items-center justify-center text-muted-foreground">
-													<ProviderIcon
-														kind={selectedGroup.providerKind}
-														baseUrl=""
-														logoUrl={null}
-														class="h-4 w-4"
-													/>
+													<ProviderIcon kind={selectedGroup.providerKind} baseUrl="" logoUrl={null} class="h-4 w-4" />
 												</span>
 												<span class="flex-1 min-w-0">
 													<span class="flex items-center gap-2">

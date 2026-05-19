@@ -29,13 +29,14 @@ function buildDescription(files: string[]): string {
   return (
     `Plugin authors drop one of ${list} (YAML or JSON) at the root of their repo. ` +
     'The registry fetches it on submission and on every release webhook. Relative `icon`/`screenshots` paths are resolved against the repo at the matching ref. ' +
-    'Set `kind` to one of the values in `kinds` (the registry\'s active kind catalog) to surface your plugin in kind-filtered views. ' +
+    "Set `kind` to one of the values in `kinds` (the registry's active kind catalog) to surface your plugin in kind-filtered views. " +
     'The kind value is also folded into `tags` internally so generic tag filters keep working.'
   )
 }
 
-export default new Elysia()
-  .get('/', () => {
+export default new Elysia().get(
+  '/',
+  () => {
     const cfg = getManifestConfig()
     return {
       description: buildDescription(cfg.files),
@@ -44,11 +45,13 @@ export default new Elysia()
       example: EXAMPLE,
       kinds: getKinds().map((k) => k.key),
     }
-  }, {
+  },
+  {
     detail: {
       tags: ['Plugins'],
       summary: 'Discoverable plugin manifest spec',
-      description: 'Public reference for plugin authors. Returns the TypeBox JSON Schema, an example, and the registry\'s active kind keys.',
+      description:
+        "Public reference for plugin authors. Returns the TypeBox JSON Schema, an example, and the registry's active kind keys.",
       operationId: 'getManifestSpec',
     },
     response: {
@@ -60,4 +63,5 @@ export default new Elysia()
         kinds: t.Array(t.String()),
       }),
     },
-  })
+  },
+)

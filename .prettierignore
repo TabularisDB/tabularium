@@ -1,0 +1,12 @@
+node_modules/
+dist/
+.svelte-kit/
+.turbo/
+apps/api/
+packages/
+apps/frontend/messages/
+apps/frontend/project.inlang/
+apps/frontend/static/
+vendor/
+bun.lock
+*.md

@@ -141,7 +141,13 @@
 						</div>
 						<div class="grid gap-1">
 							<Label for="recoveryPassword" class="text-xs">{m.admin_recovery_password_label()}</Label>
-							<Input id="recoveryPassword" type="password" bind:value={newPassword} autocomplete="new-password" onkeydown={onCredKey} />
+							<Input
+								id="recoveryPassword"
+								type="password"
+								bind:value={newPassword}
+								autocomplete="new-password"
+								onkeydown={onCredKey}
+							/>
 						</div>
 					</div>
 					<div class="flex flex-wrap gap-2 justify-end">

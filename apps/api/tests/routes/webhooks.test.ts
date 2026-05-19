@@ -1,18 +1,18 @@
 import { describe, it, expect, beforeEach } from 'bun:test'
 import { clearDb, makeUser, makePlugin, buildApp } from '../helpers'
 import { db } from '../../src/db'
-import { plugins, releases } from '../../src/db/schema'
-import { eq } from 'drizzle-orm'
 
 function makeGithubReleasePayload(repoUrl: string, tagName: string, assetName: string) {
   return {
     action: 'published',
     release: {
       tag_name: tagName,
-      assets: [{
-        name: assetName,
-        browser_download_url: `https://github.com/owner/repo/releases/download/${tagName}/${assetName}`,
-      }],
+      assets: [
+        {
+          name: assetName,
+          browser_download_url: `https://github.com/owner/repo/releases/download/${tagName}/${assetName}`,
+        },
+      ],
     },
     repository: { html_url: repoUrl },
   }
@@ -28,7 +28,9 @@ describe('POST /api/webhooks/release', () => {
   beforeEach(clearDb)
 
   it('returns 401 (not 404) when plugin not found, to avoid existence oracle', async () => {
-    const body = JSON.stringify(makeGithubReleasePayload('https://github.com/nobody/repo', 'v1.0.0', 'plugin-linux-x64.zip'))
+    const body = JSON.stringify(
+      makeGithubReleasePayload('https://github.com/nobody/repo', 'v1.0.0', 'plugin-linux-x64.zip'),
+    )
     const app = await buildApp()
     const res = await app.handle(
       new Request('http://localhost/api/webhooks/release', {
@@ -112,7 +114,11 @@ describe('POST /api/webhooks/release', () => {
       webhookSecret: 'test-secret-padded-to-thirty-two-chars',
     })
 
-    const payload = { action: 'created', release: { tag_name: 'v1.0.0', assets: [] }, repository: { html_url: plugin.repoUrl } }
+    const payload = {
+      action: 'created',
+      release: { tag_name: 'v1.0.0', assets: [] },
+      repository: { html_url: plugin.repoUrl },
+    }
     const body = JSON.stringify(payload)
     const sig = await signPayload('test-secret-padded-to-thirty-two-chars', body)
 
@@ -129,7 +135,7 @@ describe('POST /api/webhooks/release', () => {
       }),
     )
     expect(res.status).toBe(200)
-    const data = await res.json() as { skipped: boolean }
+    const data = (await res.json()) as { skipped: boolean }
     expect(data.skipped).toBe(true)
   })
 })

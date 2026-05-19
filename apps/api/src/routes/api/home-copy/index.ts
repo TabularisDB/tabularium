@@ -22,13 +22,13 @@ const homeCopySchema = t.Object({
   }),
 })
 
-export default new Elysia()
-  .get('/', () => getHomeCopy(), {
-    detail: {
-      tags: ['Plugins'],
-      summary: 'Get home-page copy overrides',
-      description: 'Public read-only endpoint. Returns the admin-configured eyebrow + feature-section overrides. Empty translation maps mean "fall back to the built-in copy".',
-      operationId: 'getHomeCopy',
-    },
-    response: { 200: homeCopySchema },
-  })
+export default new Elysia().get('/', () => getHomeCopy(), {
+  detail: {
+    tags: ['Plugins'],
+    summary: 'Get home-page copy overrides',
+    description:
+      'Public read-only endpoint. Returns the admin-configured eyebrow + feature-section overrides. Empty translation maps mean "fall back to the built-in copy".',
+    operationId: 'getHomeCopy',
+  },
+  response: { 200: homeCopySchema },
+})
