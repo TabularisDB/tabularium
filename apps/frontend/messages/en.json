@@ -748,6 +748,8 @@
 	"settings_logged_in_as": "Logged in as {name}",
 	"settings_pending_transfers": "Pending transfers",
 	"settings_pending_transfers_subtitle": "Plugins waiting for your response or that you've offered to others.",
+	"settings_reauth": "Re-authorize",
+	"settings_reauth_hint": "Refresh the OAuth token without losing the link (useful when the token has expired).",
 	"settings_reject": "Reject",
 	"settings_role": "Role",
 	"settings_sign_out": "Sign out",

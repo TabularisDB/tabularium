@@ -748,6 +748,8 @@
 	"settings_logged_in_as": "已登录为 {name}",
 	"settings_pending_transfers": "待处理的转让",
 	"settings_pending_transfers_subtitle": "等待你响应,或你已发起给他人的插件转让。",
+	"settings_reauth": "重新授权",
+	"settings_reauth_hint": "刷新 OAuth 令牌而不解除链接（令牌过期时很有用）。",
 	"settings_reject": "拒绝",
 	"settings_role": "角色",
 	"settings_sign_out": "登出",

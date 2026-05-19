@@ -748,6 +748,8 @@
 	"settings_logged_in_as": "Angemeldet als {name}",
 	"settings_pending_transfers": "Ausstehende Übertragungen",
 	"settings_pending_transfers_subtitle": "Plugins, die auf deine Antwort warten oder die du anderen angeboten hast.",
+	"settings_reauth": "Neu autorisieren",
+	"settings_reauth_hint": "Aktualisiert das OAuth-Token ohne die Verknüpfung zu lösen (z.B. wenn das Token abgelaufen ist).",
 	"settings_reject": "Ablehnen",
 	"settings_role": "Rolle",
 	"settings_sign_out": "Abmelden",

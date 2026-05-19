@@ -748,6 +748,8 @@
 	"settings_logged_in_as": "Connecté en tant que {name}",
 	"settings_pending_transfers": "Transferts en attente",
 	"settings_pending_transfers_subtitle": "Plugins en attente de ta réponse ou que tu as proposés à d'autres.",
+	"settings_reauth": "Ré-autoriser",
+	"settings_reauth_hint": "Renouvelle le jeton OAuth sans perdre le lien (utile lorsque le jeton a expiré).",
 	"settings_reject": "Refuser",
 	"settings_role": "Rôle",
 	"settings_sign_out": "Se déconnecter",

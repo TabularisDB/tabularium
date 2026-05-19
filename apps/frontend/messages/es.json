@@ -748,6 +748,8 @@
 	"settings_logged_in_as": "Sesión iniciada como {name}",
 	"settings_pending_transfers": "Transferencias pendientes",
 	"settings_pending_transfers_subtitle": "Plugins esperando tu respuesta o que has ofrecido a otros.",
+	"settings_reauth": "Re-autorizar",
+	"settings_reauth_hint": "Renueva el token OAuth sin perder la vinculación (útil cuando el token ha expirado).",
 	"settings_reject": "Rechazar",
 	"settings_role": "Rol",
 	"settings_sign_out": "Cerrar sesión",
