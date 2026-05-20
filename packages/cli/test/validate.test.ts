@@ -67,4 +67,33 @@ describe('tabularium validate', () => {
     expect(combined).toContain('/name')
     expect(combined).toContain('type')
   })
+
+  it('exits non-zero for an unparseable YAML file', async () => {
+    const file = join(workdir, 'parse-error.yaml')
+    writeFileSync(file, 'name: [unterminated\n')
+    const { code } = await run(['validate', file, '--registry', baseUrl])
+    expect(code).not.toBe(0)
+  })
+
+  it('exits non-zero when the file does not exist', async () => {
+    const file = join(workdir, 'missing.yaml')
+    const { code } = await run(['validate', file, '--registry', baseUrl])
+    expect(code).not.toBe(0)
+  })
+
+  it('exits non-zero when the registry is unreachable', async () => {
+    const file = join(workdir, 'good-for-net-test.yaml')
+    writeFileSync(file, 'name: Good Plugin\nkind: theme\n')
+    // Port 1 is reserved (tcpmux) and effectively never serves HTTP.
+    const { code } = await run(['validate', file, '--registry', 'http://127.0.0.1:1'])
+    expect(code).not.toBe(0)
+  })
+
+  it('rejects an invocation missing --registry', async () => {
+    const file = join(workdir, 'noop.yaml')
+    writeFileSync(file, 'name: Good Plugin\nkind: theme\n')
+    const { code, stderr } = await run(['validate', file])
+    expect(code).not.toBe(0)
+    expect(stderr.toLowerCase()).toContain('--registry')
+  })
 })

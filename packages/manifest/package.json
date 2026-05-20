@@ -1,19 +1,43 @@
 {
   "name": "@tabularium/manifest",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.1.0",
+  "description": "Pure validator + integrity primitives for the Tabularium plugin manifest (`.tabularium` / `tabularium.yaml` / `tabularium.json`).",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://codeberg.org/Tabularium/Tabularium.git",
+    "directory": "packages/manifest"
+  },
+  "homepage": "https://tabularium.wiki",
+  "keywords": [
+    "tabularium",
+    "plugin-registry",
+    "manifest",
+    "validator",
+    "integrity"
+  ],
   "type": "module",
-  "main": "src/index.ts",
-  "module": "src/index.ts",
-  "types": "src/index.ts",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "exports": {
     ".": {
-      "types": "./src/index.ts",
-      "default": "./src/index.ts"
+      "types": "./dist/index.d.ts",
+      "default": "./dist/index.js"
     }
   },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
-    "test": "bun test"
+    "build": "tsc -p tsconfig.build.json",
+    "test": "bun test",
+    "prepublishOnly": "bun run build"
   },
   "dependencies": {
     "@sinclair/typebox": "^0.34.49",

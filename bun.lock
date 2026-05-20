@@ -79,7 +79,7 @@
     },
     "packages/cli": {
       "name": "@tabularium/cli",
-      "version": "0.0.0",
+      "version": "0.1.0",
       "bin": {
         "tabularium": "src/bin.ts",
       },
@@ -106,7 +106,7 @@
     },
     "packages/manifest": {
       "name": "@tabularium/manifest",
-      "version": "0.0.0",
+      "version": "0.1.0",
       "dependencies": {
         "@sinclair/typebox": "^0.34.49",
         "ajv": "^8.17.1",

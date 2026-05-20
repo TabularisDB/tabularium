@@ -95,7 +95,11 @@ jobs:
 
       - name: Publish
         working-directory: ${{ steps.pkg.outputs.dir }}
-        run: npm publish --access public --provenance=false
+        # `bun publish` resolves `workspace:*` deps to actual versions before
+        # uploading — `npm publish` does not, and would ship a broken tarball
+        # for @tabularium/cli which depends on @tabularium/manifest via the
+        # workspace protocol.
+        run: bun publish --access public
 
       - name: Cleanup npm auth
         if: always()

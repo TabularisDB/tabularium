@@ -1,13 +1,37 @@
 {
   "name": "@tabularium/cli",
-  "version": "0.0.0",
-  "private": true,
+  "version": "0.1.0",
+  "description": "Author-side CLI for the Tabularium plugin registry — `tabularium validate` checks your `.tabularium` manifest against a running registry's schema.",
+  "license": "Apache-2.0",
+  "repository": {
+    "type": "git",
+    "url": "git+https://codeberg.org/Tabularium/Tabularium.git",
+    "directory": "packages/cli"
+  },
+  "homepage": "https://tabularium.wiki",
+  "keywords": [
+    "tabularium",
+    "plugin-registry",
+    "cli",
+    "manifest",
+    "validate"
+  ],
   "type": "module",
   "bin": {
-    "tabularium": "src/bin.ts"
+    "tabularium": "./dist/bin.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
   },
   "scripts": {
-    "test": "bun test"
+    "build": "bun build src/bin.ts --target=node --outdir=dist --format=esm && chmod +x dist/bin.js",
+    "test": "bun test",
+    "prepublishOnly": "bun run build"
   },
   "dependencies": {
     "@tabularium/manifest": "workspace:*",
