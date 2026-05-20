@@ -47,9 +47,13 @@ jobs:
           echo "sha=${GITHUB_SHA}"  >> "$GITHUB_OUTPUT"
 
       - name: Log in to Codeberg Container Registry
+        # Username must match the PACKAGE_TOKEN's owner (a Codeberg user
+        # account, not the org). `github.actor` is the user who pushed the
+        # tag / dispatched the workflow — equals the token owner in practice
+        # because only members of the Tabularium org can release.
         run: |
           echo "${{ secrets.PACKAGE_TOKEN }}" | \
-            docker login codeberg.org -u "${{ github.repository_owner }}" --password-stdin
+            docker login codeberg.org -u "${{ github.actor }}" --password-stdin
 
       - name: Build image
         run: |

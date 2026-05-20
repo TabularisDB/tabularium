@@ -44,12 +44,16 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Ensure rust toolchain
+      - name: Ensure rust toolchain (latest stable)
         run: |
-          if ! command -v cargo >/dev/null 2>&1; then
-            curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable --profile minimal
+          if ! command -v rustup >/dev/null 2>&1; then
+            curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable --profile minimal --no-modify-path
           fi
+          export PATH="$HOME/.cargo/bin:$PATH"
+          rustup default stable
+          rustup update stable
           echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
+          cargo --version
 
       - name: Cargo check
         working-directory: packages/tabularium-rs

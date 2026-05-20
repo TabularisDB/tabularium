@@ -72,13 +72,17 @@ jobs:
       - name: Install workspace deps
         run: bun install --frozen-lockfile
 
+      # Build the package + its workspace deps before tests, otherwise cli
+      # tests fail with "cannot find module '@tabularium/manifest'" because
+      # manifest's package.json points "main" at ./dist/index.js which a
+      # fresh checkout doesn't have yet. `--filter <pkg>...` walks the
+      # dependency graph so manifest gets built before cli's tests run.
+      - name: Build package + workspace deps
+        run: bun run build --filter "${{ steps.pkg.outputs.name }}..."
+
       - name: Run package tests
         working-directory: ${{ steps.pkg.outputs.dir }}
         run: bun test
-
-      - name: Build package
-        working-directory: ${{ steps.pkg.outputs.dir }}
-        run: bun run build
 
       - name: Configure npm auth
         run: |
