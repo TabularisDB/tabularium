@@ -47,13 +47,28 @@ jobs:
           echo "sha=${GITHUB_SHA}"  >> "$GITHUB_OUTPUT"
 
       - name: Log in to Codeberg Container Registry
-        # Username must match the PACKAGE_TOKEN's owner (a Codeberg user
-        # account, not the org). `github.actor` is the user who pushed the
-        # tag / dispatched the workflow — equals the token owner in practice
-        # because only members of the Tabularium org can release.
+        # Username must match the PACKAGE_TOKEN's owner. Hardcode NewtTheWolf
+        # — Forgejo Actions doesn't reliably populate `github.actor` for tag
+        # pushes (and `github.repository_owner` is the org, not a user). The
+        # token belongs to NewtTheWolf who has write:package on the
+        # Tabularium org so this works for any tag pushed by any maintainer.
         run: |
+          set -eu
+          {
+            echo "## Registry login diagnostics"
+            echo '```'
+            echo "github.actor:            ${{ github.actor }}"
+            echo "github.repository_owner: ${{ github.repository_owner }}"
+            echo "github.ref:              ${{ github.ref }}"
+            echo "docker version: $(docker --version 2>&1 | head -1)"
+            echo "PACKAGE_TOKEN present:   $([ -n "${{ secrets.PACKAGE_TOKEN }}" ] && echo yes || echo no)"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          set +e
           echo "${{ secrets.PACKAGE_TOKEN }}" | \
-            docker login codeberg.org -u "${{ github.actor }}" --password-stdin
+            docker login codeberg.org -u NewtTheWolf --password-stdin 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
+          rc=${PIPESTATUS[1]}
+          exit "$rc"
 
       - name: Build image
         run: |
