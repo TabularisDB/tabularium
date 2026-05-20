@@ -15,7 +15,7 @@
 //! # async fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let client = Client::new("https://registry.spitzli.dev");
 //! let plugins = client.list_plugins().send().await?;
-//! for p in plugins.into_inner().items {
+//! for p in plugins.into_inner().plugins {
 //!     println!("{} — {}", p.id, p.name);
 //! }
 //! # Ok(())
@@ -23,7 +23,11 @@
 //! ```
 
 // Suppress lints inside the generated bindings — we don't control its style.
+// `elided_named_lifetimes` was renamed to `mismatched_lifetime_syntaxes` in
+// Rust 1.83; allowing both with `renamed_and_removed_lints` silenced keeps
+// the crate warning-free across the toolchain versions used in CI.
 #![allow(
+    renamed_and_removed_lints,
     clippy::all,
     elided_lifetimes_in_paths,
     elided_named_lifetimes,
