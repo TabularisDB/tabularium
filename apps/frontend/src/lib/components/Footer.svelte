@@ -105,15 +105,27 @@
 		<div class="lg:col-span-3 space-y-4">
 			<div class="font-medium text-foreground text-xs uppercase tracking-wider">{m.footer_developers()}</div>
 			<div class="flex flex-col gap-2.5 text-muted-foreground">
-				<a href="/openapi" class="hover:text-foreground inline-flex items-center gap-1.5 transition-colors w-fit">
+				<a
+					href="/openapi"
+					data-sveltekit-reload
+					class="hover:text-foreground inline-flex items-center gap-1.5 transition-colors w-fit"
+				>
 					{m.footer_openapi()}
 					<ExternalLink class="h-3 w-3" />
 				</a>
-				<a href="/api/manifest" class="hover:text-foreground inline-flex items-center gap-1.5 transition-colors w-fit">
+				<a
+					href="/api/manifest"
+					data-sveltekit-reload
+					class="hover:text-foreground inline-flex items-center gap-1.5 transition-colors w-fit"
+				>
 					{m.footer_spec({ filename: manifestPrimaryFile })}
 					<ExternalLink class="h-3 w-3" />
 				</a>
-				<a href="/openapi/json" class="hover:text-foreground inline-flex items-center gap-1.5 transition-colors w-fit">
+				<a
+					href="/openapi/json"
+					data-sveltekit-reload
+					class="hover:text-foreground inline-flex items-center gap-1.5 transition-colors w-fit"
+				>
 					{m.footer_spec_json()}
 					<ExternalLink class="h-3 w-3" />
 				</a>

@@ -450,6 +450,7 @@
 								{@const [os, arch] = p.key.split('-')}
 								<a
 									href={`/api/plugins/${plugin.id}/latest?os=${encodeURIComponent(os ?? '')}&arch=${encodeURIComponent(arch ?? '')}&redirect=1`}
+									data-sveltekit-reload
 									class="group flex items-center gap-3 px-4 py-3 rounded-lg border border-border bg-card hover:border-primary/40 hover:bg-foreground/[0.02] transition-colors"
 								>
 									<Download class="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
@@ -585,6 +586,7 @@
 														<td class="px-2.5 py-2 text-right">
 															<a
 																href={`/api/plugins/${plugin.id}/latest?os=${encodeURIComponent(os ?? '')}&arch=${encodeURIComponent(arch ?? '')}&redirect=1`}
+																data-sveltekit-reload
 																class="font-mono text-[11px] text-primary hover:underline"
 																>↓ {m.plugin_detail_download()}</a
 															>
