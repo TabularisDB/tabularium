@@ -10,7 +10,7 @@
 //! # Quickstart
 //!
 //! ```no_run
-//! # use tabularium::Client;
+//! # use tabularium_sdk::Client;
 //! # #[tokio::main]
 //! # async fn main() -> Result<(), Box<dyn std::error::Error>> {
 //! let client = Client::new("https://registry.spitzli.dev");

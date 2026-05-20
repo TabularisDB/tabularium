@@ -1,7 +1,7 @@
-# tabularium
+# tabularium-sdk
 
-[![crates.io](https://img.shields.io/crates/v/tabularium.svg)](https://crates.io/crates/tabularium)
-[![docs.rs](https://docs.rs/tabularium/badge.svg)](https://docs.rs/tabularium)
+[![crates.io](https://img.shields.io/crates/v/tabularium-sdk.svg)](https://crates.io/crates/tabularium-sdk)
+[![docs.rs](https://docs.rs/tabularium-sdk/badge.svg)](https://docs.rs/tabularium-sdk)
 
 Async Rust client for the [Tabularium](https://tabularium.wiki) plugin registry HTTP API.
 
@@ -11,14 +11,14 @@ The client is generated at build time by [`progenitor`](https://docs.rs/progenit
 
 ```toml
 [dependencies]
-tabularium = "0.1"
+tabularium-sdk = "0.1"
 tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
 ```
 
 ## Quickstart
 
 ```rust
-use tabularium::Client;
+use tabularium_sdk::Client;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
@@ -58,7 +58,7 @@ The shipped `openapi.json` snapshot mirrors the upstream registry's `/openapi/js
 
 ```sh
 curl -sf https://your-registry.example.com/openapi/json > packages/tabularium-rs/openapi.json
-cargo build -p tabularium
+cargo build -p tabularium-sdk
 ```
 
 `build.rs` patches a couple of known Elysia-side quirks before handing the spec to progenitor — see the comments in that file for context.

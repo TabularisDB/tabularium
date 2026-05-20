@@ -6,7 +6,7 @@
 //!
 //! Falls back to https://registry.spitzli.dev when no URL is passed.
 
-use tabularium::Client;
+use tabularium_sdk::Client;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {

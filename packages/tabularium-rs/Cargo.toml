@@ -1,12 +1,12 @@
 [package]
-name = "tabularium"
+name = "tabularium-sdk"
 version = "0.1.0"
 edition = "2021"
 description = "Async Rust client for the Tabularium plugin registry HTTP API"
 license = "Apache-2.0"
 repository = "https://codeberg.org/Tabularium/Tabularium"
 homepage = "https://tabularium.wiki"
-documentation = "https://docs.rs/tabularium"
+documentation = "https://docs.rs/tabularium-sdk"
 keywords = ["tabularium", "plugin-registry", "client", "api"]
 categories = ["api-bindings", "asynchronous"]
 readme = "README.md"
