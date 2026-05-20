@@ -77,11 +77,12 @@ apps/
   backend/         API Elysia + wizard di installazione
   frontend/        SPA SvelteKit
 packages/
-  client/          @tabularium/client — client Eden Treaty tipizzato
-  manifest/        @tabularium/manifest — validatore puro + primitive di integrità
-  cli/             @tabularium/cli — `tabularium validate` lato autore
+  client/          @tabularium/client — client Eden Treaty tipizzato (TypeScript)
+  manifest/        @tabularium/manifest — validatore puro + primitive di integrità (su npm)
+  cli/             @tabularium/cli — `tabularium validate` lato autore (su npm)
+  tabularium-rs/   tabularium-sdk — client Rust asincrono (su crates.io)
   tsconfig/        tsconfig condiviso
-deploy/            manifest k3s + script di build dell'immagine
+deploy/            manifest k3s (build dell'immagine in `.forgejo/workflows/docker-build.yml`)
 docs/              contenuti Docsify (guide integrity, deploy, ecc.)
 .forgejo/          Workflow Codeberg Forgejo Actions
 ```

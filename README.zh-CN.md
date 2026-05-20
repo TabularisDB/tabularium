@@ -77,11 +77,12 @@ apps/
   backend/         Elysia API + 安装向导
   frontend/        SvelteKit SPA
 packages/
-  client/          @tabularium/client — 类型化 Eden Treaty 客户端
-  manifest/        @tabularium/manifest — 纯 validator + integrity primitives
-  cli/             @tabularium/cli — 作者侧 `tabularium validate`
+  client/          @tabularium/client — 类型化 Eden Treaty 客户端 (TypeScript)
+  manifest/        @tabularium/manifest — 纯 validator + integrity primitives（已发布到 npm）
+  cli/             @tabularium/cli — 作者侧 `tabularium validate`（已发布到 npm）
+  tabularium-rs/   tabularium-sdk — 异步 Rust 客户端（已发布到 crates.io）
   tsconfig/        共享 tsconfig
-deploy/            k3s manifests + 镜像构建脚本
+deploy/            k3s manifests（镜像构建在 `.forgejo/workflows/docker-build.yml` 中运行）
 docs/              Docsify 文档内容(integrity 指南、部署等)
 .forgejo/          Codeberg Forgejo Actions 工作流
 ```
