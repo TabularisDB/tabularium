@@ -25,6 +25,8 @@
       "!apps/frontend/messages",
       "!apps/frontend/project.inlang",
       "!apps/frontend/static",
+      "!packages/tabularium-rs/openapi.json",
+      "!packages/tabularium-rs/target",
       "!vendor",
       "!bun.lock",
       "!**/package.json",

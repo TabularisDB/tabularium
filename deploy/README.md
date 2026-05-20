@@ -17,19 +17,16 @@ Already present on `lyna`:
 2. **OAuth callback URLs** — callbacks are per provider-instance: `https://registry.spitzli.dev/auth/<instance-id>/callback`. The instance ID is the slug you give the provider in `/admin/providers` (e.g. `github`, `codeberg`). Add the matching callback URL to each upstream OAuth app.
 3. **Cloudflare SSL mode** — set to **Flexible** (origin HTTP). Or "Full" with the TLS block in `40-ingress.yaml` enabled + a cert-manager cert.
 
-## Build + load image
+## Build + push image
 
-The cluster pulls from local containerd (`imagePullPolicy: Never`), so the image must be imported on `lyna`.
+CI (`.forgejo/workflows/docker-build.yml`) handles this. It runs on:
 
-```bash
-# From repo root. Requires SSH access to lyna.
-./deploy/build-image.sh dev
+- `release: published` → tags the image with `vX.Y.Z`, `latest`, and the commit SHA
+- `workflow_dispatch` → tags it as `dev-<short-sha>`
 
-# Override host/user if needed:
-K3S_HOST=lyna K3S_USER=root ./deploy/build-image.sh dev
-```
+The workflow runs on `lyna` (`runs-on: lyna`), so the build uses the lyna node's docker daemon directly. Output goes to `codeberg.org/tabularium/tabularium:<tag>` via a `PACKAGE_TOKEN` secret with `write:package` scope.
 
-This builds locally, saves a tarball, and imports it into `k3s ctr images`.
+For ad-hoc local builds, run `docker build -t tabularium:dev .` and either push to the codeberg registry yourself or import directly into k3s containerd with `docker save | ssh lyna sudo k3s ctr images import -`.
 
 ## Create the secret
 
@@ -75,7 +72,12 @@ After CF DNS propagation: open <https://registry.spitzli.dev>.
 
 ## Update image after code changes
 
+Trigger the `Build Docker image` workflow (push to `main` / dispatch / cut a release), then point the deployment at the freshly-built tag:
+
 ```bash
-./deploy/build-image.sh dev
-kubectl -n tabularis-registry rollout restart deploy/registry
+kubectl -n tabularis-registry set image deploy/registry \
+  registry=codeberg.org/tabularium/tabularium:<tag>
+kubectl -n tabularis-registry rollout status deploy/registry
 ```
+
+`:latest` is updated by every release, so plain `rollout restart` is enough when running on `imagePullPolicy: Always`.
