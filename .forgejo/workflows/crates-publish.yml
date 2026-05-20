@@ -76,7 +76,28 @@ jobs:
 
       - name: Cargo build
         working-directory: packages/tabularium-rs
-        run: cargo build --release
+        # Capture build output into the step summary so failures are diagnosable
+        # even when the runner's log endpoint is unreachable from outside the UI.
+        run: |
+          set +e
+          {
+            echo "## Cargo build diagnostics"
+            echo '```'
+            echo "pwd: $(pwd)"
+            echo "cargo: $(command -v cargo) -> $(cargo --version)"
+            echo "rustc: $(command -v rustc) -> $(rustc --version)"
+            echo "PATH: $PATH"
+            echo "ls -la:"
+            ls -la
+            echo '```'
+            echo
+            echo '### `cargo build --release --verbose` output'
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          cargo build --release --verbose 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
+          rc=${PIPESTATUS[0]}
+          echo '```' >> "$GITHUB_STEP_SUMMARY"
+          exit "$rc"
 
       - name: Cargo test
         working-directory: packages/tabularium-rs
