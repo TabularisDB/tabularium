@@ -16,6 +16,11 @@ RUN bun install --frozen-lockfile
 
 COPY . .
 
+# Build the manifest workspace package before the frontend so its dist/
+# is available — `@tabularium/manifest`'s package.json points "main" at
+# ./dist/index.js (so it publishes cleanly to npm), and `apps/api` imports
+# from it at runtime via that resolution.
+RUN cd packages/manifest && bun run build
 RUN cd apps/frontend && bun run build
 
 FROM docker.io/oven/bun:1.3-alpine@sha256:5acc90a93e91ff07bf72aa90a7c9f0fa189765aec90b47bdbf2152d2196383c0 AS prod-deps
@@ -107,6 +112,7 @@ COPY --from=build --chown=app:app /repo/apps/api/index.ts ./apps/api/index.ts
 COPY --from=build --chown=app:app /repo/apps/api/tsconfig.json ./apps/api/tsconfig.json
 COPY --from=build --chown=app:app /repo/apps/api/bunfig.toml ./apps/api/bunfig.toml
 COPY --from=build --chown=app:app /repo/packages/manifest/src ./packages/manifest/src
+COPY --from=build --chown=app:app /repo/packages/manifest/dist ./packages/manifest/dist
 COPY --from=build --chown=app:app /repo/apps/frontend/dist ./apps/frontend/dist
 
 RUN mkdir -p /app/apps/api/data && chown -R app:app /app/apps/api/data
