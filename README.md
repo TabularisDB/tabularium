@@ -16,10 +16,15 @@ A directory of plugins (or any release-shipping artefact) with a web UI, an OAut
 
 ## Features
 
-- 🧩 **Multi-provider submission** — GitHub, GitLab, Gitea (any instance)
+- 🧩 **Multi-provider submission** — GitHub, GitLab, Gitea, Forgejo (any instance), with manifest preview on repo select
+- 🔐 **Signed releases** — every ingested release is hashed (SHA-256) and signed with the registry's Ed25519 key; JWKS at `/.well-known/registry-key.json`. GitHub build-provenance attestations are relayed when present.
+- 📨 **Plugin requests** — users can request plugins, upvote, and claim them at `/requests` (toggleable)
+- 🔁 **Plugin transfers** — owners can transfer plugin ownership between accounts from `/settings`
+- 🌐 **Multi-locale READMEs** — manifest `readmes:` maps locales to README paths; registry serves the matched README via `?locale=`
+- 📱 **Desktop app handoff** — operators can register `tabularis://`-style URL schemes; the plugin detail page surfaces an "Open in App" CTA
+- 🏷 **Plugin kinds** — admin-defined taxonomy (Themes, Snippets, SQL Templates, …) with opt-in per-kind public catalogue subpages
 - 🪄 **Install wizard** — structured DB form (host/port/user/pw + test-connection), bootstrap admin password printed to logs, auto-redirect into `/admin` already signed-in after restart
 - 📝 **Built-in CMS** — markdown pages with widgets, translations per locale
-- 🏷 **Plugin kinds** — admin-defined taxonomy (Themes, Snippets, SQL Templates, …) consumed by end-user apps as filter chips
 - 🎨 **Branding** — name, colours, logo, favicon, analytics, robots policy
 - 🌍 **6 UI languages** — English, Deutsch, Español, Français, Italiano, 中文 — admin-configurable
 - 🗄 **Multi-dialect** — SQLite, Postgres, or MySQL (auto-detected from `DATABASE_URL`)
@@ -109,7 +114,11 @@ apps/
   frontend/        SvelteKit SPA
 packages/
   client/          @tabularium/client — typed Eden Treaty client
+  manifest/        @tabularium/manifest — pure validator + integrity primitives
+  cli/             @tabularium/cli — author-side `tabularium validate`
   tsconfig/        Shared tsconfig
+deploy/            k3s manifests + image build script
+docs/              Docsify content (integrity guides, deploy, etc.)
 .forgejo/          Codeberg Forgejo Actions workflows
 ```
 

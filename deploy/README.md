@@ -14,7 +14,7 @@ Already present on `lyna`:
 ## One-time
 
 1. **DNS** — point `registry.spitzli.dev` (A record) at `164.68.114.26`. Proxy via Cloudflare (orange cloud).
-2. **OAuth callback URLs** — add `https://registry.spitzli.dev/auth/github/callback` (GitHub) and `https://registry.spitzli.dev/auth/codeberg/callback` (Codeberg) to your existing OAuth apps.
+2. **OAuth callback URLs** — callbacks are per provider-instance: `https://registry.spitzli.dev/auth/<instance-id>/callback`. The instance ID is the slug you give the provider in `/admin/providers` (e.g. `github`, `codeberg`). Add the matching callback URL to each upstream OAuth app.
 3. **Cloudflare SSL mode** — set to **Flexible** (origin HTTP). Or "Full" with the TLS block in `40-ingress.yaml` enabled + a cert-manager cert.
 
 ## Build + load image
@@ -35,12 +35,17 @@ This builds locally, saves a tarball, and imports it into `k3s ctr images`.
 
 ```bash
 kubectl -n tabularis-registry create secret generic registry-env \
+  --from-literal=JWT_SECRET="$(openssl rand -hex 32)" \
+  --from-literal=TOKEN_ENC_KEY="$(openssl rand -hex 32)" \
   --from-literal=GITHUB_CLIENT_ID="..." \
   --from-literal=GITHUB_CLIENT_SECRET="..." \
-  --from-literal=GITEA_CODEBERG_CLIENT_ID="..." \
-  --from-literal=GITEA_CODEBERG_CLIENT_SECRET="..." \
-  --from-literal=JWT_SECRET="$(openssl rand -hex 32)"
+  --from-literal=CODEBERG_CLIENT_ID="..." \
+  --from-literal=CODEBERG_CLIENT_SECRET="..."
 ```
+
+`TOKEN_ENC_KEY` encrypts OAuth tokens (access + refresh) and the registry's release-signing private key at rest. Rotate it only via a planned key-rotation (re-encrypt) — losing it means re-linking every OAuth identity and rotating the release signing key.
+
+The provider OAuth client envs are bootstrap-only — admins can add / replace provider instances via the `/admin/providers` UI after first boot.
 
 `BASE_URL`, `WEB_BASE_URL`, `PORT`, `NODE_ENV`, `LOG_LEVEL`, `DATABASE_URL` are set in the Deployment.
 
