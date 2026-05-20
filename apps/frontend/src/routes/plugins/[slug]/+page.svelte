@@ -38,8 +38,11 @@
 	const slug = $derived(page.params.slug)
 	const locale = $derived(i18n.current)
 
+	type VersionStat = { version: string; total: number; platforms: Record<string, number> }
+
 	let plugin = $state<Plugin | null>(null)
 	let stats = $state<PluginStats | null>(null)
+	let downloadStats = $state<{ total: number; versions: VersionStat[] } | null>(null)
 	let loading = $state(true)
 	let notFound = $state(false)
 	let deleting = $state(false)
@@ -74,9 +77,20 @@
 		}
 	}
 
+	async function loadDownloadStats() {
+		try {
+			const { data, error } = await eden.api.plugins({ slug }).downloads.get()
+			if (error) return
+			downloadStats = data as { total: number; versions: VersionStat[] }
+		} catch {
+			// silent
+		}
+	}
+
 	onMount(() => {
 		void load(locale)
 		void loadStats()
+		void loadDownloadStats()
 		if (!instanceInfo.loaded) void instanceInfo.refresh()
 	})
 
@@ -300,11 +314,6 @@
 		return 'gitea'
 	}
 
-	function totalReleaseSize(release: typeof latestRelease): number {
-		if (!release) return 0
-		return Object.values(release.assets).reduce((acc, a) => acc + (a.size ?? 0), 0)
-	}
-
 	const ogImage = $derived(plugin?.iconUrl ?? `${baseUrl}/favicon.png`)
 	const ogTitle = $derived(plugin ? `${plugin.name} — ${branding.name}` : branding.name)
 	const ogDescription = $derived(plugin?.description ?? '')
@@ -482,41 +491,56 @@
 					{#if installDeepLink}
 						<a
 							href={installDeepLink.href}
-							class="group flex items-center gap-3 px-4 py-3 rounded-lg border border-primary/30 bg-primary/[0.04] hover:bg-primary/[0.07] hover:border-primary/50 transition-colors"
+							class="group relative flex items-center gap-4 px-5 py-4 rounded-xl border border-primary/40 bg-gradient-to-br from-primary/[0.12] via-primary/[0.05] to-transparent hover:border-primary/60 hover:from-primary/[0.18] transition-all"
 						>
-							<Rocket class="h-4 w-4 text-primary" />
+							<div
+								class="h-10 w-10 rounded-lg bg-primary/20 border border-primary/30 flex items-center justify-center flex-shrink-0"
+							>
+								<Rocket class="h-5 w-5 text-primary" />
+							</div>
 							<div class="flex-1 min-w-0">
-								<div class="text-sm font-medium">
+								<div class="text-sm font-semibold">
 									{m.plugin_detail_open_in_app({ app: installDeepLink.scheme.name })}
 								</div>
-								<div class="text-[11px] text-muted-foreground">{m.plugin_detail_open_in_app_subtitle()}</div>
+								<div class="text-[11px] text-muted-foreground font-mono mt-0.5">
+									{installDeepLink.scheme.scheme}://{latestRelease ? ` · v${latestRelease.version}` : ''}
+								</div>
 							</div>
-							<span class="font-mono text-[11px] text-muted-foreground">{installDeepLink.scheme.scheme}://</span>
 						</a>
 					{/if}
 					{#if latestRelease && primaryDownload}
 						<a
 							href={primaryDownload.href}
 							data-sveltekit-reload
-							class="group relative flex items-center gap-4 px-5 py-4 rounded-xl border border-primary/30 bg-gradient-to-br from-primary/10 via-primary/[0.04] to-transparent hover:border-primary/60 hover:from-primary/[0.14] transition-all"
+							class={installDeepLink
+								? 'group flex items-center gap-3 px-4 py-3 rounded-lg border border-border bg-card hover:border-primary/40 hover:bg-foreground/[0.02] transition-colors'
+								: 'group relative flex items-center gap-4 px-5 py-4 rounded-xl border border-primary/40 bg-gradient-to-br from-primary/[0.12] via-primary/[0.05] to-transparent hover:border-primary/60 hover:from-primary/[0.18] transition-all'}
 						>
-							<div
-								class="h-10 w-10 rounded-lg bg-primary/15 border border-primary/25 flex items-center justify-center flex-shrink-0"
-							>
-								<Download class="h-5 w-5 text-primary" />
-							</div>
-							<div class="flex-1 min-w-0">
-								<div class="text-sm font-semibold">
-									{m.plugin_detail_download_for({ platform: platformLabel(primaryDownload.key) })}
+							{#if installDeepLink}
+								<Download class="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+								<div class="flex-1 min-w-0">
+									<div class="text-sm font-medium">
+										{m.plugin_detail_download_for({ platform: platformLabel(primaryDownload.key) })}
+									</div>
+									{#if primaryDownload.size}
+										<div class="text-[11px] text-muted-foreground font-mono">{formatBytes(primaryDownload.size)}</div>
+									{/if}
 								</div>
-								<div class="text-[11px] text-muted-foreground font-mono mt-0.5">
-									v{latestRelease.version}{primaryDownload.size ? ` · ${formatBytes(primaryDownload.size)}` : ''}
+							{:else}
+								<div
+									class="h-10 w-10 rounded-lg bg-primary/20 border border-primary/30 flex items-center justify-center flex-shrink-0"
+								>
+									<Download class="h-5 w-5 text-primary" />
 								</div>
-							</div>
-							<span
-								class="font-mono text-[10px] uppercase tracking-[0.14em] text-primary/70 group-hover:text-primary transition-colors"
-								>↓ {m.plugin_detail_download()}</span
-							>
+								<div class="flex-1 min-w-0">
+									<div class="text-sm font-semibold">
+										{m.plugin_detail_download_for({ platform: platformLabel(primaryDownload.key) })}
+									</div>
+									<div class="text-[11px] text-muted-foreground font-mono mt-0.5">
+										v{latestRelease.version}{primaryDownload.size ? ` · ${formatBytes(primaryDownload.size)}` : ''}
+									</div>
+								</div>
+							{/if}
 						</a>
 						{#if otherDownloads.length > 0}
 							<details class="group rounded-lg border border-border bg-card/30 overflow-hidden">
@@ -703,6 +727,68 @@
 						</div>
 					</section>
 				{/if}
+
+				<!-- DOWNLOAD STATS PER VERSION -->
+				<section class="space-y-4">
+					<h2 class="text-2xl font-semibold tracking-tight">{m.plugin_detail_downloads_per_version()}</h2>
+					{#if downloadStats && downloadStats.versions.length > 0}
+						<div class="rounded-xl border border-border bg-card/50 overflow-hidden">
+							<table class="w-full">
+								<thead>
+									<tr class="border-b border-border bg-card">
+										<th
+											class="px-4 py-2.5 text-left text-[10px] uppercase tracking-[0.12em] font-mono text-muted-foreground"
+										>
+											v
+										</th>
+										<th
+											class="px-4 py-2.5 text-right text-[10px] uppercase tracking-[0.12em] font-mono text-muted-foreground"
+										>
+											{m.plugin_detail_downloads_total()}
+										</th>
+										<th
+											class="px-4 py-2.5 text-left text-[10px] uppercase tracking-[0.12em] font-mono text-muted-foreground hidden sm:table-cell"
+										>
+											{m.plugin_detail_stat_downloads()}
+										</th>
+									</tr>
+								</thead>
+								<tbody>
+									{#each downloadStats.versions as v (v.version)}
+										{@const denom = downloadStats?.total || 1}
+										{@const pct = (v.total / denom) * 100}
+										<tr class="border-t border-border/60 first:border-t-0">
+											<td class="px-4 py-2.5 font-mono text-xs">v{v.version}</td>
+											<td class="px-4 py-2.5 text-right">
+												<div class="inline-flex items-center gap-2">
+													<div class="hidden sm:block w-20 h-1.5 rounded-full bg-border overflow-hidden">
+														<div class="h-full bg-primary/60" style:width="{Math.max(2, pct)}%"></div>
+													</div>
+													<span class="font-mono text-xs tabular-nums">{formatNumber(v.total)}</span>
+												</div>
+											</td>
+											<td class="px-4 py-2.5 hidden sm:table-cell">
+												<div class="flex flex-wrap gap-1.5">
+													{#each Object.entries(v.platforms) as [pl, n] (pl)}
+														<span
+															class="font-mono text-[10px] px-1.5 py-0.5 rounded bg-foreground/5 text-muted-foreground"
+														>
+															{platformLabel(pl)} · {formatNumber(n)}
+														</span>
+													{/each}
+												</div>
+											</td>
+										</tr>
+									{/each}
+								</tbody>
+							</table>
+						</div>
+					{:else}
+						<div class="rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">
+							{m.plugin_detail_downloads_empty()}
+						</div>
+					{/if}
+				</section>
 			</div>
 
 			<!-- SIDEBAR -->
@@ -736,7 +822,7 @@
 						</div>
 						<div class="text-base">{formatRelative(latestRelease?.createdAt)}</div>
 					</div>
-					{#if latestRelease}
+					{#if primaryDownload?.size}
 						<div class="flex items-center justify-between py-3 border-b border-dashed border-border/70">
 							<div
 								class="inline-flex items-center gap-2 text-xs uppercase tracking-[0.06em] text-muted-foreground font-mono"
@@ -744,7 +830,7 @@
 								<HardDrive class="h-3.5 w-3.5" />
 								<span>{m.plugin_detail_stat_size()}</span>
 							</div>
-							<div class="text-base">{formatBytes(totalReleaseSize(latestRelease))}</div>
+							<div class="text-base">{formatBytes(primaryDownload.size)}</div>
 						</div>
 					{/if}
 					{#if latestRelease?.minRuntimeVersion}
