@@ -21,6 +21,7 @@
 	import Code2 from '@lucide/svelte/icons/code-2'
 	import Sparkles from '@lucide/svelte/icons/sparkles'
 	import Check from '@lucide/svelte/icons/check'
+	import ChevronDown from '@lucide/svelte/icons/chevron-down'
 	import Badge from '$components/ui/Badge.svelte'
 	import Button from '$components/ui/Button.svelte'
 	import Skeleton from '$components/ui/Skeleton.svelte'
@@ -96,6 +97,26 @@
 	const platformList = $derived.by(() => {
 		if (!latestRelease) return [] as Array<{ key: string; url: string; size?: number; sha256?: string }>
 		return Object.entries(latestRelease.assets).map(([key, entry]) => ({ key, ...entry }))
+	})
+
+	function downloadHref(slug: string, key: string): string {
+		const [os, arch] = key.split('-')
+		return `/api/plugins/${slug}/latest?os=${encodeURIComponent(os ?? '')}&arch=${encodeURIComponent(arch ?? '')}&redirect=1`
+	}
+
+	const primaryDownload = $derived.by(() => {
+		if (!plugin || platformList.length === 0) return null
+		const guessed = guessPlatform(platformList.map((p) => p.key))
+		const match = platformList.find((p) => p.key === guessed)
+		if (!match) return null
+		return { ...match, href: downloadHref(plugin.id, match.key) }
+	})
+
+	const otherDownloads = $derived.by(() => {
+		const slug = plugin?.id
+		if (!slug) return [] as Array<{ key: string; url: string; size?: number; sha256?: string; href: string }>
+		const skip = primaryDownload?.key
+		return platformList.filter((p) => p.key !== skip).map((p) => ({ ...p, href: downloadHref(slug, p.key) }))
 	})
 
 	const installDeepLink = $derived.by(() => {
@@ -333,52 +354,81 @@
 		</div>
 	{:else if plugin}
 		<!-- HERO -->
-		<header class="relative pt-14 pb-10">
-			<div
-				class="pointer-events-none absolute inset-0 -z-10 bg-gradient-to-br from-primary/10 via-transparent to-primary/[0.03]"
-			></div>
+		<header class="relative pt-14 pb-10 overflow-hidden">
+			<div class="pointer-events-none absolute inset-0 -z-10">
+				<div
+					class="absolute inset-x-0 top-0 h-80 bg-gradient-to-b from-primary/[0.08] via-primary/[0.02] to-transparent"
+				></div>
+				<div class="absolute top-4 left-8 h-56 w-56 rounded-full bg-primary/15 blur-3xl opacity-60"></div>
+				<div class="absolute top-12 right-1/4 h-40 w-40 rounded-full bg-primary/10 blur-3xl opacity-40"></div>
+			</div>
 
-			<nav class="text-xs font-mono text-muted-foreground mb-6">
+			<nav class="text-xs font-mono text-muted-foreground mb-8 flex items-center gap-2 flex-wrap">
 				<a href="/plugins" class="hover:text-foreground transition-colors">/plugins</a>
-				<span class="opacity-50"> · </span>
+				{#if plugin.category}
+					<span class="opacity-40">·</span>
+					<a
+						href={`/plugins?category=${encodeURIComponent(plugin.category)}`}
+						class="hover:text-foreground transition-colors">{plugin.category}</a
+					>
+				{/if}
+				<span class="opacity-40">·</span>
 				<span class="text-foreground">{plugin.id}</span>
 			</nav>
 
 			<div class="flex items-start gap-6 flex-wrap">
-				<div
-					class="h-20 w-20 rounded-xl border border-border flex items-center justify-center overflow-hidden flex-shrink-0 bg-card"
-				>
-					{#if plugin.iconUrl}
-						<img src={plugin.iconUrl} alt={plugin.name} class="h-full w-full object-contain p-2" loading="eager" />
-					{:else}
-						<Boxes class="h-8 w-8 text-muted-foreground" strokeWidth={1.4} />
-					{/if}
+				<div class="relative flex-shrink-0">
+					<div class="absolute -inset-2 bg-primary/20 blur-2xl rounded-full opacity-60"></div>
+					<div
+						class="relative h-24 w-24 rounded-2xl border border-border bg-card flex items-center justify-center overflow-hidden shadow-xl shadow-primary/10"
+					>
+						{#if plugin.iconUrl}
+							<img src={plugin.iconUrl} alt={plugin.name} class="h-full w-full object-contain p-2" loading="eager" />
+						{:else}
+							<Boxes class="h-10 w-10 text-muted-foreground" strokeWidth={1.4} />
+						{/if}
+					</div>
 				</div>
 
 				<div class="flex-1 min-w-[280px] space-y-3">
-					<div class="flex items-center gap-3 flex-wrap">
-						<h1 class="text-5xl md:text-6xl leading-[0.95] tracking-tight font-semibold">{plugin.name}</h1>
+					<div class="flex items-center gap-1.5 flex-wrap">
 						{#if plugin.featured}
 							<span
-								class="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] tracking-[0.18em] uppercase font-mono bg-warning/10 text-warning border border-warning/25"
+								class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] tracking-[0.16em] uppercase font-mono bg-gradient-to-r from-warning/20 to-warning/5 text-warning border border-warning/30"
 							>
 								<Sparkles class="h-3 w-3" />
 								{m.plugin_detail_featured()}
 							</span>
 						{/if}
-					</div>
-					<p class="text-lg text-foreground/85 max-w-2xl leading-relaxed">{plugin.description}</p>
-					<div class="flex items-center gap-4 text-sm text-muted-foreground flex-wrap pt-1">
-						<span>{m.plugin_detail_by()} <span class="text-foreground">{author}</span></span>
 						{#if plugin.latestVersion}
-							<span class="font-mono text-foreground">v{plugin.latestVersion}</span>
+							<span
+								class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-mono bg-primary/10 text-primary border border-primary/20"
+								>v{plugin.latestVersion}</span
+							>
 						{/if}
 						{#if plugin.license}
-							<span class="inline-flex items-center gap-1.5"><Shield class="h-3.5 w-3.5" />{plugin.license}</span>
+							<span
+								class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-mono text-muted-foreground border border-border bg-card/60"
+							>
+								<Shield class="h-3 w-3" />{plugin.license}
+							</span>
 						{/if}
 						{#if plugin.category}
-							<Badge variant="outline">{plugin.category}</Badge>
+							<Badge variant="outline" class="text-[10px] font-mono">{plugin.category}</Badge>
 						{/if}
+					</div>
+					<h1 class="text-5xl md:text-6xl leading-[0.95] tracking-tight font-semibold">{plugin.name}</h1>
+					<p class="text-lg text-foreground/85 max-w-2xl leading-relaxed">{plugin.description}</p>
+					<div class="flex items-center gap-4 text-sm text-muted-foreground flex-wrap pt-1">
+						<span>{m.plugin_detail_by()} <span class="text-foreground font-medium">{author}</span></span>
+						{#if stats}
+							<span class="inline-flex items-center gap-1.5"
+								><Star class="h-3.5 w-3.5" />{formatNumber(stats.stars)}</span
+							>
+						{/if}
+						<span class="inline-flex items-center gap-1.5"
+							><Download class="h-3.5 w-3.5" />{formatNumber(plugin.downloads)}</span
+						>
 					</div>
 				</div>
 
@@ -444,12 +494,64 @@
 							<span class="font-mono text-[11px] text-muted-foreground">{installDeepLink.scheme.scheme}://</span>
 						</a>
 					{/if}
-					{#if latestRelease && platformList.length > 0}
+					{#if latestRelease && primaryDownload}
+						<a
+							href={primaryDownload.href}
+							data-sveltekit-reload
+							class="group relative flex items-center gap-4 px-5 py-4 rounded-xl border border-primary/30 bg-gradient-to-br from-primary/10 via-primary/[0.04] to-transparent hover:border-primary/60 hover:from-primary/[0.14] transition-all"
+						>
+							<div
+								class="h-10 w-10 rounded-lg bg-primary/15 border border-primary/25 flex items-center justify-center flex-shrink-0"
+							>
+								<Download class="h-5 w-5 text-primary" />
+							</div>
+							<div class="flex-1 min-w-0">
+								<div class="text-sm font-semibold">
+									{m.plugin_detail_download_for({ platform: platformLabel(primaryDownload.key) })}
+								</div>
+								<div class="text-[11px] text-muted-foreground font-mono mt-0.5">
+									v{latestRelease.version}{primaryDownload.size ? ` · ${formatBytes(primaryDownload.size)}` : ''}
+								</div>
+							</div>
+							<span
+								class="font-mono text-[10px] uppercase tracking-[0.14em] text-primary/70 group-hover:text-primary transition-colors"
+								>↓ {m.plugin_detail_download()}</span
+							>
+						</a>
+						{#if otherDownloads.length > 0}
+							<details class="group rounded-lg border border-border bg-card/30 overflow-hidden">
+								<summary
+									class="px-4 py-2.5 cursor-pointer text-xs font-mono text-muted-foreground hover:text-foreground transition-colors flex items-center justify-between list-none [&::-webkit-details-marker]:hidden"
+								>
+									<span>{m.plugin_detail_download_other_platforms({ count: otherDownloads.length })}</span>
+									<ChevronDown class="h-3.5 w-3.5 transition-transform group-open:rotate-180" />
+								</summary>
+								<div class="grid grid-cols-1 sm:grid-cols-2 gap-2 px-3 pb-3 pt-1 border-t border-border/60">
+									{#each otherDownloads as p (p.key)}
+										<a
+											href={p.href}
+											data-sveltekit-reload
+											class="group/item flex items-center gap-3 px-3 py-2.5 rounded-md border border-border bg-card hover:border-primary/40 hover:bg-foreground/[0.02] transition-colors"
+										>
+											<Download
+												class="h-3.5 w-3.5 text-muted-foreground group-hover/item:text-primary transition-colors"
+											/>
+											<div class="flex-1 min-w-0">
+												<div class="font-mono text-xs">{platformLabel(p.key)}</div>
+												{#if p.size}
+													<div class="text-[10px] text-muted-foreground">{formatBytes(p.size)}</div>
+												{/if}
+											</div>
+										</a>
+									{/each}
+								</div>
+							</details>
+						{/if}
+					{:else if latestRelease && platformList.length > 0}
 						<div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
 							{#each platformList as p (p.key)}
-								{@const [os, arch] = p.key.split('-')}
 								<a
-									href={`/api/plugins/${plugin.id}/latest?os=${encodeURIComponent(os ?? '')}&arch=${encodeURIComponent(arch ?? '')}&redirect=1`}
+									href={downloadHref(plugin.id, p.key)}
 									data-sveltekit-reload
 									class="group flex items-center gap-3 px-4 py-3 rounded-lg border border-border bg-card hover:border-primary/40 hover:bg-foreground/[0.02] transition-colors"
 								>
