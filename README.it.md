@@ -14,10 +14,15 @@ Una directory di plugin (o di qualsiasi artefatto distribuito via release) con U
 
 ## Caratteristiche
 
-- 🧩 **Submission multi-provider** — GitHub, GitLab, Gitea (qualsiasi istanza)
+- 🧩 **Submission multi-provider** — GitHub, GitLab, Gitea, Forgejo (qualsiasi istanza), con anteprima del manifest alla selezione del repo
+- 🔐 **Release firmate** — ogni release ingerita viene hashata (SHA-256) e firmata con la chiave Ed25519 del registry; JWKS su `/.well-known/registry-key.json`. Le attestation di build-provenance di GitHub vengono inoltrate quando presenti.
+- 📨 **Richieste di plugin** — gli utenti possono richiedere plugin, votarli e reclamarli su `/requests` (disattivabile)
+- 🔁 **Trasferimenti di plugin** — i proprietari possono trasferire la titolarità di un plugin tra account da `/settings`
+- 🌐 **README multilingua** — il campo `readmes:` del manifest mappa lingue a percorsi di README; il registry serve il README corrispondente via `?locale=`
+- 📱 **Handoff verso app desktop** — gli operatori possono registrare schemi URL tipo `tabularis://`; la pagina di dettaglio del plugin mostra una CTA "Apri nell'app"
+- 🏷 **Tipi di plugin** — tassonomia definita dall'admin (temi, snippet, template SQL, …) con sottopagine pubbliche opt-in per tipo
 - 🪄 **Wizard di installazione** — form DB strutturato (host/porta/utente/password + test di connessione), password bootstrap nei log, login automatico in `/admin` dopo il riavvio
 - 📝 **CMS integrato** — pagine markdown con widget e traduzioni per lingua
-- 🏷 **Tipi di plugin** — tassonomia definita dall'admin (temi, snippet, template SQL, …) consumata dalle app utente come filtri
 - 🎨 **Branding** — nome, colori, logo, favicon, analytics, policy di indicizzazione
 - 🌍 **6 lingue** — English, Deutsch, Español, Français, Italiano, 中文 — configurabile dall'admin
 - 🗄 **Multi-dialetto** — SQLite, Postgres o MySQL (auto-rilevato da `DATABASE_URL`)
@@ -73,7 +78,11 @@ apps/
   frontend/        SPA SvelteKit
 packages/
   client/          @tabularium/client — client Eden Treaty tipizzato
+  manifest/        @tabularium/manifest — validatore puro + primitive di integrità
+  cli/             @tabularium/cli — `tabularium validate` lato autore
   tsconfig/        tsconfig condiviso
+deploy/            manifest k3s + script di build dell'immagine
+docs/              contenuti Docsify (guide integrity, deploy, ecc.)
 .forgejo/          Workflow Codeberg Forgejo Actions
 ```
 

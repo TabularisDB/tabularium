@@ -14,10 +14,15 @@
 
 ## 特性
 
-- 🧩 **多 Provider 提交** — GitHub、GitLab、Gitea(支持任意自建实例)
+- 🧩 **多 Provider 提交** — GitHub、GitLab、Gitea、Forgejo(支持任意自建实例),选择仓库时即可预览 manifest
+- 🔐 **签名 release** — 每个入库的 release 都会被哈希(SHA-256)并使用注册中心的 Ed25519 密钥签名;JWKS 位于 `/.well-known/registry-key.json`。若存在 GitHub build-provenance attestation,会一并转发。
+- 📨 **插件请求** — 用户可在 `/requests` 提交插件请求、投票并认领(可关闭)
+- 🔁 **插件转让** — 所有者可在 `/settings` 中将插件所有权在账户之间转让
+- 🌐 **多语言 README** — manifest 的 `readmes:` 字段将 locale 映射到 README 路径;注册中心通过 `?locale=` 返回匹配的 README
+- 📱 **桌面应用跳转** — 运维方可以注册 `tabularis://` 风格的 URL scheme;插件详情页会展示「在应用中打开」CTA
+- 🏷 **插件类型** — 管理员可维护的分类法(Themes、Snippets、SQL 模板……),可按类型开启独立的公开目录子页
 - 🪄 **安装向导** — 冷启动无需数据库,结构化数据库表单 + 连接测试,完成后自动登录并跳转
 - 📝 **内建 CMS** — 支持 widget 的 Markdown 页面,按语言独立翻译
-- 🏷 **插件类型** — 管理员可维护的分类法(Themes、Snippets、SQL 模板),在公共目录上以 facet 形式呈现
 - 🎨 **品牌定制** — 名称、配色、Logo、favicon、统计脚本、索引策略
 - 🌍 **6 种语言** — English、Deutsch、Español、Français、Italiano、中文 — 管理员可配置
 - 🗄 **多方言支持** — SQLite、Postgres 或 MySQL(从 `DATABASE_URL` 自动识别)
@@ -73,7 +78,11 @@ apps/
   frontend/        SvelteKit SPA
 packages/
   client/          @tabularium/client — 类型化 Eden Treaty 客户端
+  manifest/        @tabularium/manifest — 纯 validator + integrity primitives
+  cli/             @tabularium/cli — 作者侧 `tabularium validate`
   tsconfig/        共享 tsconfig
+deploy/            k3s manifests + 镜像构建脚本
+docs/              Docsify 文档内容(integrity 指南、部署等)
 .forgejo/          Codeberg Forgejo Actions 工作流
 ```
 

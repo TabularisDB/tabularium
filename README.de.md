@@ -14,10 +14,15 @@ Ein Verzeichnis für Plugins (oder beliebige Release-Artefakte) mit Web-UI, OAut
 
 ## Features
 
-- 🧩 **Multi-Provider-Submission** — GitHub, GitLab, Gitea (beliebige Instanzen)
+- 🧩 **Multi-Provider-Submission** — GitHub, GitLab, Gitea, Forgejo (beliebige Instanzen), mit Manifest-Vorschau bei der Repo-Auswahl
+- 🔐 **Signierte Releases** — jedes eingelesene Release wird gehasht (SHA-256) und mit dem Ed25519-Schlüssel der Registry signiert; JWKS unter `/.well-known/registry-key.json`. GitHub-Build-Provenance-Attestations werden weitergereicht, sofern vorhanden.
+- 📨 **Plugin-Requests** — Nutzer:innen können Plugins anfragen, upvoten und unter `/requests` für sich beanspruchen (abschaltbar)
+- 🔁 **Plugin-Transfers** — Owner können Plugin-Eigentum unter `/settings` zwischen Accounts übertragen
+- 🌐 **Mehrsprachige READMEs** — das Manifest-Feld `readmes:` mappt Locales auf README-Pfade; die Registry liefert das passende README via `?locale=`
+- 📱 **Desktop-App-Handoff** — Betreiber:innen können `tabularis://`-artige URL-Schemes registrieren; die Plugin-Detailseite zeigt einen „In App öffnen"-CTA
+- 🏷 **Plugin-Arten** — admin-definierte Taxonomie (Themes, Snippets, SQL-Templates, …) mit optionalen öffentlichen Katalog-Unterseiten pro Art
 - 🪄 **Install-Wizard** — strukturiertes DB-Formular (Host/Port/User/PW + Test-Connection), Bootstrap-Passwort im Log, nach dem Restart automatischer Login in `/admin`
 - 📝 **Integriertes CMS** — Markdown-Seiten mit Widgets, Übersetzungen pro Sprache
-- 🏷 **Plugin-Arten** — admin-definierte Taxonomie (Themes, Snippets, SQL-Templates, …), die Endnutzer-Apps als Filter-Chips konsumieren
 - 🎨 **Branding** — Name, Farben, Logo, Favicon, Analytics, Indexierungs-Policy
 - 🌍 **6 UI-Sprachen** — English, Deutsch, Español, Français, Italiano, 中文 — vom Admin konfigurierbar
 - 🗄 **Multi-Dialekt** — SQLite, Postgres oder MySQL (auto-erkannt aus `DATABASE_URL`)
@@ -73,7 +78,11 @@ apps/
   frontend/        SvelteKit SPA
 packages/
   client/          @tabularium/client — typisierter Eden-Treaty-Client
+  manifest/        @tabularium/manifest — reiner Validator + Integrity-Primitives
+  cli/             @tabularium/cli — autorenseitiges `tabularium validate`
   tsconfig/        Shared tsconfig
+deploy/            k3s-Manifests + Image-Build-Script
+docs/              Docsify-Inhalte (Integrity-Guides, Deploy, etc.)
 .forgejo/          Codeberg-Forgejo-Actions-Workflows
 ```
 
