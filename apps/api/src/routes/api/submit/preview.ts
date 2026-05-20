@@ -6,11 +6,20 @@ import { deriveSlug } from '$lib/slug'
 import { parseRepoUrl, checkOwnership } from '$lib/providers'
 import { getValidAccessToken, OAuthExpiredError, UpstreamUnauthorizedError } from '$lib/oauth-tokens'
 import { resolveManifest, ManifestValidationError } from '$lib/manifest'
+import { getManifestConfig } from '$lib/manifest-config'
 import { fetchLatestRelease } from '$lib/release-fetch'
 import { getFeatures } from '$lib/features'
 import { logger } from '$lib/logger'
 
 const log = logger.child({ module: 'submit-preview' })
+
+function formatManifestFilenames(): string {
+  const files = getManifestConfig().files
+  if (files.length === 0) return '(no filenames configured)'
+  if (files.length === 1) return `\`${files[0]}\``
+  if (files.length === 2) return `\`${files[0]}\` or \`${files[1]}\``
+  return files.map((f, i) => (i === files.length - 1 ? `or \`${f}\`` : `\`${f}\``)).join(', ')
+}
 
 const screenshotSchema = t.Object({
   url: t.String(),
@@ -105,7 +114,7 @@ export default new Elysia()
           providerKind: ref.instance.kind,
           fromManifest: false as const,
           suggestedName: humanize(ref.repo),
-          message: 'No release yet — the registry will pull the .tabularium manifest on the first release webhook.',
+          message: `No release yet — the registry will pull the manifest (${formatManifestFilenames()}) on the first release webhook.`,
         }
       }
 
@@ -122,8 +131,7 @@ export default new Elysia()
             providerKind: ref.instance.kind,
             fromManifest: false as const,
             suggestedName: humanize(ref.repo),
-            message:
-              'Release found, but no .tabularium file at the tag — you will need to provide a name and description manually.',
+            message: `Release found, but no manifest file at the tag (looked for ${formatManifestFilenames()}) — you will need to provide a name and description manually.`,
           }
         }
         const { parsed, source, readmeLocales } = manifest
