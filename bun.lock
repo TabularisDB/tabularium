@@ -15,7 +15,7 @@
     },
     "apps/api": {
       "name": "@tabularium/api",
-      "version": "0.0.0",
+      "version": "0.1.0",
       "dependencies": {
         "@elysiajs/cors": "^1.4.2",
         "@elysiajs/openapi": "^1.4.5",
@@ -46,7 +46,7 @@
     },
     "apps/frontend": {
       "name": "@tabularium/registry-frontend",
-      "version": "0.0.1",
+      "version": "0.1.0",
       "dependencies": {
         "@lucide/svelte": "^1.3.0",
         "@tabularium/client": "workspace:*",
