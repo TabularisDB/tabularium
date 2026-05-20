@@ -3,6 +3,12 @@ import { Type, type Static } from '@sinclair/typebox'
 // Locked core. Operator-editable fields live in `manifest.extensions_schema`,
 // not here.
 export const ManifestSchema = Type.Object({
+  // URL slug identity. Optional — falls back to a sanitized repo name when
+  // omitted. Pattern matches crates.io / npm conventions: lowercase, must
+  // start with a letter, alphanumerics + `-` only, 1–64 chars.
+  id: Type.Optional(
+    Type.String({ minLength: 1, maxLength: 64, pattern: '^[a-z][a-z0-9-]*$' }),
+  ),
   name: Type.Optional(Type.String({ minLength: 1, maxLength: 60 })),
   description: Type.Optional(Type.String({ maxLength: 280 })),
   category: Type.Optional(Type.String({ maxLength: 40 })),

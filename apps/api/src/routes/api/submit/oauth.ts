@@ -73,7 +73,29 @@ export default new Elysia()
         return { error: ownership.reason }
       }
 
-      const slug = deriveSlug(ref.repo)
+      // Resolve the manifest BEFORE picking the slug — if the manifest
+      // declares `id` (crates.io-style: lowercase, dashes only) that becomes
+      // the authoritative slug; otherwise fall back to a sanitized repo name.
+      // We fetch the latest release here too so we can ingest it below
+      // without re-doing the work.
+      const latestRelease = await fetchLatestRelease(accessToken, ref).catch((err) => {
+        log.warn({ err, repo: ref.repo }, 'latest-release lookup failed at submit')
+        return null
+      })
+      let preflightManifest: Awaited<ReturnType<typeof resolveManifest>> = null
+      try {
+        if (latestRelease) {
+          preflightManifest = await resolveManifest(accessToken, ref, { ref: latestRelease.tag })
+        }
+      } catch (err) {
+        if (err instanceof ManifestValidationError) {
+          log.warn({ repo: ref.repo, errors: err.errors }, 'manifest invalid at submit — slug will fall back to repo name')
+        } else {
+          throw err
+        }
+      }
+
+      const slug = preflightManifest?.parsed.id ?? deriveSlug(ref.repo)
       const existing = await db.query.plugins.findFirst({ where: { id: slug } })
       if (existing) {
         set.status = 409
@@ -105,16 +127,14 @@ export default new Elysia()
       })
 
       try {
-        const latestRelease = await fetchLatestRelease(accessToken, ref).catch((err) => {
-          log.warn({ err, slug }, 'latest-release lookup failed at submit')
-          return null
-        })
         if (!latestRelease) {
           log.info({ slug }, 'no release yet — skipping manifest fetch, waiting for webhook')
         }
         if (latestRelease) {
           const tag = latestRelease.tag
-          const manifest = await resolveManifest(accessToken, ref, { ref: tag })
+          // preflightManifest was already resolved above (slug derivation).
+          // Reuse it instead of re-fetching the manifest.
+          const manifest = preflightManifest
           if (manifest) {
             const patch = manifestPatch(manifest, {
               repoBase: rawContentBase(ref, tag),
@@ -124,7 +144,7 @@ export default new Elysia()
             log.info({ slug, source: manifest.source, tag }, 'manifest applied at submit (from latest release)')
           }
           if (!manifest) {
-            log.info({ slug, tag }, 'no .tabularium manifest in latest release — using fallback metadata')
+            log.info({ slug, tag }, 'no manifest in latest release — using fallback metadata')
           }
           // Also ingest the release itself — without this, the plugin has no
           // releases in the DB until the next webhook fires, which means the

@@ -86,11 +86,15 @@ export default new Elysia()
         return { ok: false as const, error: ownership.reason }
       }
 
-      const slug = deriveSlug(ref.repo)
-      const existing = await db.query.plugins.findFirst({
-        where: { id: slug },
-        columns: { id: true },
-      })
+      // Provisional slug from the repo name. If a manifest is found and
+      // declares `id`, that wins below — manifest `id` is the authoritative
+      // identity (crates.io-style: lowercase, dashes only). The repo-derived
+      // slug only matters when the manifest is missing the field (or absent).
+      const repoSlug = deriveSlug(ref.repo)
+      let slug = repoSlug
+      const lookupExisting = async (id: string) =>
+        db.query.plugins.findFirst({ where: { id }, columns: { id: true } })
+      let existing = await lookupExisting(slug)
 
       let latestRelease
       try {
@@ -135,6 +139,10 @@ export default new Elysia()
           }
         }
         const { parsed, source, readmeLocales } = manifest
+        if (parsed.id && parsed.id !== slug) {
+          slug = parsed.id
+          existing = await lookupExisting(slug)
+        }
         const preview = {
           name: parsed.name ?? null,
           description: parsed.description ?? null,
