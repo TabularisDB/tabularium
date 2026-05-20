@@ -24,6 +24,8 @@ CREATE TABLE "identities" (
 	"external_id" text NOT NULL,
 	"username" text NOT NULL,
 	"access_token" text,
+	"refresh_token" text,
+	"access_token_expires_at" bigint,
 	"created_at" bigint NOT NULL
 );
 --> statement-breakpoint

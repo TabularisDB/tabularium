@@ -1,7 +1,7 @@
 {
   "version": "7",
   "dialect": "sqlite",
-  "id": "f5e88f64-c13f-4af0-b425-af036e65e1c3",
+  "id": "1871a9e6-c3bb-4bbc-ac6e-35f6ec26182b",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -253,6 +253,26 @@
       "default": null,
       "generated": null,
       "name": "access_token",
+      "entityType": "columns",
+      "table": "identities"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "refresh_token",
+      "entityType": "columns",
+      "table": "identities"
+    },
+    {
+      "type": "integer",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "access_token_expires_at",
       "entityType": "columns",
       "table": "identities"
     },

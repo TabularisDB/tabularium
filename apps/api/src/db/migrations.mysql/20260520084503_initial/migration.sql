@@ -25,6 +25,8 @@ CREATE TABLE `identities` (
 	`external_id` varchar(120) NOT NULL,
 	`username` varchar(120) NOT NULL,
 	`access_token` text,
+	`refresh_token` text,
+	`access_token_expires_at` bigint,
 	`created_at` bigint NOT NULL,
 	CONSTRAINT `identities_instance_external_unique` UNIQUE INDEX(`provider_instance_id`,`external_id`)
 );

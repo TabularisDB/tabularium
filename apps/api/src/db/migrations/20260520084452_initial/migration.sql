@@ -26,6 +26,8 @@ CREATE TABLE `identities` (
 	`external_id` text NOT NULL,
 	`username` text NOT NULL,
 	`access_token` text,
+	`refresh_token` text,
+	`access_token_expires_at` integer,
 	`created_at` integer NOT NULL,
 	CONSTRAINT `fk_identities_user_id_users_id_fk` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE CASCADE,
 	CONSTRAINT `fk_identities_provider_instance_id_provider_instances_id_fk` FOREIGN KEY (`provider_instance_id`) REFERENCES `provider_instances`(`id`)
