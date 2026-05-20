@@ -33,7 +33,7 @@ COPY packages/tsconfig/package.json ./packages/tsconfig/
 # CLI workspace (author-side tool, not loaded at runtime).
 RUN printf '%s\n' \
   '{' \
-  '  "name": "tabularis-registry",' \
+  '  "name": "@tabularium/registry",' \
   '  "private": true,' \
   '  "type": "module",' \
   '  "workspaces": ["apps/api", "packages/client", "packages/manifest", "packages/tsconfig"],' \

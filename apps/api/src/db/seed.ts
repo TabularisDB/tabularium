@@ -13,7 +13,7 @@ await db
   .insert(users)
   .values({
     id: REGISTRY_OWNER_ID,
-    displayName: 'tabularis-registry',
+    displayName: 'tabularium',
   })
   .onConflictDoNothing()
 
@@ -24,7 +24,7 @@ await db
     userId: REGISTRY_OWNER_ID,
     providerInstanceId: 'seed-system-provider',
     externalId: '0',
-    username: 'tabularis-registry',
+    username: 'tabularium',
   })
   .onConflictDoNothing()
 

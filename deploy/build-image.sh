@@ -11,7 +11,7 @@
 set -euo pipefail
 
 TAG="${1:-dev}"
-IMAGE="tabularis-registry:${TAG}"
+IMAGE="tabularium:${TAG}"
 HOST="${K3S_HOST:-lyna}"
 SSH_TARGET="${K3S_USER:+${K3S_USER}@}${HOST}"
 
@@ -21,7 +21,7 @@ echo ">>> Building ${IMAGE}"
 docker build -t "${IMAGE}" .
 
 echo ">>> Saving to tarball"
-TMP="$(mktemp -t tabularis-registry-XXXXXX.tar)"
+TMP="$(mktemp -t tabularium-XXXXXX.tar)"
 trap 'rm -f "${TMP}"' EXIT
 docker save -o "${TMP}" "${IMAGE}"
 
