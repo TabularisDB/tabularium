@@ -64,10 +64,16 @@ jobs:
             echo "PACKAGE_TOKEN present:   $([ -n "${{ secrets.PACKAGE_TOKEN }}" ] && echo yes || echo no)"
             echo '```'
           } >> "$GITHUB_STEP_SUMMARY"
+          # Print token *length* (not the value) so we can tell whether the
+          # secret is empty / truncated / has trailing whitespace without
+          # leaking it. Forgejo masks the literal secret in logs but a
+          # numeric length slips through.
+          T="${{ secrets.PACKAGE_TOKEN }}"
+          echo "PACKAGE_TOKEN length: ${#T}"
+          printf 'first/last char codepoints: %d / %d\n' "'${T:0:1}" "'${T: -1}"
           set +e
-          echo "${{ secrets.PACKAGE_TOKEN }}" | \
-            docker login codeberg.org -u NewtTheWolf --password-stdin 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
-          rc=${PIPESTATUS[1]}
+          printf '%s' "${T}" | docker login codeberg.org -u NewtTheWolf --password-stdin 2>&1
+          rc=$?
           exit "$rc"
 
       - name: Build image
