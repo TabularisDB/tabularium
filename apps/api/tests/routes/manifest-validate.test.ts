@@ -17,11 +17,11 @@ describe('POST /api/manifest/validate', () => {
   beforeEach(clearDb)
 
   it('returns ok:true for a valid YAML manifest', async () => {
-    const res = await post({ text: 'name: My Plugin\nkind: theme\n', source: 'tabularium.yaml' })
+    const res = await post({ text: 'name: my-plugin\nkind: theme\n', source: 'tabularium.yaml' })
     expect(res.status).toBe(200)
     const body = (await res.json()) as { ok: boolean; normalized?: { name: string } }
     expect(body.ok).toBe(true)
-    expect(body.normalized?.name).toBe('My Plugin')
+    expect(body.normalized?.name).toBe('my-plugin')
   })
 
   it('returns ok:false with structured errors for an invalid manifest', async () => {
@@ -40,7 +40,7 @@ describe('POST /api/manifest/validate', () => {
       extensionsSchema: { 'x-theme': { type: 'string' } },
     })
     const res = await post({
-      text: 'name: X\nkind: theme\nx-theme: light\n',
+      text: 'name: themex\nkind: theme\nx-theme: light\n',
       source: 'tabularium.yaml',
       kind: 'theme',
     })
@@ -49,7 +49,7 @@ describe('POST /api/manifest/validate', () => {
   })
 
   it('sniffs source when omitted (JSON body)', async () => {
-    const res = await post({ text: '{"name":"X"}' })
+    const res = await post({ text: '{"name":"snippetx"}' })
     expect(res.status).toBe(200)
     const body = (await res.json()) as { ok: boolean }
     expect(body.ok).toBe(true)

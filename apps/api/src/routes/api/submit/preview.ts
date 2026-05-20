@@ -139,8 +139,8 @@ export default new Elysia()
           }
         }
         const { parsed, source, readmeLocales } = manifest
-        if (parsed.id && parsed.id !== slug) {
-          slug = parsed.id
+        if (parsed.name && parsed.name !== slug) {
+          slug = parsed.name
           existing = await lookupExisting(slug)
         }
         const preview = {

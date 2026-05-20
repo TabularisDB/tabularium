@@ -7,16 +7,16 @@ describe('validateManifest', () => {
   const baseSchema = buildSchema({ coreSchema: ManifestSchema as never })
 
   it('returns ok:true and normalized output for a valid manifest', () => {
-    const result = validateManifest({ name: 'My Plugin', kind: 'theme' }, baseSchema)
+    const result = validateManifest({ name: 'my-plugin', kind: 'theme' }, baseSchema)
     expect(result.ok).toBe(true)
     if (result.ok) {
-      expect(result.normalized.name).toBe('My Plugin')
+      expect(result.normalized.name).toBe('my-plugin')
       expect(result.errors).toEqual([])
     }
   })
 
   it('strips additional properties (lenient) when normalizing', () => {
-    const result = validateManifest({ name: 'X', extra: 'nope' }, baseSchema)
+    const result = validateManifest({ name: 'x', extra: 'nope' }, baseSchema)
     expect(result.ok).toBe(false)
     if (!result.ok) {
       const e = result.errors.find((e) => e.code === 'additionalProperties')
@@ -25,9 +25,9 @@ describe('validateManifest', () => {
   })
 
   it('does not mutate the input object', () => {
-    const input = { name: 'X', extra: 'nope' }
+    const input = { name: 'x', extra: 'nope' }
     validateManifest(input, baseSchema)
-    expect(input).toEqual({ name: 'X', extra: 'nope' })
+    expect(input).toEqual({ name: 'x', extra: 'nope' })
   })
 
   it('returns structured errors for type mismatches', () => {
@@ -50,10 +50,10 @@ describe('validateManifest', () => {
   })
 
   it('lenient mode strips unknown fields without erroring', () => {
-    const result = validateManifest({ name: 'X', 'x-unknown': 'extra' }, baseSchema, { lenient: true })
+    const result = validateManifest({ name: 'x', 'x-unknown': 'extra' }, baseSchema, { lenient: true })
     expect(result.ok).toBe(true)
     if (result.ok) {
-      expect(result.normalized.name).toBe('X')
+      expect(result.normalized.name).toBe('x')
       expect((result.normalized as Record<string, unknown>)['x-unknown']).toBeUndefined()
     }
   })

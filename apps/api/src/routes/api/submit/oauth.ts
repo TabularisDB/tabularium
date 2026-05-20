@@ -95,7 +95,7 @@ export default new Elysia()
         }
       }
 
-      const slug = preflightManifest?.parsed.id ?? deriveSlug(ref.repo)
+      const slug = preflightManifest?.parsed.name ?? deriveSlug(ref.repo)
       const existing = await db.query.plugins.findFirst({ where: { id: slug } })
       if (existing) {
         set.status = 409
