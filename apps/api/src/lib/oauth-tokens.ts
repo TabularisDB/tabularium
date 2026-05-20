@@ -23,6 +23,20 @@ export class OAuthExpiredError extends Error {
   }
 }
 
+// Thrown by forge fetchers when the upstream returns 401 even though we held
+// what we thought was a valid token. Common for legacy identities created
+// before refresh-token support — they have no expiry hint so getValidAccessToken
+// returns the stale token, and we only learn it's dead from the upstream.
+export class UpstreamUnauthorizedError extends Error {
+  constructor(
+    public readonly providerInstanceId: string,
+    public readonly upstream: string,
+  ) {
+    super(`Upstream ${upstream} returned 401`)
+    this.name = 'UpstreamUnauthorizedError'
+  }
+}
+
 export type IdentityWithTokens = {
   id: string
   providerInstanceId: string
@@ -97,7 +111,10 @@ function tryExpiresAt(tokens: { accessTokenExpiresAt(): Date }): number | null {
   }
 }
 
-export function reauthErrorBody(err: OAuthExpiredError): { error: string; reauthFor: string } {
+export function reauthErrorBody(err: OAuthExpiredError | UpstreamUnauthorizedError): {
+  error: string
+  reauthFor: string
+} {
   return {
     error: 'OAuth token expired — re-authorization needed',
     reauthFor: err.providerInstanceId,

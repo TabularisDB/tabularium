@@ -1,6 +1,7 @@
 import type { RepoRef } from './providers'
 import { logger } from './logger'
 import { getManifestConfig } from './manifest-config'
+import { UpstreamUnauthorizedError } from './oauth-tokens'
 import {
   ManifestSchema,
   type Manifest,
@@ -68,6 +69,7 @@ function makeGithubFlavoredFetcher(
     const url = `${apiBase}/repos/${ref.owner}/${ref.repo}/contents/${encodeURIComponent(path)}${branch ? `?ref=${encodeURIComponent(branch)}` : ''}`
     const res = await fetch(url, { headers })
     if (res.status === 404) return null
+    if (res.status === 401) throw new UpstreamUnauthorizedError(ref.instance.id, `contents/${path}`)
     if (!res.ok) throw new Error(`Fetch ${path}: ${res.status}`)
     const len = Number(res.headers.get('content-length') ?? 0)
     if (len > MAX_README_BYTES) throw new Error(`${path} exceeds size cap`)
@@ -82,6 +84,7 @@ function makeGiteaFetcher(apiBase: string, accessToken: string, ref: RepoRef, br
     const url = `${apiBase}/repos/${ref.owner}/${ref.repo}/raw/${path.split('/').map(encodeURIComponent).join('/')}${branch ? `?ref=${encodeURIComponent(branch)}` : ''}`
     const res = await fetch(url, { headers })
     if (res.status === 404) return null
+    if (res.status === 401) throw new UpstreamUnauthorizedError(ref.instance.id, `raw/${path}`)
     if (!res.ok) throw new Error(`Fetch ${path}: ${res.status}`)
     const len = Number(res.headers.get('content-length') ?? 0)
     if (len > MAX_README_BYTES) throw new Error(`${path} exceeds size cap`)
@@ -101,6 +104,7 @@ function makeGitlabFetcher(
     const url = `${baseUrl}/api/v4/projects/${projectId}/repository/files/${encodeURIComponent(path)}/raw?ref=${encodeURIComponent(branch ?? 'HEAD')}`
     const res = await fetch(url, { headers: { Authorization: `Bearer ${accessToken}` } })
     if (res.status === 404) return null
+    if (res.status === 401) throw new UpstreamUnauthorizedError(ref.instance.id, `files/${path}`)
     if (!res.ok) throw new Error(`Fetch ${path}: ${res.status}`)
     const text = await res.text()
     return { content: text, bytes: new TextEncoder().encode(text).length }
@@ -190,6 +194,7 @@ export async function resolveManifest(
       }
       return { raw: got.content, parsed, readmeMarkdown, readmeLocales, source: candidate.source }
     } catch (err) {
+      if (err instanceof UpstreamUnauthorizedError) throw err
       if (err instanceof ManifestValidationError) {
         log.warn({ path: candidate.path, errors: err.errors }, 'manifest invalid — trying next candidate')
       } else {

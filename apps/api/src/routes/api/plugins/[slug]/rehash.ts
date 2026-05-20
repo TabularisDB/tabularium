@@ -11,7 +11,7 @@ import { recordAudit, actorFromUser } from '$lib/audit'
 import { parseRepoUrl } from '$lib/providers'
 import { fetchLatestRelease } from '$lib/release-fetch'
 import { persistRelease, hashReleaseAssetsAsync } from '$lib/release-ingest'
-import { getValidAccessToken, OAuthExpiredError, reauthErrorBody } from '$lib/oauth-tokens'
+import { getValidAccessToken, OAuthExpiredError, UpstreamUnauthorizedError, reauthErrorBody } from '$lib/oauth-tokens'
 
 export default new Elysia()
   .use(authMiddleware)
@@ -66,7 +66,16 @@ export default new Elysia()
           }
           throw e
         }
-        const fetched = await fetchLatestRelease(token, ref).catch(() => null)
+        let fetched
+        try {
+          fetched = await fetchLatestRelease(token, ref)
+        } catch (e) {
+          if (e instanceof UpstreamUnauthorizedError) {
+            set.status = 401
+            return reauthErrorBody(e)
+          }
+          fetched = null
+        }
         if (!fetched || !fetched.published) {
           set.status = 404
           return { error: 'No published release found on the forge yet' }

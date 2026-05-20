@@ -1,5 +1,6 @@
 import { logger } from './logger'
 import type { ProviderInstance } from './provider-instance'
+import { UpstreamUnauthorizedError } from './oauth-tokens'
 
 const log = logger.child({ module: 'list-repos' })
 
@@ -41,6 +42,7 @@ async function listGithubFlavored(
   for (let page = 1; page <= maxPages; page++) {
     const url = `${apiBase}${query}${query.includes('?') ? '&' : '?'}per_page=${pageSize}&page=${page}`
     const res = await fetch(url, { headers })
+    if (res.status === 401) throw new UpstreamUnauthorizedError(instanceId, 'user/repos')
     if (!res.ok) {
       log.warn({ url, status: res.status }, 'repos api error')
       break
@@ -87,6 +89,7 @@ async function listGitlab(
   for (let page = 1; page <= 4; page++) {
     const url = `${baseUrl}/api/v4/projects?membership=true&per_page=50&page=${page}&order_by=last_activity_at&min_access_level=40`
     const res = await fetch(url, { headers: { Authorization: `Bearer ${token}` } })
+    if (res.status === 401) throw new UpstreamUnauthorizedError(instanceId, 'projects')
     if (!res.ok) {
       log.warn({ url, status: res.status }, 'gitlab api error')
       break

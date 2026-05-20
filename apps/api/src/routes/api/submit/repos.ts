@@ -3,7 +3,7 @@ import { authMiddleware } from '$middleware/auth'
 import { db } from '$db'
 import type { identities } from '$db/schema'
 import { listReposFor, type SubmittableRepo } from '$lib/list-repos'
-import { getValidAccessToken, OAuthExpiredError } from '$lib/oauth-tokens'
+import { getValidAccessToken, OAuthExpiredError, UpstreamUnauthorizedError } from '$lib/oauth-tokens'
 import { getInstance } from '$lib/provider-instance'
 import { logger } from '$lib/logger'
 
@@ -53,7 +53,7 @@ export default new Elysia().use(authMiddleware).get(
         try {
           repos = await reposForIdentity(id)
         } catch (e) {
-          if (e instanceof OAuthExpiredError) {
+          if (e instanceof OAuthExpiredError || e instanceof UpstreamUnauthorizedError) {
             error = 'reauth_required'
           } else {
             log.error({ err: e, identityId: id.id, instance: id.providerInstanceId }, 'failed to list repos')

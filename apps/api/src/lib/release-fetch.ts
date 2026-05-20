@@ -1,5 +1,6 @@
 import type { NormalizedRelease } from './webhook'
 import type { RepoRef } from './providers'
+import { UpstreamUnauthorizedError } from './oauth-tokens'
 
 /**
  * Pull the latest release directly from the provider API as if it had just arrived
@@ -30,6 +31,7 @@ async function fetchGithubFlavored(
   if (userAgent) headers['User-Agent'] = userAgent
   const res = await fetch(`${apiBase}/repos/${ref.owner}/${ref.repo}/releases/latest`, { headers })
   if (res.status === 404) return null
+  if (res.status === 401) throw new UpstreamUnauthorizedError(ref.instance.id, 'releases/latest')
   if (!res.ok) throw new Error(`Provider API ${res.status}`)
   const data = (await res.json()) as {
     tag_name?: string
@@ -52,6 +54,7 @@ async function fetchGitlab(baseUrl: string, accessToken: string, ref: RepoRef): 
   const res = await fetch(`${baseUrl}/api/v4/projects/${projectId}/releases?per_page=1`, {
     headers: { Authorization: `Bearer ${accessToken}` },
   })
+  if (res.status === 401) throw new UpstreamUnauthorizedError(ref.instance.id, 'releases')
   if (!res.ok) throw new Error(`GitLab API ${res.status}`)
   const list = (await res.json()) as Array<{
     tag_name?: string

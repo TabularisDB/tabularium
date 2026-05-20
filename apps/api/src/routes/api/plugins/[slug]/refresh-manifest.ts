@@ -3,7 +3,7 @@ import { authMiddleware } from '$middleware/auth'
 import { rateLimit } from '$middleware/rate-limit'
 import { db } from '$db'
 import { parseRepoUrl } from '$lib/providers'
-import { getValidAccessToken, OAuthExpiredError, reauthErrorBody } from '$lib/oauth-tokens'
+import { getValidAccessToken, OAuthExpiredError, UpstreamUnauthorizedError, reauthErrorBody } from '$lib/oauth-tokens'
 import { resolveManifest, rawContentBase } from '$lib/manifest'
 import { manifestPatch, applyManifestToPlugin } from '$lib/manifest-apply'
 import { cache } from '$lib/cache'
@@ -60,7 +60,16 @@ export default new Elysia()
         throw e
       }
       const branch = body?.ref ?? plugin.latestVersion ?? 'HEAD'
-      const manifest = await resolveManifest(token, ref, { ref: branch })
+      let manifest
+      try {
+        manifest = await resolveManifest(token, ref, { ref: branch })
+      } catch (e) {
+        if (e instanceof UpstreamUnauthorizedError) {
+          set.status = 401
+          return reauthErrorBody(e)
+        }
+        throw e
+      }
       if (!manifest) {
         set.status = 404
         return { error: `No .tabularium file found in ${plugin.repoUrl} @ ${branch}` }

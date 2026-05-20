@@ -4,7 +4,7 @@ import { rateLimit } from '$middleware/rate-limit'
 import { db } from '$db'
 import { deriveSlug } from '$lib/slug'
 import { parseRepoUrl, checkOwnership } from '$lib/providers'
-import { getValidAccessToken, OAuthExpiredError } from '$lib/oauth-tokens'
+import { getValidAccessToken, OAuthExpiredError, UpstreamUnauthorizedError } from '$lib/oauth-tokens'
 import { resolveManifest, ManifestValidationError } from '$lib/manifest'
 import { fetchLatestRelease } from '$lib/release-fetch'
 import { getFeatures } from '$lib/features'
@@ -83,10 +83,17 @@ export default new Elysia()
         columns: { id: true },
       })
 
-      const latestRelease = await fetchLatestRelease(accessToken, ref).catch((err) => {
+      let latestRelease
+      try {
+        latestRelease = await fetchLatestRelease(accessToken, ref)
+      } catch (err) {
+        if (err instanceof UpstreamUnauthorizedError) {
+          set.status = 401
+          return { ok: false as const, error: 'OAuth token expired', reauthFor: err.providerInstanceId }
+        }
         log.warn({ err, slug }, 'latest-release lookup failed during preview')
-        return null
-      })
+        latestRelease = null
+      }
 
       if (!latestRelease) {
         return {
@@ -151,6 +158,10 @@ export default new Elysia()
           preview,
         }
       } catch (err) {
+        if (err instanceof UpstreamUnauthorizedError) {
+          set.status = 401
+          return { ok: false as const, error: 'OAuth token expired', reauthFor: err.providerInstanceId }
+        }
         if (err instanceof ManifestValidationError) {
           return {
             ok: true as const,
