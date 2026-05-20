@@ -1,0 +1,81 @@
+# Publish the tabularium Rust client to crates.io.
+#
+# Triggers on tags shaped `tabularium-rs-v<semver>` so the Rust client can
+# release independently from the npm packages. Tag version must match
+# `packages/tabularium-rs/Cargo.toml [package].version`.
+#
+# Also supports workflow_dispatch with an explicit version for republishes
+# or first-time pushes from a local tag.
+#
+# Secrets:
+#   CARGO_REGISTRY_TOKEN — a crates.io API token with publish rights on
+#                          the `tabularium` crate.
+
+name: crates.io publish
+
+on:
+  push:
+    tags:
+      - 'tabularium-rs-v*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Semver to publish (e.g. 0.1.0). Must match Cargo.toml [package].version.'
+        required: true
+        type: string
+      dry-run:
+        description: 'Run `cargo publish --dry-run` instead of an actual publish.'
+        required: false
+        default: false
+        type: boolean
+
+jobs:
+  publish:
+    runs-on: lyna
+    permissions:
+      contents: read
+    env:
+      CARGO_TERM_COLOR: always
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve expected version
+        id: pkg
+        working-directory: packages/tabularium-rs
+        run: |
+          set -eu
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            VERSION="${{ inputs.version }}"
+          else
+            TAG="${{ github.ref_name }}"
+            VERSION="${TAG#tabularium-rs-v}"
+          fi
+          CARGO_VERSION=$(awk -F\" '/^version =/ {print $2; exit}' Cargo.toml)
+          if [ "${CARGO_VERSION}" != "${VERSION}" ]; then
+            echo "::error::Tag version (${VERSION}) does not match Cargo.toml version (${CARGO_VERSION})"
+            exit 1
+          fi
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+
+      - name: Cargo build
+        working-directory: packages/tabularium-rs
+        run: cargo build --release
+
+      - name: Cargo test
+        working-directory: packages/tabularium-rs
+        run: cargo test --release
+
+      - name: Cargo publish (dry run)
+        if: github.event_name == 'workflow_dispatch' && inputs.dry-run
+        working-directory: packages/tabularium-rs
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: cargo publish --dry-run --allow-dirty
+
+      - name: Cargo publish
+        if: github.event_name == 'push' || (github.event_name == 'workflow_dispatch' && !inputs.dry-run)
+        working-directory: packages/tabularium-rs
+        env:
+          CARGO_REGISTRY_TOKEN: ${{ secrets.CARGO_REGISTRY_TOKEN }}
+        run: cargo publish --allow-dirty

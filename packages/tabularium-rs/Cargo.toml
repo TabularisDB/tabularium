@@ -1,0 +1,52 @@
+[package]
+name = "tabularium"
+version = "0.1.0"
+edition = "2021"
+description = "Async Rust client for the Tabularium plugin registry HTTP API"
+license = "Apache-2.0"
+repository = "https://codeberg.org/NewtTheWolf/tabularium"
+homepage = "https://tabularium.wiki"
+documentation = "https://docs.rs/tabularium"
+keywords = ["tabularium", "plugin-registry", "client", "api"]
+categories = ["api-bindings", "asynchronous"]
+readme = "README.md"
+rust-version = "1.75"
+include = [
+    "src/**/*",
+    "build.rs",
+    "openapi.json",
+    "README.md",
+    "LICENSE-APACHE",
+    "Cargo.toml",
+]
+
+[dependencies]
+async-trait = "0.1"
+bytes = "1"
+chrono = { version = "0.4", default-features = false, features = ["serde"] }
+futures-core = "0.3"
+progenitor-client = "0.10"
+rand = "0.8"
+regress = "0.10"
+reqwest = { version = "0.12", default-features = false, features = [
+    "json",
+    "stream",
+    "rustls-tls",
+] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+uuid = { version = "1", features = ["serde", "v4"] }
+
+[build-dependencies]
+openapiv3 = "2"
+prettyplease = "0.2"
+progenitor = "0.10"
+serde_json = "1"
+syn = "2"
+
+[dev-dependencies]
+tokio = { version = "1", features = ["macros", "rt-multi-thread"] }
+
+[[example]]
+name = "list_plugins"
+path = "examples/list_plugins.rs"

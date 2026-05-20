@@ -37,3 +37,13 @@ jobs:
       - name: Tsc --noEmit
         working-directory: apps/api
         run: bun run check
+
+  rust-client:
+    runs-on: lyna
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Cargo check
+        working-directory: packages/tabularium-rs
+        run: cargo check --all-targets
