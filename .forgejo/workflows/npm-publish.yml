@@ -33,20 +33,13 @@ on:
 
 jobs:
   publish:
-    runs-on: docker
-    container:
-      image: node:24-bookworm-slim
+    # Host mode on lyna — the docker-in-docker container path fails to pull
+    # `node:24-bookworm-slim` from docker hub on this runner (anonymous pull
+    # rate limit). lyna already has bun + git pre-installed, same as test.yml.
+    runs-on: lyna
     permissions:
       contents: read
     steps:
-      - name: Install bun + git
-        run: |
-          apt-get update
-          apt-get install -y --no-install-recommends ca-certificates curl unzip git
-          curl -fsSL https://bun.sh/install | bash -s "bun-v1.3.12"
-          echo "$HOME/.bun/bin" >> "$GITHUB_PATH"
-          rm -rf /var/lib/apt/lists/*
-
       - name: Checkout
         uses: actions/checkout@v4
 
@@ -66,12 +59,12 @@ jobs:
           if [ ! -f "${DIR}/package.json" ]; then
             echo "::error::${DIR}/package.json not found"; exit 1
           fi
-          PKG_VERSION=$(node -p "require('./${DIR}/package.json').version")
+          PKG_VERSION=$(bun -e "console.log(require('./${DIR}/package.json').version)")
           if [ "${PKG_VERSION}" != "${VERSION}" ]; then
             echo "::error::Tag version (${VERSION}) does not match package.json version (${PKG_VERSION}) in ${DIR}"
             exit 1
           fi
-          PKG_NAME=$(node -p "require('./${DIR}/package.json').name")
+          PKG_NAME=$(bun -e "console.log(require('./${DIR}/package.json').name)")
           echo "name=${PKG_NAME}"     >> "$GITHUB_OUTPUT"
           echo "dir=${DIR}"           >> "$GITHUB_OUTPUT"
           echo "version=${VERSION}"   >> "$GITHUB_OUTPUT"
