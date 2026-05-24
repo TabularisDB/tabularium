@@ -35,13 +35,7 @@ Ein Verzeichnis für Plugins (oder beliebige Release-Artefakte) mit Web-UI, OAut
 git clone https://codeberg.org/NewtTheWolf/Tabularium
 cd Tabularium
 bun install
-docker compose -f compose.dev.yml up -d   # postgres + dragonfly (optional)
-
-# in einem Terminal
-cd apps/api && bun --hot src/index.ts
-
-# in einem zweiten
-cd apps/frontend && bun dev
+just dev   # startet minikube + tilt up (postgres + dragonfly + api + frontend)
 ```
 
 Öffne `http://localhost:5180` — der Wizard führt durch die Datenbankeinrichtung, lässt Migrations laufen, seedet Default-CMS-Seiten und befördert den Bootstrap-Account zum echten Admin.

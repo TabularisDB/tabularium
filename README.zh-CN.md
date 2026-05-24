@@ -35,13 +35,7 @@
 git clone https://codeberg.org/NewtTheWolf/Tabularium
 cd Tabularium
 bun install
-docker compose -f compose.dev.yml up -d   # postgres + dragonfly(可选)
-
-# 终端 1
-cd apps/api && bun --hot src/index.ts
-
-# 终端 2
-cd apps/frontend && bun dev
+just dev   # 启动 minikube + tilt up(postgres + dragonfly + api + frontend)
 ```
 
 打开 `http://localhost:5180` — 向导会引导你完成数据库配置、运行迁移、写入默认 CMS 页面,并将 bootstrap 账号提升为真正的管理员。

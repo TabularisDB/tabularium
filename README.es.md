@@ -35,13 +35,7 @@ Un directorio de plugins (o cualquier artefacto que se publique por releases) co
 git clone https://codeberg.org/NewtTheWolf/Tabularium
 cd Tabularium
 bun install
-docker compose -f compose.dev.yml up -d   # postgres + dragonfly (opcional)
-
-# terminal 1
-cd apps/api && bun --hot src/index.ts
-
-# terminal 2
-cd apps/frontend && bun dev
+just dev   # arranca minikube + tilt up (postgres + dragonfly + api + frontend)
 ```
 
 Abre `http://localhost:5180` — el asistente te guía por la configuración de la base de datos, ejecuta las migraciones, siembra páginas CMS por defecto y promueve la cuenta bootstrap a admin real.

@@ -1,0 +1,66 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: dragonfly-data
+  namespace: tabularium-dev
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 1Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: dragonfly
+  namespace: tabularium-dev
+  labels:
+    app: dragonfly
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: dragonfly
+  strategy:
+    type: Recreate
+  template:
+    metadata:
+      labels:
+        app: dragonfly
+    spec:
+      containers:
+        - name: dragonfly
+          image: docker.dragonflydb.io/dragonflydb/dragonfly
+          ports:
+            - containerPort: 6379
+              name: redis
+          readinessProbe:
+            tcpSocket:
+              port: redis
+            initialDelaySeconds: 2
+            periodSeconds: 2
+            timeoutSeconds: 3
+            failureThreshold: 30
+          volumeMounts:
+            - name: dragonfly-data
+              mountPath: /data
+      volumes:
+        - name: dragonfly-data
+          persistentVolumeClaim:
+            claimName: dragonfly-data
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: dragonfly
+  namespace: tabularium-dev
+  labels:
+    app: dragonfly
+spec:
+  selector:
+    app: dragonfly
+  ports:
+    - name: redis
+      port: 6379
+      targetPort: redis

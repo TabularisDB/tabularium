@@ -15,10 +15,12 @@ export default defineConfig({
   ],
   server: {
     port: 5180,
+    // Defaults to localhost (bare-metal dev). Under compose/Tilt the API lives
+    // at http://api:3000 — set API_PROXY_TARGET to point there.
     proxy: {
-      '/api': 'http://localhost:3000',
-      '/auth': 'http://localhost:3000',
-      '/openapi': 'http://localhost:3000',
+      '/api': process.env.API_PROXY_TARGET ?? 'http://localhost:3000',
+      '/auth': process.env.API_PROXY_TARGET ?? 'http://localhost:3000',
+      '/openapi': process.env.API_PROXY_TARGET ?? 'http://localhost:3000',
     },
   },
   optimizeDeps: {

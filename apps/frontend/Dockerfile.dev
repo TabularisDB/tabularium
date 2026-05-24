@@ -1,0 +1,26 @@
+# Tilt-driven dev image for apps/frontend (SvelteKit + Vite).
+
+# syntax=docker/dockerfile:1.7
+FROM docker.io/oven/bun:1.3-alpine
+
+WORKDIR /repo
+
+COPY package.json bun.lock turbo.json ./
+COPY apps/api/package.json ./apps/api/
+COPY apps/frontend/package.json ./apps/frontend/
+COPY packages/client/package.json ./packages/client/
+COPY packages/cli/package.json ./packages/cli/
+COPY packages/manifest/package.json ./packages/manifest/
+COPY packages/tsconfig/package.json ./packages/tsconfig/
+
+RUN bun install --frozen-lockfile
+
+COPY . .
+
+WORKDIR /repo/apps/frontend
+
+ENV NODE_ENV=development
+EXPOSE 5180
+
+# --host 0.0.0.0 binds outside the loopback so compose can map the port.
+CMD ["bun", "run", "dev", "--", "--host", "0.0.0.0"]

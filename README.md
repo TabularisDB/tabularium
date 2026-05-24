@@ -70,14 +70,10 @@ If you want to hack on Tabularium itself rather than just deploy it:
 git clone https://codeberg.org/Tabularium/Tabularium
 cd Tabularium
 bun install
-docker compose -f compose.dev.yml up -d   # postgres + dragonfly
-
-# in one terminal
-cd apps/api && bun --hot src/index.ts
-
-# in another
-cd apps/frontend && bun dev
+just dev   # starts minikube + tilt up (postgres + dragonfly + api + frontend)
 ```
+
+Tilt UI is at http://localhost:10350; the registry is port-forwarded to http://localhost:3000 and the frontend to http://localhost:5180. Source edits hot-reload into the cluster automatically.
 
 The bootstrap password is printed on first boot:
 

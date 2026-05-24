@@ -1,0 +1,29 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: db-migrate
+  namespace: tabularium-dev
+  labels:
+    app: db-migrate
+spec:
+  backoffLimit: 6
+  template:
+    metadata:
+      labels:
+        app: db-migrate
+    spec:
+      restartPolicy: Never
+      containers:
+        - name: migrate
+          image: tabularium-api
+          imagePullPolicy: IfNotPresent
+          workingDir: /repo/apps/api
+          command:
+            - bunx
+            - drizzle-kit
+            - migrate
+            - --config
+            - drizzle.pg.config.ts
+          envFrom:
+            - secretRef:
+                name: tabularium-env

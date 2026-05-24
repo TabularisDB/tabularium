@@ -4,13 +4,14 @@ Elysia HTTP server + install wizard. Drizzle ORM against SQLite / Postgres / MyS
 
 ## Develop
 
+From the repo root:
+
 ```bash
 bun install
-docker compose -f ../../compose.dev.yml up -d   # postgres + dragonfly (optional)
-bun --hot src/index.ts
+just dev   # starts minikube + tilt up (full dev stack)
 ```
 
-Defaults to `PORT=3000`. The first boot prints a one-time bootstrap login:
+The api is port-forwarded to `localhost:3000`. The first boot prints a one-time bootstrap login:
 
 ```
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
