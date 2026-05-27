@@ -30,6 +30,9 @@ jobs:
       - name: Install deps
         run: bun install --frozen-lockfile
 
+      - name: Build @tabularium/manifest dist
+        run: bun --cwd packages/manifest run build
+
       - name: Vite build
         working-directory: apps/frontend
         run: bun run build

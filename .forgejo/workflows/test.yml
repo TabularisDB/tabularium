@@ -28,5 +28,8 @@ jobs:
       - name: Install deps
         run: bun install --frozen-lockfile
 
+      - name: Build @tabularium/manifest dist
+        run: bun --cwd packages/manifest run build
+
       - name: Run tests
         run: bun run test
