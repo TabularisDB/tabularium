@@ -19,7 +19,7 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Build @tabularium/manifest dist
-        run: bun --cwd packages/manifest run build
+        run: cd packages/manifest && bun run build
 
       - name: Run tests
         run: bun run test

@@ -1,0 +1,10 @@
+# bun 1.3 in some environments (notably docker overlayfs) defaults to the
+# `isolated` linker, which COPIES workspace packages into each consumer's
+# node_modules — including @tabularium/manifest, which gets copied before its
+# dist/ is built. The copy doesn't pick up the later build, so apps/api's
+# tsc fails with "Cannot find module '@tabularium/manifest'" in CI.
+#
+# Force the hoisted linker (symlinked workspace deps) so the manifest build
+# step's output is immediately visible to every consumer.
+[install]
+linker = "hoisted"
