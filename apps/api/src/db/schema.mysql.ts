@@ -59,47 +59,51 @@ export const identities = mysqlTable(
   }),
 )
 
-export const plugins = mysqlTable('plugins', {
-  id: varchar('id', { length: 80 }).primaryKey(),
-  ownerId: id('owner_id')
-    .notNull()
-    .references(() => users.id),
-  providerInstanceId: id('provider_instance_id').references(() => providerInstances.id),
-  name: varchar('name', { length: 120 }).notNull(),
-  description: varchar('description', { length: 500 }).notNull(),
-  author: varchar('author', { length: 500 }).notNull(),
-  repoUrl: varchar('repo_url', { length: 500 }).notNull(),
-  homepage: varchar('homepage', { length: 500 }).notNull(),
-  latestVersion: varchar('latest_version', { length: 40 }),
-  webhookSecret: varchar('webhook_secret', { length: 128 }).notNull(),
-  status: varchar('status', { length: 16, enum: ['approved', 'pending', 'rejected'] })
-    .notNull()
-    .default('approved'),
-  rejectionReason: varchar('rejection_reason', { length: 500 }),
-  category: varchar('category', { length: 40 }),
-  tags: text('tags'),
-  license: varchar('license', { length: 40 }),
-  iconUrl: varchar('icon_url', { length: 500 }),
-  screenshots: text('screenshots'),
-  readme: text('readme'),
-  documentationUrl: varchar('documentation_url', { length: 500 }),
-  supportEmail: varchar('support_email', { length: 254 }),
-  issuesUrl: varchar('issues_url', { length: 500 }),
-  manifestFetchedAt: ts('manifest_fetched_at'),
-  manifestVersion: varchar('manifest_version', { length: 80 }),
-  featured: tinyint('featured').notNull().default(0),
-  featuredOrder: int('featured_order'),
-  downloads: int('downloads').notNull().default(0),
-  createdAt: ts('created_at').notNull().$defaultFn(now),
-  updatedAt: ts('updated_at').notNull().$defaultFn(now),
-}, (t) => ({
-  byStatus: index('plugins_status_idx').on(t.status),
-  byOwner: index('plugins_owner_id_idx').on(t.ownerId),
-  byProvider: index('plugins_provider_instance_id_idx').on(t.providerInstanceId),
-  byCategory: index('plugins_category_idx').on(t.category),
-  byUpdated: index('plugins_updated_at_idx').on(t.updatedAt),
-  byFeatured: index('plugins_featured_idx').on(t.featured, t.featuredOrder),
-}))
+export const plugins = mysqlTable(
+  'plugins',
+  {
+    id: varchar('id', { length: 80 }).primaryKey(),
+    ownerId: id('owner_id')
+      .notNull()
+      .references(() => users.id),
+    providerInstanceId: id('provider_instance_id').references(() => providerInstances.id),
+    name: varchar('name', { length: 120 }).notNull(),
+    description: varchar('description', { length: 500 }).notNull(),
+    author: varchar('author', { length: 500 }).notNull(),
+    repoUrl: varchar('repo_url', { length: 500 }).notNull(),
+    homepage: varchar('homepage', { length: 500 }).notNull(),
+    latestVersion: varchar('latest_version', { length: 40 }),
+    webhookSecret: varchar('webhook_secret', { length: 128 }).notNull(),
+    status: varchar('status', { length: 16, enum: ['approved', 'pending', 'rejected'] })
+      .notNull()
+      .default('approved'),
+    rejectionReason: varchar('rejection_reason', { length: 500 }),
+    category: varchar('category', { length: 40 }),
+    tags: text('tags'),
+    license: varchar('license', { length: 40 }),
+    iconUrl: varchar('icon_url', { length: 500 }),
+    screenshots: text('screenshots'),
+    readme: text('readme'),
+    documentationUrl: varchar('documentation_url', { length: 500 }),
+    supportEmail: varchar('support_email', { length: 254 }),
+    issuesUrl: varchar('issues_url', { length: 500 }),
+    manifestFetchedAt: ts('manifest_fetched_at'),
+    manifestVersion: varchar('manifest_version', { length: 80 }),
+    featured: tinyint('featured').notNull().default(0),
+    featuredOrder: int('featured_order'),
+    downloads: int('downloads').notNull().default(0),
+    createdAt: ts('created_at').notNull().$defaultFn(now),
+    updatedAt: ts('updated_at').notNull().$defaultFn(now),
+  },
+  (t) => ({
+    byStatus: index('plugins_status_idx').on(t.status),
+    byOwner: index('plugins_owner_id_idx').on(t.ownerId),
+    byProvider: index('plugins_provider_instance_id_idx').on(t.providerInstanceId),
+    byCategory: index('plugins_category_idx').on(t.category),
+    byUpdated: index('plugins_updated_at_idx').on(t.updatedAt),
+    byFeatured: index('plugins_featured_idx').on(t.featured, t.featuredOrder),
+  }),
+)
 
 export const releases = mysqlTable(
   'releases',
@@ -212,28 +216,32 @@ export const markdownPages = mysqlTable(
   }),
 )
 
-export const pluginTransfers = mysqlTable('plugin_transfers', {
-  id: id('id').primaryKey(),
-  pluginId: varchar('plugin_id', { length: 80 })
-    .notNull()
-    .references(() => plugins.id, { onDelete: 'cascade' }),
-  fromUserId: id('from_user_id')
-    .notNull()
-    .references(() => users.id, { onDelete: 'cascade' }),
-  toUserId: id('to_user_id')
-    .notNull()
-    .references(() => users.id, { onDelete: 'cascade' }),
-  status: varchar('status', { length: 16, enum: ['pending', 'accepted', 'rejected', 'cancelled', 'expired'] })
-    .notNull()
-    .default('pending'),
-  message: varchar('message', { length: 500 }),
-  createdAt: ts('created_at').notNull().$defaultFn(now),
-  expiresAt: ts('expires_at').notNull(),
-  respondedAt: ts('responded_at'),
-}, (t) => ({
-  byTo: index('plugin_transfers_to_user_status_idx').on(t.toUserId, t.status),
-  byFrom: index('plugin_transfers_from_user_status_idx').on(t.fromUserId, t.status),
-}))
+export const pluginTransfers = mysqlTable(
+  'plugin_transfers',
+  {
+    id: id('id').primaryKey(),
+    pluginId: varchar('plugin_id', { length: 80 })
+      .notNull()
+      .references(() => plugins.id, { onDelete: 'cascade' }),
+    fromUserId: id('from_user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    toUserId: id('to_user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    status: varchar('status', { length: 16, enum: ['pending', 'accepted', 'rejected', 'cancelled', 'expired'] })
+      .notNull()
+      .default('pending'),
+    message: varchar('message', { length: 500 }),
+    createdAt: ts('created_at').notNull().$defaultFn(now),
+    expiresAt: ts('expires_at').notNull(),
+    respondedAt: ts('responded_at'),
+  },
+  (t) => ({
+    byTo: index('plugin_transfers_to_user_status_idx').on(t.toUserId, t.status),
+    byFrom: index('plugin_transfers_from_user_status_idx').on(t.fromUserId, t.status),
+  }),
+)
 
 export const sessions = mysqlTable(
   'sessions',
@@ -254,20 +262,24 @@ export const sessions = mysqlTable(
   }),
 )
 
-export const auditLog = mysqlTable('audit_log', {
-  id: id('id').primaryKey(),
-  actorId: id('actor_id').references(() => users.id, { onDelete: 'set null' }),
-  actorName: varchar('actor_name', { length: 120 }),
-  action: varchar('action', { length: 80 }).notNull(),
-  target: varchar('target', { length: 200 }),
-  meta: text('meta'),
-  ip: varchar('ip', { length: 64 }),
-  createdAt: ts('created_at').notNull().$defaultFn(now),
-}, (t) => ({
-  byCreated: index('audit_log_created_at_idx').on(t.createdAt),
-  byActorCreated: index('audit_log_actor_created_idx').on(t.actorId, t.createdAt),
-  byTarget: index('audit_log_target_idx').on(t.target),
-}))
+export const auditLog = mysqlTable(
+  'audit_log',
+  {
+    id: id('id').primaryKey(),
+    actorId: id('actor_id').references(() => users.id, { onDelete: 'set null' }),
+    actorName: varchar('actor_name', { length: 120 }),
+    action: varchar('action', { length: 80 }).notNull(),
+    target: varchar('target', { length: 200 }),
+    meta: text('meta'),
+    ip: varchar('ip', { length: 64 }),
+    createdAt: ts('created_at').notNull().$defaultFn(now),
+  },
+  (t) => ({
+    byCreated: index('audit_log_created_at_idx').on(t.createdAt),
+    byActorCreated: index('audit_log_actor_created_idx').on(t.actorId, t.createdAt),
+    byTarget: index('audit_log_target_idx').on(t.target),
+  }),
+)
 
 export const downloadEvents = mysqlTable(
   'download_events',

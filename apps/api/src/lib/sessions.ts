@@ -40,8 +40,5 @@ export async function revokeSession(sessionId: string): Promise<void> {
 // Revoke every active session for a user — used by admin "kick all" or
 // password-change flows.
 export async function revokeAllSessionsForUser(userId: string): Promise<void> {
-  await db
-    .update(sessions)
-    .set({ revokedAt: Date.now() })
-    .where(eq(sessions.userId, userId))
+  await db.update(sessions).set({ revokedAt: Date.now() }).where(eq(sessions.userId, userId))
 }

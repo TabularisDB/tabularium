@@ -114,10 +114,7 @@ async function searchSqliteIds(term: string, opts: SearchOptions): Promise<Searc
   const idSet = hits.map((h) => h.id)
   const filterWithFts = and(inArray(plugins.id, idSet), ...filters)
   const [{ total }] = await db.select({ total: count() }).from(plugins).where(filterWithFts)
-  const filtered = await db
-    .select({ id: plugins.id })
-    .from(plugins)
-    .where(filterWithFts)
+  const filtered = await db.select({ id: plugins.id }).from(plugins).where(filterWithFts)
   const allowed = new Set(filtered.map((r) => r.id))
   const ranked = hits.filter((h) => allowed.has(h.id)).slice(opts.offset, opts.offset + opts.limit)
   return { total: Number(total), ids: ranked.map((r) => r.id) }

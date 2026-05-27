@@ -6,7 +6,9 @@ await connectDB(url)
 
 const dialect = getDialect()
 if (dialect !== 'sqlite') {
-  console.error(`migrate.ts only handles sqlite — for ${dialect} use 'bunx drizzle-kit migrate --config drizzle.${dialect}.config.ts'`)
+  console.error(
+    `migrate.ts only handles sqlite — for ${dialect} use 'bunx drizzle-kit migrate --config drizzle.${dialect}.config.ts'`,
+  )
   process.exit(1)
 }
 

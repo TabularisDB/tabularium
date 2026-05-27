@@ -81,7 +81,10 @@ export async function applyManifestToPlugin(slug: string, patch: PluginManifestU
   })
   const safePatch = { ...patch }
   if (existing?.status === 'approved' && safePatch.name && safePatch.name !== existing.name) {
-    log.warn({ slug, attemptedName: safePatch.name, currentName: existing.name }, 'manifest renamed an approved plugin; ignoring')
+    log.warn(
+      { slug, attemptedName: safePatch.name, currentName: existing.name },
+      'manifest renamed an approved plugin; ignoring',
+    )
     delete safePatch.name
   }
   await db.update(plugins).set(safePatch).where(eq(plugins.id, slug))

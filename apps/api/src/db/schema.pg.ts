@@ -59,47 +59,51 @@ export const identities = pgTable(
   }),
 )
 
-export const plugins = pgTable('plugins', {
-  id: text('id').primaryKey(),
-  ownerId: text('owner_id')
-    .notNull()
-    .references(() => users.id),
-  providerInstanceId: text('provider_instance_id').references(() => providerInstances.id),
-  name: text('name').notNull(),
-  description: text('description').notNull(),
-  author: text('author').notNull(),
-  repoUrl: text('repo_url').notNull(),
-  homepage: text('homepage').notNull(),
-  latestVersion: text('latest_version'),
-  webhookSecret: text('webhook_secret').notNull(),
-  status: text('status', { enum: ['approved', 'pending', 'rejected'] })
-    .notNull()
-    .default('approved'),
-  rejectionReason: text('rejection_reason'),
-  category: text('category'),
-  tags: text('tags'),
-  license: text('license'),
-  iconUrl: text('icon_url'),
-  screenshots: text('screenshots'),
-  readme: text('readme'),
-  documentationUrl: text('documentation_url'),
-  supportEmail: text('support_email'),
-  issuesUrl: text('issues_url'),
-  manifestFetchedAt: ts('manifest_fetched_at'),
-  manifestVersion: text('manifest_version'),
-  featured: smallint('featured').notNull().default(0),
-  featuredOrder: integer('featured_order'),
-  downloads: integer('downloads').notNull().default(0),
-  createdAt: ts('created_at').notNull().$defaultFn(now),
-  updatedAt: ts('updated_at').notNull().$defaultFn(now),
-}, (t) => ({
-  byStatus: index('plugins_status_idx').on(t.status),
-  byOwner: index('plugins_owner_id_idx').on(t.ownerId),
-  byProvider: index('plugins_provider_instance_id_idx').on(t.providerInstanceId),
-  byCategory: index('plugins_category_idx').on(t.category),
-  byUpdated: index('plugins_updated_at_idx').on(t.updatedAt),
-  byFeatured: index('plugins_featured_idx').on(t.featured, t.featuredOrder),
-}))
+export const plugins = pgTable(
+  'plugins',
+  {
+    id: text('id').primaryKey(),
+    ownerId: text('owner_id')
+      .notNull()
+      .references(() => users.id),
+    providerInstanceId: text('provider_instance_id').references(() => providerInstances.id),
+    name: text('name').notNull(),
+    description: text('description').notNull(),
+    author: text('author').notNull(),
+    repoUrl: text('repo_url').notNull(),
+    homepage: text('homepage').notNull(),
+    latestVersion: text('latest_version'),
+    webhookSecret: text('webhook_secret').notNull(),
+    status: text('status', { enum: ['approved', 'pending', 'rejected'] })
+      .notNull()
+      .default('approved'),
+    rejectionReason: text('rejection_reason'),
+    category: text('category'),
+    tags: text('tags'),
+    license: text('license'),
+    iconUrl: text('icon_url'),
+    screenshots: text('screenshots'),
+    readme: text('readme'),
+    documentationUrl: text('documentation_url'),
+    supportEmail: text('support_email'),
+    issuesUrl: text('issues_url'),
+    manifestFetchedAt: ts('manifest_fetched_at'),
+    manifestVersion: text('manifest_version'),
+    featured: smallint('featured').notNull().default(0),
+    featuredOrder: integer('featured_order'),
+    downloads: integer('downloads').notNull().default(0),
+    createdAt: ts('created_at').notNull().$defaultFn(now),
+    updatedAt: ts('updated_at').notNull().$defaultFn(now),
+  },
+  (t) => ({
+    byStatus: index('plugins_status_idx').on(t.status),
+    byOwner: index('plugins_owner_id_idx').on(t.ownerId),
+    byProvider: index('plugins_provider_instance_id_idx').on(t.providerInstanceId),
+    byCategory: index('plugins_category_idx').on(t.category),
+    byUpdated: index('plugins_updated_at_idx').on(t.updatedAt),
+    byFeatured: index('plugins_featured_idx').on(t.featured, t.featuredOrder),
+  }),
+)
 
 export const releases = pgTable(
   'releases',
@@ -212,28 +216,32 @@ export const markdownPages = pgTable(
   }),
 )
 
-export const pluginTransfers = pgTable('plugin_transfers', {
-  id: text('id').primaryKey(),
-  pluginId: text('plugin_id')
-    .notNull()
-    .references(() => plugins.id, { onDelete: 'cascade' }),
-  fromUserId: text('from_user_id')
-    .notNull()
-    .references(() => users.id, { onDelete: 'cascade' }),
-  toUserId: text('to_user_id')
-    .notNull()
-    .references(() => users.id, { onDelete: 'cascade' }),
-  status: text('status', { enum: ['pending', 'accepted', 'rejected', 'cancelled', 'expired'] })
-    .notNull()
-    .default('pending'),
-  message: text('message'),
-  createdAt: ts('created_at').notNull().$defaultFn(now),
-  expiresAt: ts('expires_at').notNull(),
-  respondedAt: ts('responded_at'),
-}, (t) => ({
-  byTo: index('plugin_transfers_to_user_status_idx').on(t.toUserId, t.status),
-  byFrom: index('plugin_transfers_from_user_status_idx').on(t.fromUserId, t.status),
-}))
+export const pluginTransfers = pgTable(
+  'plugin_transfers',
+  {
+    id: text('id').primaryKey(),
+    pluginId: text('plugin_id')
+      .notNull()
+      .references(() => plugins.id, { onDelete: 'cascade' }),
+    fromUserId: text('from_user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    toUserId: text('to_user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    status: text('status', { enum: ['pending', 'accepted', 'rejected', 'cancelled', 'expired'] })
+      .notNull()
+      .default('pending'),
+    message: text('message'),
+    createdAt: ts('created_at').notNull().$defaultFn(now),
+    expiresAt: ts('expires_at').notNull(),
+    respondedAt: ts('responded_at'),
+  },
+  (t) => ({
+    byTo: index('plugin_transfers_to_user_status_idx').on(t.toUserId, t.status),
+    byFrom: index('plugin_transfers_from_user_status_idx').on(t.fromUserId, t.status),
+  }),
+)
 
 export const sessions = pgTable(
   'sessions',
@@ -254,20 +262,24 @@ export const sessions = pgTable(
   }),
 )
 
-export const auditLog = pgTable('audit_log', {
-  id: text('id').primaryKey(),
-  actorId: text('actor_id').references(() => users.id, { onDelete: 'set null' }),
-  actorName: text('actor_name'),
-  action: text('action').notNull(),
-  target: text('target'),
-  meta: text('meta'),
-  ip: text('ip'),
-  createdAt: ts('created_at').notNull().$defaultFn(now),
-}, (t) => ({
-  byCreated: index('audit_log_created_at_idx').on(t.createdAt),
-  byActorCreated: index('audit_log_actor_created_idx').on(t.actorId, t.createdAt),
-  byTarget: index('audit_log_target_idx').on(t.target),
-}))
+export const auditLog = pgTable(
+  'audit_log',
+  {
+    id: text('id').primaryKey(),
+    actorId: text('actor_id').references(() => users.id, { onDelete: 'set null' }),
+    actorName: text('actor_name'),
+    action: text('action').notNull(),
+    target: text('target'),
+    meta: text('meta'),
+    ip: text('ip'),
+    createdAt: ts('created_at').notNull().$defaultFn(now),
+  },
+  (t) => ({
+    byCreated: index('audit_log_created_at_idx').on(t.createdAt),
+    byActorCreated: index('audit_log_actor_created_idx').on(t.actorId, t.createdAt),
+    byTarget: index('audit_log_target_idx').on(t.target),
+  }),
+)
 
 export const downloadEvents = pgTable(
   'download_events',

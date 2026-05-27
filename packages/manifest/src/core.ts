@@ -9,9 +9,7 @@ export const ManifestSchema = Type.Object({
   // display-name field; for a prettier heading use the README H1.
   // Optional at the schema level — when a manifest is shipped without it
   // the registry falls back to a sanitized repo name.
-  name: Type.Optional(
-    Type.String({ minLength: 1, maxLength: 64, pattern: '^[a-z][a-z0-9-]*$' }),
-  ),
+  name: Type.Optional(Type.String({ minLength: 1, maxLength: 64, pattern: '^[a-z][a-z0-9-]*$' })),
   description: Type.Optional(Type.String({ maxLength: 280 })),
   category: Type.Optional(Type.String({ maxLength: 40 })),
   kind: Type.Optional(Type.String({ minLength: 1, maxLength: 40, pattern: '^[a-z0-9][a-z0-9-]*$' })),

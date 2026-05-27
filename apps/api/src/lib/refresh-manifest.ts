@@ -27,7 +27,10 @@ export async function refreshManifestForPlugin(
     where: { userId: plugin.ownerId, providerInstanceId: ref.instance.id },
   })
   if (!ownerIdentity?.accessToken) {
-    return { status: 412, body: { error: 'No stored access token for owner — owner must re-link their provider account' } }
+    return {
+      status: 412,
+      body: { error: 'No stored access token for owner — owner must re-link their provider account' },
+    }
   }
   let token: string
   try {

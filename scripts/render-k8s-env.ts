@@ -36,10 +36,7 @@ function parseEnvFile(content: string): Record<string, string> {
     const key = line.slice(0, separator).trim()
     let value = line.slice(separator + 1).trim()
 
-    if (
-      (value.startsWith('"') && value.endsWith('"')) ||
-      (value.startsWith("'") && value.endsWith("'"))
-    ) {
+    if ((value.startsWith('"') && value.endsWith('"')) || (value.startsWith("'") && value.endsWith("'"))) {
       value = value.slice(1, -1)
     }
 

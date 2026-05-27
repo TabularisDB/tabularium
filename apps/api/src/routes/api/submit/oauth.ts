@@ -87,7 +87,10 @@ export default new Elysia()
         }
       } catch (err) {
         if (err instanceof ManifestValidationError) {
-          log.warn({ repo: ref.repo, errors: err.errors }, 'manifest invalid at submit — slug will fall back to repo name')
+          log.warn(
+            { repo: ref.repo, errors: err.errors },
+            'manifest invalid at submit — slug will fall back to repo name',
+          )
         } else {
           throw err
         }

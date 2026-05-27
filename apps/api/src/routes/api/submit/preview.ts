@@ -93,8 +93,7 @@ export default new Elysia()
       // slug only matters when the manifest is missing the field (or absent).
       const repoSlug = deriveSlug(ref.repo)
       let slug = repoSlug
-      const lookupExisting = async (id: string) =>
-        db.query.plugins.findFirst({ where: { id }, columns: { id: true } })
+      const lookupExisting = async (id: string) => db.query.plugins.findFirst({ where: { id }, columns: { id: true } })
       let existing = await lookupExisting(slug)
 
       let latestRelease
@@ -244,4 +243,3 @@ export default new Elysia()
       },
     },
   )
-
