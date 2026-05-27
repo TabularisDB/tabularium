@@ -28,15 +28,6 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Setup docker CLI
-        # Runner job container (node:lts) has no docker CLI. Install on demand;
-        # the host's docker socket is mounted via runner config (docker_host: "").
-        run: |
-          if ! command -v docker >/dev/null 2>&1; then
-            apt-get update -qq && apt-get install -y -qq docker.io
-          fi
-          docker --version
-
       - name: Resolve image + tag
         id: meta
         run: |
