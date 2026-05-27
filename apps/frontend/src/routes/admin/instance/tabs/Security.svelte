@@ -70,9 +70,9 @@
 		return `${n} B`
 	}
 
-	function formatTimestamp(unixSeconds?: number): string {
-		if (!unixSeconds || !Number.isFinite(unixSeconds)) return '—'
-		return new Date(unixSeconds * 1000).toLocaleString()
+	function formatTimestamp(ms?: number): string {
+		if (!ms || !Number.isFinite(ms)) return '—'
+		return new Date(ms).toLocaleString()
 	}
 
 	async function loadInstance() {
