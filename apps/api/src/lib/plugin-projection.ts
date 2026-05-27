@@ -1,4 +1,4 @@
-import type { plugins as pluginsTable, releases as releasesTable } from '../db/schema'
+import type { plugins as pluginsTable, releases as releasesTable } from '$db/schema'
 import { parseAssets } from './asset'
 
 type PluginRow = typeof pluginsTable.$inferSelect

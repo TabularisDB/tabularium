@@ -10,16 +10,8 @@ export type FetchAttestationArgs = {
   token: string
 }
 
-/**
- * Fetch the sigstore bundle GitHub stores alongside an attested artifact.
- *
- *   GET <apiBase>/repos/<owner>/<repo>/attestations/sha256:<sha256>
- *
- * Returns the parsed JSON envelope (verbatim, no normalization) on 200,
- * `null` on 404. Other non-OK statuses throw so callers can decide whether
- * to retry vs. skip; the webhook hashing loop already swallows these into a
- * warn log.
- */
+// GET <apiBase>/repos/<owner>/<repo>/attestations/sha256:<sha256>
+// Returns the verbatim sigstore envelope, null on 404, throws on other failure.
 export async function fetchAttestation(args: FetchAttestationArgs): Promise<unknown | null> {
   const { apiBase, owner, repo, sha256, token } = args
   const url = `${apiBase}/repos/${owner}/${repo}/attestations/sha256:${sha256}`

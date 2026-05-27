@@ -1,8 +1,8 @@
 import { Elysia, t } from 'elysia'
-import { authMiddleware } from '../../../../middleware/auth'
-import { rateLimit } from '../../../../middleware/rate-limit'
-import { db } from '../../../../db'
-import { pluginRequests, pluginRequestVotes } from '../../../../db/schema'
+import { authMiddleware } from '$middleware/auth'
+import { rateLimit } from '$middleware/rate-limit'
+import { db } from '$db'
+import { pluginRequests, pluginRequestVotes } from '$db/schema'
 import { eq, and, sql } from 'drizzle-orm'
 
 export default new Elysia()

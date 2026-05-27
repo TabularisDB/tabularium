@@ -1,4 +1,4 @@
-import { detectDialect, sqlitePath, type Dialect } from '../db/dialect'
+import { detectDialect, sqlitePath, type Dialect } from '$db/dialect'
 
 export type ProbeResult = { ok: true; dialect: Dialect } | { ok: false; dialect: Dialect; error: string }
 

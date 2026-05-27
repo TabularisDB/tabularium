@@ -1,11 +1,7 @@
 import { Elysia, t } from 'elysia'
-import { eq, and } from 'drizzle-orm'
 import { adminMiddleware } from '$middleware/admin'
 import { db } from '$db'
-import { releases } from '$db/schema'
-import { parseAssets, serializeAssets, hashAsset, type AssetMap } from '$lib/asset'
-import { cache } from '$lib/cache'
-import { latestCacheKey } from '$routes/api/plugins/[slug]/latest'
+import { rehashRelease } from '$lib/rehash'
 import { recordAudit, actorFromAdmin } from '$lib/audit'
 
 export default new Elysia().use(adminMiddleware).post(
@@ -21,41 +17,18 @@ export default new Elysia().use(adminMiddleware).post(
       set.status = 400
       return { error: 'No version available — plugin has no releases' }
     }
-    const release = await db.query.releases.findFirst({
-      where: { pluginId: plugin.id, version },
-    })
-    if (!release) {
-      set.status = 404
-      return { error: `Release ${version} not found` }
+    const result = await rehashRelease(plugin.id, version, { force: body.force })
+    if (!result.ok) {
+      set.status = result.status
+      return { error: result.error }
     }
-
-    const current = parseAssets(release.assets)
-    const updated: AssetMap = { ...current }
-    const results: Record<string, { sha256?: string; size?: number; reason?: string }> = {}
-
-    for (const [platform, entry] of Object.entries(current)) {
-      if (entry.sha256 && !body.force) {
-        results[platform] = { sha256: entry.sha256, size: entry.size }
-        continue
-      }
-      const result = await hashAsset(entry.url)
-      results[platform] = result
-      if (result.sha256) updated[platform] = { ...entry, sha256: result.sha256, size: result.size }
-    }
-
-    await db
-      .update(releases)
-      .set({ assets: serializeAssets(updated) })
-      .where(and(eq(releases.pluginId, plugin.id), eq(releases.version, version)))
-    await cache().del(latestCacheKey(plugin.id))
     await recordAudit({
       ...actorFromAdmin(admin, request),
       action: 'plugin.rehash',
       target: `plugin:${plugin.id}`,
       meta: { version, force: Boolean(body.force) },
     })
-
-    return { ok: true, slug: plugin.id, version, results }
+    return { ok: true, slug: plugin.id, version, results: result.results }
   },
   {
     detail: {

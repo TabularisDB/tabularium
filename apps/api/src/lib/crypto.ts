@@ -18,24 +18,15 @@ export function encryptToken(plaintext: string): string {
   return Buffer.concat([Buffer.of(FORMAT_V1), iv, tag, enc]).toString('base64')
 }
 
-function decryptLayout(buf: Buffer, offset: number): string {
-  const iv = buf.subarray(offset, offset + IV_LEN)
-  const tag = buf.subarray(offset + IV_LEN, offset + IV_LEN + TAG_LEN)
-  const enc = buf.subarray(offset + IV_LEN + TAG_LEN)
+export function decryptToken(encoded: string): string {
+  const buf = Buffer.from(encoded, 'base64')
+  if (buf.length < 1 + IV_LEN + TAG_LEN || buf[0] !== FORMAT_V1) {
+    throw new Error('ciphertext malformed or wrong format version')
+  }
+  const iv = buf.subarray(1, 1 + IV_LEN)
+  const tag = buf.subarray(1 + IV_LEN, 1 + IV_LEN + TAG_LEN)
+  const enc = buf.subarray(1 + IV_LEN + TAG_LEN)
   const decipher = createDecipheriv(ALGO, getKey(), iv)
   decipher.setAuthTag(tag)
   return Buffer.concat([decipher.update(enc), decipher.final()]).toString('utf8')
-}
-
-export function decryptToken(encoded: string): string {
-  const buf = Buffer.from(encoded, 'base64')
-  if (buf.length < IV_LEN + TAG_LEN) throw new Error('ciphertext too short')
-  if (buf.length >= 1 + IV_LEN + TAG_LEN && buf[0] === FORMAT_V1) {
-    try {
-      return decryptLayout(buf, 1)
-    } catch {
-      // fall through to legacy layout; legacy IV could start with 0x01 too
-    }
-  }
-  return decryptLayout(buf, 0)
 }

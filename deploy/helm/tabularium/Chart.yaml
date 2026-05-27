@@ -1,0 +1,24 @@
+apiVersion: v2
+name: tabularium
+description: Self-hosted plugin registry (Tabularium). Bun + Elysia + SvelteKit + Drizzle.
+type: application
+home: https://tabularium.wiki
+sources:
+  - https://codeberg.org/NewtTheWolf/Tabularium
+keywords:
+  - registry
+  - plugins
+  - bun
+  - elysia
+  - sveltekit
+maintainers:
+  - name: NewtTheWolf
+    url: https://codeberg.org/NewtTheWolf
+icon: https://tabularium.wiki/assets/icon.png
+
+# Chart SemVer — bump when templates change.
+version: 0.1.0
+
+# Tabularium app version this chart was tested against — keep in sync with
+# the image tag default in values.yaml.
+appVersion: "0.1.0"

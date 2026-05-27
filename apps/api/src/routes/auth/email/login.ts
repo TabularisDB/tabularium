@@ -2,6 +2,7 @@ import { Elysia, t } from 'elysia'
 import { db } from '$db'
 import { verifyPassword } from '$lib/password'
 import { signJwt } from '$lib/jwt'
+import { createSession } from '$lib/sessions'
 import { isProd } from '$lib/env'
 import { logger } from '$lib/logger'
 import { rateLimit } from '$middleware/rate-limit'
@@ -10,7 +11,7 @@ const log = logger.child({ module: 'auth-email-login' })
 
 export default new Elysia().use(rateLimit({ bucket: 'auth-email-login', limit: 5, windowSeconds: 900 })).post(
   '/',
-  async ({ body, set, cookie }) => {
+  async ({ body, set, cookie, request }) => {
     const email = body.email.toLowerCase()
     const creds = await db.query.rootCredentials.findFirst({ where: { email } })
     const hash = creds?.passwordHash ?? '$argon2id$v=19$m=65536,t=3,p=4$invalid$invalid'
@@ -27,11 +28,17 @@ export default new Elysia().use(rateLimit({ bucket: 'auth-email-login', limit: 5
       return { error: 'Invalid credentials or recovery is no longer available' }
     }
 
+    const sessionId = await createSession({
+      userId: userRow.id,
+      userAgent: request.headers.get('user-agent') ?? null,
+      ip: request.headers.get('x-forwarded-for') ?? request.headers.get('x-real-ip') ?? null,
+    })
     const jwt = await signJwt({
       sub: userRow.id,
       identityId: null,
       username: userRow.displayName,
       providerInstanceId: null,
+      jti: sessionId,
     })
 
     cookie.auth.set({

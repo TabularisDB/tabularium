@@ -2,12 +2,7 @@ import { Elysia, t } from 'elysia'
 import { authMiddleware } from '$middleware/auth'
 import { rateLimit } from '$middleware/rate-limit'
 import { db } from '$db'
-import { parseRepoUrl } from '$lib/providers'
-import { getValidAccessToken, OAuthExpiredError, UpstreamUnauthorizedError, reauthErrorBody } from '$lib/oauth-tokens'
-import { resolveManifest, rawContentBase } from '$lib/manifest'
-import { manifestPatch, applyManifestToPlugin } from '$lib/manifest-apply'
-import { cache } from '$lib/cache'
-import { latestCacheKey } from '$routes/api/plugins/[slug]/latest'
+import { refreshManifestForPlugin } from '$lib/refresh-manifest'
 import { recordAudit, actorFromUser } from '$lib/audit'
 
 export default new Elysia()
@@ -37,56 +32,18 @@ export default new Elysia()
         set.status = 403
         return { error: 'Only the plugin owner can refresh this manifest' }
       }
-      const ref = parseRepoUrl(plugin.repoUrl)
-      if (!ref) {
-        set.status = 422
-        return { error: 'Repo URL no longer parses to a configured provider instance' }
+      const result = await refreshManifestForPlugin(plugin, { branch: body?.ref })
+      if (!('ok' in result)) {
+        set.status = result.status
+        return result.body
       }
-      const ownerIdentity = await db.query.identities.findFirst({
-        where: { userId: plugin.ownerId, providerInstanceId: ref.instance.id },
-      })
-      if (!ownerIdentity?.accessToken) {
-        set.status = 412
-        return { error: 'No stored access token — re-link your provider account' }
-      }
-      let token: string
-      try {
-        token = await getValidAccessToken(ownerIdentity, ref.instance)
-      } catch (e) {
-        if (e instanceof OAuthExpiredError) {
-          set.status = 401
-          return reauthErrorBody(e)
-        }
-        throw e
-      }
-      const branch = body?.ref ?? plugin.latestVersion ?? 'HEAD'
-      let manifest
-      try {
-        manifest = await resolveManifest(token, ref, { ref: branch })
-      } catch (e) {
-        if (e instanceof UpstreamUnauthorizedError) {
-          set.status = 401
-          return reauthErrorBody(e)
-        }
-        throw e
-      }
-      if (!manifest) {
-        set.status = 404
-        return { error: `No .tabularium file found in ${plugin.repoUrl} @ ${branch}` }
-      }
-      const patch = manifestPatch(manifest, {
-        repoBase: rawContentBase(ref, branch),
-        version: branch,
-      })
-      await applyManifestToPlugin(plugin.id, patch)
-      await cache().del(latestCacheKey(plugin.id))
       await recordAudit({
         ...actorFromUser(user, request),
         action: 'plugin.refresh_manifest',
         target: `plugin:${plugin.id}`,
-        meta: { ref: branch, source: manifest.source, by: 'author' },
+        meta: { ref: result.ref, source: result.source, by: 'author' },
       })
-      return { ok: true, slug: plugin.id, source: manifest.source, ref: branch }
+      return result
     },
     {
       detail: {

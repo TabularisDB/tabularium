@@ -44,4 +44,7 @@ export const relations = defineRelations(schema, (r) => ({
   },
   auditLog: {},
   downloadEvents: {},
+  sessions: {
+    user: r.one.users({ from: r.sessions.userId, to: r.users.id }),
+  },
 }))

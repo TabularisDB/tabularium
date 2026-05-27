@@ -88,6 +88,16 @@ export async function createApp() {
     })
     .use(router)
 
+  const { generateNonce, cspHeader, injectNonce } = await import('$lib/csp')
+
+  async function serveSpa(set: { headers: Record<string, string | number> }): Promise<string> {
+    const nonce = generateNonce()
+    set.headers['content-type'] = 'text/html; charset=utf-8'
+    set.headers['content-security-policy'] = cspHeader(nonce)
+    const html = await Bun.file(resolve('../frontend/dist/index.html')).text()
+    return injectNonce(html, nonce)
+  }
+
   if (config.installed) {
     const { diskUploadsRoot } = await import('$lib/storage')
     return base
@@ -95,7 +105,7 @@ export async function createApp() {
       .use(staticPlugin({ assets: resolve('../frontend/dist'), prefix: '/' }))
       .get(
         '/*',
-        ({ path, set }) => {
+        async ({ path, set }) => {
           if (
             path.startsWith('/api') ||
             path.startsWith('/auth') ||
@@ -105,8 +115,7 @@ export async function createApp() {
             set.status = 404
             return { error: 'Not found' }
           }
-          set.headers['content-type'] = 'text/html; charset=utf-8'
-          return Bun.file(resolve('../frontend/dist/index.html'))
+          return serveSpa(set)
         },
         { detail: { hide: true } },
       )
@@ -123,14 +132,7 @@ export async function createApp() {
       }
     })
     .use(staticPlugin({ assets: resolve('../frontend/dist'), prefix: '/' }))
-    .get(
-      '/*',
-      ({ set }) => {
-        set.headers['content-type'] = 'text/html; charset=utf-8'
-        return Bun.file(resolve('../frontend/dist/index.html'))
-      },
-      { detail: { hide: true } },
-    )
+    .get('/*', async ({ set }) => serveSpa(set), { detail: { hide: true } })
 }
 
 export type App = Awaited<ReturnType<typeof createApp>>
@@ -185,9 +187,8 @@ async function bootNormalMode() {
   await mkdir(diskUploadsRoot(), { recursive: true })
   await initProviderInstances()
 
-  // Seed/upgrade the registry signing keypair on every boot. Fresh installs
-  // also seed at the end of `/api/init/complete`; this boot-time call covers
-  // upgrades from instances created before Phase 2 shipped Ed25519 signing.
+  // Seed the registry signing keypair on boot; fresh installs also seed at
+  // the end of `/api/init/complete`. Idempotent.
   const { ensureSigningKey } = await import('$lib/registry-key')
   await ensureSigningKey()
 

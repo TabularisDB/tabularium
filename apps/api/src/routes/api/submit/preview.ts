@@ -10,6 +10,7 @@ import { getManifestConfig } from '$lib/manifest-config'
 import { fetchLatestRelease } from '$lib/release-fetch'
 import { getFeatures } from '$lib/features'
 import { logger } from '$lib/logger'
+import { humanize } from '$lib/util'
 
 const log = logger.child({ module: 'submit-preview' })
 
@@ -244,6 +245,3 @@ export default new Elysia()
     },
   )
 
-function humanize(s: string): string {
-  return s.replace(/[-_]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
-}

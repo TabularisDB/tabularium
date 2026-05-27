@@ -18,12 +18,8 @@ export async function initBootstrap(): Promise<void> {
   const plaintext = fromEnv ?? generatePassword()
   const passwordHash = await hashPassword(plaintext)
   state = { email: BOOTSTRAP_EMAIL, passwordHash }
-  if (!fromEnv) {
-    await Bun.write(BOOTSTRAP_PW_FILE, plaintext)
-    printFileBanner(BOOTSTRAP_PW_FILE)
-  } else {
-    printEnvBanner()
-  }
+  if (!fromEnv) await Bun.write(BOOTSTRAP_PW_FILE, plaintext)
+  printBanner(fromEnv ? 'env' : 'file')
 }
 
 export function isBootstrapActive(): boolean {
@@ -49,36 +45,15 @@ function generatePassword(): string {
   return Array.from(bytes, (b) => ALPHABET[b % ALPHABET.length]).join('')
 }
 
-function printFileBanner(path: string): void {
+function printBanner(source: 'env' | 'file'): void {
   const url = `${process.env.BASE_URL ?? 'http://localhost:3000'}/init`
   const bar = '━'.repeat(64)
-  console.log('')
-  console.log(bar)
-  console.log('  FIRST-RUN SETUP')
-  console.log('')
-  console.log('  Open the registry in your browser:')
-  console.log(`    ${url}`)
-  console.log('')
-  console.log(`    Email:    ${BOOTSTRAP_EMAIL}`)
-  console.log(`    Password: (written to ${path})`)
-  console.log('')
-  console.log('  Set BOOTSTRAP_PASSWORD env var to pin it across reboots.')
-  console.log(bar)
-  console.log('')
-}
-
-function printEnvBanner(): void {
-  const url = `${process.env.BASE_URL ?? 'http://localhost:3000'}/init`
-  const bar = '━'.repeat(64)
-  console.log('')
-  console.log(bar)
-  console.log('  FIRST-RUN SETUP')
-  console.log('')
-  console.log('  Open the registry in your browser:')
-  console.log(`    ${url}`)
-  console.log('')
-  console.log(`    Email:    ${BOOTSTRAP_EMAIL}`)
-  console.log('    Password: (from BOOTSTRAP_PASSWORD env var)')
-  console.log(bar)
-  console.log('')
+  const passwordLine =
+    source === 'env'
+      ? '    Password: (from BOOTSTRAP_PASSWORD env var)'
+      : `    Password: (written to ${BOOTSTRAP_PW_FILE})`
+  const tail = source === 'env' ? '' : '\n  Set BOOTSTRAP_PASSWORD env var to pin it across reboots.'
+  console.log(
+    `\n${bar}\n  FIRST-RUN SETUP\n\n  Open the registry in your browser:\n    ${url}\n\n    Email:    ${BOOTSTRAP_EMAIL}\n${passwordLine}\n${tail}\n${bar}\n`,
+  )
 }

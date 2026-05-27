@@ -9,6 +9,8 @@ const PayloadSchema = Type.Object({
   username: Type.String({ minLength: 1, maxLength: 128 }),
   providerInstanceId: Type.Union([Type.String(), Type.Null()]),
   bootstrap: Type.Optional(Type.Boolean()),
+  // jti = session id (sessions table PK). Bootstrap tokens omit it.
+  jti: Type.Optional(Type.String()),
 })
 
 export type JwtPayload = Static<typeof PayloadSchema>
@@ -31,13 +33,14 @@ export async function signBootstrapJwt(): Promise<string> {
 }
 
 export async function signJwt(payload: JwtPayload): Promise<string> {
-  return new SignJWT({ ...payload })
+  const jwt = new SignJWT({ ...payload })
     .setProtectedHeader({ alg: 'HS256' })
     .setIssuer(ISSUER)
     .setAudience(AUDIENCE)
     .setIssuedAt()
     .setExpirationTime('7d')
-    .sign(getSecret())
+  if (payload.jti) jwt.setJti(payload.jti)
+  return jwt.sign(getSecret())
 }
 
 export async function verifyJwt(token: string): Promise<JwtPayload | null> {

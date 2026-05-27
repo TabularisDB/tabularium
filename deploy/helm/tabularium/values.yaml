@@ -1,0 +1,189 @@
+# Default values for the tabularium chart.
+# Override with `--values my-values.yaml` or `--set key=value`.
+
+# ---- Image -----------------------------------------------------------------
+image:
+  repository: codeberg.org/tabularium/tabularium
+  # If unset, falls back to .Chart.AppVersion.
+  tag: ""
+  pullPolicy: IfNotPresent
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+# ---- Replicas & rollout ----------------------------------------------------
+# SQLite mode forces replicas=1 regardless (no shared filesystem semantics).
+replicaCount: 1
+strategy:
+  type: Recreate
+
+# ---- Container env (free-form) --------------------------------------------
+# Anything you set here is injected verbatim. Use `valueFrom: { secretKeyRef }`
+# for secrets you don't want in values.yaml. Sensible defaults for boot-time
+# config (DATABASE_URL, BASE_URL, ...) come from .config.* below.
+env: {}
+# env:
+#   LOG_LEVEL: info
+#   FEATURE_REQUESTS: "0"
+
+# Existing secret referenced wholesale via envFrom. Convenient for OAuth client
+# secrets, JWT_SECRET, TOKEN_ENC_KEY, etc. If empty, no envFrom is rendered.
+existingEnvSecret: ""
+
+# ---- App config (rendered into env) ---------------------------------------
+config:
+  # http
+  port: 3000
+  baseUrl: "https://registry.example.com"
+  webBaseUrl: "https://registry.example.com"
+  logLevel: "info"
+  nodeEnv: "production"
+  # data
+  # `sqlite` uses PVC (see persistence.*); `external` lets you set databaseUrl directly.
+  databaseMode: "sqlite"
+  # only used when databaseMode == "external"
+  databaseUrl: ""
+  dataDir: "/data"
+  # secrets (provide via .Values.secrets, or wire through existingSecret)
+  # JWT_SECRET, TOKEN_ENC_KEY — see secrets section below.
+
+# Chart-managed Secret for the dev-friendly path: chart renders a Secret named
+# `<release>-tabularium` with these keys. For production, prefer `existingSecret`
+# and manage the Secret out-of-band (sealed-secrets, sops, ESO).
+secrets:
+  # If `existingSecret` is set, no Secret is created and `existingSecret` is used
+  # in envFrom instead.
+  existingSecret: ""
+  # Otherwise, these are placed into a chart-managed Secret. Leave blank to skip.
+  jwtSecret: ""
+  tokenEncKey: ""
+  # Optional: bootstrap admin email override
+  bootstrapEmail: ""
+
+# ---- Persistence (sqlite mode) --------------------------------------------
+persistence:
+  enabled: true
+  storageClass: ""        # empty = use cluster default
+  accessMode: ReadWriteOnce
+  size: 5Gi
+  # If you already have a PVC bound, point at it here and skip chart creation.
+  existingClaim: ""
+
+# ---- Service ---------------------------------------------------------------
+service:
+  type: ClusterIP
+  port: 80
+  # targetPort defaults to .config.port (3000)
+  annotations: {}
+
+# ---- ServiceAccount -------------------------------------------------------
+serviceAccount:
+  create: true
+  automount: false
+  annotations: {}
+  name: ""
+
+# ---- Pod / container security ---------------------------------------------
+# Defaults match the existing deploy/k8s manifest: non-root, no privesc,
+# read-only fs (with an emptyDir for /tmp).
+podSecurityContext:
+  runAsNonRoot: true
+  runAsUser: 1000
+  runAsGroup: 1000
+  fsGroup: 1000
+  seccompProfile:
+    type: RuntimeDefault
+
+securityContext:
+  allowPrivilegeEscalation: false
+  readOnlyRootFilesystem: true
+  capabilities:
+    drop: [ALL]
+
+# ---- Ingress ---------------------------------------------------------------
+# k3s ships traefik by default — leave className empty and traefik will pick
+# it up. Cloudflare proxy + HTTP origin is the existing setup; the commented
+# tls block shows the cert-manager recipe.
+ingress:
+  enabled: true
+  className: ""          # k3s: leave empty for traefik default
+  annotations: {}
+  # annotations:
+  #   cert-manager.io/cluster-issuer: letsencrypt
+  #   traefik.ingress.kubernetes.io/router.entrypoints: websecure
+  #   traefik.ingress.kubernetes.io/router.tls: "true"
+  hosts:
+    - host: registry.example.com
+      paths:
+        - path: /
+          pathType: Prefix
+  tls: []
+  # tls:
+  #   - hosts:
+  #       - registry.example.com
+  #     secretName: registry-tls
+
+# ---- Probes (path-overridable, port locked to http) ------------------------
+probes:
+  readiness:
+    path: /healthz
+    initialDelaySeconds: 5
+    periodSeconds: 10
+  liveness:
+    path: /healthz
+    initialDelaySeconds: 15
+    periodSeconds: 20
+
+# ---- Resources -------------------------------------------------------------
+resources:
+  requests:
+    cpu: 50m
+    memory: 128Mi
+  limits:
+    cpu: 500m
+    memory: 512Mi
+
+# ---- HPA -------------------------------------------------------------------
+# Disabled by default — SQLite mode can't scale horizontally, and most installs
+# don't need it. Enable for postgres/mysql installs with heavy read traffic.
+autoscaling:
+  enabled: false
+  minReplicas: 1
+  maxReplicas: 5
+  targetCPUUtilizationPercentage: 80
+  # targetMemoryUtilizationPercentage: 80
+
+# ---- Pod scheduling -------------------------------------------------------
+podAnnotations: {}
+podLabels: {}
+nodeSelector: {}
+tolerations: []
+affinity: {}
+
+# ---- Extras --------------------------------------------------------------
+# Extra volumes / volumeMounts merged into the Pod spec / container spec.
+volumes: []
+volumeMounts: []
+
+# ---- Optional bundled Postgres (bitnami subchart) -------------------------
+# Off by default. Enable only if you want this chart to manage its own Postgres
+# instance — otherwise point .config.databaseUrl at an existing one.
+postgresql:
+  enabled: false
+  # See https://artifacthub.io/packages/helm/bitnami/postgresql for full values.
+  auth:
+    username: tabularium
+    password: ""           # if empty, the bitnami chart auto-generates
+    database: tabularium
+
+# ---- Optional bundled Dragonfly (cache; Redis-compatible) ----------------
+dragonfly:
+  enabled: false
+  image:
+    repository: docker.dragonflydb.io/dragonflydb/dragonfly
+    tag: latest
+  port: 6379
+  persistence:
+    enabled: true
+    size: 1Gi

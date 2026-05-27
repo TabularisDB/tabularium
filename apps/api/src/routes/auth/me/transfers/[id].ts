@@ -1,5 +1,5 @@
 import { Elysia, t } from 'elysia'
-import { eq } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { authMiddleware } from '$middleware/auth'
 import { db } from '$db'
 import { pluginTransfers, plugins } from '$db/schema'
@@ -36,7 +36,19 @@ export default new Elysia().use(authMiddleware).post(
 
     const status = body.action === 'accept' ? 'accepted' : body.action === 'reject' ? 'rejected' : 'cancelled'
     const now = Date.now()
-    await db.update(pluginTransfers).set({ status, respondedAt: now }).where(eq(pluginTransfers.id, params.id))
+
+    // Conditional UPDATE so two concurrent requests can't both flip a single
+    // pending transfer. The losing writer's WHERE clause matches zero rows.
+    await db
+      .update(pluginTransfers)
+      .set({ status, respondedAt: now })
+      .where(and(eq(pluginTransfers.id, params.id), eq(pluginTransfers.status, 'pending')))
+
+    const after = await db.query.pluginTransfers.findFirst({ where: { id: params.id } })
+    if (!after || after.status !== status) {
+      set.status = 409
+      return { error: `Transfer is already ${after?.status ?? 'unknown'}` }
+    }
 
     if (status === 'accepted') {
       await db

@@ -5,7 +5,7 @@ import { getSetting, isSettingsInitialized } from '$lib/settings'
 
 const log = logger.child({ module: 'rate-limit' })
 
-function parseInt(value: string | undefined, fallback: number): number {
+function readPositiveInt(value: string | undefined, fallback: number): number {
   if (!value) return fallback
   const n = Number(value)
   return Number.isFinite(n) && n > 0 ? Math.trunc(n) : fallback
@@ -14,8 +14,8 @@ function parseInt(value: string | undefined, fallback: number): number {
 function effectiveOpts(opts: RateLimitOptions): { limit: number; windowSeconds: number } {
   if (!isSettingsInitialized()) return { limit: opts.limit, windowSeconds: opts.windowSeconds }
   return {
-    limit: parseInt(getSetting(`ratelimit.${opts.bucket}.limit`), opts.limit),
-    windowSeconds: parseInt(getSetting(`ratelimit.${opts.bucket}.window`), opts.windowSeconds),
+    limit: readPositiveInt(getSetting(`ratelimit.${opts.bucket}.limit`), opts.limit),
+    windowSeconds: readPositiveInt(getSetting(`ratelimit.${opts.bucket}.window`), opts.windowSeconds),
   }
 }
 
@@ -38,7 +38,9 @@ function clientIp(req: Request): string {
       ?.split(',')
       .map((s) => s.trim())
       .filter(Boolean)
-    if (xff?.length) return xff[xff.length - 1]
+    // Left-most XFF entry is the original client; right-most is the nearest
+    // proxy. Only honor when infra.trust_proxy is enabled (operator opt-in).
+    if (xff?.length) return xff[0]
     const real = req.headers.get('x-real-ip')?.trim()
     if (real) return real
   }

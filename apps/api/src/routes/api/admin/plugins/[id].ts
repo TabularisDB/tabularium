@@ -6,13 +6,14 @@ import { plugins, releases } from '$db/schema'
 import { cache } from '$lib/cache'
 import { latestCacheKey } from '$routes/api/plugins/[slug]/latest'
 import { recordAudit } from '$lib/audit'
+import { jsonArrayOrNull } from '$lib/util'
 
 const statusEnum = t.Union([t.Literal('approved'), t.Literal('pending'), t.Literal('rejected')])
 
+// PATCH semantics: undefined input means "don't touch this column", so we
+// can't blindly call jsonArrayOrNull (which turns undefined → null).
 function jsonArray<T>(v: T[] | undefined): string | null | undefined {
-  if (v === undefined) return undefined
-  if (v.length === 0) return null
-  return JSON.stringify(v)
+  return v === undefined ? undefined : jsonArrayOrNull(v)
 }
 
 export default new Elysia()

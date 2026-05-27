@@ -1,6 +1,6 @@
 import { and, eq, lt } from 'drizzle-orm'
-import { db } from '../db'
-import { pluginTransfers } from '../db/schema'
+import { db } from '$db'
+import { pluginTransfers } from '$db/schema'
 
 export const TRANSFER_TTL_MS = 7 * 24 * 60 * 60 * 1000
 

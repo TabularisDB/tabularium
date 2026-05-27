@@ -21,6 +21,7 @@ describe('buildIntegrity', () => {
       pluginId: plugin.id,
       version: '1.2.3',
       assets: '{}',
+      manifestSha256: 'c'.repeat(64),
     })
     await db.insert(releaseAssets).values({
       id: ulid(),
@@ -63,8 +64,7 @@ describe('buildIntegrity', () => {
     expect(body.registry).toBe(env.BASE_URL)
     expect(body.plugin_slug).toBe(plugin.id)
     expect(body.release_version).toBe('1.2.3')
-    // Placeholder per Task 9 spec — sha256 of canonical empty-object JSON.
-    expect(body.manifest_sha256).toBe('44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a')
+    expect(body.manifest_sha256).toBe('c'.repeat(64))
     expect(body.assets).toEqual([{ name: 'p.zip', sha256: 'a'.repeat(64), size: 12345 }])
   })
 
@@ -102,6 +102,7 @@ describe('buildIntegrity', () => {
       pluginId: plugin.id,
       version: '2.0.0',
       assets: '{}',
+      manifestSha256: 'd'.repeat(64),
     })
     await db.insert(releaseAssets).values({
       id: ulid(),

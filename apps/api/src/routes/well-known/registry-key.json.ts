@@ -1,14 +1,8 @@
 import { Elysia } from 'elysia'
 import { getCurrentPublicJwk, getPreviousPublicJwk } from '$lib/registry-key'
 
-/**
- * JWKS handler factory. The exported default Elysia instance is mounted at
- * `/well-known/registry-key.json` by the file-router (it does not traverse
- * dot-prefixed directories like `.well-known`). An absolute-path alias at the
- * spec-correct URL `/.well-known/registry-key.json` is registered by
- * `routes/index.ts`, which sits at the router root and re-uses the handler
- * below via the named export.
- */
+// Exported separately so routes/index.ts can alias this at the spec-correct
+// `/.well-known/...` URL (the file-router can't discover dot-prefixed dirs).
 export async function handleJwks(set: {
   status?: number | string
   headers: Record<string, string | number>

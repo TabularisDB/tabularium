@@ -1,12 +1,12 @@
 import { Elysia, t } from 'elysia'
 import { ulid } from 'ulid'
-import { authMiddleware } from '../../../middleware/auth'
-import { rateLimit } from '../../../middleware/rate-limit'
-import { db } from '../../../db'
-import { pluginRequests, pluginRequestClaims } from '../../../db/schema'
+import { authMiddleware } from '$middleware/auth'
+import { rateLimit } from '$middleware/rate-limit'
+import { db } from '$db'
+import { pluginRequests, pluginRequestClaims } from '$db/schema'
 import { desc, count, eq, and, inArray } from 'drizzle-orm'
-import { getFeatures } from '../../../lib/features'
-import { verifyJwt } from '../../../lib/jwt'
+import { getFeatures } from '$lib/features'
+import { verifyJwt } from '$lib/jwt'
 
 const requestSchema = t.Object({
   id: t.String(),
@@ -158,9 +158,14 @@ export default new Elysia()
         security: [{ bearerAuth: [] }, { cookieAuth: [] }],
       },
       body: t.Object({
-        slug: t.String({ pattern: '^[a-z0-9-]+$', description: 'URL-safe slug. Lowercase letters, digits, hyphens.' }),
-        name: t.String({ description: 'Human-readable plugin name.' }),
-        description: t.String({ description: 'What the plugin should do.' }),
+        slug: t.String({
+          pattern: '^[a-z0-9-]+$',
+          minLength: 1,
+          maxLength: 80,
+          description: 'URL-safe slug. Lowercase letters, digits, hyphens.',
+        }),
+        name: t.String({ minLength: 1, maxLength: 120, description: 'Human-readable plugin name.' }),
+        description: t.String({ minLength: 1, maxLength: 2000, description: 'What the plugin should do.' }),
       }),
       response: {
         200: createRequestResponseSchema,

@@ -1,9 +1,10 @@
 import { Elysia, t } from 'elysia'
-import { db } from '../../../db'
-import { plugins } from '../../../db/schema'
-import { like, or, count, and, eq } from 'drizzle-orm'
-import { projectPlugin } from '../../../lib/plugin-projection'
-import { getKinds, isKindKey } from '../../../lib/kinds'
+import { db } from '$db'
+import { plugins } from '$db/schema'
+import { like, count, and, eq } from 'drizzle-orm'
+import { projectPlugin } from '$lib/plugin-projection'
+import { getKinds, isKindKey } from '$lib/kinds'
+import { searchPluginIds } from '$lib/search-plugins'
 
 const screenshotSchema = t.Object({
   url: t.String(),
@@ -53,6 +54,10 @@ function escapeLike(input: string): string {
   return input.replace(/[\\%_]/g, (ch) => `\\${ch}`)
 }
 
+function tagLikePattern(tag: string): string {
+  return `%"${escapeLike(tag)}"%`
+}
+
 function clampInt(raw: unknown, def: number, min: number, max: number): number {
   const n = Number(raw ?? def)
   if (!Number.isFinite(n)) return def
@@ -82,47 +87,54 @@ export default new Elysia().get(
             ? { featuredOrder: 'asc' }
             : { updatedAt: 'desc' }
 
-    const where: RelationalFilter = { status: 'approved' }
-    if (search) {
-      const term = `%${escapeLike(search)}%`
-      where.OR = [{ name: { like: term } }, { description: { like: term } }, { id: { like: term } }]
-    }
-    if (category) where.category = category
-    if (tag) where.tags = { like: `%"${escapeLike(tag)}"%` }
-    if (kindFilterActive) {
-      if (!kindValid) {
-        return {
-          total: 0,
-          page,
-          limit,
-          plugins: [],
-          facets: { categories: [], kinds: [] },
-        }
+    if (kindFilterActive && !kindValid) {
+      return {
+        total: 0,
+        page,
+        limit,
+        plugins: [],
+        facets: { categories: [], kinds: [] },
       }
-      where.tags = { like: `%"${escapeLike(kindParam!)}"%` }
     }
+
+    const tagFilter = kindFilterActive ? kindParam! : tag
+    const where: RelationalFilter = { status: 'approved' }
+    if (category) where.category = category
+    if (tagFilter) where.tags = { like: tagLikePattern(tagFilter) }
     if (query.featured === '1') where.featured = 1
 
-    // Mirror the same filter as an SQL-expression for `db.select().count()`.
-    const builderConditions = [eq(plugins.status, 'approved')]
+    let total: number
+    let rows: Awaited<ReturnType<typeof db.query.plugins.findMany>>
+
     if (search) {
-      const term = `%${escapeLike(search)}%`
-      builderConditions.push(or(like(plugins.name, term), like(plugins.description, term), like(plugins.id, term))!)
+      const result = await searchPluginIds({
+        term: search,
+        status: 'approved',
+        category: category || null,
+        tag: tagFilter || null,
+        featured: query.featured === '1',
+        limit,
+        offset,
+      })
+      total = result.total
+      if (result.ids.length === 0) {
+        rows = []
+      } else {
+        const fetched = await db.query.plugins.findMany({ where: { id: { in: result.ids } } })
+        const byId = new Map(fetched.map((p) => [p.id, p]))
+        rows = result.ids.map((id) => byId.get(id)).filter((p): p is (typeof fetched)[number] => Boolean(p))
+      }
+    } else {
+      const builderConditions = [eq(plugins.status, 'approved')]
+      if (category) builderConditions.push(eq(plugins.category, category))
+      if (tagFilter) builderConditions.push(like(plugins.tags, tagLikePattern(tagFilter)))
+      if (query.featured === '1') builderConditions.push(eq(plugins.featured, 1))
+      const builderWhere = builderConditions.length === 1 ? builderConditions[0] : and(...builderConditions)
+
+      const [row] = await db.select({ total: count() }).from(plugins).where(builderWhere)
+      total = row.total
+      rows = await db.query.plugins.findMany({ where, limit, offset, orderBy })
     }
-    if (category) builderConditions.push(eq(plugins.category, category))
-    if (tag) builderConditions.push(like(plugins.tags, `%"${escapeLike(tag)}"%`))
-    if (kindFilterActive && kindValid) builderConditions.push(like(plugins.tags, `%"${escapeLike(kindParam!)}"%`))
-    if (query.featured === '1') builderConditions.push(eq(plugins.featured, 1))
-    const builderWhere = builderConditions.length === 1 ? builderConditions[0] : and(...builderConditions)
-
-    const [{ total }] = await db.select({ total: count() }).from(plugins).where(builderWhere)
-
-    const rows = await db.query.plugins.findMany({
-      where,
-      limit,
-      offset,
-      orderBy,
-    })
 
     const categoryRows = await db
       .select({ value: plugins.category, count: count() })

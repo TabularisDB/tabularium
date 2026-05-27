@@ -25,9 +25,7 @@ function generateWebhookSecret(): string {
   return Buffer.from(bytes).toString('hex')
 }
 
-function humanize(s: string): string {
-  return s.replace(/[-_]+/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())
-}
+import { humanize } from '$lib/util'
 
 export default new Elysia()
   .use(authMiddleware)

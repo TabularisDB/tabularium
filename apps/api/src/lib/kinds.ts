@@ -1,5 +1,5 @@
 import { getSetting, setSetting } from './settings'
-import { validateExtensionsDelta, type ExtensionsDelta } from './manifest-schema'
+import { validateExtensionsDelta, type ExtensionsDelta } from './extensions-schema'
 
 export type KindPublicPageCopy = {
   hero: string | null
@@ -40,11 +40,6 @@ const DESC_MAX = 280
 const HERO_MAX = 80
 const INTRO_MAX = 600
 
-// Kind keys that would shadow an existing top-level public route.
-// /:key is mounted under /c/ so this list is short — only the immediate
-// children of /c (none yet) would collide.
-const RESERVED_KIND_KEYS = new Set<string>([])
-
 export function validateKindDef(input: unknown): KindDef {
   if (!input || typeof input !== 'object' || Array.isArray(input)) {
     throw new KindError('invalid', 'kind definition must be an object')
@@ -81,10 +76,6 @@ export function validateKindDef(input: unknown): KindDef {
         throw new KindError('invalid', err instanceof Error ? err.message : 'invalid extensionsSchema')
       }
     }
-  }
-
-  if (RESERVED_KIND_KEYS.has(key)) {
-    throw new KindError('invalid', `"${key}" is a reserved route — pick a different key`)
   }
 
   const publicPageEnabled = o.publicPageEnabled === true

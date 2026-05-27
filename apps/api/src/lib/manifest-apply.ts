@@ -1,8 +1,11 @@
 import { eq } from 'drizzle-orm'
-import { db } from '../db'
-import { plugins } from '../db/schema'
+import { db } from '$db'
+import { plugins } from '$db/schema'
 import { resolveAbsolute } from './url'
 import type { ResolvedManifest } from './manifest'
+import { logger } from './logger'
+
+const log = logger.child({ module: 'manifest-apply' })
 
 export type PluginManifestUpdate = {
   name?: string
@@ -22,10 +25,7 @@ export type PluginManifestUpdate = {
   updatedAt: number
 }
 
-function jsonArray<T>(v: T[] | undefined | null): string | null {
-  if (!v || v.length === 0) return null
-  return JSON.stringify(v)
-}
+import { jsonArrayOrNull as jsonArray } from './util'
 
 /**
  * Convert a parsed manifest into a column patch for the `plugins` row.
@@ -72,5 +72,17 @@ export function manifestPatch(
 }
 
 export async function applyManifestToPlugin(slug: string, patch: PluginManifestUpdate): Promise<void> {
-  await db.update(plugins).set(patch).where(eq(plugins.id, slug))
+  // Plugin name is locked once approved — owners can't repoint a vetted slug
+  // at a phishing-style display name via the next webhook. description /
+  // homepage stay editable so authors can still iterate.
+  const existing = await db.query.plugins.findFirst({
+    where: { id: slug },
+    columns: { status: true, name: true },
+  })
+  const safePatch = { ...patch }
+  if (existing?.status === 'approved' && safePatch.name && safePatch.name !== existing.name) {
+    log.warn({ slug, attemptedName: safePatch.name, currentName: existing.name }, 'manifest renamed an approved plugin; ignoring')
+    delete safePatch.name
+  }
+  await db.update(plugins).set(safePatch).where(eq(plugins.id, slug))
 }

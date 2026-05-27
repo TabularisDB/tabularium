@@ -1,42 +1,31 @@
 import { ulid } from 'ulid'
 import { and, eq } from 'drizzle-orm'
-import { db } from '../db'
-import { plugins, releases, releaseAssets } from '../db/schema'
+import { db } from '$db'
+import { plugins, releases, releaseAssets } from '$db/schema'
 import { inferPlatformKey, type NormalizedRelease } from './webhook'
-import { parseRepoUrl, type RepoRef } from './providers'
+import { parseRepoUrl } from './providers'
 import { getValidAccessToken, OAuthExpiredError } from './oauth-tokens'
 import { hashAsset, serializeAssets, parseAssets, type AssetMap } from './asset'
 import { cache } from './cache'
-import { latestCacheKey } from '../routes/api/plugins/[slug]/latest'
+import { latestCacheKey } from '$routes/api/plugins/[slug]/latest'
 import { recordAudit } from './audit'
 import { fetchAttestation } from './attestation'
 import { logger } from './logger'
+import { compareSemver } from './semver'
+import { resolveManifest, rawContentBase } from './manifest'
+import { manifestPatch, applyManifestToPlugin } from './manifest-apply'
+import { createHash } from 'node:crypto'
 
 const log = logger.child({ module: 'release-ingest' })
 
-function compareSemver(a: string, b: string): number {
-  const parse = (v: string) => v.split('.').map(Number)
-  const [aMaj, aMin, aPat] = parse(a)
-  const [bMaj, bMin, bPat] = parse(b)
-  if (Number.isNaN(aMaj + aMin + aPat) || Number.isNaN(bMaj + bMin + bPat)) return 0
-  if (aMaj !== bMaj) return aMaj - bMaj
-  if (aMin !== bMin) return aMin - bMin
-  return aPat - bPat
-}
-
-/**
- * Insert/upsert a release row from a normalized payload, update the parent
- * plugin's `latestVersion` when newer, and busts the latest-by-platform cache.
- *
- * Returns the canonical version (tag without `v` prefix) and the set of
- * platform keys we recognised — fields callers may want to log or echo back.
- *
- * Does NOT hash the assets — that's the caller's job via `hashReleaseAssetsAsync`
- * so the slow network work can run in the background.
- */
+// Upserts the release row + bumps latestVersion + invalidates latest cache.
+// Assets are NOT hashed here — fire hashReleaseAssetsAsync in the background.
+// `manifestSha256` is the sha256 of the raw manifest file at this release —
+// the registry-integrity JWS signs it so verifiers can pin the source manifest.
 export async function persistRelease(
   plugin: { id: string; latestVersion: string | null },
   normalized: NormalizedRelease,
+  opts: { manifestSha256?: string | null } = {},
 ): Promise<{ version: string; assetMap: AssetMap }> {
   const version = normalized.tag.replace(/^v/, '')
 
@@ -46,12 +35,13 @@ export async function persistRelease(
     if (key) assetMap[key] = { url: asset.url }
   }
 
+  const sha = opts.manifestSha256 ?? null
   await db
     .insert(releases)
-    .values({ id: ulid(), pluginId: plugin.id, version, assets: serializeAssets(assetMap) })
+    .values({ id: ulid(), pluginId: plugin.id, version, assets: serializeAssets(assetMap), manifestSha256: sha })
     .onConflictDoUpdate({
       target: [releases.pluginId, releases.version],
-      set: { assets: serializeAssets(assetMap) },
+      set: { assets: serializeAssets(assetMap), manifestSha256: sha },
     })
 
   if (!plugin.latestVersion || compareSemver(version, plugin.latestVersion) > 0) {
@@ -63,15 +53,9 @@ export async function persistRelease(
   return { version, assetMap }
 }
 
-/**
- * Background job: fetch each asset, compute sha256 + size, write per-asset
- * rows into `release_assets`, then mirror the hashes into the legacy
- * `releases.assets` JSON blob. For GitHub-hosted releases, also pulls in
- * sigstore attestation bundles.
- *
- * Intended to be called via `queueMicrotask(() => hashReleaseAssetsAsync(...))`
- * — callers should not await it inside a request handler.
- */
+// Background job — never await inside a request handler. Hashes assets,
+// writes release_assets rows, mirrors hashes into the releases.assets JSON,
+// and pulls GitHub sigstore attestations when present.
 export async function hashReleaseAssetsAsync(
   plugin: { id: string; ownerId: string; repoUrl: string },
   normalized: NormalizedRelease,
@@ -178,5 +162,45 @@ export async function hashReleaseAssetsAsync(
   }
 }
 
-// Re-export for callers that just need the type / RepoRef inference.
-export type { RepoRef }
+export function manifestSha256(raw: string): string {
+  return createHash('sha256').update(raw, 'utf8').digest('hex')
+}
+
+// Pulls the manifest at `ref.tag` and applies it to the plugin row, returning
+// the manifest sha256 so the caller can persist it on the release. Returns null
+// when the owner OAuth token isn't usable or no manifest is found.
+export async function refreshManifestAtRelease(
+  plugin: { id: string; ownerId: string; repoUrl: string },
+  tag: string,
+  version: string,
+): Promise<string | null> {
+  try {
+    const ref = parseRepoUrl(plugin.repoUrl)
+    if (!ref) return null
+    const ownerIdentity = await db.query.identities.findFirst({
+      where: { userId: plugin.ownerId, providerInstanceId: ref.instance.id },
+    })
+    if (!ownerIdentity?.accessToken) return null
+    let token: string
+    try {
+      token = await getValidAccessToken(ownerIdentity, ref.instance)
+    } catch (e) {
+      if (e instanceof OAuthExpiredError) {
+        log.warn({ slug: plugin.id }, 'manifest refresh skipped — owner OAuth token expired')
+        return null
+      }
+      throw e
+    }
+    const manifest = await resolveManifest(token, ref, { ref: tag })
+    if (!manifest) return null
+    const patch = manifestPatch(manifest, { repoBase: rawContentBase(ref, tag), version })
+    await applyManifestToPlugin(plugin.id, patch)
+    await cache().del(latestCacheKey(plugin.id))
+    const sha = manifestSha256(manifest.raw)
+    log.info({ slug: plugin.id, version, source: manifest.source }, 'manifest refreshed at release')
+    return sha
+  } catch (err) {
+    log.warn({ err, slug: plugin.id }, 'manifest refresh at release failed')
+    return null
+  }
+}

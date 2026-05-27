@@ -90,6 +90,9 @@ export async function createInstance(input: CreateInstanceInput): Promise<Provid
   if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
     throw new Error('baseUrl must use http(s)')
   }
+  if (parsed.protocol === 'http:' && parsed.hostname !== 'localhost' && parsed.hostname !== '127.0.0.1') {
+    throw new Error('baseUrl must use https outside localhost — OAuth tokens would traverse the network in cleartext')
+  }
   const baseUrl = parsed.origin
   await db.insert(providerInstances).values({
     id: input.id,
@@ -117,6 +120,12 @@ export async function updateInstance(id: string, patch: UpdateInstanceInput): Pr
       parsed = new URL(patch.baseUrl)
     } catch {
       throw new Error('baseUrl must be a valid URL')
+    }
+    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') {
+      throw new Error('baseUrl must use http(s)')
+    }
+    if (parsed.protocol === 'http:' && parsed.hostname !== 'localhost' && parsed.hostname !== '127.0.0.1') {
+      throw new Error('baseUrl must use https outside localhost — OAuth tokens would traverse the network in cleartext')
     }
     set.baseUrl = parsed.origin
   }

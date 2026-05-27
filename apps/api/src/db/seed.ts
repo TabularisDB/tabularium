@@ -1,10 +1,17 @@
-// src/db/seed.ts
 import { ulid } from 'ulid'
-import { db } from './index'
-import { users, identities, plugins, releases } from './schema'
+import { db, connectDB, getDialect } from '$db'
+import { users, identities, plugins, releases } from '$db/schema'
 import { migrate } from 'drizzle-orm/bun-sqlite/migrator'
 
-migrate(db, { migrationsFolder: './src/db/migrations' })
+const registryPath = process.env.SEED_REGISTRY_JSON ?? './seed-registry.json'
+const url = process.env.DATABASE_URL ?? './data/registry.db'
+
+await connectDB(url)
+
+if (getDialect() === 'sqlite') {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  migrate(db as any, { migrationsFolder: './src/db/migrations' })
+}
 
 const REGISTRY_OWNER_ID = 'seed-system-user'
 const REGISTRY_OWNER_IDENTITY_ID = 'seed-system-identity'
@@ -45,8 +52,12 @@ type RegistryJson = {
   }>
 }
 
-const registryPath = '/home/newt/Projekte/Personal/NewtTheWolf/tabularis/plugins/registry.json'
-const registry = (await Bun.file(registryPath).json()) as RegistryJson
+const file = Bun.file(registryPath)
+if (!(await file.exists())) {
+  console.error(`seed-registry.json not found at ${registryPath} — set SEED_REGISTRY_JSON to override`)
+  process.exit(1)
+}
+const registry = (await file.json()) as RegistryJson
 
 let pluginCount = 0
 let releaseCount = 0

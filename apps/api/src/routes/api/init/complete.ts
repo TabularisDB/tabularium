@@ -8,6 +8,7 @@ import { getBootstrap, clearBootstrap } from '$lib/bootstrap'
 import { seedDefaultPages } from '$lib/seed-pages'
 import { bootstrapAuthMiddleware } from '$middleware/bootstrap-auth'
 import { signJwt } from '$lib/jwt'
+import { createSession } from '$lib/sessions'
 import { isProd } from '$lib/env'
 import { logger } from '$lib/logger'
 
@@ -15,7 +16,7 @@ const log = logger.child({ module: 'init-complete' })
 
 export default new Elysia().use(bootstrapAuthMiddleware).post(
   '/',
-  async ({ body, set, cookie }) => {
+  async ({ body, set, cookie, request }) => {
     const boot = getBootstrap()
     if (!boot) {
       set.status = 410
@@ -106,11 +107,17 @@ export default new Elysia().use(bootstrapAuthMiddleware).post(
 
     clearBootstrap()
 
+    const sessionId = await createSession({
+      userId,
+      userAgent: request.headers.get('user-agent') ?? null,
+      ip: request.headers.get('x-forwarded-for') ?? request.headers.get('x-real-ip') ?? null,
+    })
     const jwt = await signJwt({
       sub: userId,
       identityId: null,
       username: 'Admin',
       providerInstanceId: null,
+      jti: sessionId,
     })
     cookie.auth.set({
       value: jwt,

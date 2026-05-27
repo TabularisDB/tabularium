@@ -1,6 +1,7 @@
 import { Elysia } from 'elysia'
-import { verifyJwt } from '../lib/jwt'
-import { logger } from '../lib/logger'
+import { verifyJwt } from '$lib/jwt'
+import { touchSession } from '$lib/sessions'
+import { logger } from '$lib/logger'
 
 const log = logger.child({ module: 'auth-middleware' })
 
@@ -30,6 +31,13 @@ export const authMiddleware = new Elysia({ name: 'auth-middleware' }).derive(
       log.warn({ sub: user.sub }, 'bootstrap token rejected in normal auth path')
       set.status = 401
       throw new Error('Unauthorized')
+    }
+    // Token signed by us — make sure its session hasn't been revoked since
+    // (logout, password change, admin kick). Bootstrap tokens skip this lookup.
+    if (user.jti && !(await touchSession(user.jti))) {
+      log.info({ sub: user.sub, jti: user.jti }, 'session revoked')
+      set.status = 401
+      throw new Error('Session revoked')
     }
 
     return { user }

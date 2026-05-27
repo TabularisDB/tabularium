@@ -71,6 +71,4 @@ export function validateSchemaUrl(input: string): void {
 
 export const MANIFEST_DEFAULTS = {
   files: DEFAULT_FILES,
-  fileRegex: FILE_RE.source,
-  maxFiles: MAX_FILES,
 } as const

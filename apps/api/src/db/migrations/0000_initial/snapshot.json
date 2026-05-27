@@ -1,7 +1,7 @@
 {
   "version": "7",
   "dialect": "sqlite",
-  "id": "1871a9e6-c3bb-4bbc-ac6e-35f6ec26182b",
+  "id": "7f00599f-a7fa-4281-8f84-2d222aad28c4",
   "prevIds": [
     "00000000-0000-0000-0000-000000000000"
   ],
@@ -56,6 +56,10 @@
     },
     {
       "name": "root_credentials",
+      "entityType": "tables"
+    },
+    {
+      "name": "sessions",
       "entityType": "tables"
     },
     {
@@ -1127,6 +1131,16 @@
       "table": "releases"
     },
     {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "manifest_sha256",
+      "entityType": "columns",
+      "table": "releases"
+    },
+    {
       "type": "integer",
       "notNull": true,
       "autoincrement": false,
@@ -1175,6 +1189,76 @@
       "name": "created_at",
       "entityType": "columns",
       "table": "root_credentials"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "id",
+      "entityType": "columns",
+      "table": "sessions"
+    },
+    {
+      "type": "text",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "user_id",
+      "entityType": "columns",
+      "table": "sessions"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "created_at",
+      "entityType": "columns",
+      "table": "sessions"
+    },
+    {
+      "type": "integer",
+      "notNull": true,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "last_seen_at",
+      "entityType": "columns",
+      "table": "sessions"
+    },
+    {
+      "type": "integer",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "revoked_at",
+      "entityType": "columns",
+      "table": "sessions"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "user_agent",
+      "entityType": "columns",
+      "table": "sessions"
+    },
+    {
+      "type": "text",
+      "notNull": false,
+      "autoincrement": false,
+      "default": null,
+      "generated": null,
+      "name": "ip",
+      "entityType": "columns",
+      "table": "sessions"
     },
     {
       "type": "text",
@@ -1513,6 +1597,21 @@
     },
     {
       "columns": [
+        "user_id"
+      ],
+      "tableTo": "users",
+      "columnsTo": [
+        "id"
+      ],
+      "onUpdate": "NO ACTION",
+      "onDelete": "CASCADE",
+      "nameExplicit": false,
+      "name": "fk_sessions_user_id_users_id_fk",
+      "entityType": "fks",
+      "table": "sessions"
+    },
+    {
+      "columns": [
         "slug",
         "locale"
       ],
@@ -1633,6 +1732,15 @@
     },
     {
       "columns": [
+        "id"
+      ],
+      "nameExplicit": false,
+      "name": "sessions_pk",
+      "table": "sessions",
+      "entityType": "pks"
+    },
+    {
+      "columns": [
         "key"
       ],
       "nameExplicit": false,
@@ -1648,6 +1756,52 @@
       "name": "users_pk",
       "table": "users",
       "entityType": "pks"
+    },
+    {
+      "columns": [
+        {
+          "value": "created_at",
+          "isExpression": false
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "origin": "manual",
+      "name": "audit_log_created_at_idx",
+      "entityType": "indexes",
+      "table": "audit_log"
+    },
+    {
+      "columns": [
+        {
+          "value": "actor_id",
+          "isExpression": false
+        },
+        {
+          "value": "created_at",
+          "isExpression": false
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "origin": "manual",
+      "name": "audit_log_actor_created_idx",
+      "entityType": "indexes",
+      "table": "audit_log"
+    },
+    {
+      "columns": [
+        {
+          "value": "target",
+          "isExpression": false
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "origin": "manual",
+      "name": "audit_log_target_idx",
+      "entityType": "indexes",
+      "table": "audit_log"
     },
     {
       "columns": [
@@ -1692,6 +1846,20 @@
     {
       "columns": [
         {
+          "value": "user_id",
+          "isExpression": false
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "origin": "manual",
+      "name": "identities_user_id_idx",
+      "entityType": "indexes",
+      "table": "identities"
+    },
+    {
+      "columns": [
+        {
           "value": "path",
           "isExpression": false
         },
@@ -1706,6 +1874,130 @@
       "name": "markdown_pages_path_locale",
       "entityType": "indexes",
       "table": "markdown_pages"
+    },
+    {
+      "columns": [
+        {
+          "value": "to_user_id",
+          "isExpression": false
+        },
+        {
+          "value": "status",
+          "isExpression": false
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "origin": "manual",
+      "name": "plugin_transfers_to_user_status_idx",
+      "entityType": "indexes",
+      "table": "plugin_transfers"
+    },
+    {
+      "columns": [
+        {
+          "value": "from_user_id",
+          "isExpression": false
+        },
+        {
+          "value": "status",
+          "isExpression": false
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "origin": "manual",
+      "name": "plugin_transfers_from_user_status_idx",
+      "entityType": "indexes",
+      "table": "plugin_transfers"
+    },
+    {
+      "columns": [
+        {
+          "value": "status",
+          "isExpression": false
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "origin": "manual",
+      "name": "plugins_status_idx",
+      "entityType": "indexes",
+      "table": "plugins"
+    },
+    {
+      "columns": [
+        {
+          "value": "owner_id",
+          "isExpression": false
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "origin": "manual",
+      "name": "plugins_owner_id_idx",
+      "entityType": "indexes",
+      "table": "plugins"
+    },
+    {
+      "columns": [
+        {
+          "value": "provider_instance_id",
+          "isExpression": false
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "origin": "manual",
+      "name": "plugins_provider_instance_id_idx",
+      "entityType": "indexes",
+      "table": "plugins"
+    },
+    {
+      "columns": [
+        {
+          "value": "category",
+          "isExpression": false
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "origin": "manual",
+      "name": "plugins_category_idx",
+      "entityType": "indexes",
+      "table": "plugins"
+    },
+    {
+      "columns": [
+        {
+          "value": "updated_at",
+          "isExpression": false
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "origin": "manual",
+      "name": "plugins_updated_at_idx",
+      "entityType": "indexes",
+      "table": "plugins"
+    },
+    {
+      "columns": [
+        {
+          "value": "featured",
+          "isExpression": false
+        },
+        {
+          "value": "featured_order",
+          "isExpression": false
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "origin": "manual",
+      "name": "plugins_featured_idx",
+      "entityType": "indexes",
+      "table": "plugins"
     },
     {
       "columns": [
@@ -1742,6 +2034,52 @@
       "name": "releases_plugin_version",
       "entityType": "indexes",
       "table": "releases"
+    },
+    {
+      "columns": [
+        {
+          "value": "plugin_id",
+          "isExpression": false
+        },
+        {
+          "value": "created_at",
+          "isExpression": false
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "origin": "manual",
+      "name": "releases_plugin_created_idx",
+      "entityType": "indexes",
+      "table": "releases"
+    },
+    {
+      "columns": [
+        {
+          "value": "user_id",
+          "isExpression": false
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "origin": "manual",
+      "name": "sessions_user_id_idx",
+      "entityType": "indexes",
+      "table": "sessions"
+    },
+    {
+      "columns": [
+        {
+          "value": "revoked_at",
+          "isExpression": false
+        }
+      ],
+      "isUnique": false,
+      "where": null,
+      "origin": "manual",
+      "name": "sessions_revoked_idx",
+      "entityType": "indexes",
+      "table": "sessions"
     },
     {
       "columns": [

@@ -92,12 +92,7 @@ class RedisCache implements CacheStore {
   async get<T>(key: string, validate?: CacheValidator<T>): Promise<T | null> {
     const raw = await this.client.get(key)
     if (raw === null || raw === undefined) return null
-    let parsed: unknown
-    try {
-      parsed = JSON.parse(raw)
-    } catch {
-      parsed = raw
-    }
+    const parsed: unknown = JSON.parse(raw)
     if (validate && !validate(parsed)) {
       log.warn({ key }, 'cache value failed validation — discarding')
       await this.client.del(key)
@@ -107,7 +102,10 @@ class RedisCache implements CacheStore {
   }
 
   async set(key: string, value: unknown, ttlSeconds?: number): Promise<void> {
-    const serialized = typeof value === 'string' ? value : JSON.stringify(value)
+    // Always JSON-encode so the read path can JSON.parse unconditionally.
+    // Storing strings raw caused values like '1' to round-trip as the number 1
+    // (JSON.parse('1') === 1), which then fails any isString validator.
+    const serialized = JSON.stringify(value)
     if (ttlSeconds) {
       await this.client.set(key, serialized, 'EX', ttlSeconds)
       return

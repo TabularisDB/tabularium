@@ -1,10 +1,6 @@
-/**
- * MySQL mirror of schema.sqlite.ts.
- * Kept structurally identical column-by-column. `varchar` lengths picked generously since the
- * upstream values are unbounded (slugs, urls, ulids); switch to `text` if your MySQL is on
- * row-size-limited storage.
- */
-import { mysqlTable, text, varchar, int, tinyint, bigint, uniqueIndex, primaryKey } from 'drizzle-orm/mysql-core'
+// MySQL mirror of schema.ts. varchar lengths are generous; swap to text if your
+// MySQL is on a row-size-limited storage engine.
+import { mysqlTable, text, varchar, int, tinyint, bigint, uniqueIndex, index, primaryKey } from 'drizzle-orm/mysql-core'
 
 const now = () => Date.now()
 const ts = (name: string) => bigint(name, { mode: 'number' })
@@ -59,6 +55,7 @@ export const identities = mysqlTable(
   },
   (t) => ({
     uniqueIdentity: uniqueIndex('identities_instance_external_unique').on(t.providerInstanceId, t.externalId),
+    byUser: index('identities_user_id_idx').on(t.userId),
   }),
 )
 
@@ -95,7 +92,14 @@ export const plugins = mysqlTable('plugins', {
   downloads: int('downloads').notNull().default(0),
   createdAt: ts('created_at').notNull().$defaultFn(now),
   updatedAt: ts('updated_at').notNull().$defaultFn(now),
-})
+}, (t) => ({
+  byStatus: index('plugins_status_idx').on(t.status),
+  byOwner: index('plugins_owner_id_idx').on(t.ownerId),
+  byProvider: index('plugins_provider_instance_id_idx').on(t.providerInstanceId),
+  byCategory: index('plugins_category_idx').on(t.category),
+  byUpdated: index('plugins_updated_at_idx').on(t.updatedAt),
+  byFeatured: index('plugins_featured_idx').on(t.featured, t.featuredOrder),
+}))
 
 export const releases = mysqlTable(
   'releases',
@@ -107,10 +111,12 @@ export const releases = mysqlTable(
     version: varchar('version', { length: 40 }).notNull(),
     minRuntimeVersion: varchar('min_runtime_version', { length: 40 }),
     assets: text('assets').notNull(),
+    manifestSha256: varchar('manifest_sha256', { length: 64 }),
     createdAt: ts('created_at').notNull().$defaultFn(now),
   },
   (t) => ({
     uniqueVersion: uniqueIndex('releases_plugin_version').on(t.pluginId, t.version),
+    byPluginCreated: index('releases_plugin_created_idx').on(t.pluginId, t.createdAt),
   }),
 )
 
@@ -224,7 +230,29 @@ export const pluginTransfers = mysqlTable('plugin_transfers', {
   createdAt: ts('created_at').notNull().$defaultFn(now),
   expiresAt: ts('expires_at').notNull(),
   respondedAt: ts('responded_at'),
-})
+}, (t) => ({
+  byTo: index('plugin_transfers_to_user_status_idx').on(t.toUserId, t.status),
+  byFrom: index('plugin_transfers_from_user_status_idx').on(t.fromUserId, t.status),
+}))
+
+export const sessions = mysqlTable(
+  'sessions',
+  {
+    id: id('id').primaryKey(),
+    userId: id('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    createdAt: ts('created_at').notNull().$defaultFn(now),
+    lastSeenAt: ts('last_seen_at').notNull().$defaultFn(now),
+    revokedAt: ts('revoked_at'),
+    userAgent: varchar('user_agent', { length: 500 }),
+    ip: varchar('ip', { length: 64 }),
+  },
+  (t) => ({
+    byUser: index('sessions_user_id_idx').on(t.userId),
+    byRevoked: index('sessions_revoked_idx').on(t.revokedAt),
+  }),
+)
 
 export const auditLog = mysqlTable('audit_log', {
   id: id('id').primaryKey(),
@@ -235,7 +263,11 @@ export const auditLog = mysqlTable('audit_log', {
   meta: text('meta'),
   ip: varchar('ip', { length: 64 }),
   createdAt: ts('created_at').notNull().$defaultFn(now),
-})
+}, (t) => ({
+  byCreated: index('audit_log_created_at_idx').on(t.createdAt),
+  byActorCreated: index('audit_log_actor_created_idx').on(t.actorId, t.createdAt),
+  byTarget: index('audit_log_target_idx').on(t.target),
+}))
 
 export const downloadEvents = mysqlTable(
   'download_events',

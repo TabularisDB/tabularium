@@ -5,6 +5,9 @@
 # syntax=docker/dockerfile:1.7
 FROM docker.io/oven/bun:1.3-alpine
 
+# dev.sh uses bash features (trap, status=$?) and bun:1.3-alpine ships only ash.
+RUN apk add --no-cache bash
+
 WORKDIR /repo
 
 COPY package.json bun.lock turbo.json ./
@@ -21,6 +24,9 @@ COPY . .
 
 # `@tabularium/manifest`'s package.json main points at ./dist/index.js, so the
 # API can't `import { … } from '@tabularium/manifest'` until dist exists.
+# The Tiltfile re-runs this build via a live_update `run()` when manifest src
+# changes; if you sync packages/manifest/src outside Tilt the dev container
+# won't pick it up until the image is rebuilt.
 RUN cd packages/manifest && bun run build
 
 WORKDIR /repo/apps/api

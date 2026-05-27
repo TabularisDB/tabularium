@@ -1,12 +1,12 @@
 import { Elysia, t } from 'elysia'
-import { db } from '../../../../db'
-import { plugins, releases } from '../../../../db/schema'
+import { db } from '$db'
+import { plugins, releases } from '$db/schema'
 import { eq } from 'drizzle-orm'
-import { authMiddleware } from '../../../../middleware/auth'
-import { projectPluginDetail } from '../../../../lib/plugin-projection'
-import { renderMarkdown } from '../../../../lib/markdown'
-import { cache, isString } from '../../../../lib/cache'
-import { buildIntegrity } from '../../../../lib/release-integrity'
+import { authMiddleware } from '$middleware/auth'
+import { projectPluginDetail } from '$lib/plugin-projection'
+import { renderMarkdown } from '$lib/markdown'
+import { cache, isString } from '$lib/cache'
+import { buildIntegrity } from '$lib/release-integrity'
 
 const screenshotSchema = t.Object({
   url: t.String(),

@@ -1,10 +1,6 @@
-/**
- * Postgres mirror of schema.sqlite.ts. Kept structurally identical column-by-column
- * so projection / drizzle-orm helpers (`eq`, `and`, …) stay portable.
- * Booleans stored as smallint (0/1) to mirror SQLite's integer-boolean convention,
- * so query code that treats `enabled === 1` stays correct across dialects.
- */
-import { pgTable, text, integer, smallint, bigint, uniqueIndex, primaryKey } from 'drizzle-orm/pg-core'
+// Postgres mirror of schema.ts. Booleans live as smallint (0/1) so cross-dialect
+// query code like `eq(x.enabled, 1)` stays valid against any driver.
+import { pgTable, text, integer, smallint, bigint, uniqueIndex, index, primaryKey } from 'drizzle-orm/pg-core'
 
 const now = () => Date.now()
 // Postgres `bigint` returns string in postgres-js by default; we set typed transform in db client.
@@ -59,6 +55,7 @@ export const identities = pgTable(
   },
   (t) => ({
     uniqueIdentity: uniqueIndex('identities_instance_external_unique').on(t.providerInstanceId, t.externalId),
+    byUser: index('identities_user_id_idx').on(t.userId),
   }),
 )
 
@@ -95,7 +92,14 @@ export const plugins = pgTable('plugins', {
   downloads: integer('downloads').notNull().default(0),
   createdAt: ts('created_at').notNull().$defaultFn(now),
   updatedAt: ts('updated_at').notNull().$defaultFn(now),
-})
+}, (t) => ({
+  byStatus: index('plugins_status_idx').on(t.status),
+  byOwner: index('plugins_owner_id_idx').on(t.ownerId),
+  byProvider: index('plugins_provider_instance_id_idx').on(t.providerInstanceId),
+  byCategory: index('plugins_category_idx').on(t.category),
+  byUpdated: index('plugins_updated_at_idx').on(t.updatedAt),
+  byFeatured: index('plugins_featured_idx').on(t.featured, t.featuredOrder),
+}))
 
 export const releases = pgTable(
   'releases',
@@ -107,10 +111,12 @@ export const releases = pgTable(
     version: text('version').notNull(),
     minRuntimeVersion: text('min_runtime_version'),
     assets: text('assets').notNull(),
+    manifestSha256: text('manifest_sha256'),
     createdAt: ts('created_at').notNull().$defaultFn(now),
   },
   (t) => ({
     uniqueVersion: uniqueIndex('releases_plugin_version').on(t.pluginId, t.version),
+    byPluginCreated: index('releases_plugin_created_idx').on(t.pluginId, t.createdAt),
   }),
 )
 
@@ -224,7 +230,29 @@ export const pluginTransfers = pgTable('plugin_transfers', {
   createdAt: ts('created_at').notNull().$defaultFn(now),
   expiresAt: ts('expires_at').notNull(),
   respondedAt: ts('responded_at'),
-})
+}, (t) => ({
+  byTo: index('plugin_transfers_to_user_status_idx').on(t.toUserId, t.status),
+  byFrom: index('plugin_transfers_from_user_status_idx').on(t.fromUserId, t.status),
+}))
+
+export const sessions = pgTable(
+  'sessions',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    createdAt: ts('created_at').notNull().$defaultFn(now),
+    lastSeenAt: ts('last_seen_at').notNull().$defaultFn(now),
+    revokedAt: ts('revoked_at'),
+    userAgent: text('user_agent'),
+    ip: text('ip'),
+  },
+  (t) => ({
+    byUser: index('sessions_user_id_idx').on(t.userId),
+    byRevoked: index('sessions_revoked_idx').on(t.revokedAt),
+  }),
+)
 
 export const auditLog = pgTable('audit_log', {
   id: text('id').primaryKey(),
@@ -235,7 +263,11 @@ export const auditLog = pgTable('audit_log', {
   meta: text('meta'),
   ip: text('ip'),
   createdAt: ts('created_at').notNull().$defaultFn(now),
-})
+}, (t) => ({
+  byCreated: index('audit_log_created_at_idx').on(t.createdAt),
+  byActorCreated: index('audit_log_actor_created_idx').on(t.actorId, t.createdAt),
+  byTarget: index('audit_log_target_idx').on(t.target),
+}))
 
 export const downloadEvents = pgTable(
   'download_events',

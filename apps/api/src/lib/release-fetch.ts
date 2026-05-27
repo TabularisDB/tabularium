@@ -2,10 +2,9 @@ import type { NormalizedRelease } from './webhook'
 import type { RepoRef } from './providers'
 import { UpstreamUnauthorizedError } from './oauth-tokens'
 
-/**
- * Pull the latest release directly from the provider API as if it had just arrived
- * via webhook. Used by the admin "replay" button when the webhook didn't fire / failed.
- */
+// Pulls the newest release straight from the provider API, in the same shape
+// the webhook handler would have ingested. Used wherever we need to materialize
+// a release without an incoming hook (submit, preview, rehash, admin replay).
 export async function fetchLatestRelease(accessToken: string, ref: RepoRef): Promise<NormalizedRelease | null> {
   const { instance } = ref
   if (instance.kind === 'github') {

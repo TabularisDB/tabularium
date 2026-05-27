@@ -1,5 +1,5 @@
 // src/db/schema.ts
-import { sqliteTable, text, integer, uniqueIndex, primaryKey } from 'drizzle-orm/sqlite-core'
+import { sqliteTable, text, integer, uniqueIndex, index, primaryKey } from 'drizzle-orm/sqlite-core'
 
 const now = () => Date.now()
 
@@ -52,6 +52,7 @@ export const identities = sqliteTable(
   },
   (t) => ({
     uniqueIdentity: uniqueIndex('identities_instance_external_unique').on(t.providerInstanceId, t.externalId),
+    byUser: index('identities_user_id_idx').on(t.userId),
   }),
 )
 
@@ -92,7 +93,14 @@ export const plugins = sqliteTable('plugins', {
   downloads: integer('downloads').notNull().default(0),
   createdAt: integer('created_at').notNull().$defaultFn(now),
   updatedAt: integer('updated_at').notNull().$defaultFn(now),
-})
+}, (t) => ({
+  byStatus: index('plugins_status_idx').on(t.status),
+  byOwner: index('plugins_owner_id_idx').on(t.ownerId),
+  byProvider: index('plugins_provider_instance_id_idx').on(t.providerInstanceId),
+  byCategory: index('plugins_category_idx').on(t.category),
+  byUpdated: index('plugins_updated_at_idx').on(t.updatedAt),
+  byFeatured: index('plugins_featured_idx').on(t.featured, t.featuredOrder),
+}))
 
 export const releases = sqliteTable(
   'releases',
@@ -104,10 +112,12 @@ export const releases = sqliteTable(
     version: text('version').notNull(),
     minRuntimeVersion: text('min_runtime_version'),
     assets: text('assets').notNull(), // JSON string
+    manifestSha256: text('manifest_sha256'),
     createdAt: integer('created_at').notNull().$defaultFn(now),
   },
   (t) => ({
     uniqueVersion: uniqueIndex('releases_plugin_version').on(t.pluginId, t.version),
+    byPluginCreated: index('releases_plugin_created_idx').on(t.pluginId, t.createdAt),
   }),
 )
 
@@ -221,18 +231,44 @@ export const pluginTransfers = sqliteTable('plugin_transfers', {
   createdAt: integer('created_at').notNull().$defaultFn(now),
   expiresAt: integer('expires_at').notNull(),
   respondedAt: integer('responded_at'),
-})
+}, (t) => ({
+  byTo: index('plugin_transfers_to_user_status_idx').on(t.toUserId, t.status),
+  byFrom: index('plugin_transfers_from_user_status_idx').on(t.fromUserId, t.status),
+}))
+
+export const sessions = sqliteTable(
+  'sessions',
+  {
+    id: text('id').primaryKey(), // also the JWT `jti`
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    createdAt: integer('created_at').notNull().$defaultFn(now),
+    lastSeenAt: integer('last_seen_at').notNull().$defaultFn(now),
+    revokedAt: integer('revoked_at'),
+    userAgent: text('user_agent'),
+    ip: text('ip'),
+  },
+  (t) => ({
+    byUser: index('sessions_user_id_idx').on(t.userId),
+    byRevoked: index('sessions_revoked_idx').on(t.revokedAt),
+  }),
+)
 
 export const auditLog = sqliteTable('audit_log', {
   id: text('id').primaryKey(),
   actorId: text('actor_id').references(() => users.id, { onDelete: 'set null' }),
   actorName: text('actor_name'),
-  action: text('action').notNull(), // e.g. plugin.approve, branding.update, provider.create
-  target: text('target'), // e.g. plugin:foo-slug, provider:gh
-  meta: text('meta'), // optional JSON payload
+  action: text('action').notNull(),
+  target: text('target'),
+  meta: text('meta'),
   ip: text('ip'),
   createdAt: integer('created_at').notNull().$defaultFn(now),
-})
+}, (t) => ({
+  byCreated: index('audit_log_created_at_idx').on(t.createdAt),
+  byActorCreated: index('audit_log_actor_created_idx').on(t.actorId, t.createdAt),
+  byTarget: index('audit_log_target_idx').on(t.target),
+}))
 
 // One row per resolved /latest hit. No PII — just enough to plot
 // download trends per plugin/platform/version over time.

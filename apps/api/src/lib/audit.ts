@@ -1,6 +1,6 @@
 import { ulid } from 'ulid'
-import { db } from '../db'
-import { auditLog } from '../db/schema'
+import { db } from '$db'
+import { auditLog } from '$db/schema'
 import { logger } from './logger'
 
 const log = logger.child({ module: 'audit' })

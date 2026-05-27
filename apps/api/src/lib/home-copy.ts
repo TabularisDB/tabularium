@@ -39,7 +39,7 @@ function sanitizeTranslations(raw: unknown): Translations {
   for (const locale of SUPPORTED_LOCALES) {
     const v = obj[locale]
     if (typeof v === 'string') {
-      const trimmed = v
+      const trimmed = v.trim()
       if (trimmed.length > 0) out[locale] = trimmed
     }
   }

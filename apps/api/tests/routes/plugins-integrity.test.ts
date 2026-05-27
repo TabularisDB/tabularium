@@ -13,7 +13,7 @@ describe('GET /api/plugins/:slug — integrity field', () => {
     const user = await makeUser()
     const plugin = await makePlugin(user.id, { status: 'approved', latestVersion: '1.0.0' })
     const releaseId = ulid()
-    await db.insert(releases).values({ id: releaseId, pluginId: plugin.id, version: '1.0.0', assets: '{}' })
+    await db.insert(releases).values({ id: releaseId, pluginId: plugin.id, version: '1.0.0', assets: '{}', manifestSha256: 'e'.repeat(64) })
     await db
       .insert(releaseAssets)
       .values({ id: ulid(), releaseId, name: 'p.zip', url: 'https://e/p.zip', size: 100, sha256: 'c'.repeat(64) })

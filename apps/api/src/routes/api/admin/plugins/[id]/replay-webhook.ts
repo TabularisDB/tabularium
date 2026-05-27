@@ -1,30 +1,14 @@
 import { Elysia, t } from 'elysia'
-import { ulid } from 'ulid'
-import { eq } from 'drizzle-orm'
 import { adminMiddleware } from '$middleware/admin'
 import { db } from '$db'
-import { plugins, releases } from '$db/schema'
-import { inferPlatformKey } from '$lib/webhook'
 import { parseRepoUrl } from '$lib/providers'
 import { getValidAccessToken, OAuthExpiredError, UpstreamUnauthorizedError, reauthErrorBody } from '$lib/oauth-tokens'
 import { fetchLatestRelease } from '$lib/release-fetch'
-import { serializeAssets, type AssetMap } from '$lib/asset'
-import { cache } from '$lib/cache'
-import { latestCacheKey } from '$routes/api/plugins/[slug]/latest'
+import { persistRelease, hashReleaseAssetsAsync, refreshManifestAtRelease } from '$lib/release-ingest'
 import { recordAudit, actorFromAdmin } from '$lib/audit'
 import { logger } from '$lib/logger'
 
 const log = logger.child({ module: 'webhook-replay' })
-
-function compareSemver(a: string, b: string): number {
-  const parse = (v: string) => v.split('.').map(Number)
-  const [aMaj, aMin, aPat] = parse(a)
-  const [bMaj, bMin, bPat] = parse(b)
-  if (Number.isNaN(aMaj + aMin + aPat) || Number.isNaN(bMaj + bMin + bPat)) return 0
-  if (aMaj !== bMaj) return aMaj - bMaj
-  if (aMin !== bMin) return aMin - bMin
-  return aPat - bPat
-}
 
 export default new Elysia().use(adminMiddleware).post(
   '/',
@@ -80,25 +64,18 @@ export default new Elysia().use(adminMiddleware).post(
       return { ok: true, skipped: true, reason: 'Latest release is a draft' }
     }
 
-    const version = normalized.tag.replace(/^v/, '')
-    const assetMap: AssetMap = {}
-    for (const asset of normalized.assets) {
-      const key = inferPlatformKey(asset.name)
-      if (key) assetMap[key] = { url: asset.url }
-    }
+    const { version, assetMap } = await persistRelease(plugin, normalized)
 
-    await db
-      .insert(releases)
-      .values({ id: ulid(), pluginId: plugin.id, version, assets: serializeAssets(assetMap) })
-      .onConflictDoUpdate({
-        target: [releases.pluginId, releases.version],
-        set: { assets: serializeAssets(assetMap) },
-      })
+    queueMicrotask(async () => {
+      const sha = await refreshManifestAtRelease(plugin, normalized.tag, version)
+      if (sha) await persistRelease(plugin, normalized, { manifestSha256: sha })
+    })
 
-    if (!plugin.latestVersion || compareSemver(version, plugin.latestVersion) > 0) {
-      await db.update(plugins).set({ latestVersion: version, updatedAt: Date.now() }).where(eq(plugins.id, plugin.id))
-    }
-    await cache().del(latestCacheKey(plugin.id))
+    queueMicrotask(() => {
+      hashReleaseAssetsAsync(plugin, normalized, assetMap, version).catch((err) =>
+        log.error({ err, slug: plugin.id, version }, 'background hashing crashed'),
+      )
+    })
 
     await recordAudit({
       ...actorFromAdmin(admin, request),

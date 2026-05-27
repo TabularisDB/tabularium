@@ -1,10 +1,10 @@
 import { Elysia, t } from 'elysia'
 import { sql, eq } from 'drizzle-orm'
 import { ulid } from 'ulid'
-import { db } from '../../../../db'
-import { plugins, downloadEvents } from '../../../../db/schema'
-import { cache } from '../../../../lib/cache'
-import { parseAssets, type AssetMap } from '../../../../lib/asset'
+import { db } from '$db'
+import { plugins, downloadEvents } from '$db/schema'
+import { cache } from '$lib/cache'
+import { parseAssets, type AssetMap } from '$lib/asset'
 
 function isLatestResolved(v: unknown): v is LatestResolved {
   if (!v || typeof v !== 'object') return false

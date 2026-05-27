@@ -47,6 +47,7 @@ describe('key rotation e2e', () => {
       pluginId: plugin.id,
       version: '2.0.0',
       assets: '{}',
+      manifestSha256: 'f'.repeat(64),
     })
     await db.insert(releaseAssets).values({
       id: ulid(),

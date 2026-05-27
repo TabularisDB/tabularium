@@ -5,27 +5,18 @@ import { db } from '$db'
 import { users, rootCredentials } from '$db/schema'
 import { hashPassword } from '$lib/password'
 import { signJwt } from '$lib/jwt'
+import { createSession } from '$lib/sessions'
 import { isProd } from '$lib/env'
 import { logger } from '$lib/logger'
 import { rateLimit } from '$middleware/rate-limit'
 
 const log = logger.child({ module: 'auth-email-register' })
 
-const EMAIL_RE = /^[^@\s]+@[^@\s]+\.[^@\s]+$/
-
 export default new Elysia().use(rateLimit({ bucket: 'auth-email-register', limit: 3, windowSeconds: 3600 })).post(
   '/',
-  async ({ body, set, cookie }) => {
+  async ({ body, set, cookie, request }) => {
     const { email, password, displayName } = body
     const normalizedEmail = email.toLowerCase()
-    if (!EMAIL_RE.test(normalizedEmail)) {
-      set.status = 400
-      return { error: 'Invalid email' }
-    }
-    if (password.length < 8) {
-      set.status = 400
-      return { error: 'Password must be at least 8 characters' }
-    }
 
     const [{ adminCount }] = await db.select({ adminCount: count() }).from(users).where(eq(users.role, 'admin'))
     if (adminCount > 0) {
@@ -47,11 +38,17 @@ export default new Elysia().use(rateLimit({ bucket: 'auth-email-register', limit
     await db.insert(rootCredentials).values({ userId: id, email: normalizedEmail, passwordHash })
     log.info({ userId: id, email: normalizedEmail }, 'bootstrap admin registered')
 
+    const sessionId = await createSession({
+      userId: id,
+      userAgent: request.headers.get('user-agent') ?? null,
+      ip: request.headers.get('x-forwarded-for') ?? request.headers.get('x-real-ip') ?? null,
+    })
     const jwt = await signJwt({
       sub: id,
       identityId: null,
       username: finalDisplayName,
       providerInstanceId: null,
+      jti: sessionId,
     })
 
     cookie.auth.set({

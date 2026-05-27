@@ -31,6 +31,11 @@ function createBrandingStore() {
   let state = $state<Branding>({ ...DEFAULTS })
   let loaded = false
 
+  function getCspNonce(): string | null {
+    if (typeof document === 'undefined') return null
+    return document.querySelector<HTMLMetaElement>('meta[name="csp-nonce"]')?.content ?? null
+  }
+
   function applyToDom(b: Branding) {
     if (typeof document === 'undefined') return
     document.title = b.name
@@ -45,13 +50,21 @@ function createBrandingStore() {
     const head = document.head
     head.querySelector<HTMLElement>('[data-tabularium-analytics]')?.remove()
     if (b.analyticsScript) {
+      // Server enforces CSP `script-src 'self' 'nonce-XXX' 'strict-dynamic'`.
+      // Stamp our per-request nonce onto admin-supplied scripts so they pass
+      // the browser check; without the nonce, browser blocks execution.
+      const nonce = getCspNonce()
       const wrapper = document.createElement('div')
       wrapper.innerHTML = b.analyticsScript
       for (const node of Array.from(wrapper.children)) {
         if (node.tagName === 'SCRIPT') {
           const original = node as HTMLScriptElement
           const clone = document.createElement('script')
-          for (const attr of Array.from(original.attributes)) clone.setAttribute(attr.name, attr.value)
+          for (const attr of Array.from(original.attributes)) {
+            if (attr.name === 'nonce') continue
+            clone.setAttribute(attr.name, attr.value)
+          }
+          if (nonce) clone.setAttribute('nonce', nonce)
           clone.text = original.text
           clone.dataset.tabulariumAnalytics = '1'
           head.appendChild(clone)

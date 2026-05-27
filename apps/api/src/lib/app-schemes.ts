@@ -46,14 +46,11 @@ export async function setAppUrlSchemes(schemes: AppUrlScheme[]): Promise<void> {
   await setSetting(KEY, JSON.stringify(cleaned))
 }
 
-/**
- * Pick the scheme that should handle a given plugin kind. Returns the first
- * scheme whose `kinds` includes the kind, OR the first scheme without a
- * `kinds` filter (a wildcard). Returns null if no scheme matches.
- */
+// First match by `kinds`, else first wildcard. The frontend has its own copy
+// of this logic in stores/instance-info.svelte.ts — keep both in sync or merge.
 export function pickSchemeForKind(schemes: AppUrlScheme[], kind: string): AppUrlScheme | null {
   for (const s of schemes) {
-    if (s.kinds && s.kinds.includes(kind)) return s
+    if (s.kinds?.includes(kind)) return s
   }
   for (const s of schemes) {
     if (!s.kinds) return s

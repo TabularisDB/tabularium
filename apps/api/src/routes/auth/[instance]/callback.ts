@@ -5,6 +5,7 @@ import { count, eq } from 'drizzle-orm'
 import { db } from '$db'
 import { users, identities, rootCredentials } from '$db/schema'
 import { signJwt, verifyJwt } from '$lib/jwt'
+import { createSession } from '$lib/sessions'
 import { encryptToken } from '$lib/crypto'
 import { getInstance, type ProviderInstance } from '$lib/provider-instance'
 import { env, isProd } from '$lib/env'
@@ -168,6 +169,11 @@ export default new Elysia().get(
       return { error: 'State mismatch' }
     }
 
+    // State has now been validated and consumed — clear the cookie regardless
+    // of what the rest of the flow does, so error paths don't leave it valid
+    // for up to 10 min. Success path re-sets the auth cookie below.
+    cookie.oauth_state.remove()
+
     const inst = getInstance(params.instance)
     if (!inst) {
       set.status = 404
@@ -249,7 +255,6 @@ export default new Elysia().get(
         })
 
         if (linkUserId) {
-          const { getSetting } = await import('$lib/settings')
           const persist = getSetting('auth.email_recovery_persist') === '1'
           if (!persist) {
             const remaining = await db.query.identities.findMany({
@@ -264,11 +269,17 @@ export default new Elysia().get(
         }
       }
 
+      const sessionId = await createSession({
+        userId: userId!,
+        userAgent: request.headers.get('user-agent') ?? null,
+        ip: request.headers.get('x-forwarded-for') ?? request.headers.get('x-real-ip') ?? null,
+      })
       const jwt = await signJwt({
         sub: userId!,
         identityId: identityId!,
         username: profile.username,
         providerInstanceId: inst.id,
+        jti: sessionId,
       })
 
       cookie.auth.set({
@@ -279,11 +290,8 @@ export default new Elysia().get(
         sameSite: 'lax',
         path: '/',
       })
-      cookie.oauth_state.remove()
-
-      // Phase B.2: record OAuth callback so /admin/providers can show "last used".
-      // Target shape `provider_instance:<id>` is the canonical reference for
-      // anything that wants to derive last-traffic timestamps per provider.
+      // `provider_instance:<id>` target shape is the canonical reference used
+      // by the providers admin UI to derive last-used timestamps.
       await recordAudit({
         actorId: userId!,
         actorName: profile.username,

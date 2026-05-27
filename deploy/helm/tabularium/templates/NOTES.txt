@@ -1,0 +1,34 @@
+{{ .Chart.Name }} {{ .Chart.AppVersion }} installed.
+
+1. Reach the registry from inside the cluster:
+   http://{{ include "tabularium.fullname" . }}.{{ .Release.Namespace }}.svc:{{ .Values.service.port }}
+
+{{- if .Values.ingress.enabled }}
+2. From outside:
+{{- range .Values.ingress.hosts }}
+   {{ if $.Values.ingress.tls }}https{{ else }}http{{ end }}://{{ .host }}
+{{- end }}
+{{- else }}
+2. No ingress configured. Port-forward to try it locally:
+   kubectl -n {{ .Release.Namespace }} port-forward svc/{{ include "tabularium.fullname" . }} 3000:{{ .Values.service.port }}
+   open http://localhost:3000
+{{- end }}
+
+3. First boot prints the bootstrap admin password — tail logs:
+   kubectl -n {{ .Release.Namespace }} logs -f deploy/{{ include "tabularium.fullname" . }}
+
+{{- if eq .Values.config.databaseMode "sqlite" }}
+
+Note: SQLite mode pins replicas to 1. PVC `{{ include "tabularium.fullname" . }}-data` ({{ .Values.persistence.size }}) holds the registry DB at {{ .Values.config.dataDir }}/registry.db.
+{{- else }}
+
+Note: External DB mode. DATABASE_URL is set from .Values.config.databaseUrl. Run migrations after rollout:
+   kubectl -n {{ .Release.Namespace }} exec deploy/{{ include "tabularium.fullname" . }} -- bun run migrate
+{{- end }}
+
+{{- if and (not .Values.secrets.existingSecret) (not (or .Values.secrets.jwtSecret .Values.secrets.tokenEncKey)) }}
+
+Warning: No JWT_SECRET / TOKEN_ENC_KEY set. The app generates ephemeral keys at boot — sessions and stored tokens get invalidated on every restart. For real installs:
+   helm upgrade --reuse-values --set secrets.jwtSecret=... --set secrets.tokenEncKey=...
+or point at an existing Secret via `secrets.existingSecret`.
+{{- end }}
