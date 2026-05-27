@@ -9,8 +9,16 @@ export type CheckResult = { ok: boolean; detail?: string }
 export async function checkDb(setupMode: boolean): Promise<CheckResult> {
   if (setupMode || !isDBConnected()) return { ok: true, detail: 'setup-mode (db not yet connected)' }
   try {
-    await db.run(sql`SELECT 1`)
-    return { ok: true, detail: `dialect=${getDialect()}` }
+    const dialect = getDialect()
+    // Drizzle's `db.run()` only exists on the sqlite driver; pg/mysql use `.execute()`.
+    if (dialect === 'sqlite') {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (db as any).run(sql`SELECT 1`)
+    } else {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      await (db as any).execute(sql`SELECT 1`)
+    }
+    return { ok: true, detail: `dialect=${dialect}` }
   } catch (err) {
     return { ok: false, detail: err instanceof Error ? err.message : String(err) }
   }
