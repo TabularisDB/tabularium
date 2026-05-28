@@ -186,6 +186,48 @@ describe('POST /api/admin/kinds', () => {
     )
     expect(res.status).toBe(400)
   })
+
+  it('POST accepts prosePre/prosePost + customExample', async () => {
+    const token = await adminToken()
+    const app = await buildApp()
+    const res = await app.handle(
+      new Request('http://localhost/api/admin/kinds', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+        body: JSON.stringify({
+          key: 'theme',
+          label: 'Theme',
+          description: null,
+          prosePre: 'before',
+          prosePost: 'after',
+          customExample: { yaml: 'name: x\nkind: theme\n' },
+        }),
+      }),
+    )
+    expect(res.status).toBe(201)
+    const body = (await res.json()) as { kind: Record<string, unknown> }
+    expect(body.kind.prosePre).toBe('before')
+    expect(body.kind.prosePost).toBe('after')
+    expect((body.kind.customExample as { yaml: string }).yaml).toBe('name: x\nkind: theme\n')
+  })
+
+  it('POST rejects invalid YAML in customExample', async () => {
+    const token = await adminToken()
+    const app = await buildApp()
+    const res = await app.handle(
+      new Request('http://localhost/api/admin/kinds', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+        body: JSON.stringify({
+          key: 'theme',
+          label: 'Theme',
+          description: null,
+          customExample: { yaml: 'name: : invalid' },
+        }),
+      }),
+    )
+    expect(res.status).toBe(400)
+  })
 })
 
 describe('GET /api/admin/kinds/:key', () => {

@@ -15,6 +15,15 @@ const publicPageCopySchema = t.Object({
   introTranslations: translationMapSchema,
 })
 
+const customExampleSchema = t.Optional(
+  t.Nullable(
+    t.Object({
+      yaml: t.Optional(t.String({ maxLength: 16000 })),
+      json: t.Optional(t.String({ maxLength: 16000 })),
+    }),
+  ),
+)
+
 const kindSchema = t.Object({
   key: t.String(),
   label: t.String(),
@@ -24,6 +33,11 @@ const kindSchema = t.Object({
   extensionsSchema: t.Optional(t.Nullable(t.Record(t.String(), t.Any()))),
   publicPageEnabled: t.Optional(t.Boolean()),
   publicPageCopy: t.Optional(t.Nullable(publicPageCopySchema)),
+  prosePre: t.Optional(t.Nullable(t.String())),
+  prosePreTranslations: translationMapSchema,
+  prosePost: t.Optional(t.Nullable(t.String())),
+  prosePostTranslations: translationMapSchema,
+  customExample: customExampleSchema,
 })
 
 const putBodySchema = t.Object({
@@ -35,6 +49,11 @@ const putBodySchema = t.Object({
   extensionsSchema: t.Optional(t.Nullable(t.Record(t.String(), t.Any()))),
   publicPageEnabled: t.Optional(t.Boolean()),
   publicPageCopy: t.Optional(t.Nullable(publicPageCopySchema)),
+  prosePre: t.Optional(t.Nullable(t.String({ maxLength: 8000 }))),
+  prosePreTranslations: translationMapSchema,
+  prosePost: t.Optional(t.Nullable(t.String({ maxLength: 8000 }))),
+  prosePostTranslations: translationMapSchema,
+  customExample: customExampleSchema,
 })
 
 function statusFor(err: KindError, body?: { key: string }, path?: string): number {
@@ -83,6 +102,11 @@ export default new Elysia()
           ...(body.extensionsSchema !== undefined ? { extensionsSchema: body.extensionsSchema } : {}),
           ...(body.publicPageEnabled !== undefined ? { publicPageEnabled: body.publicPageEnabled } : {}),
           ...(body.publicPageCopy !== undefined ? { publicPageCopy: body.publicPageCopy } : {}),
+          ...(body.prosePre !== undefined ? { prosePre: body.prosePre } : {}),
+          ...(body.prosePreTranslations !== undefined ? { prosePreTranslations: body.prosePreTranslations } : {}),
+          ...(body.prosePost !== undefined ? { prosePost: body.prosePost } : {}),
+          ...(body.prosePostTranslations !== undefined ? { prosePostTranslations: body.prosePostTranslations } : {}),
+          ...(body.customExample !== undefined ? { customExample: body.customExample } : {}),
         })
         await recordAudit({
           ...actorFromAdmin(admin, request),
