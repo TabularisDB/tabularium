@@ -1,6 +1,14 @@
-import { describe, it, expect } from 'bun:test'
-import { flattenSchemaProps, synthesizeExample, type FieldDoc } from '../../src/lib/plugin-docs'
+import { describe, it, expect, beforeEach } from 'bun:test'
+import {
+  flattenSchemaProps,
+  synthesizeExample,
+  buildPluginDocs,
+  type FieldDoc,
+} from '../../src/lib/plugin-docs'
 import { ManifestSchema } from '@tabularium/manifest'
+import { createKind, deleteKind } from '../../src/lib/kinds'
+import { setExtensionsDelta } from '../../src/lib/manifest-schema'
+import { clearDb } from '../helpers'
 
 describe('flattenSchemaProps', () => {
   it('extracts core fields with type + required + description from TypeBox', () => {
@@ -132,5 +140,52 @@ describe('synthesizeExample', () => {
       fixed: { kind: 'theme' },
     })
     expect(obj.kind).toBe('theme')
+  })
+})
+
+describe('buildPluginDocs', () => {
+  beforeEach(async () => {
+    await clearDb()
+    await setExtensionsDelta(null)
+  })
+
+  it('returns core + empty extensions when registry is empty', async () => {
+    const docs = await buildPluginDocs({ locale: 'en' })
+    expect(docs.coreFields.length).toBeGreaterThan(0)
+    expect(docs.coreFields.find((f) => f.key === 'name')).toBeDefined()
+    expect(docs.globalExtensions).toEqual([])
+    expect(docs.kinds).toEqual([])
+  })
+
+  it('localizes kind label + description for de', async () => {
+    await createKind({
+      key: 'theme',
+      label: 'Theme',
+      description: 'Visual theme',
+      labelTranslations: { de: 'Thema' },
+      descriptionTranslations: { de: 'Visuelles Thema' },
+    })
+    const docs = await buildPluginDocs({ locale: 'de' })
+    const themeSection = docs.kinds.find((k) => k.key === 'theme')
+    expect(themeSection?.label).toBe('Thema')
+    expect(themeSection?.description).toBe('Visuelles Thema')
+    await deleteKind('theme')
+  })
+
+  it('includes per-kind example with all visible fields', async () => {
+    await createKind({
+      key: 'theme',
+      label: 'Theme',
+      description: null,
+      extensionsSchema: { palette: { type: 'string', description: 'Palette name' } },
+    })
+    const docs = await buildPluginDocs({ locale: 'en' })
+    const example = docs.examples.perKind.find((e) => e.kindKey === 'theme')
+    expect(example).toBeDefined()
+    expect(example!.json).toContain('"kind": "theme"')
+    expect(example!.json).toContain('"palette"')
+    expect(example!.yaml).toContain('kind: theme')
+    expect(example!.yaml).toContain('palette:')
+    await deleteKind('theme')
   })
 })

@@ -1,4 +1,9 @@
+import { stringify as yamlStringify } from 'yaml'
+import { ManifestSchema } from '@tabularium/manifest'
 import type { Locale } from './i18n'
+import { getExtensionsDelta } from './manifest-schema'
+import { listLocalizedKinds } from './kinds'
+import { env } from './env'
 
 export type FieldDoc = {
   key: string
@@ -101,4 +106,97 @@ export function synthesizeExample(input: SynthInput): Record<string, unknown> {
     out[key] = placeholderFor(node)
   }
   return out
+}
+
+export type KindDocSection = {
+  key: string
+  label: string
+  description: string | null
+  publicPageUrl: string | null
+  extensionFields: FieldDoc[]
+}
+
+export type KindExample = {
+  kindKey: string
+  yaml: string
+  json: string
+}
+
+export type PluginDocs = {
+  meta: { generatedAt: number; schemaSourceUrl: string }
+  coreFields: FieldDoc[]
+  globalExtensions: FieldDoc[]
+  kinds: KindDocSection[]
+  examples: { perKind: KindExample[] }
+  apiReference: { openapiSpecUrl: string; openapiUiUrl: string }
+}
+
+function deltaToSchema(delta: Record<string, Record<string, unknown>>): Record<string, unknown> {
+  const required: string[] = []
+  const properties: Record<string, unknown> = {}
+  for (const [k, v] of Object.entries(delta)) {
+    const node = { ...v }
+    if (node.required === true) required.push(k)
+    delete node.required
+    properties[k] = node
+  }
+  return { properties, ...(required.length > 0 ? { required } : {}) }
+}
+
+export async function buildPluginDocs(opts: { locale: Locale }): Promise<PluginDocs> {
+  const coreSchema = ManifestSchema as unknown as Record<string, unknown>
+  const coreFields = flattenSchemaProps({ schema: coreSchema, requiredOverride: null, locale: opts.locale })
+
+  const globalDelta = getExtensionsDelta()
+  const globalSchema = deltaToSchema(globalDelta as Record<string, Record<string, unknown>>)
+  const globalExtensions = flattenSchemaProps({
+    schema: globalSchema,
+    requiredOverride: null,
+    locale: opts.locale,
+  })
+
+  const localizedKinds = listLocalizedKinds(opts.locale)
+  const kinds: KindDocSection[] = []
+  const examples: KindExample[] = []
+  for (const kind of localizedKinds) {
+    const kindDelta = (kind.extensionsSchema ?? {}) as Record<string, Record<string, unknown>>
+    const kindSchema = deltaToSchema(kindDelta)
+    const extensionFields = flattenSchemaProps({
+      schema: kindSchema,
+      requiredOverride: null,
+      locale: opts.locale,
+    })
+    kinds.push({
+      key: kind.key,
+      label: kind.label,
+      description: kind.description,
+      publicPageUrl: kind.publicPageEnabled ? `/c/${kind.key}` : null,
+      extensionFields,
+    })
+
+    const mergedProps: Record<string, Record<string, unknown>> = {
+      ...((coreSchema.properties as Record<string, Record<string, unknown>>) ?? {}),
+      ...(globalSchema.properties as Record<string, Record<string, unknown>>),
+      ...(kindSchema.properties as Record<string, Record<string, unknown>>),
+    }
+    const obj = synthesizeExample({ properties: mergedProps, fixed: { kind: kind.key } })
+    examples.push({
+      kindKey: kind.key,
+      json: JSON.stringify(obj, null, 2),
+      yaml: yamlStringify(obj),
+    })
+  }
+
+  const baseUrl = env.BASE_URL.replace(/\/$/, '')
+  return {
+    meta: { generatedAt: Date.now(), schemaSourceUrl: `${baseUrl}/manifest.schema.json` },
+    coreFields,
+    globalExtensions,
+    kinds,
+    examples: { perKind: examples },
+    apiReference: {
+      openapiSpecUrl: `${baseUrl}/openapi/json`,
+      openapiUiUrl: `${baseUrl}/openapi`,
+    },
+  }
 }
