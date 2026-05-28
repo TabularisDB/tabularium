@@ -10,6 +10,8 @@ import {
   createKind,
   updateKind,
   deleteKind,
+  getLocalizedKind,
+  listLocalizedKinds,
 } from '../../src/lib/kinds'
 
 describe('validateKindDef', () => {
@@ -290,5 +292,68 @@ describe('validateKindDef — translations', () => {
       labelTranslations: { de: 'Thema', fr: '' },
     })
     expect(def.labelTranslations).toEqual({ de: 'Thema' })
+  })
+})
+
+describe('localized kind views', () => {
+  beforeEach(async () => {
+    await setSetting('plugin_kinds', '[]')
+  })
+
+  it('resolves requested locale when present', async () => {
+    await createKind({
+      key: 'theme',
+      label: 'Theme',
+      description: 'Visual theme',
+      labelTranslations: { de: 'Thema' },
+      descriptionTranslations: { de: 'Visuelles Thema' },
+    })
+    const view = getLocalizedKind('theme', 'de')
+    expect(view?.label).toBe('Thema')
+    expect(view?.description).toBe('Visuelles Thema')
+  })
+
+  it('falls back to default-locale when translation missing', async () => {
+    await createKind({ key: 'theme', label: 'Theme', description: 'Visual theme' })
+    const view = getLocalizedKind('theme', 'de')
+    expect(view?.label).toBe('Theme')
+    expect(view?.description).toBe('Visual theme')
+  })
+
+  it('resolves publicPageCopy translations', async () => {
+    await createKind({
+      key: 'theme',
+      label: 'Theme',
+      description: null,
+      publicPageCopy: {
+        hero: 'Browse themes',
+        heroTranslations: { de: 'Themen durchstöbern' },
+        intro: 'All available themes.',
+        introTranslations: {},
+      },
+    })
+    const view = getLocalizedKind('theme', 'de')
+    expect(view?.publicPageCopy?.hero).toBe('Themen durchstöbern')
+    expect(view?.publicPageCopy?.intro).toBe('All available themes.')
+  })
+
+  it('listLocalizedKinds returns all kinds resolved', async () => {
+    await createKind({ key: 'theme', label: 'Theme', description: null, labelTranslations: { de: 'Thema' } })
+    await createKind({ key: 'plugin', label: 'Plugin', description: null })
+    const views = listLocalizedKinds('de')
+    expect(views.length).toBe(2)
+    expect(views.map((v) => v.label).sort()).toEqual(['Plugin', 'Thema'])
+  })
+
+  it('falls back to default-locale translation when requested locale missing', async () => {
+    await createKind({
+      key: 'theme',
+      label: 'Theme-default-base',
+      description: null,
+      labelTranslations: { en: 'Theme-en', fr: 'Theme-fr' },
+    })
+    // requested locale 'de' missing; default locale is 'en'; should pick Theme-en
+    const view = getLocalizedKind('theme', 'de')
+    expect(view?.label).toBe('Theme-en')
   })
 })

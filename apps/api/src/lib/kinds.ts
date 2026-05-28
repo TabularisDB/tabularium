@@ -1,6 +1,6 @@
 import { getSetting, setSetting } from './settings'
 import { validateExtensionsDelta, type ExtensionsDelta } from './extensions-schema'
-import { SUPPORTED_LOCALES, type Locale } from './i18n'
+import { SUPPORTED_LOCALES, getI18nConfig, type Locale } from './i18n'
 
 type LocalizedString = Partial<Record<Locale, string>>
 
@@ -232,4 +232,48 @@ export async function deleteKind(key: string): Promise<void> {
     throw new KindError('not_found', `kind "${key}" not found`)
   }
   await writeKinds(current.filter((k) => k.key !== key))
+}
+
+export type LocalizedKindView = {
+  key: string
+  label: string
+  description: string | null
+  publicPageEnabled: boolean
+  publicPageCopy: { hero: string | null; intro: string | null } | null
+  extensionsSchema: ExtensionsDelta | null
+}
+
+function pickLocalized<T extends string | null>(
+  base: T,
+  map: LocalizedString | undefined,
+  locale: Locale,
+): T | string {
+  const defaultLocale = getI18nConfig().defaultLocale
+  const v = map?.[locale] ?? (locale !== defaultLocale ? map?.[defaultLocale] : undefined)
+  return typeof v === 'string' && v.length > 0 ? v : base
+}
+
+function resolveKind(def: KindDef, locale: Locale): LocalizedKindView {
+  return {
+    key: def.key,
+    label: pickLocalized(def.label, def.labelTranslations, locale),
+    description: pickLocalized(def.description, def.descriptionTranslations, locale),
+    publicPageEnabled: def.publicPageEnabled ?? false,
+    publicPageCopy: def.publicPageCopy
+      ? {
+          hero: pickLocalized(def.publicPageCopy.hero, def.publicPageCopy.heroTranslations, locale),
+          intro: pickLocalized(def.publicPageCopy.intro, def.publicPageCopy.introTranslations, locale),
+        }
+      : null,
+    extensionsSchema: def.extensionsSchema ?? null,
+  }
+}
+
+export function getLocalizedKind(key: string, locale: Locale): LocalizedKindView | null {
+  const def = getKind(key)
+  return def ? resolveKind(def, locale) : null
+}
+
+export function listLocalizedKinds(locale: Locale): LocalizedKindView[] {
+  return getKinds().map((def) => resolveKind(def, locale))
 }
