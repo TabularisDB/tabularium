@@ -59,6 +59,8 @@
 	"admin_branding_title": "品牌",
 	"admin_common_discard": "丢弃",
 	"admin_common_unsaved_changes": "未保存的更改",
+	"admin_extensions_property_translations": "描述翻译",
+	"admin_extensions_translation_placeholder": "{locale} 的翻译",
 	"admin_features_allow_requests": "允许新插件需求",
 	"admin_features_allow_submissions": "允许新插件提交",
 	"admin_features_load_failed": "加载功能配置失败",

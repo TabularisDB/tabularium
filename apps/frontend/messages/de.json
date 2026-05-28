@@ -59,6 +59,8 @@
 	"admin_branding_title": "Branding",
 	"admin_common_discard": "Verwerfen",
 	"admin_common_unsaved_changes": "Nicht gespeicherte Änderungen",
+	"admin_extensions_property_translations": "Beschreibungs-Übersetzungen",
+	"admin_extensions_translation_placeholder": "Übersetzung für {locale}",
 	"admin_features_allow_requests": "Neue Plugin-Wünsche erlauben",
 	"admin_features_allow_submissions": "Neue Plugin-Einreichungen erlauben",
 	"admin_features_load_failed": "Features konnten nicht geladen werden",

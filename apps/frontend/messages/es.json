@@ -59,6 +59,8 @@
 	"admin_branding_title": "Marca",
 	"admin_common_discard": "Descartar",
 	"admin_common_unsaved_changes": "Cambios sin guardar",
+	"admin_extensions_property_translations": "Traducciones de la descripción",
+	"admin_extensions_translation_placeholder": "Traducción para {locale}",
 	"admin_features_allow_requests": "Permitir nuevas solicitudes de plugins",
 	"admin_features_allow_submissions": "Permitir nuevos envíos de plugins",
 	"admin_features_load_failed": "Fallo al cargar las funciones",

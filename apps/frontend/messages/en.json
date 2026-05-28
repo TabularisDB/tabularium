@@ -59,6 +59,8 @@
 	"admin_branding_title": "Branding",
 	"admin_common_discard": "Discard",
 	"admin_common_unsaved_changes": "Unsaved changes",
+	"admin_extensions_property_translations": "Description translations",
+	"admin_extensions_translation_placeholder": "Translation for {locale}",
 	"admin_features_allow_requests": "Allow new plugin requests",
 	"admin_features_allow_submissions": "Allow new plugin submissions",
 	"admin_features_load_failed": "Failed to load features",

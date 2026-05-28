@@ -59,6 +59,8 @@
 	"admin_branding_title": "Branding",
 	"admin_common_discard": "Annuler",
 	"admin_common_unsaved_changes": "Modifications non enregistrées",
+	"admin_extensions_property_translations": "Traductions de la description",
+	"admin_extensions_translation_placeholder": "Traduction pour {locale}",
 	"admin_features_allow_requests": "Autoriser les nouvelles demandes de plugins",
 	"admin_features_allow_submissions": "Autoriser les nouvelles soumissions de plugins",
 	"admin_features_load_failed": "Échec du chargement des fonctionnalités",

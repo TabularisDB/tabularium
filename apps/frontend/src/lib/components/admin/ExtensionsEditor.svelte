@@ -18,6 +18,7 @@
 	import CollapsibleRow from '$components/admin/CollapsibleRow.svelte'
 	import TabBar from '$components/admin/TabBar.svelte'
 	import { m } from '$lib/paraglide/messages'
+	import { i18n, LOCALE_LABELS, type Locale } from '$lib/stores/i18n.svelte'
 	import { cn } from '$lib/utils'
 
 	type Props = {
@@ -38,6 +39,7 @@
 		name: string
 		type: 'string' | 'number' | 'integer' | 'boolean' | 'array' | 'object'
 		description: string
+		descriptionTranslations: Record<string, string>
 		isAdvanced: boolean
 		advancedJson: string
 		stringEnum: string
@@ -59,6 +61,7 @@
 			name: '',
 			type: 'string',
 			description: '',
+			descriptionTranslations: {},
 			isAdvanced: false,
 			advancedJson: '',
 			stringEnum: '',
@@ -90,6 +93,14 @@
 				? (t as FormProperty['type'])
 				: 'string'
 		fp.description = typeof node.description === 'string' ? node.description : ''
+		const xTrans = node['x-translations']
+		if (xTrans && typeof xTrans === 'object' && !Array.isArray(xTrans)) {
+			const map: Record<string, string> = {}
+			for (const [k, v] of Object.entries(xTrans as Record<string, unknown>)) {
+				if (typeof v === 'string') map[k] = v
+			}
+			fp.descriptionTranslations = map
+		}
 		if (t === 'string' && Array.isArray(node.enum)) {
 			fp.stringEnum = (node.enum as string[]).join(', ')
 		}
@@ -114,6 +125,12 @@
 		}
 		const out: SchemaNode = { type: fp.type }
 		if (fp.description.trim()) out.description = fp.description.trim()
+		const transEntries = Object.entries(fp.descriptionTranslations).filter(
+			([, v]) => typeof v === 'string' && v.trim() !== '',
+		)
+		if (transEntries.length > 0) {
+			out['x-translations'] = Object.fromEntries(transEntries)
+		}
 		if (fp.type === 'string') {
 			const enumValues = fp.stringEnum
 				.split(',')
@@ -193,6 +210,19 @@
 
 	function removeProperty(idx: number) {
 		formProps = formProps.filter((_, i) => i !== idx)
+		commit()
+	}
+
+	function updateTranslation(idx: number, locale: Locale, next: string) {
+		const fp = formProps[idx]
+		if (!fp) return
+		const map = { ...fp.descriptionTranslations }
+		if (next.trim() === '') {
+			delete map[locale]
+		} else {
+			map[locale] = next
+		}
+		fp.descriptionTranslations = map
 		commit()
 	}
 
@@ -388,6 +418,31 @@
 								placeholder={m.admin_manifest_ext_description_placeholder()}
 								oninput={() => commit()}
 							/>
+							{#if i18n.availableLocales.filter((l) => l !== i18n.defaultLocale).length > 0}
+								<details class="text-xs mt-2">
+									<summary class="cursor-pointer text-muted-foreground hover:text-foreground select-none">
+										{m.admin_extensions_property_translations()}
+									</summary>
+									<div class="mt-2 space-y-2">
+										{#each i18n.availableLocales.filter((l) => l !== i18n.defaultLocale) as locale (locale)}
+											<div class="grid gap-1">
+												<Label class="text-[10px] uppercase tracking-wider">
+													{LOCALE_LABELS[locale] ?? locale}
+												</Label>
+												<Input
+													value={fp.descriptionTranslations[locale] ?? ''}
+													maxlength={200}
+													placeholder={m.admin_extensions_translation_placeholder({
+														locale: LOCALE_LABELS[locale] ?? locale,
+													})}
+													oninput={(e) =>
+														updateTranslation(idx, locale, (e.currentTarget as HTMLInputElement).value)}
+												/>
+											</div>
+										{/each}
+									</div>
+								</details>
+							{/if}
 						</div>
 
 						{#if fp.type === 'string'}
