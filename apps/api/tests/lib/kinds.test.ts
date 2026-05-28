@@ -357,3 +357,102 @@ describe('localized kind views', () => {
     expect(view?.label).toBe('Theme-en')
   })
 })
+
+describe('validateKindDef — prose + customExample', () => {
+  it('round-trips prosePre + prosePost', () => {
+    const def = validateKindDef({
+      key: 'theme',
+      label: 'Theme',
+      description: null,
+      prosePre: 'Notes before the field table.',
+      prosePost: 'Notes after the field table.',
+    })
+    expect(def.prosePre).toBe('Notes before the field table.')
+    expect(def.prosePost).toBe('Notes after the field table.')
+  })
+
+  it('round-trips prose translations', () => {
+    const def = validateKindDef({
+      key: 'theme',
+      label: 'Theme',
+      description: null,
+      prosePre: 'Default',
+      prosePreTranslations: { de: 'Vorab' },
+      prosePost: 'Default',
+      prosePostTranslations: { de: 'Nachher' },
+    })
+    expect(def.prosePreTranslations).toEqual({ de: 'Vorab' })
+    expect(def.prosePostTranslations).toEqual({ de: 'Nachher' })
+  })
+
+  it('rejects oversize prose', () => {
+    const tooLong = 'x'.repeat(8001)
+    expect(() =>
+      validateKindDef({ key: 'theme', label: 'Theme', description: null, prosePre: tooLong }),
+    ).toThrow(/max 8000/)
+  })
+
+  it('accepts customExample with valid YAML', () => {
+    const def = validateKindDef({
+      key: 'theme',
+      label: 'Theme',
+      description: null,
+      customExample: { yaml: 'name: example\nkind: theme\n' },
+    })
+    expect(def.customExample?.yaml).toBe('name: example\nkind: theme\n')
+  })
+
+  it('accepts customExample with valid JSON', () => {
+    const def = validateKindDef({
+      key: 'theme',
+      label: 'Theme',
+      description: null,
+      customExample: { json: '{"name":"example","kind":"theme"}' },
+    })
+    expect(def.customExample?.json).toBe('{"name":"example","kind":"theme"}')
+  })
+
+  it('rejects customExample with invalid YAML', () => {
+    expect(() =>
+      validateKindDef({
+        key: 'theme',
+        label: 'Theme',
+        description: null,
+        customExample: { yaml: 'name: : invalid' },
+      }),
+    ).toThrow(/invalid YAML/i)
+  })
+
+  it('rejects customExample with invalid JSON', () => {
+    expect(() =>
+      validateKindDef({
+        key: 'theme',
+        label: 'Theme',
+        description: null,
+        customExample: { json: '{ not valid }' },
+      }),
+    ).toThrow(/invalid JSON/i)
+  })
+
+  it('rejects oversize customExample', () => {
+    const tooLong = '{"x":"' + 'a'.repeat(16100) + '"}'
+    expect(() =>
+      validateKindDef({
+        key: 'theme',
+        label: 'Theme',
+        description: null,
+        customExample: { json: tooLong },
+      }),
+    ).toThrow(/max 16000/)
+  })
+
+  it('collapses empty customExample to null', () => {
+    const def = validateKindDef({
+      key: 'theme',
+      label: 'Theme',
+      description: null,
+      customExample: { yaml: '   ', json: '' },
+    })
+    expect(def.customExample).toBeUndefined()
+  })
+})

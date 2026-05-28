@@ -1,3 +1,4 @@
+import { parse as yamlParse } from 'yaml'
 import { getSetting, setSetting } from './settings'
 import { validateExtensionsDelta, type ExtensionsDelta } from './extensions-schema'
 import { SUPPORTED_LOCALES, getI18nConfig, type Locale } from './i18n'
@@ -24,6 +25,11 @@ export type KindDef = {
    */
   publicPageEnabled?: boolean
   publicPageCopy?: KindPublicPageCopy | null
+  prosePre?: string | null
+  prosePreTranslations?: LocalizedString
+  prosePost?: string | null
+  prosePostTranslations?: LocalizedString
+  customExample?: { yaml?: string; json?: string } | null
 }
 
 export type KindErrorCode = 'invalid' | 'duplicate' | 'not_found'
@@ -46,6 +52,8 @@ const LABEL_MAX = 60
 const DESC_MAX = 280
 const HERO_MAX = 80
 const INTRO_MAX = 600
+const PROSE_MAX = 8000
+const EXAMPLE_MAX = 16000
 
 function validateTranslationMap(value: unknown, max: number, field: string): LocalizedString | undefined {
   if (value === undefined) return undefined
@@ -70,6 +78,55 @@ function validateTranslationMap(value: unknown, max: number, field: string): Loc
     out[locale as Locale] = trimmed
   }
   return Object.keys(out).length > 0 ? out : undefined
+}
+
+function validateCustomExample(value: unknown): { yaml?: string; json?: string } | undefined {
+  if (value === undefined) return undefined
+  if (value === null) return undefined
+  if (typeof value !== 'object' || Array.isArray(value)) {
+    throw new KindError('invalid', 'customExample must be an object with optional yaml + json strings')
+  }
+  const obj = value as Record<string, unknown>
+  const out: { yaml?: string; json?: string } = {}
+
+  if (obj.yaml !== undefined && obj.yaml !== null) {
+    if (typeof obj.yaml !== 'string') {
+      throw new KindError('invalid', 'customExample.yaml must be a string')
+    }
+    const trimmed = obj.yaml.trim()
+    if (trimmed.length > 0) {
+      if (trimmed.length > EXAMPLE_MAX) {
+        throw new KindError('invalid', `customExample.yaml max ${EXAMPLE_MAX} chars`)
+      }
+      try {
+        yamlParse(trimmed)
+      } catch (err) {
+        throw new KindError('invalid', `customExample.yaml: invalid YAML — ${(err as Error).message}`)
+      }
+      out.yaml = obj.yaml
+    }
+  }
+
+  if (obj.json !== undefined && obj.json !== null) {
+    if (typeof obj.json !== 'string') {
+      throw new KindError('invalid', 'customExample.json must be a string')
+    }
+    const trimmed = obj.json.trim()
+    if (trimmed.length > 0) {
+      if (trimmed.length > EXAMPLE_MAX) {
+        throw new KindError('invalid', `customExample.json max ${EXAMPLE_MAX} chars`)
+      }
+      try {
+        JSON.parse(trimmed)
+      } catch (err) {
+        throw new KindError('invalid', `customExample.json: invalid JSON — ${(err as Error).message}`)
+      }
+      out.json = obj.json
+    }
+  }
+
+  if (out.yaml === undefined && out.json === undefined) return undefined
+  return out
 }
 
 export function validateKindDef(input: unknown): KindDef {
@@ -142,6 +199,12 @@ export function validateKindDef(input: unknown): KindDef {
     }
   }
 
+  const prosePre = trimOrNull(o.prosePre, PROSE_MAX, 'prosePre')
+  const prosePreTranslations = validateTranslationMap(o.prosePreTranslations, PROSE_MAX, 'prosePreTranslations')
+  const prosePost = trimOrNull(o.prosePost, PROSE_MAX, 'prosePost')
+  const prosePostTranslations = validateTranslationMap(o.prosePostTranslations, PROSE_MAX, 'prosePostTranslations')
+  const customExample = validateCustomExample(o.customExample)
+
   return {
     key,
     label,
@@ -151,6 +214,11 @@ export function validateKindDef(input: unknown): KindDef {
     ...(extensionsSchema !== undefined ? { extensionsSchema } : {}),
     ...(publicPageEnabled ? { publicPageEnabled } : {}),
     ...(publicPageCopy !== undefined ? { publicPageCopy } : {}),
+    ...(prosePre !== null ? { prosePre } : {}),
+    ...(prosePreTranslations ? { prosePreTranslations } : {}),
+    ...(prosePost !== null ? { prosePost } : {}),
+    ...(prosePostTranslations ? { prosePostTranslations } : {}),
+    ...(customExample !== undefined ? { customExample } : {}),
   }
 }
 
@@ -241,6 +309,9 @@ export type LocalizedKindView = {
   publicPageEnabled: boolean
   publicPageCopy: { hero: string | null; intro: string | null } | null
   extensionsSchema: ExtensionsDelta | null
+  prosePre: string | null
+  prosePost: string | null
+  customExample: { yaml?: string; json?: string } | null
 }
 
 function pickLocalized<T extends string | null>(
@@ -266,6 +337,9 @@ function resolveKind(def: KindDef, locale: Locale): LocalizedKindView {
         }
       : null,
     extensionsSchema: def.extensionsSchema ?? null,
+    prosePre: pickLocalized(def.prosePre ?? null, def.prosePreTranslations, locale),
+    prosePost: pickLocalized(def.prosePost ?? null, def.prosePostTranslations, locale),
+    customExample: def.customExample ?? null,
   }
 }
 
