@@ -99,6 +99,11 @@ export type Kind = {
   descriptionTranslations?: Record<string, string>
   publicPageEnabled?: boolean
   publicPageCopy?: KindPublicPageCopy | null
+  prosePre?: string | null
+  prosePreTranslations?: Record<string, string>
+  prosePost?: string | null
+  prosePostTranslations?: Record<string, string>
+  customExample?: { yaml?: string; json?: string } | null
 }
 
 export type PluginListResponse = {

@@ -12,6 +12,8 @@
 	import CardTitle from '$components/ui/CardTitle.svelte'
 	import Button from '$components/ui/Button.svelte'
 	import Input from '$components/ui/Input.svelte'
+	import Textarea from '$components/ui/Textarea.svelte'
+	import Label from '$components/ui/Label.svelte'
 	import AdminPageHeader from '$components/admin/AdminPageHeader.svelte'
 	import CollapsibleRow from '$components/admin/CollapsibleRow.svelte'
 	import ConfirmDialog from '$components/ui/ConfirmDialog.svelte'
@@ -32,6 +34,11 @@
 		descriptionTranslationsMap: Record<Locale, string>
 		heroTranslationsMap: Record<Locale, string>
 		introTranslationsMap: Record<Locale, string>
+		prosePreText: string
+		prosePreMap: Record<Locale, string>
+		prosePostText: string
+		prosePostMap: Record<Locale, string>
+		customExampleYaml: string
 		activeLocale: Locale
 	}
 
@@ -92,6 +99,11 @@
 								intro: string | null
 								introTranslations?: Record<string, string>
 							} | null
+							prosePre?: string | null
+							prosePreTranslations?: Record<string, string>
+							prosePost?: string | null
+							prosePostTranslations?: Record<string, string>
+							customExample?: { yaml?: string; json?: string } | null
 						}
 					>
 				}
@@ -108,6 +120,11 @@
 				descriptionTranslationsMap: hydrateMap(k.descriptionTranslations),
 				heroTranslationsMap: hydrateMap(k.publicPageCopy?.heroTranslations),
 				introTranslationsMap: hydrateMap(k.publicPageCopy?.introTranslations),
+				prosePreText: k.prosePre ?? '',
+				prosePreMap: hydrateMap(k.prosePreTranslations),
+				prosePostText: k.prosePost ?? '',
+				prosePostMap: hydrateMap(k.prosePostTranslations),
+				customExampleYaml: k.customExample?.yaml ?? '',
 				activeLocale: i18n.defaultLocale,
 			}))
 		} catch (e) {
@@ -163,6 +180,11 @@
 			const descriptionTranslations = collectTranslations(k.descriptionTranslationsMap)
 			const heroTranslations = collectTranslations(k.heroTranslationsMap)
 			const introTranslations = collectTranslations(k.introTranslationsMap)
+			const prosePreTranslations = collectTranslations(k.prosePreMap)
+			const prosePostTranslations = collectTranslations(k.prosePostMap)
+			const prosePreTrim = k.prosePreText.trim()
+			const prosePostTrim = k.prosePostText.trim()
+			const customExampleTrim = k.customExampleYaml.trim()
 
 			let publicPageCopy:
 				| {
@@ -190,6 +212,11 @@
 				publicPageCopy,
 				...(labelTranslations ? { labelTranslations } : {}),
 				...(descriptionTranslations ? { descriptionTranslations } : {}),
+				prosePre: prosePreTrim || null,
+				...(prosePreTranslations ? { prosePreTranslations } : {}),
+				prosePost: prosePostTrim || null,
+				...(prosePostTranslations ? { prosePostTranslations } : {}),
+				customExample: customExampleTrim ? { yaml: k.customExampleYaml } : null,
 			}
 
 			const { error } = await eden.api.admin.kinds({ key: k.key }).put(body)
@@ -283,7 +310,7 @@
 										<span class="ml-1 text-[10px] uppercase tracking-wider text-primary"
 											>{m.admin_branding_default()}</span
 										>
-									{:else if isFilled(k.labelTranslationsMap, l) || isFilled(k.descriptionTranslationsMap, l) || isFilled(k.heroTranslationsMap, l) || isFilled(k.introTranslationsMap, l)}
+									{:else if isFilled(k.labelTranslationsMap, l) || isFilled(k.descriptionTranslationsMap, l) || isFilled(k.heroTranslationsMap, l) || isFilled(k.introTranslationsMap, l) || isFilled(k.prosePreMap, l) || isFilled(k.prosePostMap, l)}
 										<span class="ml-1 text-[10px] uppercase tracking-wider text-success">·</span>
 									{/if}
 								</button>
@@ -415,6 +442,56 @@
 								</label>
 							{/if}
 						</CollapsibleRow>
+
+						<details class="text-xs mt-2">
+							<summary class="cursor-pointer text-muted-foreground hover:text-foreground">
+								{m.admin_kinds_advanced()}
+							</summary>
+							<div class="mt-3 space-y-4">
+								<div class="grid gap-2">
+									<Label>{m.admin_kinds_prose_pre()}</Label>
+									{#if k.activeLocale === i18n.defaultLocale}
+										<Textarea bind:value={k.prosePreText} rows={4} maxlength={8000} />
+									{:else}
+										<Textarea
+											bind:value={k.prosePreMap[k.activeLocale]}
+											rows={4}
+											maxlength={8000}
+											placeholder={m.admin_branding_fallback_placeholder({
+												locale: LOCALE_LABELS[i18n.defaultLocale] ?? i18n.defaultLocale,
+											})}
+										/>
+									{/if}
+								</div>
+
+								<div class="grid gap-2">
+									<Label>{m.admin_kinds_prose_post()}</Label>
+									{#if k.activeLocale === i18n.defaultLocale}
+										<Textarea bind:value={k.prosePostText} rows={4} maxlength={8000} />
+									{:else}
+										<Textarea
+											bind:value={k.prosePostMap[k.activeLocale]}
+											rows={4}
+											maxlength={8000}
+											placeholder={m.admin_branding_fallback_placeholder({
+												locale: LOCALE_LABELS[i18n.defaultLocale] ?? i18n.defaultLocale,
+											})}
+										/>
+									{/if}
+								</div>
+
+								<div class="grid gap-2">
+									<Label>{m.admin_kinds_custom_example()}</Label>
+									<Textarea
+										bind:value={k.customExampleYaml}
+										rows={8}
+										maxlength={16000}
+										placeholder={`name: my-plugin\nkind: ${k.key || 'theme'}\nversion: 1.0.0\n`}
+									/>
+									<p class="text-[10px] text-muted-foreground">{m.admin_kinds_custom_example_note()}</p>
+								</div>
+							</div>
+						</details>
 
 						<div class="flex gap-2 justify-end">
 							<Button size="sm" variant="outline" onclick={() => openDeleteKind(k)}>
