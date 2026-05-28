@@ -1,4 +1,6 @@
 <script lang="ts">
+	import { onMount } from 'svelte'
+	import { page } from '$app/state'
 	import { m } from '$lib/paraglide/messages'
 	import Card from '$components/ui/Card.svelte'
 	import CardContent from '$components/ui/CardContent.svelte'
@@ -7,6 +9,16 @@
 	import CardTitle from '$components/ui/CardTitle.svelte'
 	import FieldTable from '$components/docs/FieldTable.svelte'
 	import CodeExample from '$components/docs/CodeExample.svelte'
+
+	type FieldDoc = {
+		key: string
+		type: string
+		required: boolean
+		description: string | null
+		enumValues?: string[]
+		format?: string
+		deprecated?: boolean
+	}
 
 	type PositionMarker =
 		| 'page_top'
@@ -28,8 +40,51 @@
 		position: PositionMarker
 	}
 
-	let { data } = $props()
-	const docs = $derived(data.docs)
+	type KindDocSection = {
+		key: string
+		label: string
+		description: string | null
+		publicPageUrl: string | null
+		extensionFields: FieldDoc[]
+		prosePreHtml: string | null
+		prosePostHtml: string | null
+	}
+
+	type KindExample = { kindKey: string; yaml: string; json: string }
+
+	type PluginDocs = {
+		meta: { generatedAt: number; schemaSourceUrl: string }
+		intro: { bodyHtml: string | null }
+		outro: { bodyHtml: string | null }
+		customSections: CustomSection[]
+		coreFields: FieldDoc[]
+		globalExtensions: FieldDoc[]
+		kinds: KindDocSection[]
+		examples: { perKind: KindExample[] }
+		apiReference: { openapiSpecUrl: string; openapiUiUrl: string }
+	}
+
+	let docs = $state<PluginDocs | null>(null)
+	let loadError = $state<string | null>(null)
+	let loading = $state(true)
+
+	async function load() {
+		loading = true
+		loadError = null
+		try {
+			const requested = page.url.searchParams.get('locale') ?? ''
+			const qs = requested ? `?locale=${encodeURIComponent(requested)}` : ''
+			const res = await fetch(`/api/docs/plugin-development${qs}`)
+			if (!res.ok) throw new Error(`HTTP ${res.status}`)
+			docs = (await res.json()) as PluginDocs
+		} catch (e) {
+			loadError = e instanceof Error ? e.message : 'Failed to load docs'
+		} finally {
+			loading = false
+		}
+	}
+
+	onMount(load)
 
 	function sectionsAt(marker: PositionMarker, sections: CustomSection[]): CustomSection[] {
 		if (typeof marker === 'string') {
@@ -46,6 +101,11 @@
 </svelte:head>
 
 <div class="space-y-8 max-w-4xl mx-auto py-8 px-4">
+	{#if loading && !docs}
+		<p class="text-sm text-muted-foreground">{m.common_loading()}</p>
+	{:else if loadError}
+		<p class="text-sm text-destructive">{loadError}</p>
+	{:else if docs}
 	<header class="space-y-2">
 		<h1 class="text-3xl font-semibold tracking-tight">{m.docs_plugin_dev_title()}</h1>
 		{#if docs.intro.bodyHtml}
@@ -259,4 +319,5 @@
 			<div class="prose prose-sm dark:prose-invert max-w-none">{@html section.bodyHtml}</div>
 		</section>
 	{/each}
+	{/if}
 </div>
