@@ -88,7 +88,7 @@ spec:
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
           volumeMounts:
-            {{- if and .Values.persistence.enabled (eq .Values.config.databaseMode "sqlite") }}
+            {{- if .Values.persistence.enabled }}
             - name: data
               mountPath: {{ .Values.config.dataDir }}
             {{- end }}
@@ -98,7 +98,7 @@ spec:
             {{- toYaml . | nindent 12 }}
             {{- end }}
       volumes:
-        {{- if and .Values.persistence.enabled (eq .Values.config.databaseMode "sqlite") }}
+        {{- if .Values.persistence.enabled }}
         - name: data
           persistentVolumeClaim:
             claimName: {{ .Values.persistence.existingClaim | default (printf "%s-data" (include "tabularium.fullname" .)) }}

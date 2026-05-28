@@ -61,7 +61,13 @@ secrets:
   # Optional: bootstrap admin email override
   bootstrapEmail: ""
 
-# ---- Persistence (sqlite mode) --------------------------------------------
+# ---- Persistence ----------------------------------------------------------
+# Mounts a PVC at .config.dataDir (default /data). Holds:
+#   - the SQLite database (when databaseMode == "sqlite")
+#   - uploaded assets (logos, favicons, plugin images) when the storage driver
+#     in /admin/infra/storage is set to `disk`
+# Disable only if you use BOTH an external database AND an S3-compatible
+# storage backend — otherwise pod restarts will lose uploads.
 persistence:
   enabled: true
   storageClass: ""        # empty = use cluster default
