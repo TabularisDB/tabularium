@@ -101,230 +101,171 @@
 			(s) => typeof s.position === 'object' && s.position.kind === marker.kind && s.position.slot === marker.slot,
 		)
 	}
+
+	const topPositions: PositionMarker[] = [
+		'page_top',
+		'before_core',
+		'after_core',
+		'before_extensions',
+		'after_extensions',
+		'before_kinds',
+	]
+	const bottomPositions: PositionMarker[] = ['after_kinds', 'page_bottom']
 </script>
 
 <svelte:head>
 	<title>{m.docs_plugin_dev_title()}</title>
 </svelte:head>
 
-<div class="space-y-8 max-w-4xl mx-auto py-8 px-4">
+<div class="max-w-6xl mx-auto py-8 px-4">
 	{#if loading && !docs}
 		<p class="text-sm text-muted-foreground">{m.common_loading()}</p>
 	{:else if loadError}
 		<p class="text-sm text-destructive">{loadError}</p>
 	{:else if docs}
-	<header class="space-y-2">
-		<h1 class="text-3xl font-semibold tracking-tight">{m.docs_plugin_dev_title()}</h1>
-		{#if docs.intro.bodyHtml}
-			<div class="prose prose-sm dark:prose-invert max-w-none">
-				{@html docs.intro.bodyHtml}
-			</div>
-		{:else}
-			<p class="text-muted-foreground">{m.docs_plugin_dev_intro()}</p>
-		{/if}
-	</header>
+		<div class="lg:grid lg:grid-cols-[1fr_220px] lg:gap-8">
+			<main class="space-y-10 min-w-0">
+				<header class="space-y-3">
+					<h1 class="text-4xl font-semibold tracking-tight">{m.docs_plugin_dev_title()}</h1>
+					{#if docs.intro.bodyHtml}
+						<div class="prose dark:prose-invert max-w-none">{@html docs.intro.bodyHtml}</div>
+					{:else}
+						<p class="text-lg text-muted-foreground">{m.docs_plugin_dev_intro()}</p>
+					{/if}
+				</header>
 
-	{#each sectionsAt('page_top', docs.customSections) as section (section.id)}
-		<section class="space-y-2">
-			{#if section.title}
-				<h2 class="text-xl font-semibold tracking-tight">{section.title}</h2>
-			{/if}
-			<div class="prose prose-sm dark:prose-invert max-w-none">{@html section.bodyHtml}</div>
-		</section>
-	{/each}
-
-	{#each sectionsAt('before_core', docs.customSections) as section (section.id)}
-		<section class="space-y-2">
-			{#if section.title}
-				<h2 class="text-xl font-semibold tracking-tight">{section.title}</h2>
-			{/if}
-			<div class="prose prose-sm dark:prose-invert max-w-none">{@html section.bodyHtml}</div>
-		</section>
-	{/each}
-
-	<div id="core">
-		<Card>
-			<CardHeader>
-				<CardTitle class="text-base">{m.docs_section_core()}</CardTitle>
-				<CardDescription>{m.docs_section_core_subtitle()}</CardDescription>
-			</CardHeader>
-			<CardContent>
-				<FieldTable fields={docs.coreFields} />
-			</CardContent>
-		</Card>
-	</div>
-
-	{#each sectionsAt('after_core', docs.customSections) as section (section.id)}
-		<section class="space-y-2">
-			{#if section.title}
-				<h2 class="text-xl font-semibold tracking-tight">{section.title}</h2>
-			{/if}
-			<div class="prose prose-sm dark:prose-invert max-w-none">{@html section.bodyHtml}</div>
-		</section>
-	{/each}
-
-	{#each sectionsAt('before_extensions', docs.customSections) as section (section.id)}
-		<section class="space-y-2">
-			{#if section.title}
-				<h2 class="text-xl font-semibold tracking-tight">{section.title}</h2>
-			{/if}
-			<div class="prose prose-sm dark:prose-invert max-w-none">{@html section.bodyHtml}</div>
-		</section>
-	{/each}
-
-	<div id="extensions">
-		<Card>
-			<CardHeader>
-				<CardTitle class="text-base">{m.docs_section_extensions()}</CardTitle>
-				<CardDescription>{m.docs_section_extensions_subtitle()}</CardDescription>
-			</CardHeader>
-			<CardContent>
-				{#if docs.globalExtensions.length > 0}
-					<FieldTable fields={docs.globalExtensions} />
-				{:else}
-					<p class="text-sm text-muted-foreground">{m.docs_no_extensions()}</p>
-				{/if}
-			</CardContent>
-		</Card>
-	</div>
-
-	{#each sectionsAt('after_extensions', docs.customSections) as section (section.id)}
-		<section class="space-y-2">
-			{#if section.title}
-				<h2 class="text-xl font-semibold tracking-tight">{section.title}</h2>
-			{/if}
-			<div class="prose prose-sm dark:prose-invert max-w-none">{@html section.bodyHtml}</div>
-		</section>
-	{/each}
-
-	{#each sectionsAt('before_kinds', docs.customSections) as section (section.id)}
-		<section class="space-y-2">
-			{#if section.title}
-				<h2 class="text-xl font-semibold tracking-tight">{section.title}</h2>
-			{/if}
-			<div class="prose prose-sm dark:prose-invert max-w-none">{@html section.bodyHtml}</div>
-		</section>
-	{/each}
-
-	<section class="space-y-4">
-		<header class="space-y-1">
-			<h2 id="kinds" class="text-xl font-semibold tracking-tight">{m.docs_section_kinds()}</h2>
-			<p class="text-sm text-muted-foreground">{m.docs_section_kinds_subtitle()}</p>
-		</header>
-		{#if docs.kinds.length === 0}
-			<p class="text-sm text-muted-foreground">{m.docs_no_kinds()}</p>
-		{:else}
-			{#each docs.kinds as kind (kind.key)}
-				{#each sectionsAt({ kind: kind.key, slot: 'before' }, docs.customSections) as section (section.id)}
-					<section class="space-y-2">
-						{#if section.title}
-							<h3 class="text-lg font-semibold tracking-tight">{section.title}</h3>
-						{/if}
-						<div class="prose prose-sm dark:prose-invert max-w-none">{@html section.bodyHtml}</div>
-					</section>
+				{#each topPositions as pos (pos)}
+					{#each sectionsAt(pos, docs.customSections) as section (section.id)}
+						<section id={`section-${section.id}`} class="space-y-2 scroll-mt-20">
+							{#if section.title}
+								<h2 class="text-2xl font-semibold tracking-tight">{section.title}</h2>
+							{/if}
+							<div class="prose dark:prose-invert max-w-none">{@html section.bodyHtml}</div>
+						</section>
+					{/each}
 				{/each}
-				<div id={`kind-${kind.key}`}>
-					<Card>
-						<CardHeader>
-							<CardTitle class="text-base">
-								{kind.label}
-								{#if kind.publicPageUrl}
-									<a href={kind.publicPageUrl} class="ml-2 text-xs text-primary hover:underline">
-										→ /c/{kind.key}
-									</a>
-								{/if}
-							</CardTitle>
-							{#if kind.description}
-								<CardDescription>{kind.description}</CardDescription>
-							{/if}
-						</CardHeader>
-						<CardContent class="space-y-4">
-							{#if kind.prosePreHtml}
-								<div class="prose prose-sm dark:prose-invert max-w-none">
-									{@html kind.prosePreHtml}
-								</div>
-							{/if}
-							{#if kind.extensionFields.length > 0}
-								<FieldTable fields={kind.extensionFields} />
-							{/if}
-							{#each docs.examples.perKind.filter((e) => e.kindKey === kind.key) as ex (ex.kindKey)}
-								<CodeExample yaml={ex.yaml} json={ex.json} />
+
+				{#if docs.kinds.length > 0}
+					<section class="space-y-6">
+						<header class="space-y-1">
+							<h2 id="kinds" class="text-2xl font-semibold tracking-tight scroll-mt-20">
+								{m.docs_section_kinds()}
+							</h2>
+							<p class="text-sm text-muted-foreground">{m.docs_section_kinds_subtitle()}</p>
+						</header>
+						{#each docs.kinds as kind (kind.key)}
+							{#each sectionsAt({ kind: kind.key, slot: 'before' }, docs.customSections) as section (section.id)}
+								<section id={`section-${section.id}`} class="space-y-2 scroll-mt-20">
+									{#if section.title}
+										<h3 class="text-lg font-semibold tracking-tight">{section.title}</h3>
+									{/if}
+									<div class="prose dark:prose-invert max-w-none">{@html section.bodyHtml}</div>
+								</section>
 							{/each}
-							{#if kind.prosePostHtml}
-								<div class="prose prose-sm dark:prose-invert max-w-none">
-									{@html kind.prosePostHtml}
-								</div>
-							{/if}
-						</CardContent>
-					</Card>
-				</div>
-				{#each sectionsAt({ kind: kind.key, slot: 'after' }, docs.customSections) as section (section.id)}
-					<section class="space-y-2">
-						{#if section.title}
-							<h3 class="text-lg font-semibold tracking-tight">{section.title}</h3>
-						{/if}
-						<div class="prose prose-sm dark:prose-invert max-w-none">{@html section.bodyHtml}</div>
+							<div id={`kind-${kind.key}`} class="scroll-mt-20">
+								<Card>
+									<CardHeader>
+										<CardTitle class="text-lg">
+											{kind.label}
+											{#if kind.publicPageUrl}
+												<a href={kind.publicPageUrl} class="ml-2 text-xs text-primary hover:underline">
+													→ /c/{kind.key}
+												</a>
+											{/if}
+										</CardTitle>
+										{#if kind.description}
+											<CardDescription>{kind.description}</CardDescription>
+										{/if}
+									</CardHeader>
+									<CardContent class="space-y-4">
+										{#if kind.prosePreHtml}
+											<div class="prose dark:prose-invert max-w-none">{@html kind.prosePreHtml}</div>
+										{/if}
+										{#if kind.extensionFields.length > 0}
+											<FieldTable fields={kind.extensionFields} />
+										{/if}
+										{#each docs.examples.perKind.filter((e) => e.kindKey === kind.key) as ex (ex.kindKey)}
+											<CodeExample yaml={ex.yaml} json={ex.json} />
+										{/each}
+										{#if kind.prosePostHtml}
+											<div class="prose dark:prose-invert max-w-none">{@html kind.prosePostHtml}</div>
+										{/if}
+									</CardContent>
+								</Card>
+							</div>
+							{#each sectionsAt({ kind: kind.key, slot: 'after' }, docs.customSections) as section (section.id)}
+								<section id={`section-${section.id}`} class="space-y-2 scroll-mt-20">
+									{#if section.title}
+										<h3 class="text-lg font-semibold tracking-tight">{section.title}</h3>
+									{/if}
+									<div class="prose dark:prose-invert max-w-none">{@html section.bodyHtml}</div>
+								</section>
+							{/each}
+						{/each}
 					</section>
+				{/if}
+
+				{#each bottomPositions as pos (pos)}
+					{#each sectionsAt(pos, docs.customSections) as section (section.id)}
+						<section id={`section-${section.id}`} class="space-y-2 scroll-mt-20">
+							{#if section.title}
+								<h2 class="text-2xl font-semibold tracking-tight">{section.title}</h2>
+							{/if}
+							<div class="prose dark:prose-invert max-w-none">{@html section.bodyHtml}</div>
+						</section>
+					{/each}
 				{/each}
-			{/each}
-		{/if}
-	</section>
 
-	{#each sectionsAt('after_kinds', docs.customSections) as section (section.id)}
-		<section class="space-y-2">
-			{#if section.title}
-				<h2 class="text-xl font-semibold tracking-tight">{section.title}</h2>
-			{/if}
-			<div class="prose prose-sm dark:prose-invert max-w-none">{@html section.bodyHtml}</div>
-		</section>
-	{/each}
+				{#if docs.outro.bodyHtml}
+					<div class="prose dark:prose-invert max-w-none border-t border-border pt-8">
+						{@html docs.outro.bodyHtml}
+					</div>
+				{/if}
 
-	{#each sectionsAt('before_api', docs.customSections) as section (section.id)}
-		<section class="space-y-2">
-			{#if section.title}
-				<h2 class="text-xl font-semibold tracking-tight">{section.title}</h2>
-			{/if}
-			<div class="prose prose-sm dark:prose-invert max-w-none">{@html section.bodyHtml}</div>
-		</section>
-	{/each}
+				<Card class="border-dashed">
+					<CardHeader>
+						<CardTitle class="text-base">{m.docs_schema_link_cta()}</CardTitle>
+						<CardDescription>{m.docs_schema_link_body()}</CardDescription>
+					</CardHeader>
+					<CardContent>
+						<a
+							href="/docs/plugin-development/schema"
+							class="inline-flex items-center gap-1 text-sm text-primary hover:underline"
+						>
+							{m.docs_schema_link_label()} →
+						</a>
+					</CardContent>
+				</Card>
+			</main>
 
-	<div id="api">
-		<Card>
-			<CardHeader>
-				<CardTitle class="text-base">{m.docs_section_api()}</CardTitle>
-			</CardHeader>
-			<CardContent class="space-y-2">
-				<p class="text-sm">{m.docs_api_reference_body()}</p>
-				<div class="flex gap-3 text-sm">
-					<a href={docs.apiReference.openapiUiUrl} class="text-primary hover:underline"> OpenAPI UI → </a>
-					<a href={docs.apiReference.openapiSpecUrl} class="text-primary hover:underline"> openapi.json → </a>
-				</div>
-			</CardContent>
-		</Card>
-	</div>
-
-	{#each sectionsAt('after_api', docs.customSections) as section (section.id)}
-		<section class="space-y-2">
-			{#if section.title}
-				<h2 class="text-xl font-semibold tracking-tight">{section.title}</h2>
-			{/if}
-			<div class="prose prose-sm dark:prose-invert max-w-none">{@html section.bodyHtml}</div>
-		</section>
-	{/each}
-
-	{#if docs.outro.bodyHtml}
-		<div class="prose prose-sm dark:prose-invert max-w-none border-t border-border pt-6">
-			{@html docs.outro.bodyHtml}
+			<aside class="hidden lg:block">
+				<nav class="sticky top-20 space-y-1 text-sm">
+					<p class="text-xs uppercase tracking-wider text-muted-foreground mb-2">{m.docs_toc()}</p>
+					{#each docs.customSections as section (section.id)}
+						{#if section.title}
+							<a
+								href={`#section-${section.id}`}
+								class="block py-1 text-muted-foreground hover:text-foreground transition-colors"
+							>
+								{section.title}
+							</a>
+						{/if}
+					{/each}
+					{#if docs.kinds.length > 0}
+						<p class="text-xs uppercase tracking-wider text-muted-foreground mt-4 mb-2">
+							{m.docs_toc_kinds()}
+						</p>
+						{#each docs.kinds as kind (kind.key)}
+							<a
+								href={`#kind-${kind.key}`}
+								class="block py-1 text-muted-foreground hover:text-foreground transition-colors"
+							>
+								{kind.label}
+							</a>
+						{/each}
+					{/if}
+				</nav>
+			</aside>
 		</div>
-	{/if}
-
-	{#each sectionsAt('page_bottom', docs.customSections) as section (section.id)}
-		<section class="space-y-2">
-			{#if section.title}
-				<h2 class="text-xl font-semibold tracking-tight">{section.title}</h2>
-			{/if}
-			<div class="prose prose-sm dark:prose-invert max-w-none">{@html section.bodyHtml}</div>
-		</section>
-	{/each}
 	{/if}
 </div>

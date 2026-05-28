@@ -20,6 +20,18 @@
 	}
 
 	let { fields }: { fields: FieldDoc[] } = $props()
+
+	function hasConstraints(f: FieldDoc): boolean {
+		return !!(
+			f.pattern ||
+			f.minLength !== undefined ||
+			f.maxLength !== undefined ||
+			f.minimum !== undefined ||
+			f.maximum !== undefined ||
+			f.minItems !== undefined ||
+			f.maxItems !== undefined
+		)
+	}
 </script>
 
 <div class="overflow-x-auto rounded-md border border-border">
@@ -56,6 +68,28 @@
 								{#each f.enumValues as v (v)}
 									<code class="text-[10px] px-1.5 py-0.5 rounded bg-muted">{v}</code>
 								{/each}
+							</div>
+						{/if}
+						{#if hasConstraints(f)}
+							<div class="mt-1.5 flex flex-wrap gap-1 text-[10px]">
+								{#if f.pattern}
+									<code class="px-1.5 py-0.5 rounded bg-muted font-mono">/{f.pattern}/</code>
+								{/if}
+								{#if f.minLength !== undefined || f.maxLength !== undefined}
+									<code class="px-1.5 py-0.5 rounded bg-muted font-mono">
+										{f.minLength ?? 0}–{f.maxLength ?? '∞'} chars
+									</code>
+								{/if}
+								{#if f.minimum !== undefined || f.maximum !== undefined}
+									<code class="px-1.5 py-0.5 rounded bg-muted font-mono">
+										{f.minimum ?? '–∞'} ≤ x ≤ {f.maximum ?? '∞'}
+									</code>
+								{/if}
+								{#if f.minItems !== undefined || f.maxItems !== undefined}
+									<code class="px-1.5 py-0.5 rounded bg-muted font-mono">
+										{f.minItems ?? 0}–{f.maxItems ?? '∞'} items
+									</code>
+								{/if}
 							</div>
 						{/if}
 					</td>
