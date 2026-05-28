@@ -1,9 +1,13 @@
-import { stringify as yamlStringify } from 'yaml'
+import { stringify as yamlStringify, parse as yamlParse } from 'yaml'
 import { ManifestSchema } from '@tabularium/manifest'
 import type { Locale } from './i18n'
 import { getExtensionsDelta } from './manifest-schema'
 import { listLocalizedKinds } from './kinds'
+import { getLocalizedDocsConfig, type PositionMarker } from './docs-custom'
+import { renderMarkdown } from './markdown'
 import { env } from './env'
+
+export type { PositionMarker } from './docs-custom'
 
 export type FieldDoc = {
   key: string
@@ -114,6 +118,8 @@ export type KindDocSection = {
   description: string | null
   publicPageUrl: string | null
   extensionFields: FieldDoc[]
+  prosePreHtml: string | null
+  prosePostHtml: string | null
 }
 
 export type KindExample = {
@@ -124,11 +130,41 @@ export type KindExample = {
 
 export type PluginDocs = {
   meta: { generatedAt: number; schemaSourceUrl: string }
+  intro: { bodyHtml: string | null }
+  outro: { bodyHtml: string | null }
+  customSections: Array<{
+    id: string
+    title: string | null
+    bodyHtml: string
+    position: PositionMarker
+  }>
   coreFields: FieldDoc[]
   globalExtensions: FieldDoc[]
   kinds: KindDocSection[]
   examples: { perKind: KindExample[] }
   apiReference: { openapiSpecUrl: string; openapiUiUrl: string }
+}
+
+function buildCustomExample(
+  custom: { yaml?: string; json?: string },
+): { yaml: string; json: string } | null {
+  const yamlRaw = typeof custom.yaml === 'string' && custom.yaml.length > 0 ? custom.yaml : null
+  const jsonRaw = typeof custom.json === 'string' && custom.json.length > 0 ? custom.json : null
+  if (!yamlRaw && !jsonRaw) return null
+  try {
+    if (yamlRaw && jsonRaw) return { yaml: yamlRaw, json: jsonRaw }
+    if (yamlRaw) {
+      const parsed = yamlParse(yamlRaw)
+      return { yaml: yamlRaw, json: JSON.stringify(parsed, null, 2) }
+    }
+    if (jsonRaw) {
+      const parsed = JSON.parse(jsonRaw)
+      return { yaml: yamlStringify(parsed), json: jsonRaw }
+    }
+    return null
+  } catch {
+    return null
+  }
 }
 
 function deltaToSchema(delta: Record<string, Record<string, unknown>>): Record<string, unknown> {
@@ -172,24 +208,41 @@ export async function buildPluginDocs(opts: { locale: Locale }): Promise<PluginD
       description: kind.description,
       publicPageUrl: kind.publicPageEnabled ? `/c/${kind.key}` : null,
       extensionFields,
+      prosePreHtml: kind.prosePre ? renderMarkdown(kind.prosePre) : null,
+      prosePostHtml: kind.prosePost ? renderMarkdown(kind.prosePost) : null,
     })
 
-    const mergedProps: Record<string, Record<string, unknown>> = {
-      ...((coreSchema.properties as Record<string, Record<string, unknown>>) ?? {}),
-      ...(globalSchema.properties as Record<string, Record<string, unknown>>),
-      ...(kindSchema.properties as Record<string, Record<string, unknown>>),
+    const custom = kind.customExample ? buildCustomExample(kind.customExample) : null
+    if (custom) {
+      examples.push({ kindKey: kind.key, yaml: custom.yaml, json: custom.json })
+    } else {
+      const mergedProps: Record<string, Record<string, unknown>> = {
+        ...((coreSchema.properties as Record<string, Record<string, unknown>>) ?? {}),
+        ...(globalSchema.properties as Record<string, Record<string, unknown>>),
+        ...(kindSchema.properties as Record<string, Record<string, unknown>>),
+      }
+      const obj = synthesizeExample({ properties: mergedProps, fixed: { kind: kind.key } })
+      examples.push({
+        kindKey: kind.key,
+        json: JSON.stringify(obj, null, 2),
+        yaml: yamlStringify(obj),
+      })
     }
-    const obj = synthesizeExample({ properties: mergedProps, fixed: { kind: kind.key } })
-    examples.push({
-      kindKey: kind.key,
-      json: JSON.stringify(obj, null, 2),
-      yaml: yamlStringify(obj),
-    })
   }
+
+  const customCfg = getLocalizedDocsConfig(opts.locale)
 
   const baseUrl = env.BASE_URL.replace(/\/$/, '')
   return {
     meta: { generatedAt: Date.now(), schemaSourceUrl: `${baseUrl}/manifest.schema.json` },
+    intro: { bodyHtml: customCfg.intro.bodyHtml },
+    outro: { bodyHtml: customCfg.outro.bodyHtml },
+    customSections: customCfg.sections.map((s) => ({
+      id: s.id,
+      title: s.title,
+      bodyHtml: s.bodyHtml,
+      position: s.position,
+    })),
     coreFields,
     globalExtensions,
     kinds,

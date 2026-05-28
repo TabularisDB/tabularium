@@ -8,6 +8,11 @@ import {
 import { ManifestSchema } from '@tabularium/manifest'
 import { createKind, deleteKind } from '../../src/lib/kinds'
 import { setExtensionsDelta } from '../../src/lib/manifest-schema'
+import {
+  setIntroMarkdown,
+  setOutroMarkdown,
+  addCustomSection,
+} from '../../src/lib/docs-custom'
 import { clearDb } from '../helpers'
 
 describe('flattenSchemaProps', () => {
@@ -186,6 +191,89 @@ describe('buildPluginDocs', () => {
     expect(example!.json).toContain('"palette"')
     expect(example!.yaml).toContain('kind: theme')
     expect(example!.yaml).toContain('palette:')
+    await deleteKind('theme')
+  })
+})
+
+describe('buildPluginDocs — custom content', () => {
+  beforeEach(async () => {
+    await clearDb()
+    await setExtensionsDelta(null)
+  })
+
+  it('surfaces intro / outro HTML when admin has set markdown', async () => {
+    await setIntroMarkdown('# Welcome', { de: '# Willkommen' })
+    await setOutroMarkdown('Footer.', {})
+    const docs = await buildPluginDocs({ locale: 'de' })
+    expect(docs.intro.bodyHtml).toContain('Willkommen')
+    expect(docs.outro.bodyHtml).toContain('Footer.')
+  })
+
+  it('returns null intro/outro when nothing set', async () => {
+    const docs = await buildPluginDocs({ locale: 'en' })
+    expect(docs.intro.bodyHtml).toBeNull()
+    expect(docs.outro.bodyHtml).toBeNull()
+  })
+
+  it('includes custom sections with position', async () => {
+    await addCustomSection({
+      id: 'welcome',
+      title: 'Welcome',
+      body: '# Hi',
+      position: 'page_top',
+    })
+    const docs = await buildPluginDocs({ locale: 'en' })
+    expect(docs.customSections).toHaveLength(1)
+    expect(docs.customSections[0].id).toBe('welcome')
+    expect(docs.customSections[0].position).toBe('page_top')
+    expect(docs.customSections[0].bodyHtml).toContain('Hi')
+  })
+
+  it('renders kind prose pre/post as HTML', async () => {
+    await createKind({
+      key: 'theme',
+      label: 'Theme',
+      description: null,
+      prosePre: 'Notes **before**.',
+      prosePost: 'Notes _after_.',
+    })
+    const docs = await buildPluginDocs({ locale: 'en' })
+    const themeSection = docs.kinds.find((k) => k.key === 'theme')
+    expect(themeSection?.prosePreHtml).toContain('<strong>before</strong>')
+    expect(themeSection?.prosePostHtml).toContain('<em>after</em>')
+    await deleteKind('theme')
+  })
+
+  it('uses customExample.yaml verbatim and derives JSON', async () => {
+    await createKind({
+      key: 'theme',
+      label: 'Theme',
+      description: null,
+      customExample: { yaml: 'name: my-plugin\nkind: theme\nversion: 1.0.0\n' },
+    })
+    const docs = await buildPluginDocs({ locale: 'en' })
+    const example = docs.examples.perKind.find((e) => e.kindKey === 'theme')
+    expect(example?.yaml).toBe('name: my-plugin\nkind: theme\nversion: 1.0.0\n')
+    expect(JSON.parse(example!.json)).toEqual({
+      name: 'my-plugin',
+      kind: 'theme',
+      version: '1.0.0',
+    })
+    await deleteKind('theme')
+  })
+
+  it('uses customExample.json when only json is provided', async () => {
+    await createKind({
+      key: 'theme',
+      label: 'Theme',
+      description: null,
+      customExample: { json: '{"name":"x","kind":"theme"}' },
+    })
+    const docs = await buildPluginDocs({ locale: 'en' })
+    const example = docs.examples.perKind.find((e) => e.kindKey === 'theme')
+    expect(example?.json).toBe('{"name":"x","kind":"theme"}')
+    expect(example?.yaml).toContain('name: x')
+    expect(example?.yaml).toContain('kind: theme')
     await deleteKind('theme')
   })
 })
