@@ -5,5 +5,5 @@ dist/
 .env.local
 
 # Internal working files — not part of the public repo
-docs/
-TODO.md
+/docs/
+/TODO.md
