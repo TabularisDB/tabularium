@@ -719,6 +719,7 @@
 	"login_title": "Se connecter",
 	"login_token_note": "Les tokens sont chiffrés au repos. Nous voyons uniquement ton nom d'utilisateur et un token d'accès servant à vérifier la propriété d'un dépôt lorsque tu soumets un plugin.",
 	"nav_admin": "Admin",
+	"nav_docs": "Docs",
 	"nav_plugins": "Plugins",
 	"nav_requests": "Demandes",
 	"nav_settings": "Paramètres",

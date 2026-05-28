@@ -106,6 +106,12 @@
 			<div class="font-medium text-foreground text-xs uppercase tracking-wider">{m.footer_developers()}</div>
 			<div class="flex flex-col gap-2.5 text-muted-foreground">
 				<a
+					href="/docs/plugin-development"
+					class="hover:text-foreground transition-colors w-fit"
+				>
+					{m.docs_plugin_dev_title()}
+				</a>
+				<a
 					href="/openapi"
 					data-sveltekit-reload
 					class="hover:text-foreground inline-flex items-center gap-1.5 transition-colors w-fit"

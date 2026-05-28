@@ -719,6 +719,7 @@
 	"login_title": "登录",
 	"login_token_note": "Token 加密存储。我们只看到你的用户名和一个 access token,用于在提交插件时验证仓库所有权。",
 	"nav_admin": "管理",
+	"nav_docs": "文档",
 	"nav_plugins": "插件",
 	"nav_requests": "需求",
 	"nav_settings": "设置",

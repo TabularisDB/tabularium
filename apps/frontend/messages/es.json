@@ -719,6 +719,7 @@
 	"login_title": "Iniciar sesión",
 	"login_token_note": "Los tokens se cifran en reposo. Solo vemos tu nombre de usuario y un token de acceso para verificar la propiedad del repositorio cuando envías un plugin.",
 	"nav_admin": "Admin",
+	"nav_docs": "Documentación",
 	"nav_plugins": "Plugins",
 	"nav_requests": "Solicitudes",
 	"nav_settings": "Ajustes",

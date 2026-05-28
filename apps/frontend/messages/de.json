@@ -719,6 +719,7 @@
 	"login_title": "Anmelden",
 	"login_token_note": "Tokens werden verschlüsselt gespeichert. Wir sehen nur deinen Benutzernamen und einen Access-Token, mit dem wir den Besitz eines Repositorys bei der Einreichung prüfen.",
 	"nav_admin": "Admin",
+	"nav_docs": "Docs",
 	"nav_plugins": "Plugins",
 	"nav_requests": "Wünsche",
 	"nav_settings": "Einstellungen",

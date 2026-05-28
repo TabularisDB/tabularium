@@ -719,6 +719,7 @@
 	"login_title": "Sign in",
 	"login_token_note": "Tokens are encrypted at rest. We only see your username and an access token used to verify repository ownership when you submit a plugin.",
 	"nav_admin": "Admin",
+	"nav_docs": "Docs",
 	"nav_plugins": "Plugins",
 	"nav_requests": "Requests",
 	"nav_settings": "Settings",

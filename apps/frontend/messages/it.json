@@ -719,6 +719,7 @@
 	"login_title": "Accedi",
 	"login_token_note": "I token sono cifrati a riposo. Vediamo solo il tuo nome utente e un token di accesso usato per verificare la proprietà del repository quando invii un plugin.",
 	"nav_admin": "Admin",
+	"nav_docs": "Docs",
 	"nav_plugins": "Plugin",
 	"nav_requests": "Richieste",
 	"nav_settings": "Impostazioni",
