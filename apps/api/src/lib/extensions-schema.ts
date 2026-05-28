@@ -3,6 +3,7 @@
 // it without creating an import cycle (kinds → schema → kinds).
 import { ManifestSchema } from '@tabularium/manifest'
 import type { ExtensionsDelta, JsonSchemaProperty } from '@tabularium/manifest'
+import { SUPPORTED_LOCALES, type Locale } from './i18n'
 
 export type { ExtensionsDelta, JsonSchemaProperty }
 
@@ -30,12 +31,32 @@ function safetyCheck(node: unknown, depth: number, path: string): void {
   if (typeof node.pattern === 'string' && node.pattern.length > MAX_PATTERN_LEN) {
     throw new Error(`${path}.pattern: exceeds ${MAX_PATTERN_LEN} chars`)
   }
+  validateXTranslations(node, path)
   if (isPlainObject(node.items)) safetyCheck(node.items, depth + 1, `${path}.items`)
   if (isPlainObject(node.properties)) {
     const entries = Object.entries(node.properties)
     if (entries.length > MAX_PROPS) throw new Error(`${path}.properties: more than ${MAX_PROPS} keys`)
     for (const [name, sub] of entries) {
       safetyCheck(sub, depth + 1, `${path}.properties.${name}`)
+    }
+  }
+}
+
+function validateXTranslations(node: Record<string, unknown>, path: string): void {
+  const raw = (node as Record<string, unknown>)['x-translations']
+  if (raw === undefined) return
+  if (!isPlainObject(raw)) {
+    throw new Error(`${path}.x-translations must be a plain object`)
+  }
+  for (const [locale, value] of Object.entries(raw)) {
+    if (!SUPPORTED_LOCALES.includes(locale as Locale)) {
+      throw new Error(`${path}.x-translations: unsupported locale "${locale}"`)
+    }
+    if (typeof value !== 'string') {
+      throw new Error(`${path}.x-translations.${locale} must be a string`)
+    }
+    if (value.length > MAX_DESCRIPTION_LEN) {
+      throw new Error(`${path}.x-translations.${locale} exceeds ${MAX_DESCRIPTION_LEN} chars`)
     }
   }
 }
