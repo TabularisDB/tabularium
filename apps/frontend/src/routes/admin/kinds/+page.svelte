@@ -4,6 +4,7 @@
 	import Plus from '@lucide/svelte/icons/plus'
 	import Save from '@lucide/svelte/icons/save'
 	import Trash2 from '@lucide/svelte/icons/trash-2'
+	import Languages from '@lucide/svelte/icons/languages'
 	import Card from '$components/ui/Card.svelte'
 	import CardContent from '$components/ui/CardContent.svelte'
 	import CardDescription from '$components/ui/CardDescription.svelte'
@@ -17,6 +18,7 @@
 	import ExtensionsEditor, { type ExtensionsDelta } from '$components/admin/ExtensionsEditor.svelte'
 	import { eden } from '$lib/eden'
 	import type { Kind } from '$lib/types'
+	import { i18n, LOCALE_LABELS, type Locale } from '$lib/stores/i18n.svelte'
 	import { m } from '$lib/paraglide/messages'
 
 	type KindRow = Kind & {
@@ -26,6 +28,11 @@
 		publicPageEnabled: boolean
 		publicPageHero: string
 		publicPageIntro: string
+		labelTranslationsMap: Record<Locale, string>
+		descriptionTranslationsMap: Record<Locale, string>
+		heroTranslationsMap: Record<Locale, string>
+		introTranslationsMap: Record<Locale, string>
+		activeLocale: Locale
 	}
 
 	let kinds = $state<KindRow[]>([])
@@ -40,6 +47,26 @@
 
 	onMount(loadKinds)
 
+	function emptyByLocale(): Record<Locale, string> {
+		return i18n.availableLocales.reduce(
+			(acc, l) => {
+				acc[l] = ''
+				return acc
+			},
+			{} as Record<Locale, string>,
+		)
+	}
+
+	function hydrateMap(source: Record<string, string> | undefined): Record<Locale, string> {
+		const out = emptyByLocale()
+		if (!source) return out
+		for (const l of i18n.availableLocales) {
+			const v = source[l]
+			if (typeof v === 'string') out[l] = v
+		}
+		return out
+	}
+
 	function extractError(error: unknown): string {
 		const e = error as { value?: unknown; status?: number }
 		if (typeof e.value === 'string') return e.value
@@ -52,7 +79,23 @@
 		try {
 			const { data, error } = await eden.api.admin.kinds.get()
 			if (error) throw error
-			const list = (data as { kinds: Array<Kind & { extensionsSchema?: Record<string, unknown> | null }> }).kinds
+			const list = (
+				data as {
+					kinds: Array<
+						Kind & {
+							extensionsSchema?: Record<string, unknown> | null
+							labelTranslations?: Record<string, string>
+							descriptionTranslations?: Record<string, string>
+							publicPageCopy?: {
+								hero: string | null
+								heroTranslations?: Record<string, string>
+								intro: string | null
+								introTranslations?: Record<string, string>
+							} | null
+						}
+					>
+				}
+			).kinds
 			kinds = list.map((k) => ({
 				...k,
 				extensionsSchema: (k.extensionsSchema as ExtensionsDelta | null) ?? {},
@@ -61,6 +104,11 @@
 				publicPageEnabled: k.publicPageEnabled === true,
 				publicPageHero: k.publicPageCopy?.hero ?? '',
 				publicPageIntro: k.publicPageCopy?.intro ?? '',
+				labelTranslationsMap: hydrateMap(k.labelTranslations),
+				descriptionTranslationsMap: hydrateMap(k.descriptionTranslations),
+				heroTranslationsMap: hydrateMap(k.publicPageCopy?.heroTranslations),
+				introTranslationsMap: hydrateMap(k.publicPageCopy?.introTranslations),
+				activeLocale: i18n.defaultLocale,
 			}))
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : m.admin_kinds_load_failed())
@@ -93,21 +141,58 @@
 		}
 	}
 
+	function collectTranslations(
+		map: Record<Locale, string>,
+	): Partial<Record<Locale, string>> | undefined {
+		const out: Partial<Record<Locale, string>> = {}
+		for (const l of i18n.availableLocales) {
+			if (l === i18n.defaultLocale) continue
+			const v = map[l]?.trim()
+			if (v) out[l] = v
+		}
+		return Object.keys(out).length > 0 ? out : undefined
+	}
+
 	async function saveKind(k: KindRow) {
 		savingKey = k.key
 		try {
-			const payload = Object.keys(k.extensionsSchema).length === 0 ? null : k.extensionsSchema
+			const extPayload = Object.keys(k.extensionsSchema).length === 0 ? null : k.extensionsSchema
 			const heroTrim = k.publicPageHero.trim()
 			const introTrim = k.publicPageIntro.trim()
-			const publicPageCopy = heroTrim || introTrim ? { hero: heroTrim || null, intro: introTrim || null } : null
-			const { error } = await eden.api.admin.kinds({ key: k.key }).put({
+			const labelTranslations = collectTranslations(k.labelTranslationsMap)
+			const descriptionTranslations = collectTranslations(k.descriptionTranslationsMap)
+			const heroTranslations = collectTranslations(k.heroTranslationsMap)
+			const introTranslations = collectTranslations(k.introTranslationsMap)
+
+			let publicPageCopy:
+				| {
+						hero: string | null
+						intro: string | null
+						heroTranslations?: Partial<Record<Locale, string>>
+						introTranslations?: Partial<Record<Locale, string>>
+				  }
+				| null = null
+			if (heroTrim || introTrim || heroTranslations || introTranslations) {
+				publicPageCopy = {
+					hero: heroTrim || null,
+					intro: introTrim || null,
+					...(heroTranslations ? { heroTranslations } : {}),
+					...(introTranslations ? { introTranslations } : {}),
+				}
+			}
+
+			const body: Parameters<ReturnType<typeof eden.api.admin.kinds>['put']>[0] = {
 				key: k.key,
 				label: k.label,
 				description: k.description,
-				extensionsSchema: payload,
+				extensionsSchema: extPayload,
 				publicPageEnabled: k.publicPageEnabled,
 				publicPageCopy,
-			})
+				...(labelTranslations ? { labelTranslations } : {}),
+				...(descriptionTranslations ? { descriptionTranslations } : {}),
+			}
+
+			const { error } = await eden.api.admin.kinds({ key: k.key }).put(body)
 			if (error) {
 				toast.error(extractError(error))
 				return
@@ -156,6 +241,10 @@
 			saveKind(k)
 		}
 	}
+
+	function isFilled(map: Record<Locale, string>, locale: Locale) {
+		return Boolean(map[locale]?.trim())
+	}
 </script>
 
 <AdminPageHeader title={m.admin_kinds_title()} subtitle={m.admin_kinds_subtitle()} />
@@ -173,17 +262,81 @@
 						<CardTitle class="text-base font-mono">{k.key}</CardTitle>
 					</CardHeader>
 					<CardContent class="space-y-3">
+						<div class="flex flex-wrap items-center gap-1">
+							<Languages class="h-3.5 w-3.5 text-muted-foreground mr-1" />
+							<span class="text-xs font-medium text-muted-foreground mr-2"
+								>{m.admin_kinds_translations()}</span
+							>
+							{#each i18n.availableLocales as l (l)}
+								<button
+									type="button"
+									class={[
+										'rounded-md border px-2.5 py-1 text-xs transition-colors',
+										k.activeLocale === l
+											? 'border-primary text-foreground bg-primary/10'
+											: 'border-border text-muted-foreground hover:bg-accent/50',
+									].join(' ')}
+									onclick={() => (k.activeLocale = l)}
+								>
+									{LOCALE_LABELS[l] ?? l}
+									{#if l === i18n.defaultLocale}
+										<span class="ml-1 text-[10px] uppercase tracking-wider text-primary"
+											>{m.admin_branding_default()}</span
+										>
+									{:else if isFilled(k.labelTranslationsMap, l) || isFilled(k.descriptionTranslationsMap, l) || isFilled(k.heroTranslationsMap, l) || isFilled(k.introTranslationsMap, l)}
+										<span class="ml-1 text-[10px] uppercase tracking-wider text-success">·</span>
+									{/if}
+								</button>
+							{/each}
+						</div>
+
 						<label class="block space-y-1">
-							<span class="text-xs font-medium text-muted-foreground">{m.admin_kinds_field_label()}</span>
-							<Input bind:value={k.label} onkeydown={(e) => onEditKey(e, k)} />
+							<span class="text-xs font-medium text-muted-foreground"
+								>{k.activeLocale === i18n.defaultLocale
+									? m.admin_kinds_field_label()
+									: m.admin_kinds_label_in_locale({
+											locale: LOCALE_LABELS[k.activeLocale] ?? k.activeLocale,
+										})}</span
+							>
+							{#if k.activeLocale === i18n.defaultLocale}
+								<Input bind:value={k.label} maxlength={60} onkeydown={(e) => onEditKey(e, k)} />
+							{:else}
+								<Input
+									bind:value={k.labelTranslationsMap[k.activeLocale]}
+									maxlength={60}
+									placeholder={m.admin_branding_fallback_placeholder({
+										locale: LOCALE_LABELS[i18n.defaultLocale] ?? i18n.defaultLocale,
+									})}
+									onkeydown={(e) => onEditKey(e, k)}
+								/>
+							{/if}
 						</label>
+
 						<label class="block space-y-1">
-							<span class="text-xs font-medium text-muted-foreground">{m.admin_kinds_field_description()}</span>
-							<Input
-								value={k.description ?? ''}
-								oninput={(e) => (k.description = (e.currentTarget as HTMLInputElement).value)}
-								onkeydown={(e) => onEditKey(e, k)}
-							/>
+							<span class="text-xs font-medium text-muted-foreground"
+								>{k.activeLocale === i18n.defaultLocale
+									? m.admin_kinds_field_description()
+									: m.admin_kinds_description_in_locale({
+											locale: LOCALE_LABELS[k.activeLocale] ?? k.activeLocale,
+										})}</span
+							>
+							{#if k.activeLocale === i18n.defaultLocale}
+								<Input
+									value={k.description ?? ''}
+									maxlength={280}
+									oninput={(e) => (k.description = (e.currentTarget as HTMLInputElement).value)}
+									onkeydown={(e) => onEditKey(e, k)}
+								/>
+							{:else}
+								<Input
+									bind:value={k.descriptionTranslationsMap[k.activeLocale]}
+									maxlength={280}
+									placeholder={m.admin_branding_fallback_placeholder({
+										locale: LOCALE_LABELS[i18n.defaultLocale] ?? i18n.defaultLocale,
+									})}
+									onkeydown={(e) => onEditKey(e, k)}
+								/>
+							{/if}
 						</label>
 
 						<CollapsibleRow bind:expanded={k.extOpen} name={m.admin_kinds_ext_toggle()}>
@@ -221,12 +374,44 @@
 							</label>
 							{#if k.publicPageEnabled}
 								<label class="block space-y-1 mt-3">
-									<span class="text-xs font-medium text-muted-foreground">{m.admin_kinds_public_page_hero()}</span>
-									<Input bind:value={k.publicPageHero} placeholder={k.label} maxlength={80} />
+									<span class="text-xs font-medium text-muted-foreground"
+										>{k.activeLocale === i18n.defaultLocale
+											? m.admin_kinds_public_page_hero()
+											: m.admin_kinds_hero_in_locale({
+													locale: LOCALE_LABELS[k.activeLocale] ?? k.activeLocale,
+												})}</span
+									>
+									{#if k.activeLocale === i18n.defaultLocale}
+										<Input bind:value={k.publicPageHero} placeholder={k.label} maxlength={80} />
+									{:else}
+										<Input
+											bind:value={k.heroTranslationsMap[k.activeLocale]}
+											maxlength={80}
+											placeholder={m.admin_branding_fallback_placeholder({
+												locale: LOCALE_LABELS[i18n.defaultLocale] ?? i18n.defaultLocale,
+											})}
+										/>
+									{/if}
 								</label>
 								<label class="block space-y-1 mt-3">
-									<span class="text-xs font-medium text-muted-foreground">{m.admin_kinds_public_page_intro()}</span>
-									<Input bind:value={k.publicPageIntro} placeholder={k.description ?? ''} maxlength={600} />
+									<span class="text-xs font-medium text-muted-foreground"
+										>{k.activeLocale === i18n.defaultLocale
+											? m.admin_kinds_public_page_intro()
+											: m.admin_kinds_intro_in_locale({
+													locale: LOCALE_LABELS[k.activeLocale] ?? k.activeLocale,
+												})}</span
+									>
+									{#if k.activeLocale === i18n.defaultLocale}
+										<Input bind:value={k.publicPageIntro} placeholder={k.description ?? ''} maxlength={600} />
+									{:else}
+										<Input
+											bind:value={k.introTranslationsMap[k.activeLocale]}
+											maxlength={600}
+											placeholder={m.admin_branding_fallback_placeholder({
+												locale: LOCALE_LABELS[i18n.defaultLocale] ?? i18n.defaultLocale,
+											})}
+										/>
+									{/if}
 								</label>
 							{/if}
 						</CollapsibleRow>

@@ -86,13 +86,17 @@ export type PluginStats = {
 
 export type KindPublicPageCopy = {
   hero: string | null
+  heroTranslations?: Record<string, string>
   intro: string | null
+  introTranslations?: Record<string, string>
 }
 
 export type Kind = {
   key: string
   label: string
+  labelTranslations?: Record<string, string>
   description: string | null
+  descriptionTranslations?: Record<string, string>
   publicPageEnabled?: boolean
   publicPageCopy?: KindPublicPageCopy | null
 }
