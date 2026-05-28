@@ -18,6 +18,11 @@
 
 allow_k8s_contexts(["tabularium", "minikube"])
 
+# Dev-only stack — Tilt's secret scrubber matches POSTGRES_USER="tabularium"
+# as a substring of the "tabularium-dev" namespace name, mangling every log
+# line. No real secrets live here, so disable scrubbing wholesale.
+secret_settings(disable_scrub=True)
+
 env_deps = [
     ".env.example",
     ".env",
@@ -31,14 +36,15 @@ env_deps = [
 for env_file in env_deps:
     watch_file(env_file)
 
+# render-k8s-env.ts emits the tabularium-env Secret AND the api/frontend/migrate
+# manifests, each stamped with a `checksum/env` annotation derived from the
+# Secret content. Any change to a .env file → new hash → K8s rolls the pod
+# template natively. No `local_resource` rollout-restart hack needed.
 k8s_yaml([
     "deploy/dev/namespace.yaml",
     "deploy/dev/postgres.yaml",
     "deploy/dev/dragonfly.yaml",
     local("bun scripts/render-k8s-env.ts"),
-    "deploy/dev/db-migrate-job.yaml",
-    "deploy/dev/api.yaml",
-    "deploy/dev/frontend.yaml",
 ])
 
 # Files that should trigger a fresh `bun install` rather than a live sync.

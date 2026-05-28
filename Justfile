@@ -33,6 +33,28 @@ nuke:
     -tilt down
     minikube delete -p {{minikube_profile}}
 
+# Wipe the dev DB so the next boot starts at /init with a fresh admin record.
+# Postgres PVC, dragonfly cache, and minikube itself stay intact — much faster
+# than `just nuke`. Use this when bootstrap creds drift or the schema is wedged.
+reset:
+    #!/usr/bin/env bash
+    set -euo pipefail
+    ns=tabularium-dev
+    echo "→ Scaling tabularium-api to 0 so we can drop schemas without lock waits..."
+    kubectl -n $ns scale deploy/tabularium-api --replicas=0
+    kubectl -n $ns wait --for=delete pod -l app=tabularium-api --timeout=30s 2>/dev/null || true
+    echo "→ Dropping public + drizzle schemas..."
+    kubectl -n $ns exec deploy/postgres -- psql -U tabularium -d tabularium -v ON_ERROR_STOP=1 -c \
+      "DROP SCHEMA IF EXISTS public CASCADE; DROP SCHEMA IF EXISTS drizzle CASCADE; CREATE SCHEMA public; GRANT ALL ON SCHEMA public TO tabularium;"
+    echo "→ Flushing dragonfly cache..."
+    kubectl -n $ns exec deploy/dragonfly -- redis-cli FLUSHALL >/dev/null || true
+    echo "→ Bringing tabularium-api back up..."
+    kubectl -n $ns scale deploy/tabularium-api --replicas=1
+    kubectl -n $ns rollout status deploy/tabularium-api --timeout=120s
+    echo ""
+    echo "✓ Reset complete. Open http://localhost:3000/init and click through the wizard."
+    echo "  Bootstrap login: admin@example.com / \$BOOTSTRAP_PASSWORD (default: tabularium-dev)"
+
 # Apply pending drizzle migrations against the in-cluster postgres.
 migrate:
     kubectl -n tabularium-dev exec deploy/tabularium-api -- bun run migrate

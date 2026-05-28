@@ -21,6 +21,11 @@ export default defineConfig({
       '/api': process.env.API_PROXY_TARGET ?? 'http://localhost:3000',
       '/auth': process.env.API_PROXY_TARGET ?? 'http://localhost:3000',
       '/openapi': process.env.API_PROXY_TARGET ?? 'http://localhost:3000',
+      // Static-plugin-served upload assets (logos, favicons, plugin images).
+      // Without this, the browser hits vite for /uploads/* and gets the SPA
+      // fallback index.html — broken images in the admin previews and in the
+      // public header/footer.
+      '/uploads': process.env.API_PROXY_TARGET ?? 'http://localhost:3000',
     },
   },
   optimizeDeps: {
