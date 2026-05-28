@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'bun:test'
-import { flattenSchemaProps, type FieldDoc } from '../../src/lib/plugin-docs'
+import { flattenSchemaProps, synthesizeExample, type FieldDoc } from '../../src/lib/plugin-docs'
 import { ManifestSchema } from '@tabularium/manifest'
 
 describe('flattenSchemaProps', () => {
@@ -73,5 +73,64 @@ describe('flattenSchemaProps', () => {
     })
     expect(fields[0].type).toBe('enum')
     expect(fields[0].enumValues).toEqual(['a', 'b'])
+  })
+})
+
+describe('synthesizeExample', () => {
+  it('produces values for every property in the schema', () => {
+    const obj = synthesizeExample({
+      properties: {
+        name: { type: 'string' },
+        version: { type: 'string' },
+        kind: { type: 'string' },
+        tags: { type: 'array', items: { type: 'string' } },
+        flag: { type: 'boolean' },
+        mode: { type: 'string', enum: ['fast', 'slow'] },
+      },
+    })
+    expect(obj.name).toBe('example')
+    expect(obj.tags).toEqual(['example'])
+    expect(obj.flag).toBe(true)
+    expect(obj.mode).toBe('fast')
+  })
+
+  it('uses format-aware placeholders for known formats', () => {
+    const obj = synthesizeExample({
+      properties: {
+        email: { type: 'string', format: 'email' },
+        url: { type: 'string', format: 'uri' },
+      },
+    })
+    expect(obj.email).toBe('name@example.com')
+    expect(obj.url).toBe('https://example.com')
+  })
+
+  it('recurses into nested object properties', () => {
+    const obj = synthesizeExample({
+      properties: {
+        support: {
+          type: 'object',
+          properties: { email: { type: 'string' }, url: { type: 'string' } },
+        },
+      },
+    })
+    expect((obj.support as Record<string, unknown>).email).toBe('example')
+  })
+
+  it('honours an explicit example annotation', () => {
+    const obj = synthesizeExample({
+      properties: {
+        license: { type: 'string', example: 'MIT' },
+      },
+    })
+    expect(obj.license).toBe('MIT')
+  })
+
+  it('overrides with kindFixedValue (used for the kind: prop)', () => {
+    const obj = synthesizeExample({
+      properties: { kind: { type: 'string' } },
+      fixed: { kind: 'theme' },
+    })
+    expect(obj.kind).toBe('theme')
   })
 })
