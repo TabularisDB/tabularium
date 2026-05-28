@@ -10,6 +10,13 @@
 		enumValues?: string[]
 		format?: string
 		deprecated?: boolean
+		pattern?: string
+		minLength?: number
+		maxLength?: number
+		minimum?: number
+		maximum?: number
+		minItems?: number
+		maxItems?: number
 	}
 
 	let { fields }: { fields: FieldDoc[] } = $props()

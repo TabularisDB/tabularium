@@ -17,6 +17,13 @@ export type FieldDoc = {
   enumValues?: string[]
   format?: string
   deprecated?: boolean
+  pattern?: string
+  minLength?: number
+  maxLength?: number
+  minimum?: number
+  maximum?: number
+  minItems?: number
+  maxItems?: number
 }
 
 type FlattenInput = {
@@ -66,6 +73,13 @@ export function flattenSchemaProps(input: FlattenInput): FieldDoc[] {
       ...(enumValues ? { enumValues } : {}),
       ...(typeof node.format === 'string' ? { format: node.format } : {}),
       ...(node.deprecated === true ? { deprecated: true } : {}),
+      ...(typeof node.pattern === 'string' ? { pattern: node.pattern } : {}),
+      ...(typeof node.minLength === 'number' ? { minLength: node.minLength } : {}),
+      ...(typeof node.maxLength === 'number' ? { maxLength: node.maxLength } : {}),
+      ...(typeof node.minimum === 'number' ? { minimum: node.minimum } : {}),
+      ...(typeof node.maximum === 'number' ? { maximum: node.maximum } : {}),
+      ...(typeof node.minItems === 'number' ? { minItems: node.minItems } : {}),
+      ...(typeof node.maxItems === 'number' ? { maxItems: node.maxItems } : {}),
     })
   }
   return out

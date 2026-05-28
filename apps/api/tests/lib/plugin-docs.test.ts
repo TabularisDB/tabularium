@@ -268,3 +268,57 @@ describe('buildPluginDocs — custom content', () => {
     await deleteKind('theme')
   })
 })
+
+describe('flattenSchemaProps — constraints', () => {
+  it('extracts pattern, minLength, maxLength', () => {
+    const fields = flattenSchemaProps({
+      schema: {
+        properties: {
+          slug: { type: 'string', minLength: 1, maxLength: 64, pattern: '^[a-z]+$' },
+        },
+      },
+      requiredOverride: null,
+      locale: 'en',
+    })
+    expect(fields[0].pattern).toBe('^[a-z]+$')
+    expect(fields[0].minLength).toBe(1)
+    expect(fields[0].maxLength).toBe(64)
+  })
+
+  it('extracts minItems / maxItems on arrays', () => {
+    const fields = flattenSchemaProps({
+      schema: {
+        properties: { tags: { type: 'array', items: { type: 'string' }, maxItems: 16 } },
+      },
+      requiredOverride: null,
+      locale: 'en',
+    })
+    expect(fields[0].maxItems).toBe(16)
+  })
+
+  it('extracts minimum / maximum on numbers', () => {
+    const fields = flattenSchemaProps({
+      schema: {
+        properties: { ttl: { type: 'integer', minimum: 0, maximum: 86400 } },
+      },
+      requiredOverride: null,
+      locale: 'en',
+    })
+    expect(fields[0].minimum).toBe(0)
+    expect(fields[0].maximum).toBe(86400)
+  })
+
+  it('surfaces description from ManifestSchema core fields', () => {
+    // sanity check that the core schema annotations are flowing through
+    const fields = flattenSchemaProps({
+      schema: ManifestSchema as unknown as Record<string, unknown>,
+      requiredOverride: null,
+      locale: 'en',
+    })
+    const name = fields.find((f) => f.key === 'name')
+    expect(name?.description).toBeTruthy()
+    expect(name?.description?.length ?? 0).toBeGreaterThan(20)
+    expect(name?.pattern).toBe('^[a-z][a-z0-9-]*$')
+    expect(name?.maxLength).toBe(64)
+  })
+})
