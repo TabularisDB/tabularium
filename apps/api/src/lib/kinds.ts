@@ -1,15 +1,22 @@
 import { getSetting, setSetting } from './settings'
 import { validateExtensionsDelta, type ExtensionsDelta } from './extensions-schema'
+import { SUPPORTED_LOCALES, type Locale } from './i18n'
+
+type LocalizedString = Partial<Record<Locale, string>>
 
 export type KindPublicPageCopy = {
   hero: string | null
+  heroTranslations?: LocalizedString
   intro: string | null
+  introTranslations?: LocalizedString
 }
 
 export type KindDef = {
   key: string
   label: string
+  labelTranslations?: LocalizedString
   description: string | null
+  descriptionTranslations?: LocalizedString
   extensionsSchema?: ExtensionsDelta | null
   /**
    * When true the registry serves a dedicated catalogue page at /c/:key
@@ -40,6 +47,31 @@ const DESC_MAX = 280
 const HERO_MAX = 80
 const INTRO_MAX = 600
 
+function validateTranslationMap(value: unknown, max: number, field: string): LocalizedString | undefined {
+  if (value === undefined) return undefined
+  if (value === null) return undefined
+  if (typeof value !== 'object' || Array.isArray(value)) {
+    throw new KindError('invalid', `${field} must be an object of locale→string`)
+  }
+  const out: LocalizedString = {}
+  for (const [locale, raw] of Object.entries(value as Record<string, unknown>)) {
+    if (!SUPPORTED_LOCALES.includes(locale as Locale)) {
+      throw new KindError('invalid', `${field}: unsupported locale "${locale}"`)
+    }
+    if (raw === undefined || raw === null || raw === '') continue
+    if (typeof raw !== 'string') {
+      throw new KindError('invalid', `${field}.${locale} must be a string`)
+    }
+    const trimmed = raw.trim()
+    if (trimmed.length === 0) continue
+    if (trimmed.length > max) {
+      throw new KindError('invalid', `${field}.${locale} max ${max} chars`)
+    }
+    out[locale as Locale] = trimmed
+  }
+  return Object.keys(out).length > 0 ? out : undefined
+}
+
 export function validateKindDef(input: unknown): KindDef {
   if (!input || typeof input !== 'object' || Array.isArray(input)) {
     throw new KindError('invalid', 'kind definition must be an object')
@@ -64,6 +96,12 @@ export function validateKindDef(input: unknown): KindDef {
   } else {
     description = descRaw
   }
+  const labelTranslations = validateTranslationMap(o.labelTranslations, LABEL_MAX, 'labelTranslations')
+  const descriptionTranslations = validateTranslationMap(
+    o.descriptionTranslations,
+    DESC_MAX,
+    'descriptionTranslations',
+  )
   let extensionsSchema: ExtensionsDelta | null | undefined
   if (o.extensionsSchema !== undefined) {
     if (o.extensionsSchema === null) {
@@ -90,14 +128,26 @@ export function validateKindDef(input: unknown): KindDef {
       const copy = o.publicPageCopy as Record<string, unknown>
       const hero = trimOrNull(copy.hero, HERO_MAX, 'publicPageCopy.hero')
       const intro = trimOrNull(copy.intro, INTRO_MAX, 'publicPageCopy.intro')
-      publicPageCopy = hero || intro ? { hero, intro } : null
+      const heroTranslations = validateTranslationMap(copy.heroTranslations, HERO_MAX, 'publicPageCopy.heroTranslations')
+      const introTranslations = validateTranslationMap(copy.introTranslations, INTRO_MAX, 'publicPageCopy.introTranslations')
+      publicPageCopy =
+        hero || intro || heroTranslations || introTranslations
+          ? {
+              hero,
+              intro,
+              ...(heroTranslations ? { heroTranslations } : {}),
+              ...(introTranslations ? { introTranslations } : {}),
+            }
+          : null
     }
   }
 
   return {
     key,
     label,
+    ...(labelTranslations ? { labelTranslations } : {}),
     description,
+    ...(descriptionTranslations ? { descriptionTranslations } : {}),
     ...(extensionsSchema !== undefined ? { extensionsSchema } : {}),
     ...(publicPageEnabled ? { publicPageEnabled } : {}),
     ...(publicPageCopy !== undefined ? { publicPageCopy } : {}),

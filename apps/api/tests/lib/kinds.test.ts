@@ -221,3 +221,74 @@ describe('deleteKind', () => {
     }
   })
 })
+
+describe('validateKindDef — translations', () => {
+  it('round-trips labelTranslations', () => {
+    const def = validateKindDef({
+      key: 'theme',
+      label: 'Theme',
+      description: null,
+      labelTranslations: { de: 'Thema', fr: 'Thème' },
+    })
+    expect(def.labelTranslations).toEqual({ de: 'Thema', fr: 'Thème' })
+  })
+
+  it('round-trips descriptionTranslations', () => {
+    const def = validateKindDef({
+      key: 'theme',
+      label: 'Theme',
+      description: 'Visual theme',
+      descriptionTranslations: { de: 'Visuelles Thema' },
+    })
+    expect(def.descriptionTranslations).toEqual({ de: 'Visuelles Thema' })
+  })
+
+  it('round-trips publicPageCopy translations', () => {
+    const def = validateKindDef({
+      key: 'theme',
+      label: 'Theme',
+      description: null,
+      publicPageCopy: {
+        hero: 'Browse themes',
+        heroTranslations: { de: 'Themen durchstöbern' },
+        intro: 'All available themes.',
+        introTranslations: { de: 'Alle verfügbaren Themen.' },
+      },
+    })
+    expect(def.publicPageCopy?.heroTranslations).toEqual({ de: 'Themen durchstöbern' })
+    expect(def.publicPageCopy?.introTranslations).toEqual({ de: 'Alle verfügbaren Themen.' })
+  })
+
+  it('rejects unknown locale in labelTranslations', () => {
+    expect(() =>
+      validateKindDef({
+        key: 'theme',
+        label: 'Theme',
+        description: null,
+        labelTranslations: { 'xx-YY': 'bogus' },
+      }),
+    ).toThrow(KindError)
+  })
+
+  it('rejects oversize translation', () => {
+    const tooLong = 'x'.repeat(61) // LABEL_MAX = 60
+    expect(() =>
+      validateKindDef({
+        key: 'theme',
+        label: 'Theme',
+        description: null,
+        labelTranslations: { de: tooLong },
+      }),
+    ).toThrow(KindError)
+  })
+
+  it('drops empty-string entries from translation maps', () => {
+    const def = validateKindDef({
+      key: 'theme',
+      label: 'Theme',
+      description: null,
+      labelTranslations: { de: 'Thema', fr: '' },
+    })
+    expect(def.labelTranslations).toEqual({ de: 'Thema' })
+  })
+})
