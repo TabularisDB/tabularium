@@ -120,6 +120,72 @@ describe('POST /api/admin/kinds', () => {
     )
     expect(res.status).toBe(409)
   })
+
+  it('accepts labelTranslations and descriptionTranslations', async () => {
+    const token = await adminToken()
+    const app = await buildApp()
+    const res = await app.handle(
+      new Request('http://localhost/api/admin/kinds', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+        body: JSON.stringify({
+          key: 'theme',
+          label: 'Theme',
+          description: 'Visual theme',
+          labelTranslations: { de: 'Thema' },
+          descriptionTranslations: { de: 'Visuelles Thema' },
+        }),
+      }),
+    )
+    expect(res.status).toBe(201)
+    const body = (await res.json()) as { kind: Record<string, unknown> }
+    expect(body.kind.labelTranslations).toEqual({ de: 'Thema' })
+    expect(body.kind.descriptionTranslations).toEqual({ de: 'Visuelles Thema' })
+  })
+
+  it('accepts publicPageCopy.heroTranslations and introTranslations', async () => {
+    const token = await adminToken()
+    const app = await buildApp()
+    const res = await app.handle(
+      new Request('http://localhost/api/admin/kinds', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+        body: JSON.stringify({
+          key: 'theme',
+          label: 'Theme',
+          description: null,
+          publicPageCopy: {
+            hero: 'Browse',
+            heroTranslations: { de: 'Durchstöbern' },
+            intro: 'All themes.',
+            introTranslations: { de: 'Alle Themen.' },
+          },
+        }),
+      }),
+    )
+    expect(res.status).toBe(201)
+    const body = (await res.json()) as { kind: { publicPageCopy: Record<string, unknown> } }
+    expect(body.kind.publicPageCopy.heroTranslations).toEqual({ de: 'Durchstöbern' })
+    expect(body.kind.publicPageCopy.introTranslations).toEqual({ de: 'Alle Themen.' })
+  })
+
+  it('rejects unknown locale in labelTranslations', async () => {
+    const token = await adminToken()
+    const app = await buildApp()
+    const res = await app.handle(
+      new Request('http://localhost/api/admin/kinds', {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+        body: JSON.stringify({
+          key: 'theme',
+          label: 'Theme',
+          description: null,
+          labelTranslations: { 'xx-YY': 'bogus' },
+        }),
+      }),
+    )
+    expect(res.status).toBe(400)
+  })
 })
 
 describe('GET /api/admin/kinds/:key', () => {
@@ -197,6 +263,27 @@ describe('PUT /api/admin/kinds/:key', () => {
       }),
     )
     expect(res.status).toBe(404)
+  })
+
+  it('PUT accepts translation maps', async () => {
+    await createKind({ key: 'theme', label: 'Theme', description: null })
+    const token = await adminToken()
+    const app = await buildApp()
+    const res = await app.handle(
+      new Request('http://localhost/api/admin/kinds/theme', {
+        method: 'PUT',
+        headers: { Authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+        body: JSON.stringify({
+          key: 'theme',
+          label: 'Theme',
+          description: null,
+          labelTranslations: { de: 'Thema' },
+        }),
+      }),
+    )
+    expect(res.status).toBe(200)
+    const body = (await res.json()) as { kind: Record<string, unknown> }
+    expect(body.kind.labelTranslations).toEqual({ de: 'Thema' })
   })
 })
 

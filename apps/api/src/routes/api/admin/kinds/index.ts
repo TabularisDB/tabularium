@@ -3,15 +3,24 @@ import { adminMiddleware } from '$middleware/admin'
 import { getKinds, createKind, KindError } from '$lib/kinds'
 import { recordAudit, actorFromAdmin } from '$lib/audit'
 
+// Loose schema: the lib's validateKindDef enforces the locale whitelist and
+// per-field length caps. The Elysia layer just admits the field shape so
+// admins can submit translations.
+const translationMapSchema = t.Optional(t.Record(t.String(), t.String({ maxLength: 600 })))
+
 const publicPageCopySchema = t.Object({
   hero: t.Nullable(t.String({ maxLength: 80 })),
+  heroTranslations: translationMapSchema,
   intro: t.Nullable(t.String({ maxLength: 600 })),
+  introTranslations: translationMapSchema,
 })
 
 const kindBodySchema = t.Object({
   key: t.String({ minLength: 1, maxLength: 40 }),
   label: t.String({ minLength: 1, maxLength: 60 }),
+  labelTranslations: translationMapSchema,
   description: t.Optional(t.Nullable(t.String({ maxLength: 280 }))),
+  descriptionTranslations: translationMapSchema,
   publicPageEnabled: t.Optional(t.Boolean()),
   publicPageCopy: t.Optional(t.Nullable(publicPageCopySchema)),
 })
@@ -19,7 +28,9 @@ const kindBodySchema = t.Object({
 const kindSchema = t.Object({
   key: t.String(),
   label: t.String(),
+  labelTranslations: translationMapSchema,
   description: t.Nullable(t.String()),
+  descriptionTranslations: translationMapSchema,
   extensionsSchema: t.Optional(t.Nullable(t.Record(t.String(), t.Any()))),
   publicPageEnabled: t.Optional(t.Boolean()),
   publicPageCopy: t.Optional(t.Nullable(publicPageCopySchema)),
@@ -43,7 +54,9 @@ export default new Elysia()
         const created = await createKind({
           key: body.key,
           label: body.label,
+          ...(body.labelTranslations !== undefined ? { labelTranslations: body.labelTranslations } : {}),
           description: body.description ?? null,
+          ...(body.descriptionTranslations !== undefined ? { descriptionTranslations: body.descriptionTranslations } : {}),
           ...(body.publicPageEnabled !== undefined ? { publicPageEnabled: body.publicPageEnabled } : {}),
           ...(body.publicPageCopy !== undefined ? { publicPageCopy: body.publicPageCopy } : {}),
         })
