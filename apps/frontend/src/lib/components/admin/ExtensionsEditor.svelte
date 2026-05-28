@@ -435,8 +435,7 @@
 													placeholder={m.admin_extensions_translation_placeholder({
 														locale: LOCALE_LABELS[locale] ?? locale,
 													})}
-													oninput={(e) =>
-														updateTranslation(idx, locale, (e.currentTarget as HTMLInputElement).value)}
+													oninput={(e) => updateTranslation(idx, locale, (e.currentTarget as HTMLInputElement).value)}
 												/>
 											</div>
 										{/each}

@@ -215,8 +215,7 @@
 	function rowToBody(r: SectionRow): unknown {
 		const titleTrans = collectTranslations(r.titleMap)
 		const bodyTrans = collectTranslations(r.bodyMap)
-		const position =
-			r.position === 'kind' ? { kind: r.kindKey, slot: r.slot } : r.position
+		const position = r.position === 'kind' ? { kind: r.kindKey, slot: r.slot } : r.position
 		return {
 			id: r.id,
 			title: r.title.trim() ? r.title : null,
@@ -230,9 +229,7 @@
 	async function saveSection(r: SectionRow) {
 		try {
 			const body = JSON.stringify(rowToBody(r))
-			const url = r.isNew
-				? '/api/admin/docs/sections'
-				: `/api/admin/docs/sections/${encodeURIComponent(r.id)}`
+			const url = r.isNew ? '/api/admin/docs/sections' : `/api/admin/docs/sections/${encodeURIComponent(r.id)}`
 			const method = r.isNew ? 'POST' : 'PUT'
 			const res = await fetch(url, {
 				method,
@@ -385,10 +382,7 @@
 						</div>
 						<div class="grid gap-1">
 							<Label>{m.admin_docs_section_position()}</Label>
-							<select
-								bind:value={section.position}
-								class="h-9 rounded-md border border-input bg-card px-3 text-sm"
-							>
+							<select bind:value={section.position} class="h-9 rounded-md border border-input bg-card px-3 text-sm">
 								{#each FIXED_POSITIONS as p (p)}
 									<option value={p}>{labelForPosition(p)}</option>
 								{/each}
@@ -402,10 +396,7 @@
 							</div>
 							<div class="grid gap-1">
 								<Label>{m.admin_docs_section_slot()}</Label>
-								<select
-									bind:value={section.slot}
-									class="h-9 rounded-md border border-input bg-card px-3 text-sm"
-								>
+								<select bind:value={section.slot} class="h-9 rounded-md border border-input bg-card px-3 text-sm">
 									<option value="before">{m.admin_docs_slot_before()}</option>
 									<option value="after">{m.admin_docs_slot_after()}</option>
 								</select>

@@ -154,11 +154,7 @@ export function validateKindDef(input: unknown): KindDef {
     description = descRaw
   }
   const labelTranslations = validateTranslationMap(o.labelTranslations, LABEL_MAX, 'labelTranslations')
-  const descriptionTranslations = validateTranslationMap(
-    o.descriptionTranslations,
-    DESC_MAX,
-    'descriptionTranslations',
-  )
+  const descriptionTranslations = validateTranslationMap(o.descriptionTranslations, DESC_MAX, 'descriptionTranslations')
   let extensionsSchema: ExtensionsDelta | null | undefined
   if (o.extensionsSchema !== undefined) {
     if (o.extensionsSchema === null) {
@@ -185,8 +181,16 @@ export function validateKindDef(input: unknown): KindDef {
       const copy = o.publicPageCopy as Record<string, unknown>
       const hero = trimOrNull(copy.hero, HERO_MAX, 'publicPageCopy.hero')
       const intro = trimOrNull(copy.intro, INTRO_MAX, 'publicPageCopy.intro')
-      const heroTranslations = validateTranslationMap(copy.heroTranslations, HERO_MAX, 'publicPageCopy.heroTranslations')
-      const introTranslations = validateTranslationMap(copy.introTranslations, INTRO_MAX, 'publicPageCopy.introTranslations')
+      const heroTranslations = validateTranslationMap(
+        copy.heroTranslations,
+        HERO_MAX,
+        'publicPageCopy.heroTranslations',
+      )
+      const introTranslations = validateTranslationMap(
+        copy.introTranslations,
+        INTRO_MAX,
+        'publicPageCopy.introTranslations',
+      )
       publicPageCopy =
         hero || intro || heroTranslations || introTranslations
           ? {
@@ -314,11 +318,7 @@ export type LocalizedKindView = {
   customExample: { yaml?: string; json?: string } | null
 }
 
-function pickLocalized<T extends string | null>(
-  base: T,
-  map: LocalizedString | undefined,
-  locale: Locale,
-): T | string {
+function pickLocalized<T extends string | null>(base: T, map: LocalizedString | undefined, locale: Locale): T | string {
   const defaultLocale = getI18nConfig().defaultLocale
   const v = map?.[locale] ?? (locale !== defaultLocale ? map?.[defaultLocale] : undefined)
   return typeof v === 'string' && v.length > 0 ? v : base

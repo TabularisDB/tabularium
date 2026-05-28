@@ -232,10 +232,8 @@
 			if (form.faviconUrl !== original.faviconUrl) body.faviconUrl = form.faviconUrl || null
 			if (form.analyticsScript !== original.analyticsScript) body.analyticsScript = form.analyticsScript || null
 			if (form.allowIndexing !== original.allowIndexing) body.allowIndexing = form.allowIndexing
-			if (form.taglines[fallback] !== original.taglines[fallback])
-				body.tagline = form.taglines[fallback] ?? ''
-			if (form.footers[fallback] !== original.footers[fallback])
-				body.footerText = form.footers[fallback] || null
+			if (form.taglines[fallback] !== original.taglines[fallback]) body.tagline = form.taglines[fallback] ?? ''
+			if (form.footers[fallback] !== original.footers[fallback]) body.footerText = form.footers[fallback] || null
 
 			const taglineDiff: Partial<Record<Locale, string | null>> = {}
 			const footerDiff: Partial<Record<Locale, string | null>> = {}

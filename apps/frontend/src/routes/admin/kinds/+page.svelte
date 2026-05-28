@@ -158,9 +158,7 @@
 		}
 	}
 
-	function collectTranslations(
-		map: Record<Locale, string>,
-	): Partial<Record<Locale, string>> | undefined {
+	function collectTranslations(map: Record<Locale, string>): Partial<Record<Locale, string>> | undefined {
 		const out: Partial<Record<Locale, string>> = {}
 		for (const l of i18n.availableLocales) {
 			if (l === i18n.defaultLocale) continue
@@ -186,14 +184,12 @@
 			const prosePostTrim = k.prosePostText.trim()
 			const customExampleTrim = k.customExampleYaml.trim()
 
-			let publicPageCopy:
-				| {
-						hero: string | null
-						intro: string | null
-						heroTranslations?: Partial<Record<Locale, string>>
-						introTranslations?: Partial<Record<Locale, string>>
-				  }
-				| null = null
+			let publicPageCopy: {
+				hero: string | null
+				intro: string | null
+				heroTranslations?: Partial<Record<Locale, string>>
+				introTranslations?: Partial<Record<Locale, string>>
+			} | null = null
 			if (heroTrim || introTrim || heroTranslations || introTranslations) {
 				publicPageCopy = {
 					hero: heroTrim || null,
@@ -291,9 +287,7 @@
 					<CardContent class="space-y-3">
 						<div class="flex flex-wrap items-center gap-1">
 							<Languages class="h-3.5 w-3.5 text-muted-foreground mr-1" />
-							<span class="text-xs font-medium text-muted-foreground mr-2"
-								>{m.admin_kinds_translations()}</span
-							>
+							<span class="text-xs font-medium text-muted-foreground mr-2">{m.admin_kinds_translations()}</span>
 							{#each i18n.availableLocales as l (l)}
 								<button
 									type="button"

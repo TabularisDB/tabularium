@@ -98,7 +98,9 @@ export default new Elysia()
           label: body.label,
           ...(body.labelTranslations !== undefined ? { labelTranslations: body.labelTranslations } : {}),
           description: body.description ?? null,
-          ...(body.descriptionTranslations !== undefined ? { descriptionTranslations: body.descriptionTranslations } : {}),
+          ...(body.descriptionTranslations !== undefined
+            ? { descriptionTranslations: body.descriptionTranslations }
+            : {}),
           ...(body.extensionsSchema !== undefined ? { extensionsSchema: body.extensionsSchema } : {}),
           ...(body.publicPageEnabled !== undefined ? { publicPageEnabled: body.publicPageEnabled } : {}),
           ...(body.publicPageCopy !== undefined ? { publicPageCopy: body.publicPageCopy } : {}),

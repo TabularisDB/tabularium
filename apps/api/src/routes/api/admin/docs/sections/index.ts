@@ -1,10 +1,6 @@
 import { Elysia, t } from 'elysia'
 import { adminMiddleware } from '$middleware/admin'
-import {
-  getDocsConfig,
-  addCustomSection,
-  DocsCustomError,
-} from '$lib/docs-custom'
+import { getDocsConfig, addCustomSection, DocsCustomError } from '$lib/docs-custom'
 import { recordAudit, actorFromAdmin } from '$lib/audit'
 
 const positionSchema = t.Union([

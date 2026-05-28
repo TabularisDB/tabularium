@@ -110,8 +110,7 @@ export default new Elysia()
 
       if (!plugin || plugin.status !== 'approved') {
         set.status = 404
-        // biome-ignore lint/suspicious/noExplicitAny: Elysia can't link `set.status = 404` to the 404 response-schema branch
-        return { error: 'Plugin not found' } as any
+        return { error: 'Plugin not found' } as unknown as never
       }
 
       const detail = projectPluginDetail(plugin)

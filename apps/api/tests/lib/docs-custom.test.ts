@@ -78,15 +78,13 @@ describe('docs-custom — sections', () => {
   })
 
   it('rejects invalid id format', () => {
-    expect(() =>
-      validateCustomSection({ id: 'Bad ID', title: null, body: 'x', position: 'page_top' }),
-    ).toThrow(/id/)
+    expect(() => validateCustomSection({ id: 'Bad ID', title: null, body: 'x', position: 'page_top' })).toThrow(/id/)
   })
 
   it('rejects unknown fixed position', () => {
-    expect(() =>
-      validateCustomSection({ id: 'x', title: null, body: 'x', position: 'invalid_position' }),
-    ).toThrow(/position/)
+    expect(() => validateCustomSection({ id: 'x', title: null, body: 'x', position: 'invalid_position' })).toThrow(
+      /position/,
+    )
   })
 
   it('rejects invalid kind position (missing slot)', () => {
@@ -123,9 +121,9 @@ describe('docs-custom — sections', () => {
 
   it('prevents duplicate ids in addCustomSection', async () => {
     await addCustomSection({ id: 's', title: null, body: 'x', position: 'page_top' })
-    await expect(
-      addCustomSection({ id: 's', title: null, body: 'y', position: 'page_top' }),
-    ).rejects.toThrow(/duplicate|exists/i)
+    await expect(addCustomSection({ id: 's', title: null, body: 'y', position: 'page_top' })).rejects.toThrow(
+      /duplicate|exists/i,
+    )
   })
 
   it('localizes section body to requested locale (with fallback)', async () => {

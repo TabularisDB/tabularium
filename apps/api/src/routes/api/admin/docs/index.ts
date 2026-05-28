@@ -1,11 +1,6 @@
 import { Elysia, t } from 'elysia'
 import { adminMiddleware } from '$middleware/admin'
-import {
-  getDocsConfig,
-  setIntroMarkdown,
-  setOutroMarkdown,
-  DocsCustomError,
-} from '$lib/docs-custom'
+import { getDocsConfig, setIntroMarkdown, setOutroMarkdown, DocsCustomError } from '$lib/docs-custom'
 import { recordAudit, actorFromAdmin } from '$lib/audit'
 
 const translationMapSchema = t.Optional(t.Record(t.String(), t.String({ maxLength: 16000 })))

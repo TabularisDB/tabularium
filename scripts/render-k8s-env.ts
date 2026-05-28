@@ -155,7 +155,7 @@ function stampChecksum(rawYaml: string): string {
   for (const doc of docs) {
     const obj = doc.toJSON() as PodTemplateHolder & { kind?: string }
     if (obj?.kind === 'Deployment' || obj?.kind === 'Job') {
-      const tmpl = (obj.spec ??= {}).template ??= {}
+      const tmpl = ((obj.spec ??= {}).template ??= {})
       const meta = (tmpl.metadata ??= {})
       const annotations = (meta.annotations ??= {})
       annotations['checksum/env'] = envChecksum

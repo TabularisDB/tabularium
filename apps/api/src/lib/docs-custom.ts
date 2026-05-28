@@ -74,11 +74,7 @@ function readTranslations(baseKey: string): Partial<Record<Locale, string>> {
   return out
 }
 
-function pickLocalized(
-  base: string | null,
-  map: LocalizedString | undefined,
-  locale: Locale,
-): string | null {
+function pickLocalized(base: string | null, map: LocalizedString | undefined, locale: Locale): string | null {
   const defaultLocale = getI18nConfig().defaultLocale
   const v = map?.[locale] ?? (locale !== defaultLocale ? map?.[defaultLocale] : undefined)
   return typeof v === 'string' && v.length > 0 ? v : base
@@ -103,11 +99,7 @@ function validatePosition(v: unknown): PositionMarker {
   throw new DocsCustomError('invalid', `unknown position: ${JSON.stringify(v)}`)
 }
 
-function validateTranslationMap(
-  value: unknown,
-  max: number,
-  field: string,
-): LocalizedString | undefined {
+function validateTranslationMap(value: unknown, max: number, field: string): LocalizedString | undefined {
   if (value === undefined || value === null) return undefined
   if (!isPlainObject(value)) throw new DocsCustomError('invalid', `${field} must be an object`)
   const out: LocalizedString = {}
@@ -132,10 +124,7 @@ export function validateCustomSection(input: unknown): CustomSection {
   const o = input as Record<string, unknown>
   const id = typeof o.id === 'string' ? o.id.trim() : ''
   if (!id || id.length > SECTION_ID_MAX || !SECTION_ID_RE.test(id)) {
-    throw new DocsCustomError(
-      'invalid',
-      `id must match ${SECTION_ID_RE} (max ${SECTION_ID_MAX} chars)`,
-    )
+    throw new DocsCustomError('invalid', `id must match ${SECTION_ID_RE} (max ${SECTION_ID_MAX} chars)`)
   }
   const titleRaw = o.title
   let title: string | null = null
@@ -148,11 +137,7 @@ export function validateCustomSection(input: unknown): CustomSection {
     }
     title = titleRaw
   }
-  const titleTranslations = validateTranslationMap(
-    o.titleTranslations,
-    SECTION_TITLE_MAX,
-    'titleTranslations',
-  )
+  const titleTranslations = validateTranslationMap(o.titleTranslations, SECTION_TITLE_MAX, 'titleTranslations')
 
   if (typeof o.body !== 'string' || o.body.length === 0) {
     throw new DocsCustomError('invalid', 'body must be a non-empty string')
@@ -161,11 +146,7 @@ export function validateCustomSection(input: unknown): CustomSection {
     throw new DocsCustomError('invalid', `body max ${MARKDOWN_MAX} chars`)
   }
   const body = o.body
-  const bodyTranslations = validateTranslationMap(
-    o.bodyTranslations,
-    MARKDOWN_MAX,
-    'bodyTranslations',
-  )
+  const bodyTranslations = validateTranslationMap(o.bodyTranslations, MARKDOWN_MAX, 'bodyTranslations')
 
   const position = validatePosition(o.position)
 
@@ -236,10 +217,7 @@ export function getLocalizedDocsConfig(locale: Locale): LocalizedDocsConfig {
   }
 }
 
-async function writeTranslations(
-  baseKey: string,
-  map: Partial<Record<Locale, string>>,
-): Promise<void> {
+async function writeTranslations(baseKey: string, map: Partial<Record<Locale, string>>): Promise<void> {
   for (const l of SUPPORTED_LOCALES) {
     const key = `${baseKey}.${l}`
     const v = map[l]
@@ -304,10 +282,7 @@ export async function addCustomSection(section: CustomSection): Promise<CustomSe
   return v
 }
 
-export async function updateCustomSection(
-  id: string,
-  section: CustomSection,
-): Promise<CustomSection> {
+export async function updateCustomSection(id: string, section: CustomSection): Promise<CustomSection> {
   const v = validateCustomSection(section)
   if (v.id !== id) throw new DocsCustomError('invalid', 'body id must match path id')
   const current = readSections()

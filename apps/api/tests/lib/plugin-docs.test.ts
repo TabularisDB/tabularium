@@ -1,18 +1,9 @@
 import { describe, it, expect, beforeEach } from 'bun:test'
-import {
-  flattenSchemaProps,
-  synthesizeExample,
-  buildPluginDocs,
-  type FieldDoc,
-} from '../../src/lib/plugin-docs'
+import { flattenSchemaProps, synthesizeExample, buildPluginDocs } from '../../src/lib/plugin-docs'
 import { ManifestSchema } from '@tabularium/manifest'
 import { createKind, deleteKind } from '../../src/lib/kinds'
 import { setExtensionsDelta } from '../../src/lib/manifest-schema'
-import {
-  setIntroMarkdown,
-  setOutroMarkdown,
-  addCustomSection,
-} from '../../src/lib/docs-custom'
+import { setIntroMarkdown, setOutroMarkdown, addCustomSection } from '../../src/lib/docs-custom'
 import { clearDb } from '../helpers'
 
 describe('flattenSchemaProps', () => {

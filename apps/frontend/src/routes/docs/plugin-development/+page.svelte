@@ -36,10 +36,7 @@
 			return sections.filter((s) => typeof s.position === 'string' && s.position === marker)
 		}
 		return sections.filter(
-			(s) =>
-				typeof s.position === 'object' &&
-				s.position.kind === marker.kind &&
-				s.position.slot === marker.slot,
+			(s) => typeof s.position === 'object' && s.position.kind === marker.kind && s.position.slot === marker.slot,
 		)
 	}
 </script>
@@ -232,12 +229,8 @@
 			<CardContent class="space-y-2">
 				<p class="text-sm">{m.docs_api_reference_body()}</p>
 				<div class="flex gap-3 text-sm">
-					<a href={docs.apiReference.openapiUiUrl} class="text-primary hover:underline">
-						OpenAPI UI →
-					</a>
-					<a href={docs.apiReference.openapiSpecUrl} class="text-primary hover:underline">
-						openapi.json →
-					</a>
+					<a href={docs.apiReference.openapiUiUrl} class="text-primary hover:underline"> OpenAPI UI → </a>
+					<a href={docs.apiReference.openapiSpecUrl} class="text-primary hover:underline"> openapi.json → </a>
 				</div>
 			</CardContent>
 		</Card>

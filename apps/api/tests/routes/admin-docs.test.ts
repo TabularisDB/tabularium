@@ -104,7 +104,9 @@ describe('/api/admin/docs/sections', () => {
     const body = JSON.stringify({ id: 'dup', title: null, body: 'x', position: 'page_top' })
     const headers = { Authorization: `Bearer ${token}`, 'content-type': 'application/json' }
     await app.handle(new Request('http://localhost/api/admin/docs/sections', { method: 'POST', headers, body }))
-    const res = await app.handle(new Request('http://localhost/api/admin/docs/sections', { method: 'POST', headers, body }))
+    const res = await app.handle(
+      new Request('http://localhost/api/admin/docs/sections', { method: 'POST', headers, body }),
+    )
     expect(res.status).toBe(409)
   })
 

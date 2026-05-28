@@ -145,9 +145,7 @@ export type PluginDocs = {
   apiReference: { openapiSpecUrl: string; openapiUiUrl: string }
 }
 
-function buildCustomExample(
-  custom: { yaml?: string; json?: string },
-): { yaml: string; json: string } | null {
+function buildCustomExample(custom: { yaml?: string; json?: string }): { yaml: string; json: string } | null {
   const yamlRaw = typeof custom.yaml === 'string' && custom.yaml.length > 0 ? custom.yaml : null
   const jsonRaw = typeof custom.json === 'string' && custom.json.length > 0 ? custom.json : null
   if (!yamlRaw && !jsonRaw) return null

@@ -387,9 +387,9 @@ describe('validateKindDef — prose + customExample', () => {
 
   it('rejects oversize prose', () => {
     const tooLong = 'x'.repeat(8001)
-    expect(() =>
-      validateKindDef({ key: 'theme', label: 'Theme', description: null, prosePre: tooLong }),
-    ).toThrow(/max 8000/)
+    expect(() => validateKindDef({ key: 'theme', label: 'Theme', description: null, prosePre: tooLong })).toThrow(
+      /max 8000/,
+    )
   })
 
   it('accepts customExample with valid YAML', () => {
