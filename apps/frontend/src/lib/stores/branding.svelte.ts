@@ -44,8 +44,13 @@ function createBrandingStore() {
     root.style.setProperty('--brand-accent', b.accentHex)
     root.style.setProperty('--brand-success', b.successHex)
     if (b.faviconUrl) {
-      const link = document.querySelector<HTMLLinkElement>('link[rel="icon"]')
-      if (link) link.href = b.faviconUrl
+      let link = document.querySelector<HTMLLinkElement>('link[rel="icon"]')
+      if (!link) {
+        link = document.createElement('link')
+        link.rel = 'icon'
+        document.head.appendChild(link)
+      }
+      link.href = b.faviconUrl
     }
     const head = document.head
     head.querySelector<HTMLElement>('[data-tabularium-analytics]')?.remove()
