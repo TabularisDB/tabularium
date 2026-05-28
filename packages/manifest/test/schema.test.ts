@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'bun:test'
 import { buildSchema } from '../src/index'
 import { ManifestSchema } from '../src/core'
+import type { TSchema } from '@sinclair/typebox'
 
 describe('buildSchema', () => {
   it('returns a JSON Schema 2020-12 object with the locked core fields', () => {
@@ -135,5 +136,58 @@ describe('buildSchema', () => {
     // empty) — no leakage of kind-scoped required.
     const required = (schema.required ?? []) as string[]
     expect(required).not.toContain('x-theme-api')
+  })
+})
+
+describe('buildSchema — x-translations stripping', () => {
+  it('strips x-translations from emitted global extension props', () => {
+    const result = buildSchema({
+      coreSchema: ManifestSchema as unknown as TSchema,
+      extensions: {
+        myProp: {
+          type: 'string',
+          description: 'Default',
+          'x-translations': { de: 'Auf Deutsch' },
+        },
+      },
+    })
+    const props = (result.properties as Record<string, Record<string, unknown>>).myProp
+    expect(props['x-translations']).toBeUndefined()
+    expect(props.description).toBe('Default')
+  })
+
+  it('strips x-translations from nested property in object', () => {
+    const result = buildSchema({
+      coreSchema: ManifestSchema as unknown as TSchema,
+      extensions: {
+        parent: {
+          type: 'object',
+          properties: {
+            child: { type: 'string', 'x-translations': { de: 'X' } },
+          },
+        },
+      },
+    })
+    const parent = (result.properties as Record<string, Record<string, unknown>>).parent
+    const child = (parent.properties as Record<string, Record<string, unknown>>).child
+    expect(child['x-translations']).toBeUndefined()
+  })
+
+  it('strips x-translations from kind override extensions', () => {
+    const result = buildSchema({
+      coreSchema: ManifestSchema as unknown as TSchema,
+      kindOverrides: {
+        theme: {
+          themeProp: {
+            type: 'string',
+            description: 'Theme prop',
+            'x-translations': { de: 'Theme-Prop auf Deutsch' },
+          },
+        },
+      },
+      kind: 'theme',
+    })
+    const props = (result.properties as Record<string, Record<string, unknown>>).themeProp
+    expect(props['x-translations']).toBeUndefined()
   })
 })

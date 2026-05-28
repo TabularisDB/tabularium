@@ -47,6 +47,21 @@ function splitRequiredFlag(props: Record<string, unknown>): {
   return { cleaned, required }
 }
 
+function stripXTranslations(node: unknown): unknown {
+  if (Array.isArray(node)) {
+    return node.map(stripXTranslations)
+  }
+  if (node && typeof node === 'object') {
+    const out: Record<string, unknown> = {}
+    for (const [k, v] of Object.entries(node as Record<string, unknown>)) {
+      if (k === 'x-translations') continue
+      out[k] = stripXTranslations(v)
+    }
+    return out
+  }
+  return node
+}
+
 export function buildSchema(input: BuildSchemaInput): Record<string, unknown> {
   const coreProps = (input.coreSchema as unknown as { properties: Record<string, unknown> }).properties
   const coreRequired = (input.coreSchema as unknown as { required?: string[] }).required ?? []
@@ -58,7 +73,7 @@ export function buildSchema(input: BuildSchemaInput): Record<string, unknown> {
     const ext = kindOverrides[input.kind] ?? globalExt
     const { cleaned: extProps, required: extRequired } = splitRequiredFlag(ext)
     const required = [...coreRequired, ...extRequired]
-    return {
+    return stripXTranslations({
       $schema: 'https://json-schema.org/draft/2020-12/schema',
       $id: `${schemaUrl}?kind=${encodeURIComponent(input.kind)}`,
       title: `Tabularium plugin manifest — ${input.kind}`,
@@ -66,7 +81,7 @@ export function buildSchema(input: BuildSchemaInput): Record<string, unknown> {
       additionalProperties: false,
       properties: { ...coreProps, ...extProps },
       ...(required.length > 0 ? { required } : {}),
-    }
+    }) as Record<string, unknown>
   }
 
   const allExtensionKeys = new Set<string>(Object.keys(globalExt))
@@ -114,5 +129,5 @@ export function buildSchema(input: BuildSchemaInput): Record<string, unknown> {
     })
   }
 
-  return schema
+  return stripXTranslations(schema) as Record<string, unknown>
 }
