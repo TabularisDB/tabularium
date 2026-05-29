@@ -281,6 +281,28 @@ export const auditLog = pgTable(
   }),
 )
 
+export const adminTokens = pgTable(
+  'admin_tokens',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    prefix: text('prefix').notNull(),
+    tokenHash: text('token_hash').notNull(),
+    scopes: text('scopes'),
+    expiresAt: ts('expires_at'),
+    lastUsedAt: ts('last_used_at'),
+    createdAt: ts('created_at').notNull().$defaultFn(now),
+    revokedAt: ts('revoked_at'),
+  },
+  (t) => ({
+    byUser: index('admin_tokens_user_idx').on(t.userId),
+    byHash: uniqueIndex('admin_tokens_hash_uniq').on(t.tokenHash),
+  }),
+)
+
 export const downloadEvents = pgTable(
   'download_events',
   {

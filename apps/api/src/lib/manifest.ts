@@ -12,6 +12,8 @@ import {
   ParseError,
 } from '@tabularium/manifest'
 import { buildMergedSchema } from './manifest-schema'
+import { getKinds } from './kinds'
+import { getSetting } from './settings'
 import type { ValidationError } from '@tabularium/manifest'
 
 const log = logger.child({ module: 'manifest' })
@@ -48,7 +50,37 @@ export function parseManifestText(text: string, source: ResolvedManifest['source
   if (!result.ok) {
     throw new ManifestValidationError(result.errors)
   }
+  // Optional admin-enforced policy: when at least one kind is configured and
+  // the toggle is on, every submitted manifest must declare a kind that
+  // matches one of the configured keys. This kicks in after schema validation
+  // because `kind` is structurally optional at the schema level.
+  enforceKindPolicy(result.normalized as Record<string, unknown>)
   return result.normalized as Manifest
+}
+
+function enforceKindPolicy(normalized: Record<string, unknown>): void {
+  if (getSetting('manifest.require_kind') !== '1') return
+  const kinds = getKinds()
+  if (kinds.length === 0) return // policy needs at least one configured kind to mean anything
+  const declared = typeof normalized.kind === 'string' ? normalized.kind : null
+  if (!declared) {
+    throw new ManifestValidationError([
+      {
+        path: '/kind',
+        code: 'required',
+        message: `manifest must declare a kind — pick one of: ${kinds.map((k) => k.key).join(', ')}`,
+      },
+    ])
+  }
+  if (!kinds.some((k) => k.key === declared)) {
+    throw new ManifestValidationError([
+      {
+        path: '/kind',
+        code: 'enum',
+        message: `kind "${declared}" is not in this registry — pick one of: ${kinds.map((k) => k.key).join(', ')}`,
+      },
+    ])
+  }
 }
 
 type FileFetcher = (path: string) => Promise<{ content: string; bytes: number } | null>

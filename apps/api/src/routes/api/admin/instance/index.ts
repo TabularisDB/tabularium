@@ -7,6 +7,7 @@ import { getSetting, setSetting, deleteSetting, hasSetting } from '$lib/settings
 import { getAssetSizeCap } from '$lib/asset'
 import { recordAudit, actorFromAdmin } from '$lib/audit'
 import { getManifestConfig, validateAllowedFiles, validateSchemaUrl, MANIFEST_DEFAULTS } from '$lib/manifest-config'
+import { getKinds } from '$lib/kinds'
 
 const ASSET_SIZE_CAP_MAX_BYTES = 16 * 1024 * 1024 * 1024
 
@@ -52,12 +53,16 @@ async function bucketStates(): Promise<BucketState[]> {
 
 function manifestState() {
   const cfg = getManifestConfig()
+  const kinds = getKinds()
   return {
     allowedFiles: cfg.files,
     defaultFiles: [...MANIFEST_DEFAULTS.files],
     schemaUrl: cfg.schemaUrl,
     filesOverridden: getSetting('manifest.allowed_files') !== undefined,
     schemaUrlOverridden: getSetting('manifest.schema_url') !== undefined,
+    requireKind: getSetting('manifest.require_kind') === '1',
+    requireKindAvailable: kinds.length > 0,
+    configuredKindKeys: kinds.map((k) => k.key),
   }
 }
 
@@ -96,6 +101,9 @@ export default new Elysia()
             schemaUrl: t.String(),
             filesOverridden: t.Boolean(),
             schemaUrlOverridden: t.Boolean(),
+            requireKind: t.Boolean(),
+            requireKindAvailable: t.Boolean(),
+            configuredKindKeys: t.Array(t.String()),
           }),
           assetSizeCapBytes: t.Number(),
         }),
@@ -149,6 +157,14 @@ export default new Elysia()
             return { error: err instanceof Error ? err.message : 'invalid manifest allowed_files' }
           }
         }
+        manifestTouched = true
+      }
+      if (body.manifestRequireKind !== undefined) {
+        if (body.manifestRequireKind && getKinds().length === 0) {
+          set.status = 400
+          return { error: 'configure at least one kind before enabling kind enforcement' }
+        }
+        await setSetting('manifest.require_kind', body.manifestRequireKind ? '1' : '0')
         manifestTouched = true
       }
       if (body.manifestSchemaUrl !== undefined) {
@@ -207,6 +223,7 @@ export default new Elysia()
         ),
         manifestAllowedFiles: t.Optional(t.Nullable(t.Array(t.String({ maxLength: 60 }), { maxItems: 12 }))),
         manifestSchemaUrl: t.Optional(t.Nullable(t.String({ maxLength: 500 }))),
+        manifestRequireKind: t.Optional(t.Boolean()),
         assetSizeCapBytes: t.Optional(t.Number()),
       }),
       response: {

@@ -19,6 +19,9 @@
 		schemaUrl: string
 		filesOverridden: boolean
 		schemaUrlOverridden: boolean
+		requireKind: boolean
+		requireKindAvailable: boolean
+		configuredKindKeys: string[]
 	}
 
 	const FILE_RE = /^\.?[a-z][a-z0-9-]*(\.(yaml|yml|json))?$/
@@ -31,10 +34,17 @@
 	let loading = $state(true)
 	let saving = $state(false)
 
+	let requireKind = $state(false)
+	let requireKindAvailable = $state(false)
+	let configuredKindKeys = $state<string[]>([])
+
 	let initialFiles = $state('')
 	let initialSchemaUrl = $state('')
+	let initialRequireKind = $state(false)
 
-	const dirty = $derived(JSON.stringify(files) !== initialFiles || schemaUrl !== initialSchemaUrl)
+	const dirty = $derived(
+		JSON.stringify(files) !== initialFiles || schemaUrl !== initialSchemaUrl || requireKind !== initialRequireKind,
+	)
 
 	function extractError(error: unknown): string {
 		const e = error as { value?: unknown; status?: number }
@@ -59,8 +69,12 @@
 			schemaUrl = res.manifest.schemaUrlOverridden ? res.manifest.schemaUrl : ''
 			defaults = { files: res.manifest.defaultFiles, schemaUrl: res.manifest.schemaUrl }
 			filesOverridden = res.manifest.filesOverridden
+			requireKind = res.manifest.requireKind
+			requireKindAvailable = res.manifest.requireKindAvailable
+			configuredKindKeys = res.manifest.configuredKindKeys
 			initialFiles = JSON.stringify(files)
 			initialSchemaUrl = schemaUrl
+			initialRequireKind = requireKind
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : m.admin_instance_load_failed())
 		} finally {
@@ -75,6 +89,7 @@
 			const { error } = await eden.api.admin.instance.put({
 				manifestAllowedFiles: filesPayload,
 				manifestSchemaUrl: schemaUrl.trim() ? schemaUrl.trim() : null,
+				manifestRequireKind: requireKind,
 			})
 			if (error) throw new Error(extractError(error))
 			toast.success(m.admin_manifest_saved())
@@ -189,6 +204,25 @@
 					<Label for="manifestSchemaUrl">{m.admin_manifest_schema_url()}</Label>
 					<Input id="manifestSchemaUrl" bind:value={schemaUrl} maxlength={500} placeholder={defaults.schemaUrl} />
 					<p class="text-xs text-muted-foreground">{m.admin_manifest_schema_url_hint()}</p>
+				</div>
+
+				<div class="grid gap-2 max-w-xl border-t border-border pt-4">
+					<label class="flex items-start gap-3 cursor-pointer select-none" class:opacity-50={!requireKindAvailable}>
+						<input
+							type="checkbox"
+							class="h-4 w-4 mt-0.5 rounded border-input"
+							bind:checked={requireKind}
+							disabled={!requireKindAvailable}
+						/>
+						<span class="space-y-1">
+							<span class="block text-sm font-medium">{m.admin_manifest_require_kind()}</span>
+							<span class="block text-xs text-muted-foreground">
+								{requireKindAvailable
+									? m.admin_manifest_require_kind_hint({ keys: configuredKindKeys.join(', ') })
+									: m.admin_manifest_require_kind_disabled()}
+							</span>
+						</span>
+					</label>
 				</div>
 			{/if}
 		</CardContent>

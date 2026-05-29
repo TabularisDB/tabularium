@@ -282,6 +282,31 @@ export const auditLog = sqliteTable(
   }),
 )
 
+// Long-lived admin API tokens (M2M). The plaintext token is only ever
+// returned at creation time; we store the sha256 hash plus a short prefix
+// for display in the listing UI.
+export const adminTokens = sqliteTable(
+  'admin_tokens',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    prefix: text('prefix').notNull(),
+    tokenHash: text('token_hash').notNull(),
+    scopes: text('scopes'), // JSON array of scope strings; null = full admin
+    expiresAt: integer('expires_at'),
+    lastUsedAt: integer('last_used_at'),
+    createdAt: integer('created_at').notNull().$defaultFn(now),
+    revokedAt: integer('revoked_at'),
+  },
+  (t) => ({
+    byUser: index('admin_tokens_user_idx').on(t.userId),
+    byHash: uniqueIndex('admin_tokens_hash_uniq').on(t.tokenHash),
+  }),
+)
+
 // One row per resolved /latest hit. No PII — just enough to plot
 // download trends per plugin/platform/version over time.
 export const downloadEvents = sqliteTable(
