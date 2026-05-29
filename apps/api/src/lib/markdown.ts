@@ -153,10 +153,21 @@ const ALLOWED_ATTR = [
 
 export type Heading = { level: 2 | 3; id: string; text: string }
 
+// SvelteKit's client-side router intercepts <a> clicks and tries to resolve
+// them as Svelte pages. Markdown bodies link freely into /api/* paths
+// (raw-markdown endpoint, openapi, …) which are served by the API, not
+// SvelteKit — so clicks would land on SvelteKit's 404 page. Tag every
+// /api/* link with data-sveltekit-reload so the browser does a full-page
+// load and the request actually reaches the API.
+function reloadApiLinks(html: string): string {
+  return html.replace(/<a\s+([^>]*?)href="\/api\/([^"]*)"([^>]*)>/g, '<a $1href="/api/$2" data-sveltekit-reload$3>')
+}
+
 export async function renderMarkdown(raw: string): Promise<string> {
   if (!raw) return ''
   const html = await marked.parse(raw)
-  return DOMPurify.sanitize(html, { ALLOWED_TAGS, ALLOWED_ATTR })
+  const safe = DOMPurify.sanitize(html, { ALLOWED_TAGS, ALLOWED_ATTR })
+  return reloadApiLinks(safe)
 }
 
 function stripTags(s: string): string {
@@ -176,7 +187,7 @@ function stripTags(s: string): string {
 export async function renderMarkdownWithMeta(raw: string): Promise<{ html: string; headings: Heading[] }> {
   if (!raw) return { html: '', headings: [] }
   const html = await marked.parse(raw)
-  const safe = DOMPurify.sanitize(html, { ALLOWED_TAGS, ALLOWED_ATTR })
+  const safe = reloadApiLinks(DOMPurify.sanitize(html, { ALLOWED_TAGS, ALLOWED_ATTR }))
   const raw_headings = getHeadingList()
   const headings: Heading[] = raw_headings
     .filter((h) => h.level === 2 || h.level === 3)
