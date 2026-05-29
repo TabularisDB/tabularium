@@ -65,4 +65,24 @@ describe('POST /api/manifest/validate', () => {
     const res = await post({ text: huge, source: 'tabularium.yaml' })
     expect(res.status).toBe(413)
   })
+
+  it('mirrors the require-kind policy: rejects kind-less manifest when the toggle is on', async () => {
+    const { setSetting } = await import('../../src/lib/settings')
+    await createKind({ key: 'driver', label: 'Drivers', description: null })
+    await setSetting('manifest.require_kind', '1')
+    const res = await post({ text: 'name: my-plugin\n', source: 'tabularium.yaml' })
+    const body = (await res.json()) as { ok: boolean; errors?: Array<{ path: string; code: string }> }
+    expect(body.ok).toBe(false)
+    expect(body.errors?.some((e) => e.path === '/kind' && e.code === 'required')).toBe(true)
+  })
+
+  it('mirrors the require-kind policy: rejects unknown kind when toggle is on', async () => {
+    const { setSetting } = await import('../../src/lib/settings')
+    await createKind({ key: 'driver', label: 'Drivers', description: null })
+    await setSetting('manifest.require_kind', '1')
+    const res = await post({ text: 'name: my-plugin\nkind: theme\n', source: 'tabularium.yaml' })
+    const body = (await res.json()) as { ok: boolean; errors?: Array<{ path: string; code: string }> }
+    expect(body.ok).toBe(false)
+    expect(body.errors?.some((e) => e.path === '/kind' && e.code === 'enum')).toBe(true)
+  })
 })

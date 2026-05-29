@@ -1,6 +1,8 @@
 import { Elysia, t } from 'elysia'
 import { validateManifest, parseManifest, sniffSource, ParseError } from '@tabularium/manifest'
 import { buildMergedSchema } from '$lib/manifest-schema'
+import { getKinds } from '$lib/kinds'
+import { getSetting } from '$lib/settings'
 
 const MAX_BYTES = 64 * 1024
 
@@ -32,10 +34,43 @@ export default new Elysia()
 
       const schema = buildMergedSchema({ kind: body.kind ?? null })
       const result = validateManifest(parsed, schema) // strict, no lenient
-      if (result.ok) {
-        return { ok: true, normalized: result.normalized }
+      if (!result.ok) {
+        return { ok: false, errors: result.errors }
       }
-      return { ok: false, errors: result.errors }
+      // Mirror the manifest.require_kind policy that gates real submissions —
+      // dev tooling pinging this endpoint should see the same accept/reject
+      // verdict the registry will apply when the manifest is submitted.
+      if (getSetting('manifest.require_kind') === '1') {
+        const kinds = getKinds()
+        if (kinds.length > 0) {
+          const declared = typeof result.normalized.kind === 'string' ? result.normalized.kind : null
+          if (!declared) {
+            return {
+              ok: false,
+              errors: [
+                {
+                  path: '/kind',
+                  code: 'required',
+                  message: `manifest must declare a kind — pick one of: ${kinds.map((k) => k.key).join(', ')}`,
+                },
+              ],
+            }
+          }
+          if (!kinds.some((k) => k.key === declared)) {
+            return {
+              ok: false,
+              errors: [
+                {
+                  path: '/kind',
+                  code: 'enum',
+                  message: `kind "${declared}" is not in this registry — pick one of: ${kinds.map((k) => k.key).join(', ')}`,
+                },
+              ],
+            }
+          }
+        }
+      }
+      return { ok: true, normalized: result.normalized }
     },
     {
       body: t.Object({
