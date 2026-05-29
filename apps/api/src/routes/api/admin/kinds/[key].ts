@@ -7,6 +7,7 @@ import { recordAudit, actorFromAdmin } from '$lib/audit'
 // per-field length caps. The Elysia layer just admits the field shape so
 // admins can submit translations.
 const translationMapSchema = t.Optional(t.Record(t.String(), t.String({ maxLength: 600 })))
+const proseTranslationMapSchema = t.Optional(t.Record(t.String(), t.String()))
 
 const publicPageCopySchema = t.Object({
   hero: t.Nullable(t.String({ maxLength: 80 })),
@@ -18,8 +19,8 @@ const publicPageCopySchema = t.Object({
 const customExampleSchema = t.Optional(
   t.Nullable(
     t.Object({
-      yaml: t.Optional(t.String({ maxLength: 16000 })),
-      json: t.Optional(t.String({ maxLength: 16000 })),
+      yaml: t.Optional(t.String()),
+      json: t.Optional(t.String()),
     }),
   ),
 )
@@ -34,9 +35,9 @@ const kindSchema = t.Object({
   publicPageEnabled: t.Optional(t.Boolean()),
   publicPageCopy: t.Optional(t.Nullable(publicPageCopySchema)),
   prosePre: t.Optional(t.Nullable(t.String())),
-  prosePreTranslations: translationMapSchema,
+  prosePreTranslations: proseTranslationMapSchema,
   prosePost: t.Optional(t.Nullable(t.String())),
-  prosePostTranslations: translationMapSchema,
+  prosePostTranslations: proseTranslationMapSchema,
   customExample: customExampleSchema,
 })
 
@@ -49,10 +50,10 @@ const putBodySchema = t.Object({
   extensionsSchema: t.Optional(t.Nullable(t.Record(t.String(), t.Any()))),
   publicPageEnabled: t.Optional(t.Boolean()),
   publicPageCopy: t.Optional(t.Nullable(publicPageCopySchema)),
-  prosePre: t.Optional(t.Nullable(t.String({ maxLength: 8000 }))),
-  prosePreTranslations: translationMapSchema,
-  prosePost: t.Optional(t.Nullable(t.String({ maxLength: 8000 }))),
-  prosePostTranslations: translationMapSchema,
+  prosePre: t.Optional(t.Nullable(t.String())),
+  prosePreTranslations: proseTranslationMapSchema,
+  prosePost: t.Optional(t.Nullable(t.String())),
+  prosePostTranslations: proseTranslationMapSchema,
   customExample: customExampleSchema,
 })
 

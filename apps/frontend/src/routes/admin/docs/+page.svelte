@@ -13,22 +13,13 @@
 	import Button from '$components/ui/Button.svelte'
 	import Input from '$components/ui/Input.svelte'
 	import Label from '$components/ui/Label.svelte'
-	import Textarea from '$components/ui/Textarea.svelte'
 	import AdminPageHeader from '$components/admin/AdminPageHeader.svelte'
+	import StickySaveBar from '$components/admin/StickySaveBar.svelte'
+	import MarkdownEditor from '$components/admin/MarkdownEditor.svelte'
 	import { i18n, LOCALE_LABELS, type Locale } from '$lib/stores/i18n.svelte'
 	import { m } from '$lib/paraglide/messages'
 
-	type FixedPosition =
-		| 'page_top'
-		| 'page_bottom'
-		| 'before_core'
-		| 'after_core'
-		| 'before_extensions'
-		| 'after_extensions'
-		| 'before_kinds'
-		| 'after_kinds'
-		| 'before_api'
-		| 'after_api'
+	type FixedPosition = 'page_top' | 'before_kinds' | 'after_kinds' | 'page_bottom'
 	type PositionMarker = FixedPosition | { kind: string; slot: 'before' | 'after' }
 
 	type CustomSection = {
@@ -81,18 +72,26 @@
 	let outroActiveLocale = $state<Locale>(i18n.defaultLocale)
 	let sections = $state<SectionRow[]>([])
 
-	const FIXED_POSITIONS: FixedPosition[] = [
-		'page_top',
-		'before_core',
-		'after_core',
-		'before_extensions',
-		'after_extensions',
-		'before_kinds',
-		'after_kinds',
-		'before_api',
-		'after_api',
-		'page_bottom',
-	]
+	type Snapshot = {
+		intro: string
+		introMap: Record<Locale, string>
+		outro: string
+		outroMap: Record<Locale, string>
+	}
+
+	function snapshot(): Snapshot {
+		return {
+			intro,
+			introMap: { ...introMap },
+			outro,
+			outroMap: { ...outroMap },
+		}
+	}
+
+	let pristine = $state<Snapshot | null>(null)
+	const headerDirty = $derived(pristine !== null && JSON.stringify(snapshot()) !== JSON.stringify(pristine))
+
+	const FIXED_POSITIONS: FixedPosition[] = ['page_top', 'before_kinds', 'after_kinds', 'page_bottom']
 
 	function labelForPosition(p: FixedPosition | 'kind'): string {
 		switch (p) {
@@ -100,22 +99,10 @@
 				return m.admin_docs_position_page_top()
 			case 'page_bottom':
 				return m.admin_docs_position_page_bottom()
-			case 'before_core':
-				return m.admin_docs_position_before_core()
-			case 'after_core':
-				return m.admin_docs_position_after_core()
-			case 'before_extensions':
-				return m.admin_docs_position_before_extensions()
-			case 'after_extensions':
-				return m.admin_docs_position_after_extensions()
 			case 'before_kinds':
 				return m.admin_docs_position_before_kinds()
 			case 'after_kinds':
 				return m.admin_docs_position_after_kinds()
-			case 'before_api':
-				return m.admin_docs_position_before_api()
-			case 'after_api':
-				return m.admin_docs_position_after_api()
 			case 'kind':
 				return m.admin_docs_position_kind()
 		}
@@ -166,11 +153,20 @@
 			outro = data.config.outroMarkdown ?? ''
 			outroMap = hydrateMap(data.config.outroMarkdownTranslations)
 			sections = data.config.customSections.map(rowFromSection)
+			pristine = snapshot()
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : m.admin_docs_load_failed())
 		} finally {
 			loading = false
 		}
+	}
+
+	function discardHeader() {
+		if (!pristine) return
+		intro = pristine.intro
+		introMap = { ...pristine.introMap }
+		outro = pristine.outro
+		outroMap = { ...pristine.outroMap }
 	}
 
 	onMount(load)
@@ -185,14 +181,12 @@
 		return Object.keys(out).length > 0 ? out : undefined
 	}
 
-	async function saveIntroOutro() {
+	async function saveHeader() {
 		saving = true
 		try {
-			const introTrans = collectTranslations(introMap)
-			const outroTrans = collectTranslations(outroMap)
 			const body = {
-				intro: { body: intro.trim() ? intro : null, translations: introTrans ?? {} },
-				outro: { body: outro.trim() ? outro : null, translations: outroTrans ?? {} },
+				intro: { body: intro.trim() ? intro : null, translations: collectTranslations(introMap) ?? {} },
+				outro: { body: outro.trim() ? outro : null, translations: collectTranslations(outroMap) ?? {} },
 			}
 			const res = await fetch('/api/admin/docs', {
 				method: 'PUT',
@@ -204,6 +198,7 @@
 				const data = (await res.json().catch(() => null)) as { error?: string } | null
 				throw new Error(data?.error ?? `Save failed: ${res.status}`)
 			}
+			pristine = snapshot()
 			toast.success(m.admin_docs_saved())
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : m.admin_docs_save_failed())
@@ -296,7 +291,7 @@
 				<Languages class="h-4 w-4" />
 				{m.admin_docs_intro()}
 			</CardTitle>
-			<CardDescription>{m.admin_docs_intro_note()}</CardDescription>
+			<CardDescription>{m.admin_docs_intro_note_frontmatter()}</CardDescription>
 		</CardHeader>
 		<CardContent class="space-y-3">
 			<div class="flex flex-wrap gap-1">
@@ -316,9 +311,9 @@
 				{/each}
 			</div>
 			{#if introActiveLocale === i18n.defaultLocale}
-				<Textarea bind:value={intro} rows={6} maxlength={16000} />
+				<MarkdownEditor bind:value={intro} minRows={8} />
 			{:else}
-				<Textarea bind:value={introMap[introActiveLocale]} rows={6} maxlength={16000} />
+				<MarkdownEditor bind:value={introMap[introActiveLocale]} minRows={8} />
 			{/if}
 		</CardContent>
 	</Card>
@@ -349,19 +344,12 @@
 				{/each}
 			</div>
 			{#if outroActiveLocale === i18n.defaultLocale}
-				<Textarea bind:value={outro} rows={6} maxlength={16000} />
+				<MarkdownEditor bind:value={outro} minRows={8} />
 			{:else}
-				<Textarea bind:value={outroMap[outroActiveLocale]} rows={6} maxlength={16000} />
+				<MarkdownEditor bind:value={outroMap[outroActiveLocale]} minRows={8} />
 			{/if}
 		</CardContent>
 	</Card>
-
-	<div class="flex justify-end">
-		<Button size="sm" onclick={saveIntroOutro} disabled={saving}>
-			<Save class="h-3.5 w-3.5" />
-			{m.admin_docs_save()}
-		</Button>
-	</div>
 
 	<Card>
 		<CardHeader>
@@ -433,9 +421,9 @@
 					<div class="grid gap-2">
 						<Label>{m.admin_docs_section_body()}</Label>
 						{#if section.activeLocale === i18n.defaultLocale}
-							<Textarea bind:value={section.body} rows={6} maxlength={16000} />
+							<MarkdownEditor bind:value={section.body} minRows={8} />
 						{:else}
-							<Textarea bind:value={section.bodyMap[section.activeLocale]} rows={6} maxlength={16000} />
+							<MarkdownEditor bind:value={section.bodyMap[section.activeLocale]} minRows={8} />
 						{/if}
 					</div>
 
@@ -460,4 +448,6 @@
 			</div>
 		</CardContent>
 	</Card>
+
+	<StickySaveBar dirty={headerDirty} {saving} onSave={saveHeader} onDiscard={discardHeader} />
 {/if}

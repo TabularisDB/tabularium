@@ -31,7 +31,7 @@ describe('docs-custom — intro/outro', () => {
   it('resolved view returns intro + outro as HTML for requested locale', async () => {
     await setIntroMarkdown('# Hello', { de: '# Hallo' })
     await setOutroMarkdown('Footer.', {})
-    const localized = getLocalizedDocsConfig('de')
+    const localized = await getLocalizedDocsConfig('de')
     expect(localized.intro.bodyMarkdown).toBe('# Hallo')
     expect(localized.intro.bodyHtml).toContain('<h1')
     expect(localized.outro.bodyMarkdown).toBe('Footer.')
@@ -40,7 +40,7 @@ describe('docs-custom — intro/outro', () => {
 
   it('falls back to default-locale when translation missing', async () => {
     await setIntroMarkdown('# Hello', {})
-    const localized = getLocalizedDocsConfig('de')
+    const localized = await getLocalizedDocsConfig('de')
     expect(localized.intro.bodyMarkdown).toBe('# Hello')
   })
 
@@ -135,7 +135,7 @@ describe('docs-custom — sections', () => {
       bodyTranslations: { de: 'Deutscher Text' },
       position: 'page_top',
     })
-    const localized = getLocalizedDocsConfig('de')
+    const localized = await getLocalizedDocsConfig('de')
     const s = localized.sections.find((x) => x.id === 'intro')
     expect(s?.title).toBe('Einleitung')
     expect(s?.body).toBe('Deutscher Text')

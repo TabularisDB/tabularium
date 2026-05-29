@@ -1,21 +1,10 @@
 import { getSetting, setSetting, deleteSetting, hasSetting } from './settings'
 import { SUPPORTED_LOCALES, type Locale, getI18nConfig } from './i18n'
-import { renderMarkdown } from './markdown'
+import { renderMarkdownWithMeta, type Heading } from './markdown'
 
 type LocalizedString = Partial<Record<Locale, string>>
 
-const FIXED_POSITIONS = [
-  'page_top',
-  'page_bottom',
-  'before_core',
-  'after_core',
-  'before_extensions',
-  'after_extensions',
-  'before_kinds',
-  'after_kinds',
-  'before_api',
-  'after_api',
-] as const
+const FIXED_POSITIONS = ['page_top', 'before_kinds', 'after_kinds', 'page_bottom'] as const
 type FixedPosition = (typeof FIXED_POSITIONS)[number]
 type KindPosition = { kind: string; slot: 'before' | 'after' }
 export type PositionMarker = FixedPosition | KindPosition
@@ -37,14 +26,45 @@ export type DocsConfig = {
   customSections: CustomSection[]
 }
 
+// Strip a leading YAML frontmatter block (--- ... ---) and return the extracted
+// scalar fields plus the rest of the markdown. Only the simple `key: value`
+// form is parsed — that's what the wiki pages use; nested/array values pass
+// through verbatim in `meta` but won't be split further.
+function parseFrontmatter(md: string): { meta: Record<string, string>; body: string } {
+  const lines = md.split('\n')
+  if (lines[0]?.trim() !== '---') return { meta: {}, body: md }
+  let endIdx = -1
+  for (let i = 1; i < lines.length; i++) {
+    if (lines[i].trim() === '---') {
+      endIdx = i
+      break
+    }
+  }
+  if (endIdx === -1) return { meta: {}, body: md }
+  const meta: Record<string, string> = {}
+  for (let i = 1; i < endIdx; i++) {
+    const m = lines[i].match(/^\s*([A-Za-z_][A-Za-z0-9_-]*)\s*:\s*(.*?)\s*$/)
+    if (!m) continue
+    const [, key, raw] = m
+    meta[key.toLowerCase()] = raw.replace(/^["']|["']$/g, '')
+  }
+  const body = lines
+    .slice(endIdx + 1)
+    .join('\n')
+    .replace(/^\n+/, '')
+  return { meta, body }
+}
+
 export type LocalizedDocsConfig = {
-  intro: { bodyMarkdown: string | null; bodyHtml: string | null }
-  outro: { bodyMarkdown: string | null; bodyHtml: string | null }
+  page: { title: string | null; excerpt: string | null }
+  intro: { bodyMarkdown: string | null; bodyHtml: string | null; headings: Heading[] }
+  outro: { bodyMarkdown: string | null; bodyHtml: string | null; headings: Heading[] }
   sections: Array<{
     id: string
     title: string | null
     body: string
     bodyHtml: string
+    headings: Heading[]
     position: PositionMarker
   }>
 }
@@ -59,7 +79,7 @@ export class DocsCustomError extends Error {
   }
 }
 
-const MARKDOWN_MAX = 16000
+const MARKDOWN_MAX = Number.MAX_SAFE_INTEGER
 const SECTION_TITLE_MAX = 200
 const SECTION_ID_RE = /^[a-z0-9][a-z0-9-]*$/
 const SECTION_ID_MAX = 60
@@ -190,30 +210,38 @@ export function getDocsConfig(): DocsConfig {
   }
 }
 
-export function getLocalizedDocsConfig(locale: Locale): LocalizedDocsConfig {
+export async function getLocalizedDocsConfig(locale: Locale): Promise<LocalizedDocsConfig> {
   const cfg = getDocsConfig()
-  const introBody = pickLocalized(cfg.introMarkdown, cfg.introMarkdownTranslations, locale)
+  const introRaw = pickLocalized(cfg.introMarkdown, cfg.introMarkdownTranslations, locale)
   const outroBody = pickLocalized(cfg.outroMarkdown, cfg.outroMarkdownTranslations, locale)
-  return {
-    intro: {
-      bodyMarkdown: introBody,
-      bodyHtml: introBody ? renderMarkdown(introBody) : null,
-    },
-    outro: {
-      bodyMarkdown: outroBody,
-      bodyHtml: outroBody ? renderMarkdown(outroBody) : null,
-    },
-    sections: cfg.customSections.map((s) => {
+  const fm = introRaw ? parseFrontmatter(introRaw) : { meta: {}, body: '' }
+  const introBody = introRaw ? fm.body : null
+  const introRendered = introBody ? await renderMarkdownWithMeta(introBody) : null
+  const outroRendered = outroBody ? await renderMarkdownWithMeta(outroBody) : null
+  const sections = await Promise.all(
+    cfg.customSections.map(async (s) => {
       const title = pickLocalized(s.title, s.titleTranslations, locale)
       const body = pickLocalized(s.body, s.bodyTranslations, locale) ?? ''
+      const rendered = await renderMarkdownWithMeta(body)
       return {
         id: s.id,
         title,
         body,
-        bodyHtml: renderMarkdown(body),
+        bodyHtml: rendered.html,
+        headings: rendered.headings,
         position: s.position,
       }
     }),
+  )
+  return {
+    page: { title: fm.meta.title ?? null, excerpt: fm.meta.excerpt ?? null },
+    intro: introRendered
+      ? { bodyMarkdown: introBody, bodyHtml: introRendered.html, headings: introRendered.headings }
+      : { bodyMarkdown: null, bodyHtml: null, headings: [] },
+    outro: outroRendered
+      ? { bodyMarkdown: outroBody, bodyHtml: outroRendered.html, headings: outroRendered.headings }
+      : { bodyMarkdown: null, bodyHtml: null, headings: [] },
+    sections,
   }
 }
 

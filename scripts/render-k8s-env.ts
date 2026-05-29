@@ -100,6 +100,12 @@ env.TOKEN_ENC_KEY ||= 'a'.repeat(64)
 // never sees this script, so the hardcoding is contained to the Tilt path.
 env.BOOTSTRAP_PASSWORD = 'tabularium-dev'
 
+// Persistence: the api pod mounts the PVC at /data (see deploy/dev/api.yaml).
+// Without this var the app falls back to ./data on the ephemeral container
+// overlay — which is why config.json + uploads + bootstrap-password vanish on
+// every pod restart, forcing a fresh init each time.
+env.DATA_DIR = '/data'
+
 const tempDir = mkdtempSync(join(tmpdir(), 'tabularium-k8s-env-'))
 const envFilePath = join(tempDir, 'tabularium.env')
 writeFileSync(

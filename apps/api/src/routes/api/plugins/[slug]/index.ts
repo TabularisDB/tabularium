@@ -120,7 +120,7 @@ export default new Elysia()
         const cacheKey = `plugin:readme:${plugin.id}:${plugin.updatedAt}:${picked.locale ?? 'default'}`
         readmeHtml = await cache().get<string>(cacheKey, isString)
         if (!readmeHtml) {
-          readmeHtml = renderMarkdown(picked.markdown)
+          readmeHtml = await renderMarkdown(picked.markdown)
           await cache().set(cacheKey, readmeHtml, README_TTL)
         }
       }

@@ -52,8 +52,8 @@ const LABEL_MAX = 60
 const DESC_MAX = 280
 const HERO_MAX = 80
 const INTRO_MAX = 600
-const PROSE_MAX = 8000
-const EXAMPLE_MAX = 16000
+const PROSE_MAX = Number.MAX_SAFE_INTEGER
+const EXAMPLE_MAX = Number.MAX_SAFE_INTEGER
 
 function validateTranslationMap(value: unknown, max: number, field: string): LocalizedString | undefined {
   if (value === undefined) return undefined

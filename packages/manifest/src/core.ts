@@ -43,20 +43,24 @@ export const ManifestSchema = Type.Object({
   license: Type.Optional(
     Type.String({
       maxLength: 40,
-      description: 'SPDX identifier (e.g. "MIT", "Apache-2.0", "GPL-3.0-only"). Plain text accepted; SPDX is strongly recommended.',
+      description:
+        'SPDX identifier (e.g. "MIT", "Apache-2.0", "GPL-3.0-only"). Plain text accepted; SPDX is strongly recommended.',
     }),
   ),
   icon: Type.Optional(
     Type.String({
       maxLength: 500,
-      description: 'URL to the plugin icon. Renders next to the plugin name on cards and detail pages. PNG/SVG recommended, 256×256 or vector.',
+      description:
+        'URL to the plugin icon. Renders next to the plugin name on cards and detail pages. PNG/SVG recommended, 256×256 or vector.',
     }),
   ),
   screenshots: Type.Optional(
     Type.Array(
       Type.Object({
         url: Type.String({ minLength: 1, maxLength: 500, description: 'Image URL.' }),
-        caption: Type.Optional(Type.String({ maxLength: 200, description: 'Optional caption shown under the screenshot.' })),
+        caption: Type.Optional(
+          Type.String({ maxLength: 200, description: 'Optional caption shown under the screenshot.' }),
+        ),
         alt: Type.Optional(Type.String({ maxLength: 200, description: 'Accessible alt text for screen readers.' })),
       }),
       {
@@ -72,18 +76,16 @@ export const ManifestSchema = Type.Object({
     }),
   ),
   readmes: Type.Optional(
-    Type.Record(
-      Type.String({ pattern: '^[a-z]{2}(-[A-Z]{2})?$', maxLength: 10 }),
-      Type.String({ maxLength: 500 }),
-      {
-        description: 'Per-locale README overrides. Map keys are BCP-47 locale codes (e.g. "en", "de", "zh-CN"); values are the same shape as `readme`.',
-      },
-    ),
+    Type.Record(Type.String({ pattern: '^[a-z]{2}(-[A-Z]{2})?$', maxLength: 10 }), Type.String({ maxLength: 500 }), {
+      description:
+        'Per-locale README overrides. Map keys are BCP-47 locale codes (e.g. "en", "de", "zh-CN"); values are the same shape as `readme`.',
+    }),
   ),
   documentation_url: Type.Optional(
     Type.String({
       pattern: '^https?://.+',
-      description: 'Link to standalone documentation site (Vitepress, MkDocs, GitHub Pages, etc.). Surfaces as an "Open docs" CTA.',
+      description:
+        'Link to standalone documentation site (Vitepress, MkDocs, GitHub Pages, etc.). Surfaces as an "Open docs" CTA.',
     }),
   ),
   homepage: Type.Optional(
@@ -104,7 +106,8 @@ export const ManifestSchema = Type.Object({
   min_runtime_version: Type.Optional(
     Type.String({
       maxLength: 40,
-      description: 'Minimum host runtime version (semver range or single version). The host refuses to load the plugin on older runtimes.',
+      description:
+        'Minimum host runtime version (semver range or single version). The host refuses to load the plugin on older runtimes.',
     }),
   ),
 })

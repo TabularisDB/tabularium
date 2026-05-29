@@ -9,6 +9,9 @@
 	import CardTitle from '$components/ui/CardTitle.svelte'
 	import FieldTable from '$components/docs/FieldTable.svelte'
 	import CodeExample from '$components/docs/CodeExample.svelte'
+	import FileText from '@lucide/svelte/icons/file-text'
+	import Copy from '@lucide/svelte/icons/copy'
+	import Check from '@lucide/svelte/icons/check'
 
 	type FieldDoc = {
 		key: string
@@ -29,21 +32,18 @@
 
 	type PositionMarker =
 		| 'page_top'
-		| 'page_bottom'
-		| 'before_core'
-		| 'after_core'
-		| 'before_extensions'
-		| 'after_extensions'
 		| 'before_kinds'
 		| 'after_kinds'
-		| 'before_api'
-		| 'after_api'
+		| 'page_bottom'
 		| { kind: string; slot: 'before' | 'after' }
+
+	type DocHeading = { level: 2 | 3; id: string; text: string }
 
 	type CustomSection = {
 		id: string
 		title: string | null
 		bodyHtml: string
+		headings: DocHeading[]
 		position: PositionMarker
 	}
 
@@ -61,8 +61,9 @@
 
 	type PluginDocs = {
 		meta: { generatedAt: number; schemaSourceUrl: string }
-		intro: { bodyHtml: string | null }
-		outro: { bodyHtml: string | null }
+		page: { title: string | null; excerpt: string | null }
+		intro: { bodyHtml: string | null; headings: DocHeading[] }
+		outro: { bodyHtml: string | null; headings: DocHeading[] }
 		customSections: CustomSection[]
 		coreFields: FieldDoc[]
 		globalExtensions: FieldDoc[]
@@ -102,19 +103,25 @@
 		)
 	}
 
-	const topPositions: PositionMarker[] = [
-		'page_top',
-		'before_core',
-		'after_core',
-		'before_extensions',
-		'after_extensions',
-		'before_kinds',
-	]
+	const topPositions: PositionMarker[] = ['page_top', 'before_kinds']
 	const bottomPositions: PositionMarker[] = ['after_kinds', 'page_bottom']
+
+	let copied = $state(false)
+	async function copyMarkdown() {
+		try {
+			const res = await fetch('/api/docs/plugin-development?format=md')
+			const md = await res.text()
+			await navigator.clipboard.writeText(md)
+			copied = true
+			setTimeout(() => (copied = false), 1500)
+		} catch (e) {
+			loadError = e instanceof Error ? e.message : 'Copy failed'
+		}
+	}
 </script>
 
 <svelte:head>
-	<title>{m.docs_plugin_dev_title()}</title>
+	<title>{docs?.page.title ?? m.docs_plugin_dev_title()}</title>
 </svelte:head>
 
 <div class="max-w-6xl mx-auto py-8 px-4">
@@ -125,11 +132,41 @@
 	{:else if docs}
 		<div class="lg:grid lg:grid-cols-[1fr_220px] lg:gap-8">
 			<main class="space-y-10 min-w-0">
-				<header class="space-y-3">
-					<h1 class="text-4xl font-semibold tracking-tight">{m.docs_plugin_dev_title()}</h1>
+				<header id="intro" class="space-y-4 scroll-mt-20">
+					<div class="flex flex-wrap items-start justify-between gap-4">
+						<h1 class="text-4xl font-semibold tracking-tight">{docs.page.title ?? m.docs_plugin_dev_title()}</h1>
+						<div class="flex flex-wrap gap-2 shrink-0">
+							<a
+								href="/api/docs/plugin-development?format=md"
+								target="_blank"
+								rel="noopener"
+								class="inline-flex items-center gap-1.5 rounded-md border border-border bg-card hover:bg-accent hover:text-accent-foreground px-3 h-8 text-xs font-medium transition-colors"
+								title={m.docs_llm_hint()}
+							>
+								<FileText class="h-3.5 w-3.5" />
+								{m.docs_toc_llm()}
+							</a>
+							<button
+								type="button"
+								class="inline-flex items-center gap-1.5 rounded-md border border-border bg-card hover:bg-accent hover:text-accent-foreground px-3 h-8 text-xs font-medium transition-colors cursor-pointer"
+								onclick={copyMarkdown}
+							>
+								{#if copied}
+									<Check class="h-3.5 w-3.5 text-emerald-500" />
+									{m.docs_llm_copied()}
+								{:else}
+									<Copy class="h-3.5 w-3.5" />
+									{m.docs_llm_copy()}
+								{/if}
+							</button>
+						</div>
+					</div>
+					{#if docs.page.excerpt}
+						<p class="text-lg text-muted-foreground">{docs.page.excerpt}</p>
+					{/if}
 					{#if docs.intro.bodyHtml}
 						<div class="prose dark:prose-invert max-w-none">{@html docs.intro.bodyHtml}</div>
-					{:else}
+					{:else if !docs.page.excerpt}
 						<p class="text-lg text-muted-foreground">{m.docs_plugin_dev_intro()}</p>
 					{/if}
 				</header>
@@ -239,33 +276,157 @@
 			</main>
 
 			<aside class="hidden lg:block">
-				<nav class="sticky top-20 space-y-1 text-sm">
-					<p class="text-xs uppercase tracking-wider text-muted-foreground mb-2">{m.docs_toc()}</p>
-					{#each docs.customSections as section (section.id)}
-						{#if section.title}
-							<a
-								href={`#section-${section.id}`}
-								class="block py-1 text-muted-foreground hover:text-foreground transition-colors"
-							>
-								{section.title}
-							</a>
-						{/if}
-					{/each}
-					{#if docs.kinds.length > 0}
-						<p class="text-xs uppercase tracking-wider text-muted-foreground mt-4 mb-2">
-							{m.docs_toc_kinds()}
+				<div class="sticky top-20 flex flex-col gap-4 text-sm max-h-[calc(100vh-6rem)]">
+					<div class="space-y-0.5 shrink-0">
+						<p class="text-[10px] uppercase tracking-wider text-muted-foreground/70 mb-2 font-semibold">
+							{m.docs_toc_reference()}
 						</p>
-						{#each docs.kinds as kind (kind.key)}
+						<a
+							href="/docs/plugin-development/schema"
+							class="block py-1 text-muted-foreground hover:text-foreground transition-colors"
+						>
+							{m.docs_schema_link_label()}
+						</a>
+						<a
+							href="/api/docs/plugin-development?format=md"
+							target="_blank"
+							rel="noopener"
+							class="block py-1 text-muted-foreground hover:text-foreground transition-colors"
+						>
+							{m.docs_toc_llm()} ↗
+						</a>
+					</div>
+					<nav class="space-y-0.5 overflow-y-auto pr-2 min-h-0 -mr-2">
+						<p class="text-[10px] uppercase tracking-wider text-muted-foreground/70 mb-2 font-semibold">
+							{m.docs_toc()}
+						</p>
+						<a href="#intro" class="block py-1 text-muted-foreground hover:text-foreground transition-colors">
+							{m.docs_toc_intro()}
+						</a>
+						{#each docs.intro.headings as h (h.id)}
 							<a
-								href={`#kind-${kind.key}`}
-								class="block py-1 text-muted-foreground hover:text-foreground transition-colors"
+								href={`#${h.id}`}
+								class={[
+									'block py-1 text-muted-foreground hover:text-foreground transition-colors',
+									h.level === 3 ? 'pl-5 text-xs' : 'pl-3',
+								].join(' ')}
 							>
-								{kind.label}
+								{h.text}
 							</a>
 						{/each}
-					{/if}
-				</nav>
+						{#each docs.customSections as section (section.id)}
+							{#if section.title}
+								<a
+									href={`#section-${section.id}`}
+									class="block py-1 text-muted-foreground hover:text-foreground transition-colors"
+								>
+									{section.title}
+								</a>
+								{#each section.headings as h (h.id)}
+									<a
+										href={`#${h.id}`}
+										class={[
+											'block py-1 text-muted-foreground hover:text-foreground transition-colors',
+											h.level === 3 ? 'pl-5 text-xs' : 'pl-3',
+										].join(' ')}
+									>
+										{h.text}
+									</a>
+								{/each}
+							{/if}
+						{/each}
+						{#if docs.kinds.length > 0}
+							<p class="text-[10px] uppercase tracking-wider text-muted-foreground/70 mt-5 mb-2 font-semibold">
+								{m.docs_toc_kinds()}
+							</p>
+							<a href="#kinds" class="block py-1 text-muted-foreground hover:text-foreground transition-colors">
+								{m.docs_section_kinds()}
+							</a>
+							{#each docs.kinds as kind (kind.key)}
+								<a
+									href={`#kind-${kind.key}`}
+									class="block py-1 pl-3 text-muted-foreground hover:text-foreground transition-colors"
+								>
+									{kind.label}
+								</a>
+							{/each}
+						{/if}
+					</nav>
+				</div>
 			</aside>
 		</div>
 	{/if}
 </div>
+
+<style>
+	main :global(.prose) {
+		--tw-prose-body: hsl(var(--foreground));
+		--tw-prose-headings: hsl(var(--foreground));
+		--tw-prose-links: hsl(var(--primary));
+		--tw-prose-bold: hsl(var(--foreground));
+		--tw-prose-bullets: hsl(var(--primary) / 0.7);
+		--tw-prose-counters: hsl(var(--primary));
+	}
+	main :global(.prose h2),
+	main :global(.prose h3),
+	main :global(.prose h4) {
+		scroll-margin-top: 5rem;
+	}
+	main :global(.prose h2) {
+		padding-bottom: 0.35em;
+		border-bottom: 1px solid hsl(var(--border));
+		margin-top: 2.5em;
+	}
+	main :global(.prose h3) {
+		margin-top: 1.75em;
+	}
+	main :global(.prose :not(pre) > code) {
+		font-size: 0.85em;
+		padding: 0.12em 0.4em;
+		border-radius: 4px;
+		background: hsl(var(--muted));
+		color: hsl(var(--foreground));
+		font-weight: 500;
+		border: 1px solid hsl(var(--border));
+	}
+	main :global(.prose :not(pre) > code::before),
+	main :global(.prose :not(pre) > code::after) {
+		content: '';
+	}
+	main :global(.prose pre) {
+		border: 1px solid hsl(var(--border));
+		border-radius: 8px;
+		padding: 0;
+		overflow: hidden;
+		background: transparent;
+	}
+	main :global(.prose pre > code),
+	main :global(.prose pre.shiki) {
+		display: block;
+		padding: 1rem 1.1rem;
+		font-size: 0.85rem;
+		line-height: 1.65;
+		background: hsl(var(--muted) / 0.4);
+	}
+	main :global(.prose .shiki) {
+		background: hsl(var(--muted) / 0.4) !important;
+	}
+	main :global(.prose ol) {
+		padding-left: 1.25em;
+	}
+	main :global(.prose ol > li::marker) {
+		color: hsl(var(--primary));
+		font-weight: 600;
+	}
+	main :global(.prose ul > li::marker) {
+		color: hsl(var(--primary) / 0.7);
+	}
+	:global(.dark) main :global(.shiki),
+	:global(.dark) main :global(.shiki span) {
+		color: var(--shiki-dark) !important;
+		background-color: var(--shiki-dark-bg) !important;
+		font-style: var(--shiki-dark-font-style) !important;
+		font-weight: var(--shiki-dark-font-weight) !important;
+		text-decoration: var(--shiki-dark-text-decoration) !important;
+	}
+</style>

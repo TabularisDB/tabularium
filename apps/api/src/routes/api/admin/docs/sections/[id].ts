@@ -20,13 +20,13 @@ const positionSchema = t.Union([
   }),
 ])
 
-const translationMapSchema = t.Optional(t.Record(t.String(), t.String({ maxLength: 16000 })))
+const translationMapSchema = t.Optional(t.Record(t.String(), t.String()))
 
 const sectionBodySchema = t.Object({
   id: t.String({ minLength: 1, maxLength: 60 }),
   title: t.Nullable(t.String({ maxLength: 200 })),
   titleTranslations: translationMapSchema,
-  body: t.String({ minLength: 1, maxLength: 16000 }),
+  body: t.String({ minLength: 1 }),
   bodyTranslations: translationMapSchema,
   position: positionSchema,
 })

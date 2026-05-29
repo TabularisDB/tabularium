@@ -47,7 +47,7 @@ export default new Elysia().get(
     const cacheKey = `page:html:${row.slug}:${row.locale}:${row.updatedAt}`
     let html = await cache().get<string>(cacheKey, isString)
     if (!html) {
-      html = renderMarkdown(row.content)
+      html = await renderMarkdown(row.content)
       await cache().set(cacheKey, html, RENDER_TTL)
     }
     return {

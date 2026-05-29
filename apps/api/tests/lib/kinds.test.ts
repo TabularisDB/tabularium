@@ -385,11 +385,10 @@ describe('validateKindDef — prose + customExample', () => {
     expect(def.prosePostTranslations).toEqual({ de: 'Nachher' })
   })
 
-  it('rejects oversize prose', () => {
-    const tooLong = 'x'.repeat(8001)
-    expect(() => validateKindDef({ key: 'theme', label: 'Theme', description: null, prosePre: tooLong })).toThrow(
-      /max 8000/,
-    )
+  it('accepts long prose without truncation', () => {
+    const long = 'x'.repeat(40000)
+    const def = validateKindDef({ key: 'theme', label: 'Theme', description: null, prosePre: long })
+    expect(def.prosePre).toBe(long)
   })
 
   it('accepts customExample with valid YAML', () => {
@@ -434,16 +433,15 @@ describe('validateKindDef — prose + customExample', () => {
     ).toThrow(/invalid JSON/i)
   })
 
-  it('rejects oversize customExample', () => {
-    const tooLong = '{"x":"' + 'a'.repeat(16100) + '"}'
-    expect(() =>
-      validateKindDef({
-        key: 'theme',
-        label: 'Theme',
-        description: null,
-        customExample: { json: tooLong },
-      }),
-    ).toThrow(/max 16000/)
+  it('accepts long customExample without truncation', () => {
+    const long = '{"x":"' + 'a'.repeat(40000) + '"}'
+    const def = validateKindDef({
+      key: 'theme',
+      label: 'Theme',
+      description: null,
+      customExample: { json: long },
+    })
+    expect(def.customExample?.json).toBe(long)
   })
 
   it('collapses empty customExample to null', () => {

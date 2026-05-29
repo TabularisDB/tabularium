@@ -142,10 +142,7 @@
 					<a href="#core" class="block py-1 text-muted-foreground hover:text-foreground transition-colors">
 						{m.docs_section_core()}
 					</a>
-					<a
-						href="#extensions"
-						class="block py-1 text-muted-foreground hover:text-foreground transition-colors"
-					>
+					<a href="#extensions" class="block py-1 text-muted-foreground hover:text-foreground transition-colors">
 						{m.docs_section_extensions()}
 					</a>
 					<a href="#editor" class="block py-1 text-muted-foreground hover:text-foreground transition-colors">

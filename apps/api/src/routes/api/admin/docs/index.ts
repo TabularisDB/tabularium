@@ -3,7 +3,7 @@ import { adminMiddleware } from '$middleware/admin'
 import { getDocsConfig, setIntroMarkdown, setOutroMarkdown, DocsCustomError } from '$lib/docs-custom'
 import { recordAudit, actorFromAdmin } from '$lib/audit'
 
-const translationMapSchema = t.Optional(t.Record(t.String(), t.String({ maxLength: 16000 })))
+const translationMapSchema = t.Optional(t.Record(t.String(), t.String()))
 
 const docsConfigSchema = t.Object({
   introMarkdown: t.Nullable(t.String()),
@@ -59,13 +59,13 @@ export default new Elysia()
       body: t.Object({
         intro: t.Optional(
           t.Object({
-            body: t.Nullable(t.String({ maxLength: 16000 })),
+            body: t.Nullable(t.String()),
             translations: t.Optional(translationMapSchema),
           }),
         ),
         outro: t.Optional(
           t.Object({
-            body: t.Nullable(t.String({ maxLength: 16000 })),
+            body: t.Nullable(t.String()),
             translations: t.Optional(translationMapSchema),
           }),
         ),

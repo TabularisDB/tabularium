@@ -16,6 +16,7 @@
 	import Label from '$components/ui/Label.svelte'
 	import AdminPageHeader from '$components/admin/AdminPageHeader.svelte'
 	import CollapsibleRow from '$components/admin/CollapsibleRow.svelte'
+	import MarkdownEditor from '$components/admin/MarkdownEditor.svelte'
 	import ConfirmDialog from '$components/ui/ConfirmDialog.svelte'
 	import ExtensionsEditor, { type ExtensionsDelta } from '$components/admin/ExtensionsEditor.svelte'
 	import { eden } from '$lib/eden'
@@ -445,12 +446,11 @@
 								<div class="grid gap-2">
 									<Label>{m.admin_kinds_prose_pre()}</Label>
 									{#if k.activeLocale === i18n.defaultLocale}
-										<Textarea bind:value={k.prosePreText} rows={4} maxlength={8000} />
+										<MarkdownEditor bind:value={k.prosePreText} minRows={6} />
 									{:else}
-										<Textarea
+										<MarkdownEditor
 											bind:value={k.prosePreMap[k.activeLocale]}
-											rows={4}
-											maxlength={8000}
+											minRows={6}
 											placeholder={m.admin_branding_fallback_placeholder({
 												locale: LOCALE_LABELS[i18n.defaultLocale] ?? i18n.defaultLocale,
 											})}
@@ -461,12 +461,11 @@
 								<div class="grid gap-2">
 									<Label>{m.admin_kinds_prose_post()}</Label>
 									{#if k.activeLocale === i18n.defaultLocale}
-										<Textarea bind:value={k.prosePostText} rows={4} maxlength={8000} />
+										<MarkdownEditor bind:value={k.prosePostText} minRows={6} />
 									{:else}
-										<Textarea
+										<MarkdownEditor
 											bind:value={k.prosePostMap[k.activeLocale]}
-											rows={4}
-											maxlength={8000}
+											minRows={6}
 											placeholder={m.admin_branding_fallback_placeholder({
 												locale: LOCALE_LABELS[i18n.defaultLocale] ?? i18n.defaultLocale,
 											})}
@@ -479,7 +478,6 @@
 									<Textarea
 										bind:value={k.customExampleYaml}
 										rows={8}
-										maxlength={16000}
 										placeholder={`name: my-plugin\nkind: ${k.key || 'theme'}\nversion: 1.0.0\n`}
 									/>
 									<p class="text-[10px] text-muted-foreground">{m.admin_kinds_custom_example_note()}</p>
