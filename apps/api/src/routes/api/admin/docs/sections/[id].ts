@@ -5,15 +5,9 @@ import { recordAudit, actorFromAdmin } from '$lib/audit'
 
 const positionSchema = t.Union([
   t.Literal('page_top'),
-  t.Literal('page_bottom'),
-  t.Literal('before_core'),
-  t.Literal('after_core'),
-  t.Literal('before_extensions'),
-  t.Literal('after_extensions'),
   t.Literal('before_kinds'),
   t.Literal('after_kinds'),
-  t.Literal('before_api'),
-  t.Literal('after_api'),
+  t.Literal('page_bottom'),
   t.Object({
     kind: t.String({ minLength: 1, maxLength: 40 }),
     slot: t.Union([t.Literal('before'), t.Literal('after')]),

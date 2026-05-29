@@ -14,19 +14,19 @@ describe('parseManifestText — manifest.require_kind policy', () => {
   beforeEach(clearDb)
 
   it('accepts a kind-less manifest when policy is off', () => {
-    expect(parseManifestText(BASE, 'yaml').name).toBe('my-plugin')
+    expect(parseManifestText(BASE, 'tabularium.yaml').name).toBe('my-plugin')
   })
 
   it('accepts a kind-less manifest when policy is on but no kinds are configured', async () => {
     await setSetting('manifest.require_kind', '1')
-    expect(parseManifestText(BASE, 'yaml').name).toBe('my-plugin')
+    expect(parseManifestText(BASE, 'tabularium.yaml').name).toBe('my-plugin')
   })
 
   it('rejects a kind-less manifest when policy is on AND at least one kind exists', async () => {
     await createKind({ key: 'driver', label: 'Drivers', description: null })
     await setSetting('manifest.require_kind', '1')
     try {
-      parseManifestText(BASE, 'yaml')
+      parseManifestText(BASE, 'tabularium.yaml')
       throw new Error('expected ManifestValidationError')
     } catch (err) {
       expect(err).toBeInstanceOf(ManifestValidationError)
@@ -39,7 +39,7 @@ describe('parseManifestText — manifest.require_kind policy', () => {
     await createKind({ key: 'driver', label: 'Drivers', description: null })
     await setSetting('manifest.require_kind', '1')
     try {
-      parseManifestText(`${BASE}kind: theme\n`, 'yaml')
+      parseManifestText(`${BASE}kind: theme\n`, 'tabularium.yaml')
       throw new Error('expected ManifestValidationError')
     } catch (err) {
       expect(err).toBeInstanceOf(ManifestValidationError)
@@ -51,14 +51,14 @@ describe('parseManifestText — manifest.require_kind policy', () => {
   it('accepts a manifest with a configured kind when policy is on', async () => {
     await createKind({ key: 'driver', label: 'Drivers', description: null })
     await setSetting('manifest.require_kind', '1')
-    const m = parseManifestText(`${BASE}kind: driver\n`, 'yaml')
+    const m = parseManifestText(`${BASE}kind: driver\n`, 'tabularium.yaml')
     expect(m.kind).toBe('driver')
   })
 
   it('off-toggle short-circuits even with an unknown kind in the manifest', async () => {
     await createKind({ key: 'driver', label: 'Drivers', description: null })
     await deleteSetting('manifest.require_kind')
-    const m = parseManifestText(`${BASE}kind: anything\n`, 'yaml')
+    const m = parseManifestText(`${BASE}kind: anything\n`, 'tabularium.yaml')
     expect(m.kind).toBe('anything')
   })
 })

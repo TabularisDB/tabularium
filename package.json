@@ -28,7 +28,8 @@
     "yaml": "^2.9.0"
   },
   "overrides": {
-    "elysia": "^1.4.28"
+    "elysia": "^1.4.28",
+    "marked": "18.0.4"
   },
   "packageManager": "bun@1.3.12"
 }

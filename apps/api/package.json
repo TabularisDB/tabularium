@@ -1,6 +1,6 @@
 {
   "name": "@tabularium/api",
-  "version": "0.5.1",
+  "version": "0.5.2",
   "private": true,
   "module": "src/index.ts",
   "types": "src/types.ts",
@@ -48,7 +48,7 @@
     "elysia-fsr": "^0.1.0",
     "isomorphic-dompurify": "^3.12.0",
     "jose": "^6.2.3",
-    "marked": "^18.0.3",
+    "marked": "^18.0.4",
     "marked-gfm-heading-id": "^4.1.4",
     "marked-shiki": "^1.2.1",
     "mysql2": "^3.22.3",

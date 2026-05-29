@@ -55,7 +55,8 @@ marked.use(gfmHeadingId())
 marked.use(
   markedShiki({
     async highlight(code, lang) {
-      const safeLang = lang && SHIKI_LANGS.includes(lang) ? lang : 'text'
+      const known = lang && (SHIKI_LANGS as readonly string[]).includes(lang)
+      const safeLang = (known ? lang : 'text') as (typeof SHIKI_LANGS)[number] | 'text'
       const hl = await getHighlighter()
       return hl.codeToHtml(code, {
         lang: safeLang,

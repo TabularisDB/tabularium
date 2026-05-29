@@ -139,11 +139,7 @@ export default new Elysia()
         readmeLocale: picked.locale,
         readmeAvailableLocales: picked.available,
         readmeMarkdown: undefined,
-      } as unknown as typeof detail & {
-        readmeHtml: string | null
-        readmeLocale: string | null
-        readmeAvailableLocales: string[]
-      }
+      } as never
     },
     {
       detail: {

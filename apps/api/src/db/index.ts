@@ -56,7 +56,8 @@ export async function connectDB(databaseUrl: string): Promise<void> {
     const { drizzle } = await import('drizzle-orm/mysql2')
     const { relations: mysqlRelations } = await import('./relations.mysql')
     const pool = mysql.createPool({ uri: databaseUrl, supportBigNumbers: true, bigNumberStrings: false })
-    _instance = drizzle({ client: pool, relations: mysqlRelations, mode: 'default' as const }) as unknown as DB
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    _instance = drizzle({ client: pool, relations: mysqlRelations, mode: 'default' } as any) as unknown as DB
     return
   }
 
