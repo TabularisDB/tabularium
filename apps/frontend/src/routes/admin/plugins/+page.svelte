@@ -9,6 +9,8 @@
 	import Star from '@lucide/svelte/icons/star'
 	import StarOff from '@lucide/svelte/icons/star-off'
 	import Pin from '@lucide/svelte/icons/pin'
+	import ShieldCheck from '@lucide/svelte/icons/shield-check'
+	import ShieldOff from '@lucide/svelte/icons/shield-off'
 	import Search from '@lucide/svelte/icons/search'
 	import Card from '$components/ui/Card.svelte'
 	import CardContent from '$components/ui/CardContent.svelte'
@@ -34,6 +36,8 @@
 		rejectionReason: string | null
 		latestVersion: string | null
 		featured?: boolean
+		verified?: boolean
+		verifiedAt?: number | null
 		category?: string | null
 		createdAt: number
 		updatedAt: number
@@ -171,6 +175,25 @@
 						: ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`),
 				)
 			toast.success(p.featured ? m.admin_plugins_unpinned() : m.admin_plugins_pinned())
+			await load()
+		} catch (e) {
+			toast.error(e instanceof Error ? e.message : m.admin_plugins_update_failed())
+		} finally {
+			busy = { ...busy, [p.id]: false }
+		}
+	}
+
+	async function toggleVerified(p: AdminPlugin) {
+		busy = { ...busy, [p.id]: true }
+		try {
+			const { error } = await eden.api.admin.plugins({ id: p.id }).patch({ verified: !p.verified })
+			if (error)
+				throw new Error(
+					typeof error.value === 'string'
+						? error.value
+						: ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`),
+				)
+			toast.success(p.verified ? m.admin_plugins_unverified({ name: p.name }) : m.admin_plugins_verified_toast({ name: p.name }))
 			await load()
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : m.admin_plugins_update_failed())
@@ -343,6 +366,11 @@
 									><Pin class="h-2.5 w-2.5" />{m.admin_plugins_featured()}</Badge
 								>
 							{/if}
+							{#if p.verified}
+								<Badge variant="default" class="text-[10px] gap-1 bg-emerald-600/15 text-emerald-600 hover:bg-emerald-600/20"
+									><ShieldCheck class="h-2.5 w-2.5" />{m.admin_plugins_verified()}</Badge
+								>
+							{/if}
 							{#if p.category}
 								<Badge variant="outline" class="text-[10px]">{p.category}</Badge>
 							{/if}
@@ -365,6 +393,16 @@
 							title={p.featured ? m.admin_plugins_unpin() : m.admin_plugins_pin()}
 						>
 							{#if p.featured}<StarOff class="h-3.5 w-3.5" />{:else}<Star class="h-3.5 w-3.5" />{/if}
+						</Button>
+						<Button
+							variant="ghost"
+							size="sm"
+							onclick={() => toggleVerified(p)}
+							disabled={busy[p.id]}
+							aria-label={p.verified ? m.admin_plugins_unverify() : m.admin_plugins_verify()}
+							title={p.verified ? m.admin_plugins_unverify() : m.admin_plugins_verify()}
+						>
+							{#if p.verified}<ShieldOff class="h-3.5 w-3.5" />{:else}<ShieldCheck class="h-3.5 w-3.5" />{/if}
 						</Button>
 						<Button
 							variant="ghost"

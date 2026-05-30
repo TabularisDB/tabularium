@@ -91,6 +91,8 @@ export const plugins = pgTable(
     manifestVersion: text('manifest_version'),
     featured: smallint('featured').notNull().default(0),
     featuredOrder: integer('featured_order'),
+    verifiedAt: ts('verified_at'),
+    verifiedBy: text('verified_by').references(() => users.id, { onDelete: 'set null' }),
     downloads: integer('downloads').notNull().default(0),
     createdAt: ts('created_at').notNull().$defaultFn(now),
     updatedAt: ts('updated_at').notNull().$defaultFn(now),
@@ -102,6 +104,7 @@ export const plugins = pgTable(
     byCategory: index('plugins_category_idx').on(t.category),
     byUpdated: index('plugins_updated_at_idx').on(t.updatedAt),
     byFeatured: index('plugins_featured_idx').on(t.featured, t.featuredOrder),
+    byVerifiedAt: index('plugins_verified_at_idx').on(t.verifiedAt),
   }),
 )
 

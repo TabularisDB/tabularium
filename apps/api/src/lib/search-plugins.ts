@@ -1,6 +1,6 @@
 // Dialect-aware plugin search. pg → tsvector+GIN, sqlite → FTS5, mysql → LIKE
 // (FULLTEXT's 3-char min token would silently drop short slugs like "ui").
-import { sql, and, eq, count, inArray } from 'drizzle-orm'
+import { sql, and, eq, count, inArray, isNotNull } from 'drizzle-orm'
 import { db, getDialect } from '$db'
 import { plugins } from '$db/schema'
 
@@ -9,6 +9,7 @@ export interface SearchFilters {
   category?: string | null
   tag?: string | null
   featured?: boolean
+  verified?: boolean
 }
 
 export interface SearchOptions extends SearchFilters {
@@ -60,6 +61,7 @@ async function searchPgIds(term: string, opts: SearchOptions): Promise<SearchRes
   const filters = [eq(plugins.status, opts.status)]
   if (opts.category) filters.push(eq(plugins.category, opts.category))
   if (opts.featured) filters.push(eq(plugins.featured, 1))
+  if (opts.verified) filters.push(isNotNull(plugins.verifiedAt))
   if (opts.tag) {
     filters.push(sql`${plugins.tags} LIKE ${'%"' + escapeLike(opts.tag) + '"%'}`)
   }
@@ -93,6 +95,7 @@ async function searchSqliteIds(term: string, opts: SearchOptions): Promise<Searc
   const filters = [eq(plugins.status, opts.status)]
   if (opts.category) filters.push(eq(plugins.category, opts.category))
   if (opts.featured) filters.push(eq(plugins.featured, 1))
+  if (opts.verified) filters.push(isNotNull(plugins.verifiedAt))
   if (opts.tag) {
     filters.push(sql`${plugins.tags} LIKE ${'%"' + escapeLike(opts.tag) + '"%'}`)
   }
@@ -131,6 +134,7 @@ async function searchMysqlIds(term: string, opts: SearchOptions): Promise<Search
   ]
   if (opts.category) filters.push(eq(plugins.category, opts.category))
   if (opts.featured) filters.push(eq(plugins.featured, 1))
+  if (opts.verified) filters.push(isNotNull(plugins.verifiedAt))
   if (opts.tag) filters.push(sql`${plugins.tags} LIKE ${'%"' + escapeLike(opts.tag) + '"%'}`)
   const where = and(...filters)
 

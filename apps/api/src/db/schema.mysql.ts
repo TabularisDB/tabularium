@@ -91,6 +91,8 @@ export const plugins = mysqlTable(
     manifestVersion: varchar('manifest_version', { length: 80 }),
     featured: tinyint('featured').notNull().default(0),
     featuredOrder: int('featured_order'),
+    verifiedAt: ts('verified_at'),
+    verifiedBy: id('verified_by').references(() => users.id, { onDelete: 'set null' }),
     downloads: int('downloads').notNull().default(0),
     createdAt: ts('created_at').notNull().$defaultFn(now),
     updatedAt: ts('updated_at').notNull().$defaultFn(now),
@@ -102,6 +104,7 @@ export const plugins = mysqlTable(
     byCategory: index('plugins_category_idx').on(t.category),
     byUpdated: index('plugins_updated_at_idx').on(t.updatedAt),
     byFeatured: index('plugins_featured_idx').on(t.featured, t.featuredOrder),
+    byVerifiedAt: index('plugins_verified_at_idx').on(t.verifiedAt),
   }),
 )
 

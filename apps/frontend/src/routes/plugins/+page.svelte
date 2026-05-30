@@ -24,6 +24,7 @@
 	let kind = $state('')
 	let sort = $state<'updated' | 'new' | 'name' | 'featured'>('updated')
 	let onlyFeatured = $state(false)
+	let onlyVerified = $state(false)
 
 	let pageNum = $state(1)
 	let total = $state(0)
@@ -52,6 +53,7 @@
 		const s = url.searchParams.get('sort')
 		if (s === 'updated' || s === 'new' || s === 'name' || s === 'featured') sort = s
 		onlyFeatured = url.searchParams.get('featured') === '1'
+		onlyVerified = url.searchParams.get('verified') === '1'
 		fetchPlugins()
 	})
 
@@ -64,6 +66,7 @@
 			if (tag) query.tag = tag
 			if (kind) query.kind = kind
 			if (onlyFeatured) query.featured = '1'
+			if (onlyVerified) query.verified = '1'
 			const { data, error } = await eden.api.plugins.get({ query })
 			if (error) throw error
 			const payload = data as PluginListResponse
@@ -94,11 +97,12 @@
 		void kind
 		void sort
 		void onlyFeatured
+		void onlyVerified
 		void pageNum
 		fetchPlugins()
 	})
 
-	const hasActiveFilters = $derived(Boolean(category || tag || kind || onlyFeatured || search))
+	const hasActiveFilters = $derived(Boolean(category || tag || kind || onlyFeatured || onlyVerified || search))
 
 	function clearFilters() {
 		search = ''
@@ -106,6 +110,7 @@
 		tag = ''
 		kind = ''
 		onlyFeatured = false
+		onlyVerified = false
 		sort = 'updated'
 		pageNum = 1
 	}
@@ -143,6 +148,10 @@
 			<label class="flex items-center gap-2 text-sm cursor-pointer">
 				<input type="checkbox" bind:checked={onlyFeatured} class="h-4 w-4 rounded border-input" />
 				<span>{m.plugins_list_featured_only()}</span>
+			</label>
+			<label class="flex items-center gap-2 text-sm cursor-pointer">
+				<input type="checkbox" bind:checked={onlyVerified} class="h-4 w-4 rounded border-input" />
+				<span>{m.plugins_list_verified_only()}</span>
 			</label>
 			{#if hasActiveFilters}
 				<Button variant="ghost" size="sm" onclick={clearFilters}>

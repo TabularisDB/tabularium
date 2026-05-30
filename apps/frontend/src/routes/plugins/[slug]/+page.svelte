@@ -25,6 +25,7 @@
 	import Badge from '$components/ui/Badge.svelte'
 	import Button from '$components/ui/Button.svelte'
 	import Skeleton from '$components/ui/Skeleton.svelte'
+	import VerifiedBadge from '$components/ui/VerifiedBadge.svelte'
 	import ConfirmDialog from '$components/ui/ConfirmDialog.svelte'
 	import { eden } from '$lib/eden'
 	import { auth } from '$lib/stores/auth.svelte'
@@ -426,7 +427,12 @@
 							<Badge variant="outline" class="text-[10px] font-mono">{plugin.category}</Badge>
 						{/if}
 					</div>
-					<h1 class="text-5xl md:text-6xl leading-[0.95] tracking-tight font-semibold">{plugin.name}</h1>
+					<div class="flex items-center gap-3 flex-wrap">
+						<h1 class="text-5xl md:text-6xl leading-[0.95] tracking-tight font-semibold">{plugin.name}</h1>
+						{#if plugin.verified}
+							<VerifiedBadge size="md" verifiedAt={plugin.verifiedAt ?? null} />
+						{/if}
+					</div>
 					<p class="text-lg text-foreground/85 max-w-2xl leading-relaxed">{plugin.description}</p>
 					<div class="flex items-center gap-4 text-sm text-muted-foreground flex-wrap pt-1">
 						<span>{m.plugin_detail_by()} <span class="text-foreground font-medium">{author}</span></span>

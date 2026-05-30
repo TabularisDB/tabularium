@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { cn } from '$lib/utils'
 	import Badge from '$components/ui/Badge.svelte'
+	import VerifiedBadge from '$components/ui/VerifiedBadge.svelte'
 	import Boxes from '@lucide/svelte/icons/boxes'
 	import type { Plugin } from '$lib/types'
 
@@ -26,7 +27,12 @@
 		</div>
 		<div class="min-w-0 flex-1 space-y-1.5">
 			<div class="flex items-start justify-between gap-2">
-				<h3 class="font-semibold tracking-tight group-hover:text-primary transition-colors truncate">{plugin.name}</h3>
+				<div class="flex items-center gap-1.5 min-w-0">
+					<h3 class="font-semibold tracking-tight group-hover:text-primary transition-colors truncate">{plugin.name}</h3>
+					{#if plugin.verified}
+						<VerifiedBadge size="sm" verifiedAt={plugin.verifiedAt ?? null} />
+					{/if}
+				</div>
 				{#if plugin.latestVersion}
 					<Badge variant="secondary" class="font-mono text-[10px] flex-shrink-0">v{plugin.latestVersion}</Badge>
 				{/if}

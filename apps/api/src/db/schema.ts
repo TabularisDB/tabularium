@@ -90,6 +90,11 @@ export const plugins = sqliteTable(
     // Admin pinning for landing "featured" slot.
     featured: integer('featured').notNull().default(0),
     featuredOrder: integer('featured_order'),
+    // Admin audit verification — independent of `status`. Stays until admin
+    // revokes; new releases do not reset it. `verifiedAt IS NOT NULL` IS the
+    // verified state — no separate boolean (would be redundant + drift-prone).
+    verifiedAt: integer('verified_at'),
+    verifiedBy: text('verified_by').references(() => users.id, { onDelete: 'set null' }),
     // Resolved-asset hits via /api/plugins/:slug/latest. Direct repo-asset
     // clicks aren't counted (we don't proxy them).
     downloads: integer('downloads').notNull().default(0),
@@ -103,6 +108,7 @@ export const plugins = sqliteTable(
     byCategory: index('plugins_category_idx').on(t.category),
     byUpdated: index('plugins_updated_at_idx').on(t.updatedAt),
     byFeatured: index('plugins_featured_idx').on(t.featured, t.featuredOrder),
+    byVerifiedAt: index('plugins_verified_at_idx').on(t.verifiedAt),
   }),
 )
 

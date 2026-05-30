@@ -1,7 +1,7 @@
 import { Elysia, t } from 'elysia'
 import { db } from '$db'
 import { plugins } from '$db/schema'
-import { like, count, and, eq } from 'drizzle-orm'
+import { like, count, and, eq, isNotNull, sql } from 'drizzle-orm'
 import { projectPlugin } from '$lib/plugin-projection'
 import { getKinds, isKindKey } from '$lib/kinds'
 import { searchPluginIds } from '$lib/search-plugins'
@@ -33,6 +33,8 @@ const pluginSummarySchema = t.Object({
   issuesUrl: t.Nullable(t.String()),
   featured: t.Boolean(),
   featuredOrder: t.Nullable(t.Number()),
+  verified: t.Boolean(),
+  verifiedAt: t.Nullable(t.Number()),
   downloads: t.Number(),
   manifestFetchedAt: t.Nullable(t.Number()),
   createdAt: t.Number(),
@@ -78,14 +80,19 @@ export default new Elysia().get(
     const kindParam = query.kind?.trim()
     const kindFilterActive = kindParam !== undefined && kindParam.length > 0
     const kindValid = kindFilterActive && isKindKey(kindParam!)
-    const orderBy: Record<string, 'asc' | 'desc'> =
-      query.sort === 'new'
-        ? { createdAt: 'desc' }
-        : query.sort === 'name'
-          ? { name: 'asc' }
-          : query.sort === 'featured'
-            ? { featuredOrder: 'asc' }
-            : { updatedAt: 'desc' }
+    // Verified plugins always lead each sort — admin-vetted entries sit
+    // above unverified at equal rank. Drizzle's relational orderBy accepts a
+    // function returning SQL fragments; `verifiedAt IS NULL` evaluates to 0
+    // for verified rows and 1 for the rest in all three dialects, so an
+    // ascending sort puts verified first regardless of NULLS-default policy.
+    const baseOrderFns: Record<string, (cols: typeof plugins) => ReturnType<typeof sql>> = {
+      new: (cols) => sql`${cols.createdAt} DESC`,
+      name: (cols) => sql`${cols.name} ASC`,
+      featured: (cols) => sql`${cols.featuredOrder} ASC`,
+      updated: (cols) => sql`${cols.updatedAt} DESC`,
+    }
+    const baseOrderFn = baseOrderFns[query.sort ?? 'updated'] ?? baseOrderFns.updated
+    const orderBy = (cols: typeof plugins) => [sql`(${cols.verifiedAt} IS NULL) ASC`, baseOrderFn(cols)]
 
     if (kindFilterActive && !kindValid) {
       return {
@@ -98,10 +105,12 @@ export default new Elysia().get(
     }
 
     const tagFilter = kindFilterActive ? kindParam! : tag
+    const verifiedOnly = query.verified === '1'
     const where: RelationalFilter = { status: 'approved' }
     if (category) where.category = category
     if (tagFilter) where.tags = { like: tagLikePattern(tagFilter) }
     if (query.featured === '1') where.featured = 1
+    if (verifiedOnly) where.verifiedAt = { isNotNull: true }
 
     let total: number
     let rows: Awaited<ReturnType<typeof db.query.plugins.findMany>>
@@ -113,6 +122,7 @@ export default new Elysia().get(
         category: category || null,
         tag: tagFilter || null,
         featured: query.featured === '1',
+        verified: verifiedOnly,
         limit,
         offset,
       })
@@ -129,6 +139,7 @@ export default new Elysia().get(
       if (category) builderConditions.push(eq(plugins.category, category))
       if (tagFilter) builderConditions.push(like(plugins.tags, tagLikePattern(tagFilter)))
       if (query.featured === '1') builderConditions.push(eq(plugins.featured, 1))
+      if (verifiedOnly) builderConditions.push(isNotNull(plugins.verifiedAt))
       const builderWhere = builderConditions.length === 1 ? builderConditions[0] : and(...builderConditions)
 
       const [row] = await db.select({ total: count() }).from(plugins).where(builderWhere)
@@ -194,6 +205,7 @@ export default new Elysia().get(
       tag: t.Optional(t.String()),
       kind: t.Optional(t.String()),
       featured: t.Optional(t.String()),
+      verified: t.Optional(t.String()),
       sort: t.Optional(t.Union([t.Literal('updated'), t.Literal('new'), t.Literal('name'), t.Literal('featured')])),
       page: t.Optional(t.String()),
       limit: t.Optional(t.String()),

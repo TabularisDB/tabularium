@@ -40,6 +40,7 @@
 		type: 'string' | 'number' | 'integer' | 'boolean' | 'array' | 'object'
 		description: string
 		descriptionTranslations: Record<string, string>
+		required: boolean
 		isAdvanced: boolean
 		advancedJson: string
 		stringEnum: string
@@ -62,6 +63,7 @@
 			type: 'string',
 			description: '',
 			descriptionTranslations: {},
+			required: false,
 			isAdvanced: false,
 			advancedJson: '',
 			stringEnum: '',
@@ -93,6 +95,7 @@
 				? (t as FormProperty['type'])
 				: 'string'
 		fp.description = typeof node.description === 'string' ? node.description : ''
+		fp.required = node.required === true
 		const xTrans = node['x-translations']
 		if (xTrans && typeof xTrans === 'object' && !Array.isArray(xTrans)) {
 			const map: Record<string, string> = {}
@@ -120,8 +123,11 @@
 	function formToNode(fp: FormProperty): SchemaNode {
 		if (fp.isAdvanced) {
 			const text = (fp.advancedJson ?? '').trim()
-			if (!text) return { type: fp.type }
-			return JSON.parse(text)
+			if (!text) return fp.required ? { type: fp.type, required: true } : { type: fp.type }
+			const parsed = JSON.parse(text) as SchemaNode
+			if (fp.required) parsed.required = true
+			else if (parsed.required === true) delete parsed.required
+			return parsed
 		}
 		const out: SchemaNode = { type: fp.type }
 		if (fp.description.trim()) out.description = fp.description.trim()
@@ -142,6 +148,7 @@
 		if (fp.type === 'array') {
 			out.items = { type: fp.arrayItemType }
 		}
+		if (fp.required) out.required = true
 		return out
 	}
 
@@ -291,16 +298,20 @@
 	}
 
 	function summary(fp: FormProperty): string {
-		if (fp.isAdvanced) return 'custom JSON Schema'
 		const parts: string[] = []
-		if (fp.type === 'string' && fp.stringEnum.trim()) {
-			parts.push(`one of: ${fp.stringEnum}`)
-		} else if (fp.type === 'array') {
-			parts.push(`${fp.arrayItemType}[]`)
+		if (fp.isAdvanced) {
+			parts.push('custom JSON Schema')
 		} else {
-			parts.push(fp.type)
+			if (fp.type === 'string' && fp.stringEnum.trim()) {
+				parts.push(`one of: ${fp.stringEnum}`)
+			} else if (fp.type === 'array') {
+				parts.push(`${fp.arrayItemType}[]`)
+			} else {
+				parts.push(fp.type)
+			}
+			if (fp.description.trim()) parts.push(fp.description.trim())
 		}
-		if (fp.description.trim()) parts.push(fp.description.trim())
+		if (fp.required) parts.push(m.admin_manifest_ext_required_summary())
 		return parts.join(' · ')
 	}
 
@@ -408,6 +419,17 @@
 							</select>
 						</div>
 					</div>
+
+					<label class="inline-flex items-center gap-2 text-sm cursor-pointer">
+						<input
+							type="checkbox"
+							bind:checked={fp.required}
+							onchange={() => commit()}
+							class="h-4 w-4 rounded border-input"
+						/>
+						<span class="font-medium">{m.admin_manifest_ext_field_required()}</span>
+						<span class="text-xs text-muted-foreground">{m.admin_manifest_ext_field_required_hint()}</span>
+					</label>
 
 					{#if !fp.isAdvanced}
 						<div class="grid gap-1">

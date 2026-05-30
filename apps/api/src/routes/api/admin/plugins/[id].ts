@@ -41,6 +41,11 @@ export default new Elysia()
         if (!body.featured) patch.featuredOrder = null
       }
       if (body.featuredOrder !== undefined) patch.featuredOrder = body.featuredOrder
+      const verifyChange = body.verified !== undefined && body.verified !== (existing.verifiedAt !== null)
+      if (verifyChange) {
+        patch.verifiedAt = body.verified ? Date.now() : null
+        patch.verifiedBy = body.verified ? admin.id : null
+      }
       const ownerChange = body.ownerId !== undefined && body.ownerId !== existing.ownerId
       if (body.ownerId !== undefined) {
         const target = await db.query.users.findFirst({ where: { id: body.ownerId } })
@@ -59,6 +64,15 @@ export default new Elysia()
           action: 'plugin.force_transfer',
           target: `plugin:${params.id}`,
           meta: { fromOwnerId: existing.ownerId, toOwnerId: body.ownerId } as Record<string, unknown>,
+          ip: request.headers.get('x-forwarded-for') ?? null,
+        })
+      }
+      if (verifyChange) {
+        await recordAudit({
+          actorId: admin.id,
+          actorName: admin.displayName,
+          action: body.verified ? 'plugin.verify' : 'plugin.unverify',
+          target: `plugin:${params.id}`,
           ip: request.headers.get('x-forwarded-for') ?? null,
         })
       }
@@ -91,6 +105,7 @@ export default new Elysia()
         featured: t.Optional(t.Boolean()),
         featuredOrder: t.Optional(t.Number()),
         ownerId: t.Optional(t.String()),
+        verified: t.Optional(t.Boolean()),
       }),
       response: {
         200: t.Object({ ok: t.Boolean(), id: t.String() }),
