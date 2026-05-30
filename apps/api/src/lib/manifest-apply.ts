@@ -3,9 +3,6 @@ import { db } from '$db'
 import { plugins } from '$db/schema'
 import { resolveAbsolute } from './url'
 import { ManifestSchema, type ResolvedManifest } from './manifest'
-import { logger } from './logger'
-
-const log = logger.child({ module: 'manifest-apply' })
 
 const CORE_KEYS = new Set(Object.keys((ManifestSchema as { properties: Record<string, unknown> }).properties))
 
@@ -87,20 +84,10 @@ export function manifestPatch(
 }
 
 export async function applyManifestToPlugin(slug: string, patch: PluginManifestUpdate): Promise<void> {
-  // Plugin name is locked once approved — owners can't repoint a vetted slug
-  // at a phishing-style display name via the next webhook. description /
-  // homepage stay editable so authors can still iterate.
-  const existing = await db.query.plugins.findFirst({
-    where: { id: slug },
-    columns: { status: true, name: true },
-  })
-  const safePatch = { ...patch }
-  if (existing?.status === 'approved' && safePatch.name && safePatch.name !== existing.name) {
-    log.warn(
-      { slug, attemptedName: safePatch.name, currentName: existing.name },
-      'manifest renamed an approved plugin; ignoring',
-    )
-    delete safePatch.name
-  }
-  await db.update(plugins).set(safePatch).where(eq(plugins.id, slug))
+  // The slug is the URL identity and stays immutable. `name` is just the
+  // display string — owners control it via the manifest. The old anti-phishing
+  // guard that froze the name post-approval did more harm than help (most
+  // plugins were stuck on a repo-derived label that the manifest never
+  // matched), so it's gone.
+  await db.update(plugins).set(patch).where(eq(plugins.id, slug))
 }
