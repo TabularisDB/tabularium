@@ -169,30 +169,76 @@ export function manifestSha256(raw: string): string {
 // Pulls the manifest at `ref.tag` and applies it to the plugin row, returning
 // the manifest sha256 so the caller can persist it on the release. Returns null
 // when the owner OAuth token isn't usable or no manifest is found.
+const REFRESH_RETRY_DELAY_MS = 5_000
+
 export async function refreshManifestAtRelease(
   plugin: { id: string; ownerId: string; repoUrl: string },
   tag: string,
   version: string,
 ): Promise<string | null> {
-  try {
-    const ref = parseRepoUrl(plugin.repoUrl)
-    if (!ref) return null
-    const ownerIdentity = await db.query.identities.findFirst({
-      where: { userId: plugin.ownerId, providerInstanceId: ref.instance.id },
+  const ref = parseRepoUrl(plugin.repoUrl)
+  if (!ref) return null
+  const ownerIdentity = await db.query.identities.findFirst({
+    where: { userId: plugin.ownerId, providerInstanceId: ref.instance.id },
+  })
+  if (!ownerIdentity?.accessToken) {
+    await recordAudit({
+      action: 'plugin.manifest_refresh_failed',
+      target: `plugin:${plugin.id}`,
+      meta: { tag, version, reason: 'owner has no stored access token' },
     })
-    if (!ownerIdentity?.accessToken) return null
-    let token: string
-    try {
-      token = await getValidAccessToken(ownerIdentity, ref.instance)
-    } catch (e) {
-      if (e instanceof OAuthExpiredError) {
-        log.warn({ slug: plugin.id }, 'manifest refresh skipped — owner OAuth token expired')
-        return null
-      }
-      throw e
+    return null
+  }
+  let token: string
+  try {
+    token = await getValidAccessToken(ownerIdentity, ref.instance)
+  } catch (e) {
+    if (e instanceof OAuthExpiredError) {
+      log.warn({ slug: plugin.id }, 'manifest refresh skipped — owner OAuth token expired')
+      await recordAudit({
+        action: 'plugin.manifest_refresh_failed',
+        target: `plugin:${plugin.id}`,
+        meta: { tag, version, reason: 'owner OAuth token expired' },
+      })
+      return null
     }
-    const manifest = await resolveManifest(token, ref, { ref: tag })
-    if (!manifest) return null
+    throw e
+  }
+
+  // Webhooks fire microseconds after the tag is pushed; the upstream API
+  // sometimes returns 404 for the tag for a beat. One bounded retry covers
+  // that race without turning a hard failure into an infinite loop.
+  let manifest: Awaited<ReturnType<typeof resolveManifest>> = null
+  let lastError: unknown = null
+  for (let attempt = 1; attempt <= 2; attempt++) {
+    try {
+      manifest = await resolveManifest(token, ref, { ref: tag })
+      if (manifest) break
+      if (attempt < 2) {
+        log.info({ slug: plugin.id, tag, attempt }, 'manifest not found — retrying after delay')
+        await new Promise((r) => setTimeout(r, REFRESH_RETRY_DELAY_MS))
+      }
+    } catch (err) {
+      lastError = err
+      if (attempt < 2) {
+        log.warn({ err, slug: plugin.id, tag, attempt }, 'manifest fetch errored — retrying after delay')
+        await new Promise((r) => setTimeout(r, REFRESH_RETRY_DELAY_MS))
+      }
+    }
+  }
+
+  if (!manifest) {
+    const reason = lastError instanceof Error ? lastError.message : 'no .tabularium file at release tag'
+    log.warn({ slug: plugin.id, tag, reason }, 'manifest refresh at release failed after retry')
+    await recordAudit({
+      action: 'plugin.manifest_refresh_failed',
+      target: `plugin:${plugin.id}`,
+      meta: { tag, version, reason },
+    })
+    return null
+  }
+
+  try {
     const patch = manifestPatch(manifest, { repoBase: rawContentBase(ref, tag), version })
     await applyManifestToPlugin(plugin.id, patch)
     await cache().del(latestCacheKey(plugin.id))
@@ -200,7 +246,13 @@ export async function refreshManifestAtRelease(
     log.info({ slug: plugin.id, version, source: manifest.source }, 'manifest refreshed at release')
     return sha
   } catch (err) {
-    log.warn({ err, slug: plugin.id }, 'manifest refresh at release failed')
+    const reason = err instanceof Error ? err.message : String(err)
+    log.warn({ err, slug: plugin.id }, 'manifest apply failed after fetch succeeded')
+    await recordAudit({
+      action: 'plugin.manifest_refresh_failed',
+      target: `plugin:${plugin.id}`,
+      meta: { tag, version, reason: `apply failed: ${reason}` },
+    })
     return null
   }
 }
