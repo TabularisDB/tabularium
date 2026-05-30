@@ -285,6 +285,28 @@ export const auditLog = mysqlTable(
   }),
 )
 
+export const publisherTokens = mysqlTable(
+  'publisher_tokens',
+  {
+    id: id('id').primaryKey(),
+    userId: id('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    name: varchar('name', { length: 80 }).notNull(),
+    prefix: varchar('prefix', { length: 24 }).notNull(),
+    tokenHash: varchar('token_hash', { length: 128 }).notNull(),
+    scopes: text('scopes').notNull(),
+    expiresAt: ts('expires_at'),
+    lastUsedAt: ts('last_used_at'),
+    createdAt: ts('created_at').notNull().$defaultFn(now),
+    revokedAt: ts('revoked_at'),
+  },
+  (t) => ({
+    byUser: index('publisher_tokens_user_idx').on(t.userId),
+    byHash: uniqueIndex('publisher_tokens_hash_uniq').on(t.tokenHash),
+  }),
+)
+
 export const adminTokens = mysqlTable(
   'admin_tokens',
   {

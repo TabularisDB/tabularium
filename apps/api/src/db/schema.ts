@@ -292,6 +292,31 @@ export const auditLog = sqliteTable(
   }),
 )
 
+// Publisher tokens for CI-driven release publishing. Scoped to specific
+// plugins or account-wide via `scopes` JSON array. `scopes` is NEVER null
+// here — unscoped tokens would be too dangerous.
+export const publisherTokens = sqliteTable(
+  'publisher_tokens',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id, { onDelete: 'cascade' }),
+    name: text('name').notNull(),
+    prefix: text('prefix').notNull(),
+    tokenHash: text('token_hash').notNull(),
+    scopes: text('scopes').notNull(),
+    expiresAt: integer('expires_at'),
+    lastUsedAt: integer('last_used_at'),
+    createdAt: integer('created_at').notNull().$defaultFn(now),
+    revokedAt: integer('revoked_at'),
+  },
+  (t) => ({
+    byUser: index('publisher_tokens_user_idx').on(t.userId),
+    byHash: uniqueIndex('publisher_tokens_hash_uniq').on(t.tokenHash),
+  }),
+)
+
 // Long-lived admin API tokens (M2M). The plaintext token is only ever
 // returned at creation time; we store the sha256 hash plus a short prefix
 // for display in the listing UI.
