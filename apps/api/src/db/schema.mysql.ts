@@ -118,6 +118,9 @@ export const releases = mysqlTable(
       .references(() => plugins.id),
     version: varchar('version', { length: 40 }).notNull(),
     minRuntimeVersion: varchar('min_runtime_version', { length: 40 }),
+    yankedAt: ts('yanked_at'),
+    yankedBy: id('yanked_by').references(() => users.id, { onDelete: 'set null' }),
+    yankReason: text('yank_reason'),
     assets: text('assets').notNull(),
     manifestSha256: varchar('manifest_sha256', { length: 64 }),
     createdAt: ts('created_at').notNull().$defaultFn(now),
@@ -125,6 +128,7 @@ export const releases = mysqlTable(
   (t) => ({
     uniqueVersion: uniqueIndex('releases_plugin_version').on(t.pluginId, t.version),
     byPluginCreated: index('releases_plugin_created_idx').on(t.pluginId, t.createdAt),
+    byYankedAt: index('releases_yanked_at_idx').on(t.yankedAt),
   }),
 )
 

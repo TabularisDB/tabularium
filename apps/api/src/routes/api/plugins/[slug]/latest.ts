@@ -1,8 +1,8 @@
 import { Elysia, t } from 'elysia'
-import { sql, eq } from 'drizzle-orm'
+import { sql, eq, and, isNull, desc } from 'drizzle-orm'
 import { ulid } from 'ulid'
 import { db } from '$db'
-import { plugins, downloadEvents } from '$db/schema'
+import { plugins, releases, downloadEvents } from '$db/schema'
 import { cache } from '$lib/cache'
 import { parseAssets, type AssetMap } from '$lib/asset'
 
@@ -75,9 +75,20 @@ export default new Elysia().get(
         set.status = 404
         return { error: 'Plugin not found or has no releases' }
       }
-      const release = await db.query.releases.findFirst({
+      // Skip yanked: prefer plugin.latestVersion when it's not yanked;
+      // otherwise fall through to the most-recent non-yanked release.
+      let release = await db.query.releases.findFirst({
         where: { pluginId: plugin.id, version: plugin.latestVersion },
       })
+      if (!release || release.yankedAt !== null) {
+        const [fallback] = await db
+          .select()
+          .from(releases)
+          .where(and(eq(releases.pluginId, plugin.id), isNull(releases.yankedAt)))
+          .orderBy(desc(releases.createdAt))
+          .limit(1)
+        release = fallback
+      }
       if (!release) {
         set.status = 404
         return { error: 'Latest release not found' }

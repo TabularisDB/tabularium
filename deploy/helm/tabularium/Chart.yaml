@@ -17,8 +17,8 @@ maintainers:
 icon: https://tabularium.wiki/assets/icon.png
 
 # Chart SemVer — bump when templates change.
-version: 0.9.1
+version: 0.9.2
 
 # Tabularium app version this chart was tested against — keep in sync with
 # the image tag default in values.yaml.
-appVersion: "0.9.1"
+appVersion: "0.9.2"

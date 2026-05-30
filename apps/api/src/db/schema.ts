@@ -125,6 +125,9 @@ export const releases = sqliteTable(
       .references(() => plugins.id),
     version: text('version').notNull(),
     minRuntimeVersion: text('min_runtime_version'),
+    yankedAt: integer('yanked_at'),
+    yankedBy: text('yanked_by').references(() => users.id, { onDelete: 'set null' }),
+    yankReason: text('yank_reason'),
     assets: text('assets').notNull(), // JSON string
     manifestSha256: text('manifest_sha256'),
     createdAt: integer('created_at').notNull().$defaultFn(now),
@@ -132,6 +135,7 @@ export const releases = sqliteTable(
   (t) => ({
     uniqueVersion: uniqueIndex('releases_plugin_version').on(t.pluginId, t.version),
     byPluginCreated: index('releases_plugin_created_idx').on(t.pluginId, t.createdAt),
+    byYankedAt: index('releases_yanked_at_idx').on(t.yankedAt),
   }),
 )
 
