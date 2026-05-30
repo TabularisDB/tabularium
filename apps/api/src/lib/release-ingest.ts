@@ -12,8 +12,9 @@ import { recordAudit } from './audit'
 import { fetchAttestation } from './attestation'
 import { logger } from './logger'
 import { compareSemver } from './semver'
-import { resolveManifest, rawContentBase } from './manifest'
+import { resolveManifest, resolveManifestFromReleaseAssets, rawContentBase } from './manifest'
 import { manifestPatch, applyManifestToPlugin } from './manifest-apply'
+import { getSetting } from './settings'
 import { createHash } from 'node:crypto'
 
 const log = logger.child({ module: 'release-ingest' })
@@ -175,6 +176,7 @@ export async function refreshManifestAtRelease(
   plugin: { id: string; ownerId: string; repoUrl: string },
   tag: string,
   version: string,
+  assets: Array<{ name: string; url: string }> = [],
 ): Promise<string | null> {
   const ref = parseRepoUrl(plugin.repoUrl)
   if (!ref) return null
@@ -205,37 +207,58 @@ export async function refreshManifestAtRelease(
     throw e
   }
 
-  // Webhooks fire microseconds after the tag is pushed; the upstream API
-  // sometimes returns 404 for the tag for a beat. One bounded retry covers
-  // that race without turning a hard failure into an infinite loop.
+  // Asset-first: the release payload carries direct download URLs to every
+  // file the author published. These are immutable per release, so this path
+  // is race-free (unlike the legacy git-ref fetch). Fall back to the git path
+  // only when the operator allows it via the require_release_asset setting.
   let manifest: Awaited<ReturnType<typeof resolveManifest>> = null
-  let lastError: unknown = null
-  for (let attempt = 1; attempt <= 2; attempt++) {
-    try {
-      manifest = await resolveManifest(token, ref, { ref: tag })
-      if (manifest) break
-      if (attempt < 2) {
-        log.info({ slug: plugin.id, tag, attempt }, 'manifest not found — retrying after delay')
-        await new Promise((r) => setTimeout(r, REFRESH_RETRY_DELAY_MS))
-      }
-    } catch (err) {
-      lastError = err
-      if (attempt < 2) {
-        log.warn({ err, slug: plugin.id, tag, attempt }, 'manifest fetch errored — retrying after delay')
-        await new Promise((r) => setTimeout(r, REFRESH_RETRY_DELAY_MS))
-      }
-    }
+  try {
+    manifest = await resolveManifestFromReleaseAssets(token, assets)
+  } catch (err) {
+    log.warn({ err, slug: plugin.id, tag }, 'asset-based manifest resolution errored')
   }
 
   if (!manifest) {
-    const reason = lastError instanceof Error ? lastError.message : 'no .tabularium file at release tag'
-    log.warn({ slug: plugin.id, tag, reason }, 'manifest refresh at release failed after retry')
-    await recordAudit({
-      action: 'plugin.manifest_refresh_failed',
-      target: `plugin:${plugin.id}`,
-      meta: { tag, version, reason },
-    })
-    return null
+    const require = getSetting('manifest.require_release_asset') !== '0'
+    if (require) {
+      const reason = 'no manifest asset published on the release'
+      log.warn({ slug: plugin.id, tag, reason, assetCount: assets.length }, 'manifest asset missing — strict mode')
+      await recordAudit({
+        action: 'plugin.manifest_asset_missing',
+        target: `plugin:${plugin.id}`,
+        meta: { tag, version, assetCount: assets.length, configuredCandidates: undefined },
+      })
+      return null
+    }
+    // Fallback to the legacy git-ref fetch with a bounded retry to absorb
+    // the tag-just-pushed propagation race.
+    let lastError: unknown = null
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      try {
+        manifest = await resolveManifest(token, ref, { ref: tag })
+        if (manifest) break
+        if (attempt < 2) {
+          log.info({ slug: plugin.id, tag, attempt }, 'manifest not found — retrying after delay')
+          await new Promise((r) => setTimeout(r, REFRESH_RETRY_DELAY_MS))
+        }
+      } catch (err) {
+        lastError = err
+        if (attempt < 2) {
+          log.warn({ err, slug: plugin.id, tag, attempt }, 'manifest fetch errored — retrying after delay')
+          await new Promise((r) => setTimeout(r, REFRESH_RETRY_DELAY_MS))
+        }
+      }
+    }
+    if (!manifest) {
+      const reason = lastError instanceof Error ? lastError.message : 'no .tabularium file at release tag'
+      log.warn({ slug: plugin.id, tag, reason }, 'manifest refresh at release failed after retry')
+      await recordAudit({
+        action: 'plugin.manifest_refresh_failed',
+        target: `plugin:${plugin.id}`,
+        meta: { tag, version, reason },
+      })
+      return null
+    }
   }
 
   try {

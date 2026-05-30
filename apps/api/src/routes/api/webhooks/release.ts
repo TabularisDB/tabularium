@@ -85,7 +85,7 @@ export default new Elysia().use(rateLimit({ bucket: 'webhook-release', limit: 60
 
     // Refresh manifest + capture sha256 in background; both write to DB.
     queueMicrotask(async () => {
-      const sha = await refreshManifestAtRelease(plugin, normalized.tag, version)
+      const sha = await refreshManifestAtRelease(plugin, normalized.tag, version, normalized.assets)
       if (sha) {
         // Re-persist the row with the now-known manifest sha (persistRelease
         // ran without it because the manifest fetch is async).

@@ -173,6 +173,56 @@ export function rawContentBase(ref: RepoRef, branch: string): string {
   return `${instance.baseUrl}/${owner}/${repo}/raw/${branch}/`
 }
 
+type ReleaseAsset = { name: string; url: string }
+
+async function fetchAssetContent(url: string, accessToken: string): Promise<{ content: string; bytes: number } | null> {
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${accessToken}`,
+    'User-Agent': 'tabularium/1.0',
+  }
+  const res = await fetch(url, { headers, redirect: 'follow' })
+  if (res.status === 404) return null
+  if (!res.ok) throw new Error(`fetch asset ${url}: ${res.status}`)
+  const len = Number(res.headers.get('content-length') ?? 0)
+  if (len > MAX_BYTES) throw new Error(`asset ${url} content-length ${len} exceeds ${MAX_BYTES}`)
+  const text = await res.text()
+  return { content: text, bytes: new TextEncoder().encode(text).length }
+}
+
+// Asset-first manifest resolution: scan the release's published assets for
+// any filename in the configured candidate list and ingest that. Avoids the
+// race + auth flakiness of the git-ref fetch path because release assets are
+// immutable per release and served by the forge's CDN.
+export async function resolveManifestFromReleaseAssets(
+  accessToken: string,
+  assets: ReleaseAsset[],
+): Promise<ResolvedManifest | null> {
+  if (assets.length === 0) return null
+  const byName = new Map(assets.map((a) => [a.name, a]))
+  for (const candidate of manifestCandidates()) {
+    const asset = byName.get(candidate.path)
+    if (!asset) continue
+    try {
+      const got = await fetchAssetContent(asset.url, accessToken)
+      if (!got) continue
+      if (got.bytes > MAX_BYTES) {
+        log.warn({ path: candidate.path, bytes: got.bytes }, 'asset manifest exceeds size cap — ignored')
+        continue
+      }
+      const parsed = parseManifestText(got.content, candidate.source)
+      return { raw: got.content, parsed, readmeMarkdown: null, readmeLocales: null, source: candidate.source }
+    } catch (err) {
+      if (err instanceof UpstreamUnauthorizedError) throw err
+      if (err instanceof ManifestValidationError) {
+        log.warn({ path: candidate.path, errors: err.errors }, 'asset manifest invalid — trying next candidate')
+      } else {
+        log.warn({ err, path: candidate.path }, 'asset manifest fetch/parse failed — trying next candidate')
+      }
+    }
+  }
+  return null
+}
+
 export async function resolveManifest(
   accessToken: string,
   ref: RepoRef,
