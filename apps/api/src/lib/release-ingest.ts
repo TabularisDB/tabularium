@@ -12,7 +12,7 @@ import { recordAudit } from './audit'
 import { fetchAttestation } from './attestation'
 import { logger } from './logger'
 import { compareSemver } from './semver'
-import { resolveManifest, resolveManifestFromReleaseAssets, rawContentBase } from './manifest'
+import { resolveManifest, resolveManifestFromReleaseAssets, fetchReleaseAssetList, rawContentBase } from './manifest'
 import { manifestPatch, applyManifestToPlugin } from './manifest-apply'
 import { getSetting } from './settings'
 import { createHash } from 'node:crypto'
@@ -226,8 +226,13 @@ export async function refreshManifestAtRelease(
       await recordAudit({
         action: 'plugin.manifest_asset_missing',
         target: `plugin:${plugin.id}`,
-        meta: { tag, version, assetCount: assets.length, configuredCandidates: undefined },
+        meta: { tag, version, assetCount: assets.length, willRecheck: true },
       })
+      // Most CIs create the release first and upload assets seconds later
+      // (one PUT per asset, no second webhook). Schedule background rechecks
+      // that re-pull the current asset list from the forge; if the manifest
+      // shows up, we ingest then and emit plugin.manifest_recovered.
+      scheduleAssetRecheck({ id: plugin.id, ownerId: plugin.ownerId, repoUrl: plugin.repoUrl }, tag, version, 0)
       return null
     }
     // Fallback to the legacy git-ref fetch with a bounded retry to absorb
@@ -277,5 +282,81 @@ export async function refreshManifestAtRelease(
       meta: { tag, version, reason: `apply failed: ${reason}` },
     })
     return null
+  }
+}
+
+const ASSET_RECHECK_DELAYS_MS = [30_000, 90_000, 180_000]
+
+type PluginRef = { id: string; ownerId: string; repoUrl: string }
+
+function scheduleAssetRecheck(plugin: PluginRef, tag: string, version: string, attempt: number): void {
+  if (attempt >= ASSET_RECHECK_DELAYS_MS.length) return
+  const delay = ASSET_RECHECK_DELAYS_MS[attempt]
+  const timer = setTimeout(() => {
+    void recheckAssetsOnce(plugin, tag, version, attempt).catch((err) =>
+      log.error({ err, slug: plugin.id, tag, attempt }, 'asset recheck crashed'),
+    )
+  }, delay)
+  // Don't pin the event loop on this timer — process shutdown shouldn't wait.
+  timer.unref?.()
+}
+
+async function recheckAssetsOnce(plugin: PluginRef, tag: string, version: string, attempt: number): Promise<void> {
+  // Bail if some other ingest path beat us to applying the manifest, or if
+  // the plugin's latest moved past this version (a newer release superseded).
+  const expectedVersion = version.replace(/^v/, '')
+  const current = await db.query.plugins.findFirst({
+    where: { id: plugin.id },
+    columns: { latestVersion: true, manifestVersion: true },
+  })
+  if (!current) return
+  if (current.latestVersion !== expectedVersion) return
+  if (current.manifestVersion === tag) return
+
+  const ref = parseRepoUrl(plugin.repoUrl)
+  if (!ref) return
+  const ownerIdentity = await db.query.identities.findFirst({
+    where: { userId: plugin.ownerId, providerInstanceId: ref.instance.id },
+  })
+  if (!ownerIdentity?.accessToken) return
+  let token: string
+  try {
+    token = await getValidAccessToken(ownerIdentity, ref.instance)
+  } catch {
+    return
+  }
+
+  const assets = await fetchReleaseAssetList(token, ref, tag)
+  if (!assets || assets.length === 0) {
+    scheduleAssetRecheck(plugin, tag, version, attempt + 1)
+    return
+  }
+  let manifest: Awaited<ReturnType<typeof resolveManifest>> = null
+  try {
+    manifest = await resolveManifestFromReleaseAssets(token, assets)
+  } catch (err) {
+    log.warn({ err, slug: plugin.id, tag, attempt }, 'asset recheck resolution errored')
+  }
+  if (!manifest) {
+    scheduleAssetRecheck(plugin, tag, version, attempt + 1)
+    return
+  }
+  try {
+    const patch = manifestPatch(manifest, { repoBase: rawContentBase(ref, tag), version: expectedVersion })
+    await applyManifestToPlugin(plugin.id, patch)
+    await cache().del(latestCacheKey(plugin.id))
+    log.info({ slug: plugin.id, tag, attempt }, 'manifest recovered via asset recheck')
+    await recordAudit({
+      action: 'plugin.manifest_recovered',
+      target: `plugin:${plugin.id}`,
+      meta: {
+        tag,
+        version: expectedVersion,
+        attempt: attempt + 1,
+        delaySeconds: ASSET_RECHECK_DELAYS_MS[attempt] / 1000,
+      },
+    })
+  } catch (err) {
+    log.warn({ err, slug: plugin.id, tag }, 'asset recheck apply failed')
   }
 }

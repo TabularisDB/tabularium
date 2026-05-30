@@ -173,7 +173,59 @@ export function rawContentBase(ref: RepoRef, branch: string): string {
   return `${instance.baseUrl}/${owner}/${repo}/raw/${branch}/`
 }
 
-type ReleaseAsset = { name: string; url: string }
+export type ReleaseAsset = { name: string; url: string }
+
+// Re-fetch the current asset list for a release tag from the forge.
+// Webhooks fire on release create, but CI commonly attaches the assets a
+// few seconds AFTER — by the time we hit this, the published list often
+// has the manifest asset that the original webhook payload was missing.
+export async function fetchReleaseAssetList(
+  accessToken: string,
+  ref: RepoRef,
+  tag: string,
+): Promise<ReleaseAsset[] | null> {
+  const { instance } = ref
+  const headers: Record<string, string> = {
+    Authorization: `Bearer ${accessToken}`,
+    'User-Agent': 'tabularium/1.0',
+  }
+  let url: string
+  let parse: (body: unknown) => ReleaseAsset[]
+  if (instance.kind === 'github') {
+    const apiBase = instance.baseUrl === 'https://github.com' ? 'https://api.github.com' : `${instance.baseUrl}/api/v3`
+    url = `${apiBase}/repos/${ref.owner}/${ref.repo}/releases/tags/${encodeURIComponent(tag)}`
+    parse = (body) => {
+      const r = body as { assets?: Array<{ name: string; browser_download_url: string }> }
+      return (r.assets ?? []).map((a) => ({ name: a.name, url: a.browser_download_url }))
+    }
+  } else if (instance.kind === 'gitea') {
+    url = `${instance.baseUrl}/api/v1/repos/${ref.owner}/${ref.repo}/releases/tags/${encodeURIComponent(tag)}`
+    parse = (body) => {
+      const r = body as { assets?: Array<{ name: string; browser_download_url: string }> }
+      return (r.assets ?? []).map((a) => ({ name: a.name, url: a.browser_download_url }))
+    }
+  } else {
+    // gitlab releases endpoint
+    const projectId = encodeURIComponent(ref.fullName)
+    url = `${instance.baseUrl}/api/v4/projects/${projectId}/releases/${encodeURIComponent(tag)}`
+    parse = (body) => {
+      const r = body as { assets?: { links?: Array<{ name: string; url: string }> } }
+      return (r.assets?.links ?? []).map((a) => ({ name: a.name, url: a.url }))
+    }
+  }
+  try {
+    const res = await fetch(url, { headers })
+    if (res.status === 404) return null
+    if (!res.ok) {
+      log.warn({ url, status: res.status }, 'release asset list fetch failed')
+      return null
+    }
+    return parse(await res.json())
+  } catch (err) {
+    log.warn({ err, url }, 'release asset list fetch errored')
+    return null
+  }
+}
 
 async function fetchAssetContent(url: string, accessToken: string): Promise<{ content: string; bytes: number } | null> {
   const headers: Record<string, string> = {
