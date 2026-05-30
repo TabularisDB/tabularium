@@ -1,7 +1,7 @@
 import { Elysia, t } from 'elysia'
 import { db } from '$db'
 import { plugins } from '$db/schema'
-import { like, count, and, eq, isNotNull, sql } from 'drizzle-orm'
+import { like, count, and, or, eq, isNotNull, sql } from 'drizzle-orm'
 import { projectPlugin } from '$lib/plugin-projection'
 import { getKinds, isKindKey } from '$lib/kinds'
 import { searchPluginIds } from '$lib/search-plugins'
@@ -35,6 +35,7 @@ const pluginSummarySchema = t.Object({
   featuredOrder: t.Nullable(t.Number()),
   verified: t.Boolean(),
   verifiedAt: t.Nullable(t.Number()),
+  extensions: t.Nullable(t.Record(t.String(), t.Any())),
   downloads: t.Number(),
   manifestFetchedAt: t.Nullable(t.Number()),
   createdAt: t.Number(),
@@ -58,6 +59,29 @@ function escapeLike(input: string): string {
 
 function tagLikePattern(tag: string): string {
   return `%"${escapeLike(tag)}"%`
+}
+
+// Each filter tries two LIKE patterns so one query matches both scalar values
+// (`"engine":"firestore"`) and array members (`"paradigms":[...,"document",...]`).
+type ExtFilter = { key: string; value: string }
+
+function parseExtFilters(rawQuery: Record<string, string | undefined>): ExtFilter[] {
+  const out: ExtFilter[] = []
+  for (const [k, v] of Object.entries(rawQuery)) {
+    if (!k.startsWith('ext.') || k.length <= 4) continue
+    if (typeof v !== 'string' || v.length === 0) continue
+    out.push({ key: k.slice(4), value: v })
+  }
+  return out
+}
+
+function extLikePatterns(f: ExtFilter): { scalar: string; array: string } {
+  const k = escapeLike(f.key)
+  const v = escapeLike(f.value)
+  return {
+    scalar: `%"${k}":"${v}"%`,
+    array: `%"${k}":[%"${v}"%]%`,
+  }
 }
 
 function clampInt(raw: unknown, def: number, min: number, max: number): number {
@@ -106,6 +130,7 @@ export default new Elysia().get(
 
     const tagFilter = kindFilterActive ? kindParam! : tag
     const verifiedOnly = query.verified === '1'
+    const extFilters = parseExtFilters(query as Record<string, string | undefined>)
     const where: RelationalFilter = { status: 'approved' }
     if (category) where.category = category
     if (tagFilter) where.tags = { like: tagLikePattern(tagFilter) }
@@ -123,6 +148,7 @@ export default new Elysia().get(
         tag: tagFilter || null,
         featured: query.featured === '1',
         verified: verifiedOnly,
+        extFilters,
         limit,
         offset,
       })
@@ -140,11 +166,28 @@ export default new Elysia().get(
       if (tagFilter) builderConditions.push(like(plugins.tags, tagLikePattern(tagFilter)))
       if (query.featured === '1') builderConditions.push(eq(plugins.featured, 1))
       if (verifiedOnly) builderConditions.push(isNotNull(plugins.verifiedAt))
+      for (const f of extFilters) {
+        const p = extLikePatterns(f)
+        const orClause = or(like(plugins.extensions, p.scalar), like(plugins.extensions, p.array))
+        if (orClause) builderConditions.push(orClause)
+      }
       const builderWhere = builderConditions.length === 1 ? builderConditions[0] : and(...builderConditions)
 
       const [row] = await db.select({ total: count() }).from(plugins).where(builderWhere)
       total = row.total
-      rows = await db.query.plugins.findMany({ where, limit, offset, orderBy })
+      if (extFilters.length > 0) {
+        // ext-filter LIKE conditions don't fit the relational query syntax —
+        // use the builder for the row fetch too so the two paths agree.
+        rows = await db
+          .select()
+          .from(plugins)
+          .where(builderWhere)
+          .orderBy(...orderBy(plugins))
+          .limit(limit)
+          .offset(offset)
+      } else {
+        rows = await db.query.plugins.findMany({ where, limit, offset, orderBy })
+      }
     }
 
     const categoryRows = await db
@@ -199,17 +242,20 @@ export default new Elysia().get(
         '`sort=updated|new|name|featured`. Returns facets so the UI can render filter chips without an extra request. Public — no auth required.',
       operationId: 'listPlugins',
     },
-    query: t.Object({
-      search: t.Optional(t.String()),
-      category: t.Optional(t.String()),
-      tag: t.Optional(t.String()),
-      kind: t.Optional(t.String()),
-      featured: t.Optional(t.String()),
-      verified: t.Optional(t.String()),
-      sort: t.Optional(t.Union([t.Literal('updated'), t.Literal('new'), t.Literal('name'), t.Literal('featured')])),
-      page: t.Optional(t.String()),
-      limit: t.Optional(t.String()),
-    }),
+    query: t.Object(
+      {
+        search: t.Optional(t.String()),
+        category: t.Optional(t.String()),
+        tag: t.Optional(t.String()),
+        kind: t.Optional(t.String()),
+        featured: t.Optional(t.String()),
+        verified: t.Optional(t.String()),
+        sort: t.Optional(t.Union([t.Literal('updated'), t.Literal('new'), t.Literal('name'), t.Literal('featured')])),
+        page: t.Optional(t.String()),
+        limit: t.Optional(t.String()),
+      },
+      { additionalProperties: t.String() },
+    ),
     response: { 200: pluginListResponseSchema },
   },
 )

@@ -65,6 +65,7 @@ const pluginDetailSchema = t.Object({
   featuredOrder: t.Nullable(t.Number()),
   verified: t.Boolean(),
   verifiedAt: t.Nullable(t.Number()),
+  extensions: t.Nullable(t.Record(t.String(), t.Any())),
   downloads: t.Number(),
   manifestFetchedAt: t.Nullable(t.Number()),
   readmeHtml: t.Nullable(t.String()),

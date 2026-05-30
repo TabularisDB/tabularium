@@ -68,6 +68,7 @@ export type Plugin = {
   featuredOrder: number | null
   verified: boolean
   verifiedAt?: number | null
+  extensions?: Record<string, unknown> | null
   downloads: number
   manifestFetchedAt: number | null
   createdAt: number

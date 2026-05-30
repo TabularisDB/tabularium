@@ -29,6 +29,7 @@ export type PublicPlugin = {
   featuredOrder: number | null
   verified: boolean
   verifiedAt: number | null
+  extensions: Record<string, unknown> | null
   downloads: number
   manifestFetchedAt: number | null
   createdAt: number
@@ -57,6 +58,16 @@ function parseJsonArray<T>(raw: string | null): T[] {
   }
 }
 
+function parseJsonObject(raw: string | null): Record<string, unknown> | null {
+  if (!raw) return null
+  try {
+    const parsed = JSON.parse(raw) as unknown
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? (parsed as Record<string, unknown>) : null
+  } catch {
+    return null
+  }
+}
+
 export function projectPlugin(row: PluginRow): PublicPlugin {
   return {
     id: row.id,
@@ -81,6 +92,7 @@ export function projectPlugin(row: PluginRow): PublicPlugin {
     featuredOrder: row.featuredOrder ?? null,
     verified: row.verifiedAt !== null,
     verifiedAt: row.verifiedAt ?? null,
+    extensions: parseJsonObject(row.extensions),
     downloads: row.downloads ?? 0,
     manifestFetchedAt: row.manifestFetchedAt ?? null,
     createdAt: row.createdAt,

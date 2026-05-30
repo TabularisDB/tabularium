@@ -89,6 +89,7 @@ export const plugins = pgTable(
     issuesUrl: text('issues_url'),
     manifestFetchedAt: ts('manifest_fetched_at'),
     manifestVersion: text('manifest_version'),
+    extensions: text('extensions'),
     featured: smallint('featured').notNull().default(0),
     featuredOrder: integer('featured_order'),
     verifiedAt: ts('verified_at'),

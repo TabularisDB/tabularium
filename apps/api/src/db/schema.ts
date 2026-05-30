@@ -87,6 +87,10 @@ export const plugins = sqliteTable(
     issuesUrl: text('issues_url'),
     manifestFetchedAt: integer('manifest_fetched_at'),
     manifestVersion: text('manifest_version'), // tag/sha the manifest was last read at
+    // JSON-encoded admin-defined extension fields from the manifest
+    // (engine, paradigms, capabilities, settings, … — anything not in the
+    // core schema). Captured at ingest, surfaced raw to API consumers.
+    extensions: text('extensions'),
     // Admin pinning for landing "featured" slot.
     featured: integer('featured').notNull().default(0),
     featuredOrder: integer('featured_order'),

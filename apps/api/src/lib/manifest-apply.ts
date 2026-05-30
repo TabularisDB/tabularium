@@ -2,10 +2,21 @@ import { eq } from 'drizzle-orm'
 import { db } from '$db'
 import { plugins } from '$db/schema'
 import { resolveAbsolute } from './url'
-import type { ResolvedManifest } from './manifest'
+import { ManifestSchema, type ResolvedManifest } from './manifest'
 import { logger } from './logger'
 
 const log = logger.child({ module: 'manifest-apply' })
+
+const CORE_KEYS = new Set(Object.keys((ManifestSchema as { properties: Record<string, unknown> }).properties))
+
+function extractExtensions(parsed: Record<string, unknown>): Record<string, unknown> | null {
+  const ext: Record<string, unknown> = {}
+  for (const [k, v] of Object.entries(parsed)) {
+    if (CORE_KEYS.has(k)) continue
+    ext[k] = v
+  }
+  return Object.keys(ext).length > 0 ? ext : null
+}
 
 export type PluginManifestUpdate = {
   name?: string
@@ -19,6 +30,7 @@ export type PluginManifestUpdate = {
   documentationUrl: string | null
   supportEmail: string | null
   issuesUrl: string | null
+  extensions: string | null
   manifestFetchedAt: number
   manifestVersion: string | null
   homepage?: string
@@ -51,6 +63,8 @@ export function manifestPatch(
     tagList.unshift(parsed.kind)
   }
 
+  const extensions = extractExtensions(parsed as unknown as Record<string, unknown>)
+
   const patch: PluginManifestUpdate = {
     category: parsed.category ?? null,
     tags: jsonArray(tagList),
@@ -61,6 +75,7 @@ export function manifestPatch(
     documentationUrl: parsed.documentation_url ?? null,
     supportEmail: parsed.support?.email ?? null,
     issuesUrl: parsed.support?.issues_url ?? null,
+    extensions: extensions ? JSON.stringify(extensions) : null,
     manifestFetchedAt: Date.now(),
     manifestVersion: opts.version,
     updatedAt: Date.now(),

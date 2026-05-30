@@ -1,8 +1,13 @@
 // Dialect-aware plugin search. pg → tsvector+GIN, sqlite → FTS5, mysql → LIKE
 // (FULLTEXT's 3-char min token would silently drop short slugs like "ui").
-import { sql, and, eq, count, inArray, isNotNull } from 'drizzle-orm'
+import { sql, and, or, eq, count, inArray, isNotNull } from 'drizzle-orm'
 import { db, getDialect } from '$db'
 import { plugins } from '$db/schema'
+
+export interface ExtensionFilter {
+  key: string
+  value: string
+}
 
 export interface SearchFilters {
   status: 'approved' | 'pending' | 'rejected'
@@ -10,6 +15,7 @@ export interface SearchFilters {
   tag?: string | null
   featured?: boolean
   verified?: boolean
+  extFilters?: ExtensionFilter[]
 }
 
 export interface SearchOptions extends SearchFilters {
@@ -25,6 +31,19 @@ export interface SearchResult {
 
 function escapeLike(input: string): string {
   return input.replace(/[\\%_]/g, (ch) => `\\${ch}`)
+}
+
+function extFilterClauses(opts: SearchFilters) {
+  const out = []
+  for (const f of opts.extFilters ?? []) {
+    const k = escapeLike(f.key)
+    const v = escapeLike(f.value)
+    const scalar = `%"${k}":"${v}"%`
+    const array = `%"${k}":[%"${v}"%]%`
+    const orClause = or(sql`${plugins.extensions} LIKE ${scalar}`, sql`${plugins.extensions} LIKE ${array}`)
+    if (orClause) out.push(orClause)
+  }
+  return out
 }
 
 function sanitiseToken(term: string): string {
@@ -62,6 +81,7 @@ async function searchPgIds(term: string, opts: SearchOptions): Promise<SearchRes
   if (opts.category) filters.push(eq(plugins.category, opts.category))
   if (opts.featured) filters.push(eq(plugins.featured, 1))
   if (opts.verified) filters.push(isNotNull(plugins.verifiedAt))
+  filters.push(...extFilterClauses(opts))
   if (opts.tag) {
     filters.push(sql`${plugins.tags} LIKE ${'%"' + escapeLike(opts.tag) + '"%'}`)
   }
@@ -96,6 +116,7 @@ async function searchSqliteIds(term: string, opts: SearchOptions): Promise<Searc
   if (opts.category) filters.push(eq(plugins.category, opts.category))
   if (opts.featured) filters.push(eq(plugins.featured, 1))
   if (opts.verified) filters.push(isNotNull(plugins.verifiedAt))
+  filters.push(...extFilterClauses(opts))
   if (opts.tag) {
     filters.push(sql`${plugins.tags} LIKE ${'%"' + escapeLike(opts.tag) + '"%'}`)
   }
@@ -135,6 +156,7 @@ async function searchMysqlIds(term: string, opts: SearchOptions): Promise<Search
   if (opts.category) filters.push(eq(plugins.category, opts.category))
   if (opts.featured) filters.push(eq(plugins.featured, 1))
   if (opts.verified) filters.push(isNotNull(plugins.verifiedAt))
+  filters.push(...extFilterClauses(opts))
   if (opts.tag) filters.push(sql`${plugins.tags} LIKE ${'%"' + escapeLike(opts.tag) + '"%'}`)
   const where = and(...filters)
 

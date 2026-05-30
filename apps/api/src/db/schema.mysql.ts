@@ -89,6 +89,7 @@ export const plugins = mysqlTable(
     issuesUrl: varchar('issues_url', { length: 500 }),
     manifestFetchedAt: ts('manifest_fetched_at'),
     manifestVersion: varchar('manifest_version', { length: 80 }),
+    extensions: text('extensions'),
     featured: tinyint('featured').notNull().default(0),
     featuredOrder: int('featured_order'),
     verifiedAt: ts('verified_at'),
