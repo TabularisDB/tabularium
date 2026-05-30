@@ -193,7 +193,9 @@
 						? error.value
 						: ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`),
 				)
-			toast.success(p.verified ? m.admin_plugins_unverified({ name: p.name }) : m.admin_plugins_verified_toast({ name: p.name }))
+			toast.success(
+				p.verified ? m.admin_plugins_unverified({ name: p.name }) : m.admin_plugins_verified_toast({ name: p.name }),
+			)
 			await load()
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : m.admin_plugins_update_failed())
@@ -367,7 +369,9 @@
 								>
 							{/if}
 							{#if p.verified}
-								<Badge variant="default" class="text-[10px] gap-1 bg-emerald-600/15 text-emerald-600 hover:bg-emerald-600/20"
+								<Badge
+									variant="default"
+									class="text-[10px] gap-1 bg-emerald-600/15 text-emerald-600 hover:bg-emerald-600/20"
 									><ShieldCheck class="h-2.5 w-2.5" />{m.admin_plugins_verified()}</Badge
 								>
 							{/if}

@@ -90,7 +90,12 @@ describe('PATCH /api/admin/plugins/:id verify field', () => {
 
   it('returns 403 for non-admin', async () => {
     const u = await makeUser({ role: 'user', username: 'normie' })
-    const token = await signJwt({ sub: u.id, identityId: u.identityId, username: u.username, providerInstanceId: 'github' })
+    const token = await signJwt({
+      sub: u.id,
+      identityId: u.identityId,
+      username: u.username,
+      providerInstanceId: 'github',
+    })
     await makePlugin(u.id, { id: 'verify-me' })
 
     const res = await patchPlugin('verify-me', token, { verified: true })

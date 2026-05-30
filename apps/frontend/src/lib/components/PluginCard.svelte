@@ -28,7 +28,9 @@
 		<div class="min-w-0 flex-1 space-y-1.5">
 			<div class="flex items-start justify-between gap-2">
 				<div class="flex items-center gap-1.5 min-w-0">
-					<h3 class="font-semibold tracking-tight group-hover:text-primary transition-colors truncate">{plugin.name}</h3>
+					<h3 class="font-semibold tracking-tight group-hover:text-primary transition-colors truncate">
+						{plugin.name}
+					</h3>
 					{#if plugin.verified}
 						<VerifiedBadge size="sm" verifiedAt={plugin.verifiedAt ?? null} />
 					{/if}
