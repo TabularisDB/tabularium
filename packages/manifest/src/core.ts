@@ -128,5 +128,4 @@ export type ResolvedManifest = {
   parsed: Manifest
   readmeMarkdown: string | null
   readmeLocales: ReadmeMap | null
-  source: 'tabularium.yaml' | 'tabularium.json'
 }

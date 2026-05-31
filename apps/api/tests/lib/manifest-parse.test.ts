@@ -7,30 +7,34 @@ import { createKind } from '../../src/lib/kinds'
 describe('parseManifestText', () => {
   beforeEach(clearDb)
 
-  it('parses a core-only YAML manifest', () => {
-    const text = `name: my-plugin\nversion: 0.1.0\ndescription: short\nkind: theme\n`
-    const parsed = parseManifestText(text, 'tabularium.yaml')
+  it('parses a core-only JSON manifest', () => {
+    const text = JSON.stringify({ name: 'my-plugin', version: '0.1.0', description: 'short', kind: 'theme' })
+    const parsed = parseManifestText(text)
     expect(parsed.name).toBe('my-plugin')
     expect(parsed.kind).toBe('theme')
   })
 
   it('strips authored $schema before validating (IDE hint, not data)', () => {
-    const text = `$schema: https://tabularis.example/manifest.schema.json\nname: x\nversion: 0.1.0\n`
-    const parsed = parseManifestText(text, 'tabularium.yaml')
+    const text = JSON.stringify({
+      $schema: 'https://tabularis.example/manifest.schema.json',
+      name: 'x',
+      version: '0.1.0',
+    })
+    const parsed = parseManifestText(text)
     expect(parsed.name).toBe('x')
     expect((parsed as Record<string, unknown>).$schema).toBeUndefined()
   })
 
   it('accepts a global extension field when defined', async () => {
     await setExtensionsDelta({ 'x-app': { type: 'string' } })
-    const text = `name: x\nversion: 0.1.0\nx-app: hello\n`
-    const parsed = parseManifestText(text, 'tabularium.yaml') as Record<string, unknown>
+    const text = JSON.stringify({ name: 'x', version: '0.1.0', 'x-app': 'hello' })
+    const parsed = parseManifestText(text) as Record<string, unknown>
     expect(parsed['x-app']).toBe('hello')
   })
 
   it('strips unknown fields silently (IDE schema rejects them; server stays lenient for fwd-compat)', () => {
-    const text = `name: x\nversion: 0.1.0\nx-unknown: oops\n`
-    const parsed = parseManifestText(text, 'tabularium.yaml') as Record<string, unknown>
+    const text = JSON.stringify({ name: 'x', version: '0.1.0', 'x-unknown': 'oops' })
+    const parsed = parseManifestText(text) as Record<string, unknown>
     expect(parsed.name).toBe('x')
     expect(parsed['x-unknown']).toBeUndefined()
   })
@@ -43,23 +47,21 @@ describe('parseManifestText', () => {
       description: null,
       extensionsSchema: { 'x-theme': { type: 'string' } },
     })
-    const themed = `name: x\nversion: 0.1.0\nkind: theme\nx-theme: light\n`
-    const ok = parseManifestText(themed, 'tabularium.yaml') as Record<string, unknown>
+    const themed = JSON.stringify({ name: 'x', version: '0.1.0', kind: 'theme', 'x-theme': 'light' })
+    const ok = parseManifestText(themed) as Record<string, unknown>
     expect(ok['x-theme']).toBe('light')
 
-    // x-global is part of the GLOBAL extensions but the kind override replaces them.
-    // Server strips it silently; the public per-kind schema would warn the IDE.
-    const wrongField = `name: x\nversion: 0.1.0\nkind: theme\nx-global: hi\n`
-    const stripped = parseManifestText(wrongField, 'tabularium.yaml') as Record<string, unknown>
+    const wrongField = JSON.stringify({ name: 'x', version: '0.1.0', kind: 'theme', 'x-global': 'hi' })
+    const stripped = parseManifestText(wrongField) as Record<string, unknown>
     expect(stripped['x-global']).toBeUndefined()
   })
 
   it('throws ManifestValidationError with structured errors on type mismatch', async () => {
     const { ManifestValidationError } = await import('../../src/lib/manifest')
     await setExtensionsDelta({ 'x-app': { type: 'string' } })
-    const text = `name: x\nversion: 0.1.0\nx-app: 42\n` // 42 is a number, not a string
+    const text = JSON.stringify({ name: 'x', version: '0.1.0', 'x-app': 42 })
     try {
-      parseManifestText(text, 'tabularium.yaml')
+      parseManifestText(text)
       throw new Error('expected throw')
     } catch (err) {
       expect(err).toBeInstanceOf(ManifestValidationError)
@@ -72,7 +74,7 @@ describe('parseManifestText', () => {
   it('throws ManifestValidationError with code:parse on malformed JSON input', async () => {
     const { ManifestValidationError } = await import('../../src/lib/manifest')
     try {
-      parseManifestText('{ not json', 'tabularium.json')
+      parseManifestText('{ not json')
       throw new Error('expected throw')
     } catch (err) {
       expect(err).toBeInstanceOf(ManifestValidationError)

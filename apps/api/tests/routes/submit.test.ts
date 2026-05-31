@@ -151,9 +151,8 @@ describe('POST /api/submit/oauth', () => {
       if (u.includes('/releases/latest')) {
         return new Response(JSON.stringify({ tag_name: 'v0.1.0', assets: [] }), { status: 200 })
       }
-      if (u.includes('/contents/tabularium.yaml')) {
-        // deliberately invalid: name must be a string, not a number
-        return new Response('name: 42\nkind: theme\n', { status: 200 })
+      if (u.includes('/contents/.tabularium') || u.includes('/contents/tabularium.json')) {
+        return new Response(JSON.stringify({ name: 42, version: '0.1.0', kind: 'theme' }), { status: 200 })
       }
       if (u.includes('/contents/')) {
         return new Response('not found', { status: 404 })
@@ -182,7 +181,7 @@ describe('POST /api/submit/oauth', () => {
     const { ManifestValidationError, parseManifestText } =
       require('../../src/lib/manifest') as typeof import('../../src/lib/manifest')
     try {
-      parseManifestText('name: 42\nversion: 0.1.0\n', 'tabularium.yaml')
+      parseManifestText(JSON.stringify({ name: 42, version: '0.1.0' }))
       throw new Error('expected throw')
     } catch (err) {
       expect(err).toBeInstanceOf(ManifestValidationError)

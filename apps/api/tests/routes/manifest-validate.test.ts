@@ -16,8 +16,8 @@ async function post(body: unknown, contentType = 'application/json') {
 describe('POST /api/manifest/validate', () => {
   beforeEach(clearDb)
 
-  it('returns ok:true for a valid YAML manifest', async () => {
-    const res = await post({ text: 'name: my-plugin\nversion: 0.1.0\nkind: theme\n', source: 'tabularium.yaml' })
+  it('returns ok:true for a valid JSON manifest', async () => {
+    const res = await post({ text: JSON.stringify({ name: 'my-plugin', version: '0.1.0', kind: 'theme' }) })
     expect(res.status).toBe(200)
     const body = (await res.json()) as { ok: boolean; normalized?: { name: string } }
     expect(body.ok).toBe(true)
@@ -25,7 +25,7 @@ describe('POST /api/manifest/validate', () => {
   })
 
   it('returns ok:false with structured errors for an invalid manifest', async () => {
-    const res = await post({ text: 'name: 42\n', source: 'tabularium.yaml' })
+    const res = await post({ text: JSON.stringify({ name: 42, version: '0.1.0' }) })
     expect(res.status).toBe(200)
     const body = (await res.json()) as { ok: boolean; errors?: Array<{ path: string; code: string }> }
     expect(body.ok).toBe(false)
@@ -40,29 +40,21 @@ describe('POST /api/manifest/validate', () => {
       extensionsSchema: { 'x-theme': { type: 'string' } },
     })
     const res = await post({
-      text: 'name: themex\nversion: 0.1.0\nkind: theme\nx-theme: light\n',
-      source: 'tabularium.yaml',
+      text: JSON.stringify({ name: 'themex', version: '0.1.0', kind: 'theme', 'x-theme': 'light' }),
       kind: 'theme',
     })
     const body = (await res.json()) as { ok: boolean }
     expect(body.ok).toBe(true)
   })
 
-  it('sniffs source when omitted (JSON body)', async () => {
-    const res = await post({ text: '{"name":"snippetx","version":"0.1.0"}' })
-    expect(res.status).toBe(200)
-    const body = (await res.json()) as { ok: boolean }
-    expect(body.ok).toBe(true)
-  })
-
   it('returns 400 when text is missing', async () => {
-    const res = await post({ source: 'tabularium.yaml' })
+    const res = await post({})
     expect(res.status).toBe(400)
   })
 
   it('returns 413 when text exceeds 64 KiB', async () => {
-    const huge = 'name: ' + 'x'.repeat(70_000) + '\n'
-    const res = await post({ text: huge, source: 'tabularium.yaml' })
+    const huge = JSON.stringify({ name: 'x', version: '0.1.0', description: 'x'.repeat(70_000) })
+    const res = await post({ text: huge })
     expect(res.status).toBe(413)
   })
 
@@ -70,7 +62,7 @@ describe('POST /api/manifest/validate', () => {
     const { setSetting } = await import('../../src/lib/settings')
     await createKind({ key: 'driver', label: 'Drivers', description: null })
     await setSetting('manifest.require_kind', '1')
-    const res = await post({ text: 'name: my-plugin\nversion: 0.1.0\n', source: 'tabularium.yaml' })
+    const res = await post({ text: JSON.stringify({ name: 'my-plugin', version: '0.1.0' }) })
     const body = (await res.json()) as { ok: boolean; errors?: Array<{ path: string; code: string }> }
     expect(body.ok).toBe(false)
     expect(body.errors?.some((e) => e.path === '/kind' && e.code === 'required')).toBe(true)
@@ -80,7 +72,7 @@ describe('POST /api/manifest/validate', () => {
     const { setSetting } = await import('../../src/lib/settings')
     await createKind({ key: 'driver', label: 'Drivers', description: null })
     await setSetting('manifest.require_kind', '1')
-    const res = await post({ text: 'name: my-plugin\nversion: 0.1.0\nkind: theme\n', source: 'tabularium.yaml' })
+    const res = await post({ text: JSON.stringify({ name: 'my-plugin', version: '0.1.0', kind: 'theme' }) })
     const body = (await res.json()) as { ok: boolean; errors?: Array<{ path: string; code: string }> }
     expect(body.ok).toBe(false)
     expect(body.errors?.some((e) => e.path === '/kind' && e.code === 'enum')).toBe(true)

@@ -41,7 +41,7 @@ export default new Elysia()
         ...actorFromUser(user, request),
         action: 'plugin.refresh_manifest',
         target: `plugin:${plugin.id}`,
-        meta: { ref: result.ref, source: result.source, by: 'author' },
+        meta: { ref: result.ref, by: 'author' },
       })
       return result
     },
@@ -57,7 +57,7 @@ export default new Elysia()
       params: t.Object({ slug: t.String() }),
       body: t.Optional(t.Object({ ref: t.Optional(t.String()) })),
       response: {
-        200: t.Object({ ok: t.Boolean(), slug: t.String(), source: t.String(), ref: t.String() }),
+        200: t.Object({ ok: t.Boolean(), slug: t.String(), ref: t.String() }),
         401: t.Object({ error: t.String(), reauthFor: t.String() }),
         403: t.Object({ error: t.String() }),
         404: t.Object({ error: t.String() }),

@@ -1,7 +1,7 @@
 {
   "name": "@tabularium/manifest",
-  "version": "0.2.0",
-  "description": "Pure validator + integrity primitives for the Tabularium plugin manifest (`.tabularium` / `tabularium.yaml` / `tabularium.json`).",
+  "version": "0.3.0",
+  "description": "Pure validator + integrity primitives for the Tabularium plugin manifest (`.tabularium`, JSON).",
   "license": "Apache-2.0",
   "repository": {
     "type": "git",
@@ -42,8 +42,7 @@
   "dependencies": {
     "@sinclair/typebox": "^0.34.49",
     "ajv": "^8.17.1",
-    "ajv-formats": "^3.0.1",
-    "yaml": "^2.9.0"
+    "ajv-formats": "^3.0.1"
   },
   "devDependencies": {
     "@tabularium/tsconfig": "workspace:*"

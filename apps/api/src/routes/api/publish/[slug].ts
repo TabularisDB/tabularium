@@ -31,7 +31,6 @@ const assetSchema = t.Object({
 
 const publishBodySchema = t.Object({
   manifest: t.String({ minLength: 1, maxLength: 64 * 1024 }),
-  manifestSource: t.Union([t.Literal('tabularium.yaml'), t.Literal('tabularium.json')]),
   version: t.String({ minLength: 1, maxLength: 40, pattern: '^v?\\d+\\.\\d+\\.\\d+(?:[-+][A-Za-z0-9.-]+)?$' }),
   assets: t.Array(assetSchema, { maxItems: 32 }),
   repoUrl: t.Optional(t.String({ minLength: 1, maxLength: 500 })),
@@ -96,7 +95,7 @@ export default new Elysia().use(publisherTokenMiddleware).post(
 
       let parsed
       try {
-        parsed = parseManifestText(body.manifest, body.manifestSource)
+        parsed = parseManifestText(body.manifest)
       } catch (err) {
         if (err instanceof ManifestValidationError) {
           await recordAudit({
@@ -164,7 +163,7 @@ export default new Elysia().use(publisherTokenMiddleware).post(
       // Apply manifest fields (category, tags, icon, extensions, …) to the
       // freshly-created plugin row.
       const patch = manifestPatch(
-        { raw: body.manifest, parsed, readmeMarkdown: null, readmeLocales: null, source: body.manifestSource },
+        { raw: body.manifest, parsed, readmeMarkdown: null, readmeLocales: null },
         { repoBase: rawContentBase(ref, tag), version },
       )
       await applyManifestToPlugin(slug, patch)
@@ -212,7 +211,7 @@ export default new Elysia().use(publisherTokenMiddleware).post(
 
     let parsed
     try {
-      parsed = parseManifestText(body.manifest, body.manifestSource)
+      parsed = parseManifestText(body.manifest)
     } catch (err) {
       if (err instanceof ManifestValidationError) {
         await recordAudit({
@@ -261,7 +260,7 @@ export default new Elysia().use(publisherTokenMiddleware).post(
     const { assetMap } = await persistRelease({ id: slug, latestVersion: existing.latestVersion }, normalized)
 
     const patch = manifestPatch(
-      { raw: body.manifest, parsed, readmeMarkdown: null, readmeLocales: null, source: body.manifestSource },
+      { raw: body.manifest, parsed, readmeMarkdown: null, readmeLocales: null },
       { repoBase: rawContentBase(ref, tag), version },
     )
     await applyManifestToPlugin(slug, patch)

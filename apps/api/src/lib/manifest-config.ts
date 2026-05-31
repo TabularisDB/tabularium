@@ -1,27 +1,20 @@
 import { getSetting } from './settings'
 import { env } from './env'
 
-const DEFAULT_FILES = ['.tabularium', '.tabularium.json', 'tabularium.yaml', 'tabularium.json']
+const DEFAULT_FILES = ['.tabularium']
 
-const FILE_RE = /^\.?[a-z][a-z0-9-]*(\.(yaml|yml|json))?$/
+const FILE_RE = /^\.?[a-z][a-z0-9-]*(\.json)?$/
 const FILE_MAX = 60
 const MAX_FILES = 12
 
-export type ManifestSource = 'yaml' | 'json'
-
 export type ManifestCandidate = {
   path: string
-  source: ManifestSource
 }
 
 export type ManifestConfig = {
   files: string[]
   candidates: ManifestCandidate[]
   schemaUrl: string
-}
-
-function classify(path: string): ManifestSource {
-  return path.endsWith('.json') ? 'json' : 'yaml'
 }
 
 function readAllowedFiles(): string[] {
@@ -39,7 +32,7 @@ function readAllowedFiles(): string[] {
 
 export function getManifestConfig(): ManifestConfig {
   const files = readAllowedFiles()
-  const candidates = files.map((path) => ({ path, source: classify(path) }))
+  const candidates = files.map((path) => ({ path }))
   const schemaUrl = getSetting('manifest.schema_url') ?? `${env.BASE_URL.replace(/\/$/, '')}/manifest.schema.json`
   return { files, candidates, schemaUrl }
 }

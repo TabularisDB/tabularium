@@ -294,7 +294,7 @@ export async function refreshManifestAtRelease(
     await applyManifestToPlugin(plugin.id, patch)
     await cache().del(latestCacheKey(plugin.id))
     const sha = manifestSha256(manifest.raw)
-    log.info({ slug: plugin.id, version, source: manifest.source }, 'manifest refreshed at release')
+    log.info({ slug: plugin.id, version }, 'manifest refreshed at release')
     return sha
   } catch (err) {
     const reason = err instanceof Error ? err.message : String(err)

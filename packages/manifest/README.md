@@ -15,10 +15,10 @@ npm i @tabularium/manifest
 ### Validation
 
 ```ts
-import { parseManifest, validateManifest, buildSchema, fetchSchema, sniffSource, type ValidationError } from '@tabularium/manifest'
+import { parseManifest, validateManifest, buildSchema, fetchSchema, type ValidationError } from '@tabularium/manifest'
 ```
 
-- **`parseManifest(text, source)`** — YAML or JSON → object. Throws `ParseError`. `source` is `'tabularium.yaml' | 'tabularium.json'`; use `sniffSource(text)` to auto-detect.
+- **`parseManifest(text)`** — JSON → object. Throws `ParseError`. Tabularium is JSON-only.
 - **`validateManifest(parsed, schema, { lenient? })`** — ajv-backed JSON Schema 2020-12 validator. Returns `{ ok: true, normalized, errors: [] }` or `{ ok: false, normalized: null, errors }`. `lenient: true` strips unknown fields via `removeAdditional: 'all'` instead of erroring.
 - **`buildSchema(opts)`** — merges the core `ManifestSchema` with operator-defined extension deltas (global + per-kind) into a single JSON Schema.
 - **`fetchSchema(url)`** — `GET <url>/manifest.schema.json` helper. Includes the response body in HTTP error messages.

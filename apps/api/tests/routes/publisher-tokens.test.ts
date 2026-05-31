@@ -147,7 +147,12 @@ describe('GET/POST/DELETE /api/auth/me/tokens', () => {
 describe('POST /api/publish/:slug', () => {
   beforeEach(clearDb)
 
-  const MANIFEST = `name: alpha\nversion: 1.0.0\ndescription: A test plugin\ncategory: misc\n`
+  const MANIFEST = JSON.stringify({
+    name: 'alpha',
+    version: '1.0.0',
+    description: 'A test plugin',
+    category: 'misc',
+  })
 
   async function pubFetch(slug: string, token: string, body: Record<string, unknown>) {
     const app = await buildApp()
@@ -171,7 +176,6 @@ describe('POST /api/publish/:slug', () => {
 
     const res = await pubFetch('alpha', token, {
       manifest: MANIFEST,
-      manifestSource: 'tabularium.yaml',
       version: '1.0.0',
       assets: [{ name: 'alpha.zip', url: 'https://example.com/alpha.zip' }],
       repoUrl: 'https://github.com/u/alpha',
@@ -191,7 +195,6 @@ describe('POST /api/publish/:slug', () => {
 
     const res = await pubFetch('alpha', token, {
       manifest: MANIFEST,
-      manifestSource: 'tabularium.yaml',
       version: '1.0.0',
       assets: [],
       repoUrl: 'https://github.com/u/alpha',
@@ -205,7 +208,6 @@ describe('POST /api/publish/:slug', () => {
 
     const res = await pubFetch('alpha', token, {
       manifest: MANIFEST,
-      manifestSource: 'tabularium.yaml',
       version: '1.0.0',
       assets: [],
     })
@@ -219,7 +221,6 @@ describe('POST /api/publish/:slug', () => {
 
     const res = await pubFetch('alpha', token, {
       manifest: MANIFEST,
-      manifestSource: 'tabularium.yaml',
       version: '1.0.0',
       assets: [{ name: 'alpha.zip', url: 'https://example.com/alpha.zip' }],
     })
@@ -236,7 +237,6 @@ describe('POST /api/publish/:slug', () => {
 
     const res = await pubFetch('alpha', token, {
       manifest: MANIFEST,
-      manifestSource: 'tabularium.yaml',
       version: '1.0.0',
       assets: [],
     })
@@ -249,7 +249,6 @@ describe('POST /api/publish/:slug', () => {
 
     const res = await pubFetch('alpha', token, {
       manifest: MANIFEST,
-      manifestSource: 'tabularium.yaml',
       version: '2.0.0',
       assets: [{ name: 'alpha.zip', url: 'https://example.com/alpha.zip' }],
       repoUrl: 'https://github.com/u/alpha',
@@ -264,8 +263,7 @@ describe('POST /api/publish/:slug', () => {
     const { token } = await createPublisherToken({ userId: u.id, name: 'CI', scopes: ['publish:*'] })
 
     const res = await pubFetch('alpha', token, {
-      manifest: 'this is: { not valid yaml',
-      manifestSource: 'tabularium.yaml',
+      manifest: '{ not valid json',
       version: '1.0.0',
       assets: [],
       repoUrl: 'https://github.com/u/alpha',
@@ -280,7 +278,6 @@ describe('POST /api/publish/:slug', () => {
 
     const res = await pubFetch('alpha', token, {
       manifest: MANIFEST,
-      manifestSource: 'tabularium.yaml',
       version: '1.0.0',
       assets: [],
       repoUrl: 'https://github.com/u/alpha',

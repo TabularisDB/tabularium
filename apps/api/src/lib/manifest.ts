@@ -34,10 +34,10 @@ export class ManifestValidationError extends Error {
   }
 }
 
-export function parseManifestText(text: string, source: ResolvedManifest['source']): Manifest {
+export function parseManifestText(text: string): Manifest {
   let parsed: Record<string, unknown>
   try {
-    parsed = parseManifest(text, source)
+    parsed = parseManifest(text)
   } catch (err) {
     if (err instanceof ParseError) {
       throw new ManifestValidationError([{ path: '/', code: 'parse', message: err.message }])
@@ -155,11 +155,8 @@ function fetcherFor(accessToken: string, ref: RepoRef, branch?: string): FileFet
   return makeGitlabFetcher(instance.baseUrl, accessToken, ref, branch)
 }
 
-function manifestCandidates(): Array<{ path: string; source: ResolvedManifest['source'] }> {
-  return getManifestConfig().candidates.map(({ path, source }) => ({
-    path,
-    source: source === 'json' ? 'tabularium.json' : 'tabularium.yaml',
-  }))
+function manifestCandidates(): Array<{ path: string }> {
+  return getManifestConfig().candidates
 }
 
 export function rawContentBase(ref: RepoRef, branch: string): string {
@@ -261,8 +258,8 @@ export async function resolveManifestFromReleaseAssets(
         log.warn({ path: candidate.path, bytes: got.bytes }, 'asset manifest exceeds size cap — ignored')
         continue
       }
-      const parsed = parseManifestText(got.content, candidate.source)
-      return { raw: got.content, parsed, readmeMarkdown: null, readmeLocales: null, source: candidate.source }
+      const parsed = parseManifestText(got.content)
+      return { raw: got.content, parsed, readmeMarkdown: null, readmeLocales: null }
     } catch (err) {
       if (err instanceof UpstreamUnauthorizedError) throw err
       if (err instanceof ManifestValidationError) {
@@ -289,7 +286,7 @@ export async function resolveManifest(
         log.warn({ path: candidate.path, bytes: got.bytes }, 'manifest exceeds size cap — ignored')
         continue
       }
-      const parsed = parseManifestText(got.content, candidate.source)
+      const parsed = parseManifestText(got.content)
       let readmeMarkdown: string | null = null
       let readmeLocales: ReadmeMap | null = null
 
@@ -326,7 +323,7 @@ export async function resolveManifest(
           }
         }
       }
-      return { raw: got.content, parsed, readmeMarkdown, readmeLocales, source: candidate.source }
+      return { raw: got.content, parsed, readmeMarkdown, readmeLocales }
     } catch (err) {
       if (err instanceof UpstreamUnauthorizedError) throw err
       if (err instanceof ManifestValidationError) {

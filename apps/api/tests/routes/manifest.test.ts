@@ -31,17 +31,17 @@ describe('GET /api/manifest', () => {
       description: string
       schema: { $id?: string }
     }
-    expect(data.paths).toEqual(['.tabularium', '.tabularium.json', 'tabularium.yaml', 'tabularium.json'])
+    expect(data.paths).toEqual(['.tabularium'])
     expect(data.description).toContain('.tabularium')
     expect(data.schema.$id).toBe('http://localhost:3000/manifest.schema.json')
   })
 
   it('reflects a custom allowed_files list in paths and description', async () => {
-    await setSetting('manifest.allowed_files', JSON.stringify(['.tabularis', 'tabularis.yaml']))
+    await setSetting('manifest.allowed_files', JSON.stringify(['.tabularis', 'tabularis.json']))
     const app = await buildApp()
     const res = await app.handle(new Request('http://localhost/api/manifest'))
     const data = (await res.json()) as { paths: string[]; description: string }
-    expect(data.paths).toEqual(['.tabularis', 'tabularis.yaml'])
+    expect(data.paths).toEqual(['.tabularis', 'tabularis.json'])
     expect(data.description).toContain('.tabularis')
     expect(data.description).not.toContain('.tabularium')
   })

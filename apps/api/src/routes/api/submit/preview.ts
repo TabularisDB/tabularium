@@ -40,7 +40,6 @@ const manifestPreviewSchema = t.Object({
   homepage: t.Nullable(t.String()),
   documentationUrl: t.Nullable(t.String()),
   minRuntimeVersion: t.Nullable(t.String()),
-  source: t.String(),
   readmeLocales: t.Array(t.String()),
 })
 
@@ -138,7 +137,7 @@ export default new Elysia()
             message: `Release found, but no manifest file at the tag (looked for ${formatManifestFilenames()}) — you will need to provide a name and description manually.`,
           }
         }
-        const { parsed, source, readmeLocales } = manifest
+        const { parsed, readmeLocales } = manifest
         if (parsed.name && parsed.name !== slug) {
           slug = parsed.name
           existing = await lookupExisting(slug)
@@ -159,7 +158,6 @@ export default new Elysia()
           homepage: parsed.homepage ?? null,
           documentationUrl: parsed.documentation_url ?? null,
           minRuntimeVersion: parsed.min_runtime_version ?? null,
-          source,
           readmeLocales: readmeLocales ? Object.keys(readmeLocales) : [],
         }
         return {

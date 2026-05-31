@@ -6,7 +6,7 @@ import { manifestPatch, applyManifestToPlugin } from '$lib/manifest-apply'
 import { cache } from '$lib/cache'
 import { latestCacheKey } from '$routes/api/plugins/[slug]/latest'
 
-export type RefreshOk = { ok: true; slug: string; source: string; ref: string }
+export type RefreshOk = { ok: true; slug: string; ref: string }
 export type RefreshErr = {
   status: number
   body: { error: string; reauthFor?: string }
@@ -53,5 +53,5 @@ export async function refreshManifestForPlugin(
   const patch = manifestPatch(manifest, { repoBase: rawContentBase(ref, branch), version: branch })
   await applyManifestToPlugin(plugin.id, patch)
   await cache().del(latestCacheKey(plugin.id))
-  return { ok: true, slug: plugin.id, source: manifest.source, ref: branch }
+  return { ok: true, slug: plugin.id, ref: branch }
 }

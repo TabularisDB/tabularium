@@ -1,5 +1,5 @@
 import { Elysia, t } from 'elysia'
-import { validateManifest, parseManifest, sniffSource, ParseError } from '@tabularium/manifest'
+import { validateManifest, parseManifest, ParseError } from '@tabularium/manifest'
 import { buildMergedSchema } from '$lib/manifest-schema'
 import { getKinds } from '$lib/kinds'
 import { getSetting } from '$lib/settings'
@@ -21,10 +21,9 @@ export default new Elysia()
         set.status = 413
         return { error: 'manifest exceeds 64 KiB cap' }
       }
-      const source = body.source ?? sniffSource(text)
       let parsed: Record<string, unknown>
       try {
-        parsed = parseManifest(text, source)
+        parsed = parseManifest(text)
       } catch (err) {
         if (err instanceof ParseError) {
           return { ok: false, errors: [{ path: '/', code: 'parse', message: err.message }] }
@@ -75,7 +74,6 @@ export default new Elysia()
     {
       body: t.Object({
         text: t.String(),
-        source: t.Optional(t.Union([t.Literal('tabularium.yaml'), t.Literal('tabularium.json')])),
         kind: t.Optional(t.String({ maxLength: 40 })),
       }),
       detail: {

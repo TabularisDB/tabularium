@@ -142,7 +142,7 @@ export default new Elysia()
               version: tag,
             })
             await applyManifestToPlugin(slug, patch)
-            log.info({ slug, source: manifest.source, tag }, 'manifest applied at submit (from latest release)')
+            log.info({ slug, tag }, 'manifest applied at submit (from latest release)')
           }
           if (!manifest) {
             log.info({ slug, tag }, 'no manifest in latest release — using fallback metadata')

@@ -21,7 +21,7 @@ export default new Elysia().use(adminMiddleware).post(
       ...actorFromAdmin(admin, request),
       action: 'plugin.refresh_manifest',
       target: `plugin:${plugin.id}`,
-      meta: { ref: result.ref, source: result.source },
+      meta: { ref: result.ref },
     })
     return result
   },
@@ -37,7 +37,7 @@ export default new Elysia().use(adminMiddleware).post(
     params: t.Object({ id: t.String() }),
     body: t.Optional(t.Object({ ref: t.Optional(t.String()) })),
     response: {
-      200: t.Object({ ok: t.Boolean(), slug: t.String(), source: t.String(), ref: t.String() }),
+      200: t.Object({ ok: t.Boolean(), slug: t.String(), ref: t.String() }),
       401: t.Object({ error: t.String(), reauthFor: t.String() }),
       404: t.Object({ error: t.String() }),
       412: t.Object({ error: t.String() }),

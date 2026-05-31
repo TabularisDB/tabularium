@@ -13,7 +13,6 @@ function buildManifest(extras: Record<string, unknown>): ResolvedManifest {
     } as ResolvedManifest['parsed'],
     readmeMarkdown: null,
     readmeLocales: null,
-    source: 'tabularium.json',
   }
 }
 

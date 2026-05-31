@@ -7,14 +7,14 @@ import { resolveManifestFromReleaseAssets } from '../../src/lib/manifest'
 import { refreshManifestAtRelease } from '../../src/lib/release-ingest'
 import { setSetting } from '../../src/lib/settings'
 
-const SAMPLE_YAML = `
-$schema: https://example.com/manifest.schema.json
-name: alpha
-version: 1.0.0
-description: A test plugin.
-category: misc
-tags: [test]
-`
+const SAMPLE_JSON = JSON.stringify({
+  $schema: 'https://example.com/manifest.schema.json',
+  name: 'alpha',
+  version: '1.0.0',
+  description: 'A test plugin.',
+  category: 'misc',
+  tags: ['test'],
+})
 
 function mockAssetFetch(byUrl: Record<string, { body: string; status?: number }>) {
   return spyOn(global, 'fetch').mockImplementation((async (url: string | URL | Request) => {
@@ -33,13 +33,12 @@ describe('resolveManifestFromReleaseAssets', () => {
 
   it('returns parsed manifest when an asset matches a candidate filename', async () => {
     const spy = mockAssetFetch({
-      'https://example.com/.tabularium': { body: SAMPLE_YAML },
+      'https://example.com/.tabularium': { body: SAMPLE_JSON },
     })
     const manifest = await resolveManifestFromReleaseAssets('test-token', [
       { name: '.tabularium', url: 'https://example.com/.tabularium' },
     ])
     expect(manifest?.parsed.name).toBe('alpha')
-    expect(manifest?.source).toBe('tabularium.yaml')
     spy.mockRestore()
   })
 
@@ -65,7 +64,7 @@ describe('refreshManifestAtRelease asset-first behavior', () => {
     const u = await makeUser()
     const plugin = await makePlugin(u.id, { id: 'alpha' })
     const assetUrl = 'https://codeberg.org/u/alpha/releases/download/v1.0.0/.tabularium'
-    const spy = mockAssetFetch({ [assetUrl]: { body: SAMPLE_YAML } })
+    const spy = mockAssetFetch({ [assetUrl]: { body: SAMPLE_JSON } })
 
     const sha = await refreshManifestAtRelease(
       { id: plugin.id, ownerId: u.id, repoUrl: plugin.repoUrl },

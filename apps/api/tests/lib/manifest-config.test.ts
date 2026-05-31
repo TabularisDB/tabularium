@@ -13,9 +13,7 @@ describe('validateManifestFile', () => {
   it('accepts dotfile and plain forms', () => {
     expect(() => validateManifestFile('.tabularium')).not.toThrow()
     expect(() => validateManifestFile('.tabularium.json')).not.toThrow()
-    expect(() => validateManifestFile('.tabularium.yaml')).not.toThrow()
-    expect(() => validateManifestFile('.tabularium.yml')).not.toThrow()
-    expect(() => validateManifestFile('tabularium.yaml')).not.toThrow()
+    expect(() => validateManifestFile('tabularium.json')).not.toThrow()
     expect(() => validateManifestFile('tabularis')).not.toThrow()
     expect(() => validateManifestFile('.tabularis')).not.toThrow()
     expect(() => validateManifestFile('plugin-spec.json')).not.toThrow()
@@ -31,12 +29,14 @@ describe('validateManifestFile', () => {
 
   it('rejects path traversal', () => {
     expect(() => validateManifestFile('../etc/passwd')).toThrow()
-    expect(() => validateManifestFile('dir/file.yaml')).toThrow()
+    expect(() => validateManifestFile('dir/file.json')).toThrow()
   })
 
   it('rejects unknown extensions', () => {
     expect(() => validateManifestFile('tabularium.txt')).toThrow()
     expect(() => validateManifestFile('tabularium.toml')).toThrow()
+    expect(() => validateManifestFile('tabularium.yaml')).toThrow()
+    expect(() => validateManifestFile('tabularium.yml')).toThrow()
   })
 
   it('rejects underscores', () => {
@@ -51,8 +51,8 @@ describe('validateManifestFile', () => {
 
 describe('validateAllowedFiles', () => {
   it('accepts a non-empty list of valid filenames', () => {
-    const out = validateAllowedFiles(['.tabularium', 'tabularium.yaml'])
-    expect(out).toEqual(['.tabularium', 'tabularium.yaml'])
+    const out = validateAllowedFiles(['.tabularium', 'tabularium.json'])
+    expect(out).toEqual(['.tabularium', 'tabularium.json'])
   })
 
   it('deduplicates entries', () => {
@@ -107,19 +107,15 @@ describe('getManifestConfig', () => {
   })
 
   it('reflects a custom allowed_files list', async () => {
-    await setSetting('manifest.allowed_files', JSON.stringify(['.tabularis', 'tabularis.yaml']))
+    await setSetting('manifest.allowed_files', JSON.stringify(['.tabularis', 'tabularis.json']))
     const cfg = getManifestConfig()
-    expect(cfg.files).toEqual(['.tabularis', 'tabularis.yaml'])
+    expect(cfg.files).toEqual(['.tabularis', 'tabularis.json'])
   })
 
-  it('classifies source by extension', async () => {
-    await setSetting('manifest.allowed_files', JSON.stringify(['.x', 'x.json', 'x.yaml']))
+  it('returns the configured paths verbatim as candidates', async () => {
+    await setSetting('manifest.allowed_files', JSON.stringify(['.x', 'x.json']))
     const cfg = getManifestConfig()
-    expect(cfg.candidates).toEqual([
-      { path: '.x', source: 'yaml' },
-      { path: 'x.json', source: 'json' },
-      { path: 'x.yaml', source: 'yaml' },
-    ])
+    expect(cfg.candidates).toEqual([{ path: '.x' }, { path: 'x.json' }])
   })
 
   it('falls back to defaults when stored value is malformed JSON', async () => {
