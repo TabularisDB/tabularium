@@ -45,6 +45,8 @@ export type PublicPluginDetail = PublicPlugin & {
     minRuntimeVersion: string | null
     assets: ReturnType<typeof parseAssets>
     createdAt: number
+    yankedAt: number | null
+    yankReason: string | null
   }>
 }
 
@@ -111,6 +113,8 @@ export function projectPluginDetail(row: PluginRow & { releases: ReleaseRow[] })
       minRuntimeVersion: r.minRuntimeVersion,
       assets: parseAssets(r.assets),
       createdAt: r.createdAt,
+      yankedAt: r.yankedAt ?? null,
+      yankReason: r.yankReason ?? null,
     })),
   }
 }

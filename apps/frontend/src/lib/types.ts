@@ -37,6 +37,8 @@ export type Release = {
   minRuntimeVersion: string | null
   assets: Record<string, AssetEntry>
   createdAt: number
+  yankedAt?: number | null
+  yankReason?: string | null
 }
 
 export type Screenshot = {

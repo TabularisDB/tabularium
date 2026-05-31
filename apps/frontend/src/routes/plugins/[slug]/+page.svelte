@@ -15,6 +15,8 @@
 	import Download from '@lucide/svelte/icons/download'
 	import Rocket from '@lucide/svelte/icons/rocket'
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw'
+	import Ban from '@lucide/svelte/icons/ban'
+	import Undo2 from '@lucide/svelte/icons/undo-2'
 	import Cpu from '@lucide/svelte/icons/cpu'
 	import HardDrive from '@lucide/svelte/icons/hard-drive'
 	import Languages from '@lucide/svelte/icons/languages'
@@ -33,7 +35,7 @@
 	import { instanceInfo, buildInstallDeepLink } from '$lib/stores/instance-info.svelte'
 	import { i18n, LOCALE_LABELS, type Locale } from '$lib/stores/i18n.svelte'
 	import { toast } from 'svelte-sonner'
-	import type { Plugin, PluginStats } from '$lib/types'
+	import type { Plugin, PluginStats, Release } from '$lib/types'
 	import { m } from '$lib/paraglide/messages'
 
 	const slug = $derived(page.params.slug)
@@ -52,6 +54,10 @@
 	let activeScreenshot = $state<number | null>(null)
 	let selectedPlatform = $state<string | null>(null)
 	let copying = $state(false)
+	let yankOpen = $state(false)
+	let yankTarget = $state<{ version: string; reason: string | null } | null>(null)
+	let yanking = $state(false)
+	let unyankingId = $state<string | null>(null)
 
 	async function load(currentLocale: Locale) {
 		loading = true
@@ -242,6 +248,62 @@
 			toast.error(e instanceof Error ? e.message : m.plugin_detail_refresh_failed())
 		} finally {
 			refreshing = false
+		}
+	}
+
+	function openYank(release: Release) {
+		const reason = prompt(m.plugin_detail_yank_reason_prompt())
+		// null = cancel; empty string = no reason supplied.
+		if (reason === null) return
+		yankTarget = { version: release.version, reason: reason.trim() || null }
+		yankOpen = true
+	}
+
+	async function confirmYank() {
+		if (!plugin || !yankTarget) return
+		yanking = true
+		try {
+			const { error } = await eden.api
+				.plugins({ slug: plugin.id })
+				.releases({ version: yankTarget.version })
+				.yank.post({ reason: yankTarget.reason ?? undefined })
+			if (error)
+				throw new Error(
+					typeof error.value === 'string'
+						? error.value
+						: ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`),
+				)
+			toast.success(m.plugin_detail_yank_success())
+			yankOpen = false
+			yankTarget = null
+			await load(locale)
+		} catch (e) {
+			toast.error(e instanceof Error ? e.message : m.plugin_detail_yank_failed())
+		} finally {
+			yanking = false
+		}
+	}
+
+	async function unyankRelease(release: Release) {
+		if (!plugin || unyankingId === release.id) return
+		unyankingId = release.id
+		try {
+			const { error } = await eden.api
+				.plugins({ slug: plugin.id })
+				.releases({ version: release.version })
+				.yank.post({ unyank: true })
+			if (error)
+				throw new Error(
+					typeof error.value === 'string'
+						? error.value
+						: ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`),
+				)
+			toast.success(m.plugin_detail_unyank_success())
+			await load(locale)
+		} catch (e) {
+			toast.error(e instanceof Error ? e.message : m.plugin_detail_yank_failed())
+		} finally {
+			unyankingId = null
 		}
 	}
 
@@ -696,12 +758,51 @@
 													>runtime ≥ {release.minRuntimeVersion}</span
 												>
 											{/if}
+											{#if release.yankedAt}
+												<span
+													class="font-mono text-[10px] px-2 py-0.5 rounded-full bg-destructive/15 text-destructive tracking-wide"
+													>{m.plugin_detail_yanked_badge()}</span
+												>
+											{/if}
 										</span>
 										<span class="font-mono text-[11px] text-muted-foreground whitespace-nowrap"
 											>{formatRelative(release.createdAt)}</span
 										>
 									</summary>
 									<div class="pb-4">
+										{#if release.yankedAt || isOwner}
+											<div class="px-2.5 pb-3 flex items-center justify-between gap-3 flex-wrap">
+												{#if release.yankedAt}
+													<div class="text-xs text-muted-foreground">
+														<span class="font-mono text-destructive">{m.plugin_detail_yanked_badge()}</span>
+														{#if release.yankReason}
+															· <span class="italic">{release.yankReason}</span>
+														{/if}
+														· {formatRelative(release.yankedAt)}
+													</div>
+												{:else}
+													<span></span>
+												{/if}
+												{#if isOwner}
+													{#if release.yankedAt}
+														<Button
+															variant="outline"
+															size="sm"
+															onclick={() => unyankRelease(release)}
+															disabled={unyankingId === release.id}
+														>
+															<Undo2 class="h-3.5 w-3.5 mr-1.5" />
+															{m.plugin_detail_unyank_button()}
+														</Button>
+													{:else}
+														<Button variant="ghost" size="sm" onclick={() => openYank(release)}>
+															<Ban class="h-3.5 w-3.5 mr-1.5" />
+															{m.plugin_detail_yank_button()}
+														</Button>
+													{/if}
+												{/if}
+											</div>
+										{/if}
 										<table class="w-full border-collapse">
 											<tbody>
 												{#each Object.entries(release.assets) as [key, asset] (key)}
@@ -920,5 +1021,17 @@
 		confirmLabel={m.plugin_detail_delete()}
 		busy={deleting}
 		onConfirm={confirmDelete}
+	/>
+{/if}
+
+{#if plugin && yankTarget}
+	<ConfirmDialog
+		bind:open={yankOpen}
+		title={m.plugin_detail_yank_title({ version: yankTarget.version })}
+		description={m.plugin_detail_yank_description()}
+		confirmWord={yankTarget.version}
+		confirmLabel={m.plugin_detail_yank_button()}
+		busy={yanking}
+		onConfirm={confirmYank}
 	/>
 {/if}
