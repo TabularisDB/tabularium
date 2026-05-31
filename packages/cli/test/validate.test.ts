@@ -51,16 +51,16 @@ async function run(args: string[]): Promise<{ code: number; stdout: string; stde
 
 describe('tabularium validate', () => {
   it('exits 0 for a valid manifest', async () => {
-    const file = join(workdir, 'good.yaml')
-    writeFileSync(file, 'name: Good Plugin\nkind: theme\n')
+    const file = join(workdir, 'good.json')
+    writeFileSync(file, JSON.stringify({ name: 'Good Plugin', kind: 'theme' }))
     const { code, stdout } = await run(['validate', file, '--registry', baseUrl])
     expect(code).toBe(0)
     expect(stdout).toContain('ok')
   })
 
   it('exits 1 with structured errors for an invalid manifest', async () => {
-    const file = join(workdir, 'bad.yaml')
-    writeFileSync(file, 'name: 42\n')
+    const file = join(workdir, 'bad.json')
+    writeFileSync(file, JSON.stringify({ name: 42 }))
     const { code, stdout, stderr } = await run(['validate', file, '--registry', baseUrl])
     expect(code).toBe(1)
     const combined = stdout + stderr
@@ -68,30 +68,29 @@ describe('tabularium validate', () => {
     expect(combined).toContain('type')
   })
 
-  it('exits non-zero for an unparseable YAML file', async () => {
-    const file = join(workdir, 'parse-error.yaml')
-    writeFileSync(file, 'name: [unterminated\n')
+  it('exits non-zero for an unparseable JSON file', async () => {
+    const file = join(workdir, 'parse-error.json')
+    writeFileSync(file, '{ name: [unterminated')
     const { code } = await run(['validate', file, '--registry', baseUrl])
     expect(code).not.toBe(0)
   })
 
   it('exits non-zero when the file does not exist', async () => {
-    const file = join(workdir, 'missing.yaml')
+    const file = join(workdir, 'missing.json')
     const { code } = await run(['validate', file, '--registry', baseUrl])
     expect(code).not.toBe(0)
   })
 
   it('exits non-zero when the registry is unreachable', async () => {
-    const file = join(workdir, 'good-for-net-test.yaml')
-    writeFileSync(file, 'name: Good Plugin\nkind: theme\n')
-    // Port 1 is reserved (tcpmux) and effectively never serves HTTP.
+    const file = join(workdir, 'good-for-net-test.json')
+    writeFileSync(file, JSON.stringify({ name: 'Good Plugin', kind: 'theme' }))
     const { code } = await run(['validate', file, '--registry', 'http://127.0.0.1:1'])
     expect(code).not.toBe(0)
   })
 
   it('rejects an invocation missing --registry', async () => {
-    const file = join(workdir, 'noop.yaml')
-    writeFileSync(file, 'name: Good Plugin\nkind: theme\n')
+    const file = join(workdir, 'noop.json')
+    writeFileSync(file, JSON.stringify({ name: 'Good Plugin', kind: 'theme' }))
     const { code, stderr } = await run(['validate', file])
     expect(code).not.toBe(0)
     expect(stderr.toLowerCase()).toContain('--registry')

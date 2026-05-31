@@ -1,6 +1,6 @@
 {
   "name": "@tabularium/cli",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Author-side CLI for the Tabularium plugin registry — `tabularium validate` checks your `.tabularium` manifest against a running registry's schema.",
   "license": "Apache-2.0",
   "repository": {

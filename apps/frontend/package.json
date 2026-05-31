@@ -41,6 +41,7 @@
 		"bits-ui": "^2.4.1",
 		"clsx": "^2.1.1",
 		"elysia": "^1.4.28",
+		"layerchart": "^2.0.0-next.64",
 		"mode-watcher": "^1.0.7",
 		"svelte-jsoneditor": "3.12.0",
 		"svelte-sonner": "^1.0.0",

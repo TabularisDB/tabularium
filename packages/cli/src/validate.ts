@@ -1,14 +1,9 @@
 import { readFileSync } from 'node:fs'
-import { extname } from 'node:path'
-import { parseManifest, validateManifest, fetchSchema, ParseError, type ManifestSource } from '@tabularium/manifest'
+import { parseManifest, validateManifest, fetchSchema, ParseError } from '@tabularium/manifest'
 
 export type ValidateOptions = {
   registry: string
   kind?: string
-}
-
-function sourceFor(file: string): ManifestSource {
-  return extname(file).toLowerCase() === '.json' ? 'tabularium.json' : 'tabularium.yaml'
 }
 
 export async function runValidate(file: string, opts: ValidateOptions): Promise<number> {
@@ -22,7 +17,7 @@ export async function runValidate(file: string, opts: ValidateOptions): Promise<
 
   let parsed: Record<string, unknown>
   try {
-    parsed = parseManifest(text, sourceFor(file))
+    parsed = parseManifest(text)
   } catch (err) {
     if (err instanceof ParseError) {
       process.stderr.write(`parse error: ${err.message}\n`)

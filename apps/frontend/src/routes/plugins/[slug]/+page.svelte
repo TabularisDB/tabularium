@@ -24,6 +24,7 @@
 	import Sparkles from '@lucide/svelte/icons/sparkles'
 	import Check from '@lucide/svelte/icons/check'
 	import ChevronDown from '@lucide/svelte/icons/chevron-down'
+	import { BarChart } from 'layerchart'
 	import Badge from '$components/ui/Badge.svelte'
 	import Button from '$components/ui/Button.svelte'
 	import Skeleton from '$components/ui/Skeleton.svelte'
@@ -837,56 +838,31 @@
 				<section class="space-y-4">
 					<h2 class="text-2xl font-semibold tracking-tight">{m.plugin_detail_downloads_per_version()}</h2>
 					{#if downloadStats && downloadStats.versions.length > 0}
-						<div class="rounded-xl border border-border bg-card/50 overflow-hidden">
-							<table class="w-full">
-								<thead>
-									<tr class="border-b border-border bg-card">
-										<th
-											class="px-4 py-2.5 text-left text-[10px] uppercase tracking-[0.12em] font-mono text-muted-foreground"
-										>
-											v
-										</th>
-										<th
-											class="px-4 py-2.5 text-right text-[10px] uppercase tracking-[0.12em] font-mono text-muted-foreground"
-										>
-											{m.plugin_detail_downloads_total()}
-										</th>
-										<th
-											class="px-4 py-2.5 text-left text-[10px] uppercase tracking-[0.12em] font-mono text-muted-foreground hidden sm:table-cell"
-										>
-											{m.plugin_detail_stat_downloads()}
-										</th>
-									</tr>
-								</thead>
-								<tbody>
-									{#each downloadStats.versions as v (v.version)}
-										{@const denom = downloadStats?.total || 1}
-										{@const pct = (v.total / denom) * 100}
-										<tr class="border-t border-border/60 first:border-t-0">
-											<td class="px-4 py-2.5 font-mono text-xs">v{v.version}</td>
-											<td class="px-4 py-2.5 text-right">
-												<div class="inline-flex items-center gap-2">
-													<div class="hidden sm:block w-20 h-1.5 rounded-full bg-border overflow-hidden">
-														<div class="h-full bg-primary/60" style:width="{Math.max(2, pct)}%"></div>
-													</div>
-													<span class="font-mono text-xs tabular-nums">{formatNumber(v.total)}</span>
-												</div>
-											</td>
-											<td class="px-4 py-2.5 hidden sm:table-cell">
-												<div class="flex flex-wrap gap-1.5">
-													{#each Object.entries(v.platforms) as [pl, n] (pl)}
-														<span
-															class="font-mono text-[10px] px-1.5 py-0.5 rounded bg-foreground/5 text-muted-foreground"
-														>
-															{platformLabel(pl)} · {formatNumber(n)}
-														</span>
-													{/each}
-												</div>
-											</td>
-										</tr>
-									{/each}
-								</tbody>
-							</table>
+						<div class="rounded-xl border border-border bg-card/50 p-4 sm:p-6 space-y-6">
+							<div style:height="{Math.max(180, downloadStats.versions.length * 28 + 60)}px">
+								<BarChart
+									data={downloadStats.versions.map((v) => ({ ...v, label: `v${v.version}` }))}
+									x="total"
+									y="label"
+									orientation="horizontal"
+									bandPadding={0.3}
+								/>
+							</div>
+							<ul class="space-y-1.5 text-xs">
+								{#each downloadStats.versions as v (v.version)}
+									<li class="flex flex-wrap items-center gap-x-3 gap-y-1">
+										<span class="font-mono text-foreground/80 min-w-[60px]">v{v.version}</span>
+										<span class="font-mono tabular-nums text-muted-foreground">{formatNumber(v.total)}</span>
+										<span class="flex flex-wrap gap-1.5">
+											{#each Object.entries(v.platforms) as [pl, n] (pl)}
+												<span class="font-mono text-[10px] px-1.5 py-0.5 rounded bg-foreground/5 text-muted-foreground">
+													{platformLabel(pl)} · {formatNumber(n)}
+												</span>
+											{/each}
+										</span>
+									</li>
+								{/each}
+							</ul>
 						</div>
 					{:else}
 						<div class="rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">
