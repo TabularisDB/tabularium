@@ -29,6 +29,7 @@
 	import Skeleton from '$components/ui/Skeleton.svelte'
 	import VerifiedBadge from '$components/ui/VerifiedBadge.svelte'
 	import ConfirmDialog from '$components/ui/ConfirmDialog.svelte'
+	import YankDialog from '$components/ui/YankDialog.svelte'
 	import { eden } from '$lib/eden'
 	import { auth } from '$lib/stores/auth.svelte'
 	import { branding } from '$lib/stores/branding.svelte'
@@ -55,7 +56,7 @@
 	let selectedPlatform = $state<string | null>(null)
 	let copying = $state(false)
 	let yankOpen = $state(false)
-	let yankTarget = $state<{ version: string; reason: string | null } | null>(null)
+	let yankTarget = $state<{ version: string } | null>(null)
 	let yanking = $state(false)
 	let unyankingId = $state<string | null>(null)
 
@@ -252,21 +253,18 @@
 	}
 
 	function openYank(release: Release) {
-		const reason = prompt(m.plugin_detail_yank_reason_prompt())
-		// null = cancel; empty string = no reason supplied.
-		if (reason === null) return
-		yankTarget = { version: release.version, reason: reason.trim() || null }
+		yankTarget = { version: release.version }
 		yankOpen = true
 	}
 
-	async function confirmYank() {
+	async function confirmYank(reason: string | null) {
 		if (!plugin || !yankTarget) return
 		yanking = true
 		try {
 			const { error } = await eden.api
 				.plugins({ slug: plugin.id })
 				.releases({ version: yankTarget.version })
-				.yank.post({ reason: yankTarget.reason ?? undefined })
+				.yank.post({ reason: reason ?? undefined })
 			if (error)
 				throw new Error(
 					typeof error.value === 'string'
@@ -1025,13 +1023,5 @@
 {/if}
 
 {#if plugin && yankTarget}
-	<ConfirmDialog
-		bind:open={yankOpen}
-		title={m.plugin_detail_yank_title({ version: yankTarget.version })}
-		description={m.plugin_detail_yank_description()}
-		confirmWord={yankTarget.version}
-		confirmLabel={m.plugin_detail_yank_button()}
-		busy={yanking}
-		onConfirm={confirmYank}
-	/>
+	<YankDialog bind:open={yankOpen} version={yankTarget.version} busy={yanking} onConfirm={confirmYank} />
 {/if}
