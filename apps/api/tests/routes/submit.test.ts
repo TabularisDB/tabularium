@@ -182,14 +182,13 @@ describe('POST /api/submit/oauth', () => {
     const { ManifestValidationError, parseManifestText } =
       require('../../src/lib/manifest') as typeof import('../../src/lib/manifest')
     try {
-      parseManifestText('name: 42\n', 'tabularium.yaml')
+      parseManifestText('name: 42\nversion: 0.1.0\n', 'tabularium.yaml')
       throw new Error('expected throw')
     } catch (err) {
       expect(err).toBeInstanceOf(ManifestValidationError)
       const e = err as InstanceType<typeof ManifestValidationError>
-      expect(e.errors[0].path).toBe('/name')
       // ajv produces keyword name as the code; for a string-type mismatch it is 'type'
-      expect(e.errors[0].code).toBe('type')
+      expect(e.errors.some((er) => er.path === '/name' && er.code === 'type')).toBe(true)
     }
   })
 })

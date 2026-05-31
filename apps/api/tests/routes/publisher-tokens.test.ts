@@ -147,7 +147,7 @@ describe('GET/POST/DELETE /api/auth/me/tokens', () => {
 describe('POST /api/publish/:slug', () => {
   beforeEach(clearDb)
 
-  const MANIFEST = `name: alpha\ndescription: A test plugin\ncategory: misc\n`
+  const MANIFEST = `name: alpha\nversion: 1.0.0\ndescription: A test plugin\ncategory: misc\n`
 
   async function pubFetch(slug: string, token: string, body: Record<string, unknown>) {
     const app = await buildApp()
@@ -220,7 +220,7 @@ describe('POST /api/publish/:slug', () => {
     const res = await pubFetch('alpha', token, {
       manifest: MANIFEST,
       manifestSource: 'tabularium.yaml',
-      version: '1.1.0',
+      version: '1.0.0',
       assets: [{ name: 'alpha.zip', url: 'https://example.com/alpha.zip' }],
     })
     expect(res.status).toBe(200)
@@ -237,10 +237,26 @@ describe('POST /api/publish/:slug', () => {
     const res = await pubFetch('alpha', token, {
       manifest: MANIFEST,
       manifestSource: 'tabularium.yaml',
-      version: '1.1.0',
+      version: '1.0.0',
       assets: [],
     })
     expect(res.status).toBe(403)
+  })
+
+  it('returns 422 when manifest version does not match the published version', async () => {
+    const u = await makeUser()
+    const { token } = await createPublisherToken({ userId: u.id, name: 'CI', scopes: ['publish:*'] })
+
+    const res = await pubFetch('alpha', token, {
+      manifest: MANIFEST,
+      manifestSource: 'tabularium.yaml',
+      version: '2.0.0',
+      assets: [{ name: 'alpha.zip', url: 'https://example.com/alpha.zip' }],
+      repoUrl: 'https://github.com/u/alpha',
+    })
+    expect(res.status).toBe(422)
+    const body = (await res.json()) as { error: string }
+    expect(body.error).toMatch(/version "1\.0\.0".*tag v2\.0\.0/)
   })
 
   it('invalid manifest returns 422', async () => {

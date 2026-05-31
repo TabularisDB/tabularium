@@ -10,6 +10,7 @@ import { setSetting } from '../../src/lib/settings'
 const SAMPLE_YAML = `
 $schema: https://example.com/manifest.schema.json
 name: alpha
+version: 1.0.0
 description: A test plugin.
 category: misc
 tags: [test]
