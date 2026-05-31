@@ -12,6 +12,13 @@ export const ManifestSchema = Type.Object({
         'URL slug, canonical package name, and default display title. Must start with a letter; lowercase alphanumerics + hyphens only. Optional — registries fall back to a sanitized repo name when omitted.',
     }),
   ),
+  version: Type.String({
+    minLength: 1,
+    maxLength: 40,
+    pattern: '^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$',
+    description:
+      'Semantic version of this plugin release (no leading "v"). REQUIRED — must match the release tag stripped of any "v" prefix. The registry rejects ingests whose tag and manifest version disagree, so a manifest version bump is the single source of truth for "this is a new release".',
+  }),
   description: Type.Optional(
     Type.String({
       maxLength: 280,

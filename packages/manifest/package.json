@@ -1,6 +1,6 @@
 {
   "name": "@tabularium/manifest",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Pure validator + integrity primitives for the Tabularium plugin manifest (`.tabularium` / `tabularium.yaml` / `tabularium.json`).",
   "license": "Apache-2.0",
   "repository": {

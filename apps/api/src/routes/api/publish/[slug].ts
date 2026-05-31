@@ -5,7 +5,12 @@ import { publisherTokenMiddleware } from '$middleware/publisher-token'
 import { hasScope } from '$lib/publisher-tokens'
 import { parseRepoUrl } from '$lib/providers'
 import { ManifestValidationError, parseManifestText, rawContentBase } from '$lib/manifest'
-import { manifestPatch, applyManifestToPlugin } from '$lib/manifest-apply'
+import {
+  manifestPatch,
+  applyManifestToPlugin,
+  assertManifestVersionMatches,
+  ManifestVersionMismatchError,
+} from '$lib/manifest-apply'
 import { persistRelease, hashReleaseAssetsAsync } from '$lib/release-ingest'
 import { recordAudit } from '$lib/audit'
 import { getSetting } from '$lib/settings'
@@ -107,6 +112,28 @@ export default new Elysia().use(publisherTokenMiddleware).post(
         throw err
       }
 
+      try {
+        assertManifestVersionMatches(parsed, body.version)
+      } catch (err) {
+        if (err instanceof ManifestVersionMismatchError) {
+          await recordAudit({
+            actorId: publisher.userId,
+            action: 'plugin.publish_invalid',
+            target: `plugin:${slug}`,
+            meta: {
+              reason: 'manifest_version_mismatch',
+              declared: err.declared,
+              expected: err.expected,
+              tokenId: publisher.id,
+            },
+            ip: request.headers.get('x-forwarded-for') ?? null,
+          })
+          set.status = 422
+          return { error: err.message }
+        }
+        throw err
+      }
+
       const autoApprove = getSetting('submit.auto_approve') !== '0'
       const now = Date.now()
       await db.insert(plugins).values({
@@ -197,6 +224,28 @@ export default new Elysia().use(publisherTokenMiddleware).post(
         })
         set.status = 422
         return { error: err.message, errors: err.errors }
+      }
+      throw err
+    }
+
+    try {
+      assertManifestVersionMatches(parsed, body.version)
+    } catch (err) {
+      if (err instanceof ManifestVersionMismatchError) {
+        await recordAudit({
+          actorId: publisher.userId,
+          action: 'plugin.publish_invalid',
+          target: `plugin:${slug}`,
+          meta: {
+            reason: 'manifest_version_mismatch',
+            declared: err.declared,
+            expected: err.expected,
+            tokenId: publisher.id,
+          },
+          ip: request.headers.get('x-forwarded-for') ?? null,
+        })
+        set.status = 422
+        return { error: err.message }
       }
       throw err
     }

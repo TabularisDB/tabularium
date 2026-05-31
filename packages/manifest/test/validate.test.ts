@@ -7,11 +7,27 @@ describe('validateManifest', () => {
   const baseSchema = buildSchema({ coreSchema: ManifestSchema as never })
 
   it('returns ok:true and normalized output for a valid manifest', () => {
-    const result = validateManifest({ name: 'my-plugin', kind: 'theme' }, baseSchema)
+    const result = validateManifest({ name: 'my-plugin', version: '1.0.0', kind: 'theme' }, baseSchema)
     expect(result.ok).toBe(true)
     if (result.ok) {
       expect(result.normalized.name).toBe('my-plugin')
       expect(result.errors).toEqual([])
+    }
+  })
+
+  it('rejects a manifest without version (version is required)', () => {
+    const result = validateManifest({ name: 'my-plugin' }, baseSchema)
+    expect(result.ok).toBe(false)
+    if (!result.ok) {
+      expect(result.errors.some((e) => e.code === 'required')).toBe(true)
+    }
+  })
+
+  it('rejects a manifest whose version does not match semver', () => {
+    const result = validateManifest({ name: 'my-plugin', version: 'not-a-version' }, baseSchema)
+    expect(result.ok).toBe(false)
+    if (!result.ok) {
+      expect(result.errors.some((e) => e.path === '/version' && e.code === 'pattern')).toBe(true)
     }
   })
 
@@ -50,7 +66,9 @@ describe('validateManifest', () => {
   })
 
   it('lenient mode strips unknown fields without erroring', () => {
-    const result = validateManifest({ name: 'x', 'x-unknown': 'extra' }, baseSchema, { lenient: true })
+    const result = validateManifest({ name: 'x', version: '0.1.0', 'x-unknown': 'extra' }, baseSchema, {
+      lenient: true,
+    })
     expect(result.ok).toBe(true)
     if (result.ok) {
       expect(result.normalized.name).toBe('x')
@@ -70,10 +88,10 @@ describe('validateManifest', () => {
         theme: { 'x-theme': { type: 'string' } },
       },
     })
-    const ok = validateManifest({ kind: 'theme', 'x-theme': 'light' }, schema)
+    const ok = validateManifest({ version: '1.0.0', kind: 'theme', 'x-theme': 'light' }, schema)
     expect(ok.ok).toBe(true)
 
-    const bad = validateManifest({ kind: 'theme', 'x-theme': 42 }, schema)
+    const bad = validateManifest({ version: '1.0.0', kind: 'theme', 'x-theme': 42 }, schema)
     expect(bad.ok).toBe(false)
     if (!bad.ok) {
       expect(bad.errors.some((e) => e.path === '/x-theme' && e.code === 'type')).toBe(true)

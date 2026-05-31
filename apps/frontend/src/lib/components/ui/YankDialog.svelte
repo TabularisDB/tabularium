@@ -47,9 +47,7 @@
 			class="fixed left-1/2 top-1/2 z-50 w-full max-w-md -translate-x-1/2 -translate-y-1/2 rounded-lg border border-border bg-card p-6 shadow-2xl focus:outline-none"
 		>
 			<div class="flex items-start gap-3">
-				<span
-					class="flex h-9 w-9 items-center justify-center rounded-full bg-destructive/10 text-destructive shrink-0"
-				>
+				<span class="flex h-9 w-9 items-center justify-center rounded-full bg-destructive/10 text-destructive shrink-0">
 					<Ban class="h-5 w-5" />
 				</span>
 				<div class="flex-1 min-w-0">

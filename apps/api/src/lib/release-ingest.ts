@@ -13,7 +13,12 @@ import { fetchAttestation } from './attestation'
 import { logger } from './logger'
 import { compareSemver } from './semver'
 import { resolveManifest, resolveManifestFromReleaseAssets, fetchReleaseAssetList, rawContentBase } from './manifest'
-import { manifestPatch, applyManifestToPlugin } from './manifest-apply'
+import {
+  manifestPatch,
+  applyManifestToPlugin,
+  assertManifestVersionMatches,
+  ManifestVersionMismatchError,
+} from './manifest-apply'
 import { getSetting } from './settings'
 import { createHash } from 'node:crypto'
 
@@ -267,6 +272,24 @@ export async function refreshManifestAtRelease(
   }
 
   try {
+    assertManifestVersionMatches(manifest.parsed, version)
+  } catch (err) {
+    if (err instanceof ManifestVersionMismatchError) {
+      log.warn(
+        { slug: plugin.id, tag, declared: err.declared, expected: err.expected },
+        'manifest version mismatches release tag',
+      )
+      await recordAudit({
+        action: 'plugin.manifest_version_mismatch',
+        target: `plugin:${plugin.id}`,
+        meta: { tag, declared: err.declared, expected: err.expected },
+      })
+      return null
+    }
+    throw err
+  }
+
+  try {
     const patch = manifestPatch(manifest, { repoBase: rawContentBase(ref, tag), version })
     await applyManifestToPlugin(plugin.id, patch)
     await cache().del(latestCacheKey(plugin.id))
@@ -341,6 +364,24 @@ async function recheckAssetsOnce(plugin: PluginRef, tag: string, version: string
     scheduleAssetRecheck(plugin, tag, version, attempt + 1)
     return
   }
+  try {
+    assertManifestVersionMatches(manifest.parsed, expectedVersion)
+  } catch (err) {
+    if (err instanceof ManifestVersionMismatchError) {
+      log.warn(
+        { slug: plugin.id, tag, declared: err.declared, expected: err.expected },
+        'recheck: manifest version mismatches release tag',
+      )
+      await recordAudit({
+        action: 'plugin.manifest_version_mismatch',
+        target: `plugin:${plugin.id}`,
+        meta: { tag, declared: err.declared, expected: err.expected, source: 'recheck' },
+      })
+      return
+    }
+    throw err
+  }
+
   try {
     const patch = manifestPatch(manifest, { repoBase: rawContentBase(ref, tag), version: expectedVersion })
     await applyManifestToPlugin(plugin.id, patch)

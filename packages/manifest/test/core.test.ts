@@ -15,7 +15,12 @@ describe('ManifestSchema', () => {
   })
 
   it('exposes a Manifest static type', () => {
-    const sample: Manifest = { name: 'X' }
+    const sample: Manifest = { name: 'X', version: '0.1.0' }
     expect(sample.name).toBe('X')
+  })
+
+  it('declares version as a required field', () => {
+    const required = (ManifestSchema as { required?: string[] }).required ?? []
+    expect(required).toContain('version')
   })
 })

@@ -2,7 +2,30 @@ import { eq } from 'drizzle-orm'
 import { db } from '$db'
 import { plugins } from '$db/schema'
 import { resolveAbsolute } from './url'
-import { ManifestSchema, type ResolvedManifest } from './manifest'
+import { ManifestSchema, type Manifest, type ResolvedManifest } from './manifest'
+
+export class ManifestVersionMismatchError extends Error {
+  readonly declared: string
+  readonly expected: string
+  constructor(declared: string, expected: string) {
+    super(`manifest version "${declared}" does not match release tag v${expected}`)
+    this.name = 'ManifestVersionMismatchError'
+    this.declared = declared
+    this.expected = expected
+  }
+}
+
+// Throws when the manifest's declared version does not match the tag the
+// registry is about to ingest. Keeps the rule in one place so every ingest
+// site (webhook refresh, delayed recheck, /api/publish) enforces it the
+// same way — the version-in-manifest is the author's stated identity for
+// the release; a drift means either a tag mistake or a stale manifest.
+export function assertManifestVersionMatches(parsed: Manifest, expectedVersion: string): void {
+  const expected = expectedVersion.replace(/^v/, '')
+  if (parsed.version !== expected) {
+    throw new ManifestVersionMismatchError(parsed.version, expected)
+  }
+}
 
 const CORE_KEYS = new Set(Object.keys((ManifestSchema as { properties: Record<string, unknown> }).properties))
 
