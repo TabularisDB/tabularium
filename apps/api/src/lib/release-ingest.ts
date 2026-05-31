@@ -311,7 +311,7 @@ async function recheckAssetsOnce(plugin: PluginRef, tag: string, version: string
   })
   if (!current) return
   if (current.latestVersion !== expectedVersion) return
-  if (current.manifestVersion === tag) return
+  if (current.manifestVersion === expectedVersion) return
 
   const ref = parseRepoUrl(plugin.repoUrl)
   if (!ref) return
@@ -344,8 +344,46 @@ async function recheckAssetsOnce(plugin: PluginRef, tag: string, version: string
   try {
     const patch = manifestPatch(manifest, { repoBase: rawContentBase(ref, tag), version: expectedVersion })
     await applyManifestToPlugin(plugin.id, patch)
+
+    // Back-fill the binary asset URL map. The original webhook race left
+    // releases.assets={} (the publish event fires before CI uploads the zips);
+    // by the time the recheck runs, the forge API returns the full list, so
+    // mirror it onto the release row and kick off hashing.
+    const freshMap: AssetMap = {}
+    for (const asset of assets) {
+      const key = inferPlatformKey(asset.name)
+      if (key) freshMap[key] = { url: asset.url }
+    }
+    let assetsBackfilled = 0
+    if (Object.keys(freshMap).length > 0) {
+      const currentRelease = await db.query.releases.findFirst({
+        where: { pluginId: plugin.id, version: expectedVersion },
+      })
+      if (currentRelease) {
+        const merged = parseAssets(currentRelease.assets)
+        for (const [platform, entry] of Object.entries(freshMap)) {
+          const prev = merged[platform]
+          if (prev && prev.url === entry.url && prev.sha256) continue
+          merged[platform] = entry
+          assetsBackfilled++
+        }
+        if (assetsBackfilled > 0) {
+          await db
+            .update(releases)
+            .set({ assets: serializeAssets(merged) })
+            .where(and(eq(releases.pluginId, plugin.id), eq(releases.version, expectedVersion)))
+          void hashReleaseAssetsAsync(
+            plugin,
+            { repoUrl: plugin.repoUrl, published: true, tag, assets },
+            freshMap,
+            expectedVersion,
+          ).catch((err) => log.error({ err, slug: plugin.id, tag }, 'recheck asset hashing crashed'))
+        }
+      }
+    }
+
     await cache().del(latestCacheKey(plugin.id))
-    log.info({ slug: plugin.id, tag, attempt }, 'manifest recovered via asset recheck')
+    log.info({ slug: plugin.id, tag, attempt, assetsBackfilled }, 'manifest recovered via asset recheck')
     await recordAudit({
       action: 'plugin.manifest_recovered',
       target: `plugin:${plugin.id}`,
@@ -354,6 +392,7 @@ async function recheckAssetsOnce(plugin: PluginRef, tag: string, version: string
         version: expectedVersion,
         attempt: attempt + 1,
         delaySeconds: ASSET_RECHECK_DELAYS_MS[attempt] / 1000,
+        assetsBackfilled,
       },
     })
   } catch (err) {
