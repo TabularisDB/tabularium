@@ -34,3 +34,46 @@ test('GET /api/admin/email — returns provider and masks encrypted secrets', as
   expect(JSON.stringify(data)).not.toContain('super-secret')
   expect(JSON.stringify(data)).not.toContain('also-secret')
 })
+
+test('PUT /api/admin/email — saves turbo provider with encrypted secret', async () => {
+  const admin = await makeAdmin()
+  const app = await buildApp()
+  const res = await app.handle(
+    new Request('http://localhost/api/admin/email', {
+      method: 'PUT',
+      headers: { ...adminHeaders(admin), 'content-type': 'application/json' },
+      body: JSON.stringify({
+        provider: 'turbo',
+        from: { default: '"Tabularium" <noreply@tabularis.dev>', overrides: {} },
+        turbo: { apiKey: 'shhh', consumerKey: 'ck', consumerSecret: 'ss', region: 'eu' },
+      }),
+    }),
+  )
+  expect(res.status).toBe(200)
+  const view = await app
+    .handle(new Request('http://localhost/api/admin/email', { headers: adminHeaders(admin) }))
+    .then((r) => r.json() as Promise<Record<string, any>>)
+  expect(view.provider).toBe('turbo')
+  expect(view.turbo.region).toBe('eu')
+  expect(view.turbo.apiKeySet).toBe(true)
+  expect(view.turbo.consumerSecretSet).toBe(true)
+})
+
+test('PUT /api/admin/email — leaves stored secret intact when omitted', async () => {
+  const admin = await makeAdmin()
+  await setSetting('email.turbo.api_key', 'original', { encrypted: true })
+  const app = await buildApp()
+  await app.handle(
+    new Request('http://localhost/api/admin/email', {
+      method: 'PUT',
+      headers: { ...adminHeaders(admin), 'content-type': 'application/json' },
+      body: JSON.stringify({
+        provider: 'turbo',
+        from: { default: 'x', overrides: {} },
+        turbo: { consumerKey: 'ck2', region: 'global' },
+      }),
+    }),
+  )
+  const { getSetting } = await import('../../src/lib/settings')
+  expect(getSetting('email.turbo.api_key')).toBe('original')
+})
