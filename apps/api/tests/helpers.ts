@@ -6,6 +6,7 @@ import { ulid } from 'ulid'
 import { db } from '../src/db'
 import * as schema from '../src/db/schema'
 import { encryptToken } from '../src/lib/crypto'
+import { signJwt } from '../src/lib/jwt'
 import { initProviderInstances } from '../src/lib/provider-instance'
 import { initSettings } from '../src/lib/settings'
 import { initCache } from '../src/lib/cache'
@@ -58,6 +59,9 @@ export type TestUser = {
   accessToken: string
   identityId: string
   role: 'user' | 'admin'
+  // Pre-signed JWT for tests that need synchronous header construction
+  // (see adminHeaders). Populated by makeUser/makeAdmin.
+  jwt: string
 }
 
 export async function makeUser(overrides: Partial<TestUser> = {}): Promise<TestUser> {
@@ -66,31 +70,55 @@ export async function makeUser(overrides: Partial<TestUser> = {}): Promise<TestU
   const identityId = overrides.identityId ?? ulid()
   const username = overrides.username ?? 'testuser'
 
-  const user: TestUser = {
+  const base = {
     id,
     identityId,
     username,
     providerInstanceId: DEFAULT_INSTANCE_ID,
     externalId: String(Math.floor(Math.random() * 100000)),
     accessToken: 'test-access-token',
-    role: 'user',
+    role: 'user' as const,
     ...overrides,
   }
 
   await db.insert(schema.users).values({
-    id: user.id,
-    displayName: user.username,
-    role: user.role,
+    id: base.id,
+    displayName: base.username,
+    role: base.role,
   })
   await db.insert(schema.identities).values({
-    id: user.identityId,
-    userId: user.id,
-    providerInstanceId: user.providerInstanceId,
-    externalId: user.externalId,
-    username: user.username,
-    accessToken: encryptToken(user.accessToken),
+    id: base.identityId,
+    userId: base.id,
+    providerInstanceId: base.providerInstanceId,
+    externalId: base.externalId,
+    username: base.username,
+    accessToken: encryptToken(base.accessToken),
   })
-  return user
+  const jwt = await signJwt({
+    sub: base.id,
+    identityId: base.identityId,
+    username: base.username,
+    providerInstanceId: base.providerInstanceId,
+  })
+  return { ...base, jwt }
+}
+
+// Create an admin test user. Mirrors makeUser but defaults role to 'admin'.
+// Shared across admin route tests (Tasks 9-12).
+export async function makeAdmin(overrides: Partial<TestUser> = {}): Promise<TestUser> {
+  return makeUser({ username: 'admin', ...overrides, role: 'admin' })
+}
+
+// Synchronous Authorization headers for an admin test user. The admin
+// middleware accepts JWT bearer tokens; the JWT is pre-signed during
+// makeUser/makeAdmin and stored on TestUser.jwt so this can stay sync.
+export function adminHeaders(admin: TestUser): { Authorization: string } {
+  return { Authorization: `Bearer ${admin.jwt}` }
+}
+
+// Mirror of adminHeaders for non-admin test users.
+export function userHeaders(user: TestUser): { Authorization: string } {
+  return { Authorization: `Bearer ${user.jwt}` }
 }
 
 export async function makePlugin(ownerId: string, overrides: Partial<typeof schema.plugins.$inferInsert> = {}) {
