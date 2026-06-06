@@ -11,7 +11,7 @@ import { latestCacheKey } from '$routes/api/plugins/[slug]/latest'
 import { recordAudit } from './audit'
 import { fetchAttestation } from './attestation'
 import { logger } from './logger'
-import { compareSemver } from './semver'
+import { compareSemver, tagToVersion } from './semver'
 import { resolveManifest, resolveManifestFromReleaseAssets, fetchReleaseAssetList, rawContentBase } from './manifest'
 import {
   manifestPatch,
@@ -33,7 +33,11 @@ export async function persistRelease(
   normalized: NormalizedRelease,
   opts: { manifestSha256?: string | null } = {},
 ): Promise<{ version: string; assetMap: AssetMap }> {
-  const version = normalized.tag.replace(/^v/, '')
+  // Strict semver gate: rejecting here keeps lax tags ("v1.2", "release-foo")
+  // out of the releases table entirely. Manifest-side validation already
+  // requires the same shape, so a lax tag would just produce an orphan row
+  // whose manifest can never match.
+  const version = tagToVersion(normalized.tag)
 
   const assetMap: AssetMap = {}
   for (const asset of normalized.assets) {

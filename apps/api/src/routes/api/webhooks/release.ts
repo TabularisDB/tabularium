@@ -10,6 +10,8 @@ import {
 import { getInstance } from '$lib/provider-instance'
 import { logger } from '$lib/logger'
 import { persistRelease, hashReleaseAssetsAsync, refreshManifestAtRelease } from '$lib/release-ingest'
+import { InvalidVersionError } from '$lib/semver'
+import { recordAudit } from '$lib/audit'
 import { rateLimit } from '$middleware/rate-limit'
 
 // Real GitHub/GitLab release payloads are tens of KB; cap well above that to
@@ -81,7 +83,23 @@ export default new Elysia().use(rateLimit({ bucket: 'webhook-release', limit: 60
       return { ok: true, skipped: true }
     }
 
-    const { version, assetMap } = await persistRelease(plugin, normalized)
+    let version: string
+    let assetMap: Awaited<ReturnType<typeof persistRelease>>['assetMap']
+    try {
+      ;({ version, assetMap } = await persistRelease(plugin, normalized))
+    } catch (err) {
+      if (err instanceof InvalidVersionError) {
+        await recordAudit({
+          action: 'plugin.release_rejected',
+          target: `plugin:${plugin.id}`,
+          meta: { tag: normalized.tag, reason: 'non_semver_tag' },
+        })
+        log.warn({ slug: plugin.id, tag: normalized.tag }, 'release rejected: tag is not strict semver')
+        set.status = 422
+        return { error: err.message }
+      }
+      throw err
+    }
 
     // Refresh manifest + capture sha256 in background; both write to DB.
     queueMicrotask(async () => {

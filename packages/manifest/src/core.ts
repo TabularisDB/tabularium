@@ -1,5 +1,10 @@
 import { Type, type Static } from '@sinclair/typebox'
 
+// Strict semver pattern for the JSON Schema `pattern` keyword.
+// Used in the browser/CLI where pulling the `semver` package would be heavy.
+// On the server, prefer `semver.valid()` (see apps/api/src/lib/semver.ts).
+export const SEMVER_VERSION_PATTERN = '^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$'
+
 // Locked core. Operator-editable fields live in `manifest.extensions_schema`,
 // not here.
 export const ManifestSchema = Type.Object({
@@ -15,7 +20,7 @@ export const ManifestSchema = Type.Object({
   version: Type.String({
     minLength: 1,
     maxLength: 40,
-    pattern: '^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$',
+    pattern: SEMVER_VERSION_PATTERN,
     description:
       'Semantic version of this plugin release (no leading "v"). REQUIRED — must match the release tag stripped of any "v" prefix. The registry rejects ingests whose tag and manifest version disagree, so a manifest version bump is the single source of truth for "this is a new release".',
   }),

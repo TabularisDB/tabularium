@@ -6,6 +6,7 @@ import { recordAudit, actorFromUser } from '$lib/audit'
 import { parseRepoUrl } from '$lib/providers'
 import { fetchLatestRelease } from '$lib/release-fetch'
 import { persistRelease, hashReleaseAssetsAsync } from '$lib/release-ingest'
+import { InvalidVersionError } from '$lib/semver'
 import { getValidAccessToken, OAuthExpiredError, UpstreamUnauthorizedError, reauthErrorBody } from '$lib/oauth-tokens'
 import { rehashRelease } from '$lib/rehash'
 
@@ -76,10 +77,20 @@ export default new Elysia()
           set.status = 404
           return { error: 'No published release found on the forge yet' }
         }
-        const { version: fetchedVersion, assetMap } = await persistRelease(
-          { id: plugin.id, latestVersion: plugin.latestVersion },
-          fetched,
-        )
+        let fetchedVersion: string
+        let assetMap: Awaited<ReturnType<typeof persistRelease>>['assetMap']
+        try {
+          ;({ version: fetchedVersion, assetMap } = await persistRelease(
+            { id: plugin.id, latestVersion: plugin.latestVersion },
+            fetched,
+          ))
+        } catch (err) {
+          if (err instanceof InvalidVersionError) {
+            set.status = 422
+            return { error: err.message }
+          }
+          throw err
+        }
         queueMicrotask(() =>
           hashReleaseAssetsAsync(
             { id: plugin.id, ownerId: plugin.ownerId, repoUrl: plugin.repoUrl },

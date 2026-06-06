@@ -5,6 +5,7 @@ import { parseRepoUrl } from '$lib/providers'
 import { getValidAccessToken, OAuthExpiredError, UpstreamUnauthorizedError, reauthErrorBody } from '$lib/oauth-tokens'
 import { fetchLatestRelease } from '$lib/release-fetch'
 import { persistRelease, hashReleaseAssetsAsync, refreshManifestAtRelease } from '$lib/release-ingest'
+import { InvalidVersionError } from '$lib/semver'
 import { recordAudit, actorFromAdmin } from '$lib/audit'
 import { logger } from '$lib/logger'
 
@@ -64,7 +65,17 @@ export default new Elysia().use(adminMiddleware).post(
       return { ok: true, skipped: true, reason: 'Latest release is a draft' }
     }
 
-    const { version, assetMap } = await persistRelease(plugin, normalized)
+    let version: string
+    let assetMap: Awaited<ReturnType<typeof persistRelease>>['assetMap']
+    try {
+      ;({ version, assetMap } = await persistRelease(plugin, normalized))
+    } catch (err) {
+      if (err instanceof InvalidVersionError) {
+        set.status = 422
+        return { error: err.message }
+      }
+      throw err
+    }
 
     queueMicrotask(async () => {
       const sha = await refreshManifestAtRelease(plugin, normalized.tag, version)

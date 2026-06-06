@@ -31,7 +31,11 @@ const assetSchema = t.Object({
 
 const publishBodySchema = t.Object({
   manifest: t.String({ minLength: 1, maxLength: 64 * 1024 }),
-  version: t.String({ minLength: 1, maxLength: 40, pattern: '^v?\\d+\\.\\d+\\.\\d+(?:[-+][A-Za-z0-9.-]+)?$' }),
+  version: t.String({
+    minLength: 1,
+    maxLength: 40,
+    pattern: '^v?[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-]+)?(?:\\+[0-9A-Za-z.-]+)?$',
+  }),
   assets: t.Array(assetSchema, { maxItems: 32 }),
   repoUrl: t.Optional(t.String({ minLength: 1, maxLength: 500 })),
   attestation: t.Optional(t.Any()),
