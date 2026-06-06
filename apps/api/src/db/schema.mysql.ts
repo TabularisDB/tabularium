@@ -348,3 +348,27 @@ export const downloadEvents = mysqlTable(
     byPluginCreated: uniqueIndex('download_events_plugin_created').on(t.pluginId, t.createdAt, t.id),
   }),
 )
+
+export const emailLog = mysqlTable(
+  'email_log',
+  {
+    id: id('id').primaryKey(),
+    userId: id('user_id').references(() => users.id, { onDelete: 'set null' }),
+    trigger: varchar('trigger', { length: 80 }).notNull(),
+    template: varchar('template', { length: 80 }).notNull(),
+    locale: varchar('locale', { length: 16 }).notNull(),
+    toAddress: varchar('to_address', { length: 320 }).notNull(),
+    fromAddress: varchar('from_address', { length: 320 }).notNull(),
+    subject: varchar('subject', { length: 500 }).notNull(),
+    provider: varchar('provider', { length: 40 }).notNull(),
+    providerMid: varchar('provider_mid', { length: 255 }),
+    status: varchar('status', { length: 40 }).notNull(),
+    error: text('error'),
+    sentAt: ts('sent_at').notNull().$defaultFn(now),
+  },
+  (t) => ({
+    byUserSent: index('email_log_user_sent_idx').on(t.userId, t.sentAt),
+    byMid: index('email_log_mid_idx').on(t.providerMid),
+    byTrigger: index('email_log_trigger_idx').on(t.trigger, t.sentAt),
+  }),
+)

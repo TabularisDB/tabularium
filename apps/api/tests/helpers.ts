@@ -38,6 +38,7 @@ export async function clearDb() {
   await db.delete(schema.plugins)
   await db.delete(schema.identities)
   await db.delete(schema.auditLog)
+  await db.delete(schema.emailLog)
   await db.delete(schema.rootCredentials)
   await db.delete(schema.users)
   await db.delete(schema.providerInstances)

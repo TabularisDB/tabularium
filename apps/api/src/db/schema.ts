@@ -363,3 +363,27 @@ export const downloadEvents = sqliteTable(
     byPluginCreated: uniqueIndex('download_events_plugin_created').on(t.pluginId, t.createdAt, t.id),
   }),
 )
+
+export const emailLog = sqliteTable(
+  'email_log',
+  {
+    id: text('id').primaryKey(),
+    userId: text('user_id').references(() => users.id, { onDelete: 'set null' }),
+    trigger: text('trigger').notNull(),
+    template: text('template').notNull(),
+    locale: text('locale').notNull(),
+    toAddress: text('to_address').notNull(),
+    fromAddress: text('from_address').notNull(),
+    subject: text('subject').notNull(),
+    provider: text('provider').notNull(),
+    providerMid: text('provider_mid'),
+    status: text('status').notNull(),
+    error: text('error'),
+    sentAt: integer('sent_at').notNull().$defaultFn(now),
+  },
+  (t) => ({
+    byUserSent: index('email_log_user_sent_idx').on(t.userId, t.sentAt),
+    byMid: index('email_log_mid_idx').on(t.providerMid),
+    byTrigger: index('email_log_trigger_idx').on(t.trigger, t.sentAt),
+  }),
+)
