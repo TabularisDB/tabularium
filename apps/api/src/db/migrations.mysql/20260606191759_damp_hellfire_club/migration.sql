@@ -12,7 +12,7 @@ CREATE TABLE `email_log` (
 	`status` varchar(40) NOT NULL,
 	`error` text,
 	`sent_at` bigint NOT NULL,
-	CONSTRAINT `email_log_user_id_users_id_fkey` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`)
+	CONSTRAINT `email_log_user_id_users_id_fkey` FOREIGN KEY (`user_id`) REFERENCES `users`(`id`) ON DELETE SET NULL
 );
 --> statement-breakpoint
 CREATE INDEX `email_log_user_sent_idx` ON `email_log` (`user_id`,`sent_at`);--> statement-breakpoint
