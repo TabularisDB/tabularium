@@ -114,6 +114,119 @@ describe('GET /api/plugins/:slug/latest', () => {
   })
 })
 
+describe('GET /api/plugins/:slug/releases/:version', () => {
+  beforeEach(clearDb)
+
+  it('returns 404 for unknown slug', async () => {
+    const app = await buildApp()
+    const res = await app.handle(
+      new Request('http://localhost/api/plugins/nope/releases/1.0.0?os=linux&arch=x64'),
+    )
+    expect(res.status).toBe(404)
+  })
+
+  it('returns 404 for unknown version', async () => {
+    const user = await makeUser()
+    const plugin = await makePlugin(user.id, { latestVersion: '1.0.0' })
+    await db.insert(releases).values({
+      id: ulid(),
+      pluginId: plugin.id,
+      version: '1.0.0',
+      assets: JSON.stringify({ 'linux-x64': 'https://example.com/linux.zip' }),
+    })
+
+    const app = await buildApp()
+    const res = await app.handle(
+      new Request(`http://localhost/api/plugins/${plugin.id}/releases/9.9.9?os=linux&arch=x64`),
+    )
+    expect(res.status).toBe(404)
+  })
+
+  it('returns download URL for the pinned version', async () => {
+    const user = await makeUser()
+    const plugin = await makePlugin(user.id, { latestVersion: '2.0.0' })
+    await db.insert(releases).values({
+      id: ulid(),
+      pluginId: plugin.id,
+      version: '1.0.0',
+      assets: JSON.stringify({ 'linux-x64': 'https://example.com/old.zip' }),
+    })
+    await db.insert(releases).values({
+      id: ulid(),
+      pluginId: plugin.id,
+      version: '2.0.0',
+      assets: JSON.stringify({ 'linux-x64': 'https://example.com/new.zip' }),
+    })
+
+    const app = await buildApp()
+    const res = await app.handle(
+      new Request(`http://localhost/api/plugins/${plugin.id}/releases/1.0.0?os=linux&arch=x64`),
+    )
+    expect(res.status).toBe(200)
+    const data = (await res.json()) as { version: string; download_url: string; yanked: boolean }
+    expect(data.version).toBe('1.0.0')
+    expect(data.download_url).toBe('https://example.com/old.zip')
+    expect(data.yanked).toBe(false)
+  })
+
+  it('resolves a yanked release with yanked=true', async () => {
+    const user = await makeUser()
+    const plugin = await makePlugin(user.id, { latestVersion: '1.0.0' })
+    await db.insert(releases).values({
+      id: ulid(),
+      pluginId: plugin.id,
+      version: '1.0.0',
+      assets: JSON.stringify({ 'linux-x64': 'https://example.com/linux.zip' }),
+      yankedAt: 1700000000000,
+      yankReason: 'critical bug',
+    })
+
+    const app = await buildApp()
+    const res = await app.handle(
+      new Request(`http://localhost/api/plugins/${plugin.id}/releases/1.0.0?os=linux&arch=x64`),
+    )
+    expect(res.status).toBe(200)
+    const data = (await res.json()) as { yanked: boolean; yanked_reason: string | null }
+    expect(data.yanked).toBe(true)
+    expect(data.yanked_reason).toBe('critical bug')
+  })
+
+  it('redirects when redirect=1', async () => {
+    const user = await makeUser()
+    const plugin = await makePlugin(user.id, { latestVersion: '1.0.0' })
+    await db.insert(releases).values({
+      id: ulid(),
+      pluginId: plugin.id,
+      version: '1.0.0',
+      assets: JSON.stringify({ 'linux-x64': 'https://example.com/linux.zip' }),
+    })
+
+    const app = await buildApp()
+    const res = await app.handle(
+      new Request(`http://localhost/api/plugins/${plugin.id}/releases/1.0.0?os=linux&arch=x64&redirect=1`),
+    )
+    expect(res.status).toBe(302)
+    expect(res.headers.get('location')).toBe('https://example.com/linux.zip')
+  })
+
+  it('returns 422 when platform not supported', async () => {
+    const user = await makeUser()
+    const plugin = await makePlugin(user.id, { latestVersion: '1.0.0' })
+    await db.insert(releases).values({
+      id: ulid(),
+      pluginId: plugin.id,
+      version: '1.0.0',
+      assets: JSON.stringify({ 'linux-x64': 'https://example.com/linux.zip' }),
+    })
+
+    const app = await buildApp()
+    const res = await app.handle(
+      new Request(`http://localhost/api/plugins/${plugin.id}/releases/1.0.0?os=darwin&arch=arm64`),
+    )
+    expect(res.status).toBe(422)
+  })
+})
+
 describe('GET /api/plugins ?kind filter', () => {
   beforeEach(clearDb)
 
