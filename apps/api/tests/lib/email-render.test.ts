@@ -27,3 +27,13 @@ test('renderTemplate translates subject by locale', async () => {
   })
   expect(en.subject).not.toEqual(de.subject)
 })
+
+test('renderTemplate escapes HTML in vars', async () => {
+  const out = await renderTemplate({
+    trigger: 'account.welcome',
+    locale: 'en',
+    vars: { username: '<script>alert(1)</script>', baseUrl: 'https://x.com' },
+  })
+  expect(out.html).not.toContain('<script>')
+  expect(out.html).toContain('&lt;script&gt;')
+})

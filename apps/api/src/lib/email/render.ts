@@ -5,10 +5,14 @@ import type { EmailTrigger } from './types'
 
 const VAR_RE = /{{\s*([a-zA-Z0-9_]+)\s*}}/g
 
+function escapeHtml(s: string): string {
+  return s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!)
+}
+
 function substitute(template: string, vars: Record<string, unknown>): string {
   return template.replace(VAR_RE, (_, key: string) => {
     const v = vars[key]
-    return v == null ? '' : String(v)
+    return v == null ? '' : escapeHtml(String(v))
   })
 }
 
