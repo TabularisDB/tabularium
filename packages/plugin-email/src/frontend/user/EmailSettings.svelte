@@ -10,12 +10,16 @@
 	import Input from '$components/ui/Input.svelte'
 	import Label from '$components/ui/Label.svelte'
 	import Select from '$components/ui/Select.svelte'
-	import { auth } from '$lib/stores/auth.svelte'
 	import { toast } from 'svelte-sonner'
 	import type { EmailBucket, EmailSettingsData } from './EmailSettings.load'
 
-	type Props = { data: EmailSettingsData }
-	let { data }: Props = $props()
+	type AuthStore = {
+		user: { sub?: string; username?: string } | null
+		refresh: () => Promise<void>
+	}
+
+	type Props = { data: EmailSettingsData; auth: AuthStore }
+	let { data, auth }: Props = $props()
 
 	let email = $state('')
 	let locale = $state('en')
