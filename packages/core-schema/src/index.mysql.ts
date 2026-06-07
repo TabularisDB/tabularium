@@ -87,6 +87,7 @@ export const plugins = mysqlTable(
     license: varchar('license', { length: 40 }),
     iconUrl: varchar('icon_url', { length: 500 }),
     screenshots: text('screenshots'),
+    requires: text('requires'),
     readme: text('readme'),
     documentationUrl: varchar('documentation_url', { length: 500 }),
     supportEmail: varchar('support_email', { length: 254 }),

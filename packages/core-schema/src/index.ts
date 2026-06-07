@@ -91,6 +91,14 @@ export const plugins = sqliteTable(
     license: text('license'),
     iconUrl: text('icon_url'),
     screenshots: text('screenshots'), // JSON [{ url, caption?, alt? }]
+    // Inter-plugin dependencies declared in the manifest's `requires[]`.
+    // Stored as JSON for portability across dialects:
+    // `Array<{ id: string; version?: string; optional?: boolean; reason?: string }>`.
+    // Surfaced on `/api/plugins/:slug` so consumers can review the dependency
+    // graph before installing. Admins can disable end-to-end ingest of this
+    // field via `plugins.requires_allowed=false`, in which case the column
+    // stays NULL even when authors submit a non-empty list.
+    requires: text('requires'),
     readme: text('readme'), // raw markdown — pre-rendered to HTML on request
     documentationUrl: text('documentation_url'),
     supportEmail: text('support_email'),

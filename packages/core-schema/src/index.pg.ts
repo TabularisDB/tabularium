@@ -88,6 +88,7 @@ export const plugins = pgTable(
     license: text('license'),
     iconUrl: text('icon_url'),
     screenshots: text('screenshots'),
+    requires: text('requires'),
     readme: text('readme'),
     documentationUrl: text('documentation_url'),
     supportEmail: text('support_email'),
