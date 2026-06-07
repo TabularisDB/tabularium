@@ -138,10 +138,34 @@
         "@tabularium/tsconfig": "workspace:*",
       },
     },
+    "packages/plugin-email": {
+      "name": "@tabularium/plugin-email",
+      "version": "0.1.0",
+      "devDependencies": {
+        "@tabularium/plugin-host-types": "workspace:*",
+        "@tabularium/tsconfig": "workspace:*",
+      },
+    },
     "packages/plugin-host-types": {
       "name": "@tabularium/plugin-host-types",
       "version": "0.1.0",
       "devDependencies": {
+        "@tabularium/tsconfig": "workspace:*",
+      },
+    },
+    "packages/plugin-smtp": {
+      "name": "@tabularium/plugin-smtp",
+      "version": "0.1.0",
+      "devDependencies": {
+        "@tabularium/plugin-host-types": "workspace:*",
+        "@tabularium/tsconfig": "workspace:*",
+      },
+    },
+    "packages/plugin-turbosmtp": {
+      "name": "@tabularium/plugin-turbosmtp",
+      "version": "0.1.0",
+      "devDependencies": {
+        "@tabularium/plugin-host-types": "workspace:*",
         "@tabularium/tsconfig": "workspace:*",
       },
     },
@@ -513,7 +537,13 @@
 
     "@tabularium/manifest": ["@tabularium/manifest@workspace:packages/manifest"],
 
+    "@tabularium/plugin-email": ["@tabularium/plugin-email@workspace:packages/plugin-email"],
+
     "@tabularium/plugin-host-types": ["@tabularium/plugin-host-types@workspace:packages/plugin-host-types"],
+
+    "@tabularium/plugin-smtp": ["@tabularium/plugin-smtp@workspace:packages/plugin-smtp"],
+
+    "@tabularium/plugin-turbosmtp": ["@tabularium/plugin-turbosmtp@workspace:packages/plugin-turbosmtp"],
 
     "@tabularium/registry-frontend": ["@tabularium/registry-frontend@workspace:apps/frontend"],
 

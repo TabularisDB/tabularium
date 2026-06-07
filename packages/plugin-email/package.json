@@ -1,0 +1,24 @@
+{
+  "name": "@tabularium/plugin-email",
+  "version": "0.1.0",
+  "description": "Tabularium first-party email plugin — orchestrator for templates, render, dispatch, preferences, suppression.",
+  "private": true,
+  "type": "module",
+  "main": "./src/api/index.ts",
+  "module": "./src/api/index.ts",
+  "types": "./src/api/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/api/index.ts",
+      "default": "./src/api/index.ts"
+    },
+    "./frontend/*": "./src/frontend/*"
+  },
+  "scripts": {
+    "check": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@tabularium/plugin-host-types": "workspace:*",
+    "@tabularium/tsconfig": "workspace:*"
+  }
+}

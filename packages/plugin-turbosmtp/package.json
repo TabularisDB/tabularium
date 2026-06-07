@@ -1,0 +1,23 @@
+{
+  "name": "@tabularium/plugin-turbosmtp",
+  "version": "0.1.0",
+  "description": "Tabularium first-party TurboSMTP email provider plugin.",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "module": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "check": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@tabularium/plugin-host-types": "workspace:*",
+    "@tabularium/tsconfig": "workspace:*"
+  }
+}
