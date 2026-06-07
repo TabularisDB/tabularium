@@ -6,6 +6,13 @@ type ReleaseRow = typeof releasesTable.$inferSelect
 
 export type Screenshot = { url: string; caption: string | null; alt: string | null }
 
+export type RequireEntry = {
+  id: string
+  version?: string
+  optional?: boolean
+  reason?: string
+}
+
 export type PublicPlugin = {
   id: string
   ownerId: string
@@ -22,6 +29,7 @@ export type PublicPlugin = {
   license: string | null
   iconUrl: string | null
   screenshots: Screenshot[]
+  requires: RequireEntry[]
   documentationUrl: string | null
   supportEmail: string | null
   issuesUrl: string | null
@@ -60,6 +68,28 @@ function parseJsonArray<T>(raw: string | null): T[] {
   }
 }
 
+function parseRequires(raw: string | null): RequireEntry[] {
+  if (!raw) return []
+  try {
+    const parsed = JSON.parse(raw) as unknown
+    if (!Array.isArray(parsed)) return []
+    const out: RequireEntry[] = []
+    for (const e of parsed) {
+      if (!e || typeof e !== 'object') continue
+      const rec = e as Record<string, unknown>
+      if (typeof rec.id !== 'string') continue
+      const entry: RequireEntry = { id: rec.id }
+      if (typeof rec.version === 'string') entry.version = rec.version
+      if (typeof rec.optional === 'boolean') entry.optional = rec.optional
+      if (typeof rec.reason === 'string') entry.reason = rec.reason
+      out.push(entry)
+    }
+    return out
+  } catch {
+    return []
+  }
+}
+
 function parseJsonObject(raw: string | null): Record<string, unknown> | null {
   if (!raw) return null
   try {
@@ -87,6 +117,7 @@ export function projectPlugin(row: PluginRow): PublicPlugin {
     license: row.license ?? null,
     iconUrl: row.iconUrl ?? null,
     screenshots: parseJsonArray<Screenshot>(row.screenshots),
+    requires: parseRequires(row.requires),
     documentationUrl: row.documentationUrl ?? null,
     supportEmail: row.supportEmail ?? null,
     issuesUrl: row.issuesUrl ?? null,

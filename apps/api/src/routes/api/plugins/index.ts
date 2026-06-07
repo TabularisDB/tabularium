@@ -12,6 +12,13 @@ const screenshotSchema = t.Object({
   alt: t.Nullable(t.String()),
 })
 
+const requireEntrySchema = t.Object({
+  id: t.String(),
+  version: t.Optional(t.String()),
+  optional: t.Optional(t.Boolean()),
+  reason: t.Optional(t.String()),
+})
+
 const pluginSummarySchema = t.Object({
   id: t.String(),
   ownerId: t.String(),
@@ -28,6 +35,7 @@ const pluginSummarySchema = t.Object({
   license: t.Nullable(t.String()),
   iconUrl: t.Nullable(t.String()),
   screenshots: t.Array(screenshotSchema),
+  requires: t.Array(requireEntrySchema),
   documentationUrl: t.Nullable(t.String()),
   supportEmail: t.Nullable(t.String()),
   issuesUrl: t.Nullable(t.String()),

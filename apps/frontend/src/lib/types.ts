@@ -47,6 +47,13 @@ export type Screenshot = {
   alt: string | null
 }
 
+export type RequireEntry = {
+  id: string
+  version?: string
+  optional?: boolean
+  reason?: string
+}
+
 export type Plugin = {
   id: string
   ownerId: string
@@ -63,6 +70,7 @@ export type Plugin = {
   license: string | null
   iconUrl: string | null
   screenshots: Screenshot[]
+  requires: RequireEntry[]
   documentationUrl: string | null
   supportEmail: string | null
   issuesUrl: string | null
