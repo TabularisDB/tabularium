@@ -1,9 +1,10 @@
 import { ulid } from 'ulid'
 import { db } from '../../db'
-import { emailLog } from '../../db/schema'
+import { emailLog, emailSuppression } from '../../db/schema'
 import { getSetting } from '../settings'
 import { logger } from '../logger'
 import { renderTemplate } from './render'
+import { loadPreferences } from './preferences'
 import { TRIGGER_TO_CATEGORY } from './types'
 import type {
   EmailMessage,
@@ -51,6 +52,7 @@ export async function sendEmail(input: SendEmailInput): Promise<SendOutcome> {
 
   const locale = input.locale ?? input.user?.locale ?? 'en'
   const from = resolveFrom(input.trigger)
+  const logId = ulid()
 
   let subject = '(rendering pending)'
   let html = ''
@@ -62,7 +64,6 @@ export async function sendEmail(input: SendEmailInput): Promise<SendOutcome> {
     text = rendered.text
   } catch (err) {
     const error = err instanceof Error ? err.message : String(err)
-    const logId = ulid()
     await db.insert(emailLog).values({
       id: logId,
       userId: input.user?.id ?? null,
@@ -79,8 +80,69 @@ export async function sendEmail(input: SendEmailInput): Promise<SendOutcome> {
     return { logId, status: 'failed', error }
   }
 
+  // Suppression check happens regardless of provider configuration:
+  //   if the recipient is suppressed, we mark the log row and bail before
+  //   reading any provider config. force: true bypasses (used by admin
+  //   test-mail + security alerts).
+  const suppression = await db.query.emailSuppression.findFirst({ where: { email: to } })
+  if (suppression && !input.force) {
+    await db.insert(emailLog).values({
+      id: logId,
+      userId: input.user?.id ?? null,
+      trigger: input.trigger,
+      template: input.trigger,
+      locale,
+      toAddress: to,
+      fromAddress: from,
+      subject,
+      provider: 'none',
+      status: 'suppressed',
+      error: `suppressed:${suppression.source}`,
+    })
+    return { logId, status: 'suppressed', reason: suppression.source }
+  }
+
+  // Preference gate. Transactional categories ('account') are always-on.
+  const category = TRIGGER_TO_CATEGORY[input.trigger]
+  const isTransactional = category === 'account'
+  if (!input.force && !isTransactional && input.user) {
+    const prefs = await loadPreferences(input.user.id)
+    const bucket = prefs[category] ?? 'instant'
+    if (bucket === 'off') {
+      await db.insert(emailLog).values({
+        id: logId,
+        userId: input.user.id,
+        trigger: input.trigger,
+        template: input.trigger,
+        locale,
+        toAddress: to,
+        fromAddress: from,
+        subject,
+        provider: 'none',
+        status: 'suppressed',
+        error: 'preference:off',
+      })
+      return { logId, status: 'suppressed', reason: 'preference:off' }
+    }
+    if (bucket === 'daily' || bucket === 'weekly') {
+      await db.insert(emailLog).values({
+        id: logId,
+        userId: input.user.id,
+        trigger: input.trigger,
+        template: input.trigger,
+        locale,
+        toAddress: to,
+        fromAddress: from,
+        subject,
+        provider: 'none',
+        status: 'queued',
+      })
+      return { logId, status: 'queued' }
+    }
+    // 'instant' → fall through to provider dispatch
+  }
+
   const provider = await resolveProvider()
-  const logId = ulid()
 
   if (!provider) {
     await db.insert(emailLog).values({
@@ -97,11 +159,6 @@ export async function sendEmail(input: SendEmailInput): Promise<SendOutcome> {
     })
     return { logId, status: 'queued' }
   }
-
-  // P1 will plug the suppression check here; P1 also plugs the
-  // preference gate. For P0, transactional always-on:
-  const _category = TRIGGER_TO_CATEGORY[input.trigger]
-  void _category // referenced for clarity; gate is P1
 
   const msg: EmailMessage = { from, to, subject, htmlContent: html, textContent: text }
   try {
