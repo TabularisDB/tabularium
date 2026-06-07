@@ -7,6 +7,7 @@ import { logger } from '$lib/logger'
 import { getSetting, hasSetting, setSetting, deleteSetting } from '$lib/settings'
 import { registry } from './registry'
 import { bus } from './events'
+import { recordRoutes } from './route-collector'
 
 function wrapLogger(l: Logger): HostLogger {
   return {
@@ -41,5 +42,6 @@ export function buildHost(id: string): PluginHost {
       set: (key, value, opts) => setSetting(key, value, opts),
       delete: (key) => deleteSetting(key),
     },
+    mountRoutes: (app) => recordRoutes(app),
   }
 }

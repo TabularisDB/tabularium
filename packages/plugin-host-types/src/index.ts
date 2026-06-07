@@ -143,4 +143,12 @@ export interface PluginHost {
   registry: HostRegistry
   events: HostEvents
   settings: HostSettings
+  /**
+   * Mount an Elysia subapp from the plugin onto the core router.
+   *
+   * Typed as `unknown` so this package stays Elysia-free. Plugins pass an
+   * `Elysia` instance via `as unknown` cast; the kernel accumulates them and
+   * the boot path applies them with `coreApp.use(subapp)`.
+   */
+  mountRoutes(app: unknown): void
 }
