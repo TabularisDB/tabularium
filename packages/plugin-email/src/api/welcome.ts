@@ -1,6 +1,6 @@
-import { env } from '../../../../apps/api/src/lib/env'
 import { sendEmail } from './facade'
 import { resolveUserContact } from './contact'
+import { host } from './host-handles'
 import { log } from './logger'
 
 /**
@@ -33,7 +33,7 @@ export async function fireWelcomeEmail({
     await sendEmail({
       trigger: 'account.welcome',
       user: contact,
-      vars: { username, baseUrl: env.BASE_URL },
+      vars: { username, baseUrl: host().env.BASE_URL },
     })
   } catch (err) {
     log('email-welcome').warn('welcome email failed', { err, userId, trigger: 'account.welcome' })

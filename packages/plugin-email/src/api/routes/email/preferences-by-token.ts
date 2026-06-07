@@ -26,8 +26,9 @@ const CATEGORIES = [
   { key: 'newsletter', optIn: true },
 ]
 
-export default new Elysia()
-  .get(
+export default function buildPreferencesByTokenRoute() {
+  return new Elysia()
+    .get(
     '/',
     async ({ params, set }) => {
       const v = await verifyUnsubscribeToken(params.token)
@@ -116,3 +117,4 @@ export default new Elysia()
       parse: 'text',
     },
   )
+}

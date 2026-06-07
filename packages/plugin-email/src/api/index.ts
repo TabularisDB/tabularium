@@ -1,5 +1,4 @@
 import type { PluginHost, PluginMeta } from '@tabularium/plugin-host-types'
-import { env } from '../../../../apps/api/src/lib/env'
 import { setHost } from './host-handles'
 import { buildRoutes } from './routes'
 import { startSuppressionSync } from './suppression-sync'
@@ -85,7 +84,7 @@ export async function register(host: PluginHost): Promise<void> {
     await sendEmail({
       trigger: 'plugin.approved',
       user: contact,
-      vars: { pluginName, pluginSlug: pluginId, baseUrl: env.BASE_URL },
+      vars: { pluginName, pluginSlug: pluginId, baseUrl: host.env.BASE_URL },
     })
   })
 
@@ -95,7 +94,7 @@ export async function register(host: PluginHost): Promise<void> {
     await sendEmail({
       trigger: 'plugin.rejected',
       user: contact,
-      vars: { pluginName, pluginSlug: pluginId, reason, baseUrl: env.BASE_URL },
+      vars: { pluginName, pluginSlug: pluginId, reason, baseUrl: host.env.BASE_URL },
     })
   })
 

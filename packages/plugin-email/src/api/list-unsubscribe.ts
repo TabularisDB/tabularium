@@ -1,4 +1,3 @@
-import { env } from '../../../../apps/api/src/lib/env'
 import { host } from './host-handles'
 import { mintUnsubscribeToken } from './unsubscribe-token'
 import { TRIGGER_TO_CATEGORY } from './types'
@@ -37,7 +36,7 @@ export async function buildOptInHeaders(
   const category = TRIGGER_TO_CATEGORY[input.trigger]
   if (category === TRANSACTIONAL_CATEGORY) return null
   const token = await mintUnsubscribeToken(input.user.id)
-  const base = env.WEB_BASE_URL ?? env.BASE_URL
+  const base = host().env.WEB_BASE_URL ?? host().env.BASE_URL
   const unsubUrl = `${base}/email/unsubscribe/${token}`
   const mailto = `unsubscribe+${input.user.id}@${getMailtoDomain()}`
   return {

@@ -1,49 +1,46 @@
 import { Elysia } from 'elysia'
-import adminSettings from './admin/settings'
-import adminBootstrap from './admin/bootstrap'
-import adminTest from './admin/test'
-import adminSuppressionList from './admin/suppression/index'
-import adminSuppressionByEmail from './admin/suppression/by-email'
-import usersEmailProfile from './users-me/email-profile'
-import usersEmailPreferences from './users-me/email-preferences'
-import publicPrefsByToken from './email/preferences-by-token'
+import buildAdminSettings from './admin/settings'
+import buildAdminBootstrap from './admin/bootstrap'
+import buildAdminTest from './admin/test'
+import buildAdminSuppressionList from './admin/suppression/index'
+import buildAdminSuppressionByEmail from './admin/suppression/by-email'
+import buildUsersEmailProfile from './users-me/email-profile'
+import buildUsersEmailPreferences from './users-me/email-preferences'
+import buildPublicPrefsByToken from './email/preferences-by-token'
 
 /**
  * Build the email plugin's Elysia subapp.
  *
- * Each leaf module declares its handlers at `/` (FSR-style legacy). We
- * compose them under their full URL prefixes here so the resulting subapp
- * can be mounted at the root by the kernel and routes resolve to the same
- * URLs the API exposed before this migration.
+ * Each leaf module exports a *factory* (not a pre-constructed Elysia) so that
+ * `host().middleware.admin` is live by the time the route does `.use()`.
+ * Factories are invoked here, inside `buildRoutes()`, which is called from
+ * `register(host)` after `setHost()` has run.
  */
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 export function buildRoutes(): Elysia<any, any, any, any, any, any, any> {
-  // Elysia's chained .group()/.use() builders accumulate deep generics that
-  // don't widen back to the bare `Elysia` return type. We cast through the
-  // any-generic form so the public seam stays a plain Elysia for the kernel.
   return (
     new Elysia()
       // admin settings: /api/admin/email (GET, PUT)
       .group('/api/admin/email', (app) =>
         app
-          .use(adminSettings)
-          .group('/bootstrap', (a) => a.use(adminBootstrap))
-          .group('/test', (a) => a.use(adminTest))
+          .use(buildAdminSettings())
+          .group('/bootstrap', (a) => a.use(buildAdminBootstrap()))
+          .group('/test', (a) => a.use(buildAdminTest()))
           .group('/suppression', (a) =>
             a
-              .use(adminSuppressionList)
-              .group('/:email', (b) => b.use(adminSuppressionByEmail)),
+              .use(buildAdminSuppressionList())
+              .group('/:email', (b) => b.use(buildAdminSuppressionByEmail())),
           ),
       )
       // user settings: /api/users/me/email-{profile,preferences}
       .group('/api/users/me', (app) =>
         app
-          .group('/email-profile', (a) => a.use(usersEmailProfile))
-          .group('/email-preferences', (a) => a.use(usersEmailPreferences)),
+          .group('/email-profile', (a) => a.use(buildUsersEmailProfile()))
+          .group('/email-preferences', (a) => a.use(buildUsersEmailPreferences())),
       )
       // public token preferences center: /email/preferences/:token
       .group('/email/preferences', (app) =>
-        app.group('/:token', (a) => a.use(publicPrefsByToken)),
+        app.group('/:token', (a) => a.use(buildPublicPrefsByToken())),
       )
   )
 }
