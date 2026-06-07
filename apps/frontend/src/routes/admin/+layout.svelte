@@ -23,6 +23,7 @@
 	import Mail from '@lucide/svelte/icons/mail'
 	import Menu from '@lucide/svelte/icons/menu'
 	import X from '@lucide/svelte/icons/x'
+	import type { Component } from 'svelte'
 	import { auth } from '$lib/stores/auth.svelte'
 	import { cn } from '$lib/utils'
 	import { m } from '$lib/paraglide/messages'
@@ -31,6 +32,38 @@
 	let gated = $state(true)
 	let pendingCount = $state(0)
 	let drawerOpen = $state(false)
+
+	type PluginNavEntry = {
+		id: string
+		href: string
+		labelKey: string
+		icon: string
+		order?: number
+	}
+	let pluginNav = $state<PluginNavEntry[]>([])
+
+	// String → icon component lookup. Core uses imported components directly;
+	// plugin contributions reference icons by string name. SP1: hand-maintain.
+	// Future TODO: dynamic icon loading.
+	const ICON_MAP: Record<string, Component> = {
+		'layout-dashboard': LayoutDashboard,
+		plug: Plug,
+		boxes: Boxes,
+		'users-round': UsersRound,
+		'file-text': FileText,
+		'server-cog': ServerCog,
+		palette: Palette,
+		mail: Mail,
+		house: House,
+		'sliders-horizontal': SlidersHorizontal,
+		'toggle-right': ToggleRight,
+		tags: Tags,
+		'file-json': FileJson,
+		'book-text': BookText,
+		languages: Languages,
+		'key-round': KeyRound,
+		'list-checks': ListChecks,
+	}
 
 	onMount(async () => {
 		if (!auth.loaded) await auth.refresh()
@@ -57,27 +90,48 @@
 		} catch {
 			// ignore
 		}
+		try {
+			const res = await fetch('/api/plugin-contributions')
+			if (res.ok) {
+				const json = (await res.json()) as { points: { 'admin-nav-entry'?: PluginNavEntry[] } }
+				pluginNav = json.points['admin-nav-entry'] ?? []
+			}
+		} catch {
+			// fail open — core nav still renders
+		}
 	})
 
-	const sections = $derived([
-		{ href: '/admin', label: m.admin_nav_overview(), icon: LayoutDashboard, badge: 0 },
-		{ href: '/admin/providers', label: m.admin_nav_providers(), icon: Plug, badge: 0 },
-		{ href: '/admin/plugins', label: m.admin_nav_plugins(), icon: Boxes, badge: pendingCount },
-		{ href: '/admin/users', label: m.admin_nav_users(), icon: UsersRound, badge: 0 },
-		{ href: '/admin/pages', label: m.admin_nav_pages(), icon: FileText, badge: 0 },
-		{ href: '/admin/infra', label: m.admin_nav_infrastructure(), icon: ServerCog, badge: 0 },
-		{ href: '/admin/branding', label: m.admin_nav_branding(), icon: Palette, badge: 0 },
-		{ href: '/admin/email', label: m.admin_nav_email(), icon: Mail, badge: 0 },
-		{ href: '/admin/home', label: m.admin_nav_home(), icon: House, badge: 0 },
-		{ href: '/admin/instance', label: m.admin_nav_instance(), icon: SlidersHorizontal, badge: 0 },
-		{ href: '/admin/features', label: m.admin_nav_features(), icon: ToggleRight, badge: 0 },
-		{ href: '/admin/kinds', label: m.admin_nav_kinds(), icon: Tags, badge: 0 },
-		{ href: '/admin/manifest', label: m.admin_nav_manifest(), icon: FileJson, badge: 0 },
-		{ href: '/admin/docs', label: m.admin_nav_docs(), icon: BookText, badge: 0 },
-		{ href: '/admin/i18n', label: m.admin_nav_languages(), icon: Languages, badge: 0 },
-		{ href: '/admin/tokens', label: m.admin_nav_tokens(), icon: KeyRound, badge: 0 },
-		{ href: '/admin/audit', label: m.admin_nav_audit(), icon: ListChecks, badge: 0 },
+	const CORE_SECTIONS = $derived([
+		{ href: '/admin', label: m.admin_nav_overview(), icon: LayoutDashboard, badge: 0, order: 0 },
+		{ href: '/admin/providers', label: m.admin_nav_providers(), icon: Plug, badge: 0, order: 10 },
+		{ href: '/admin/plugins', label: m.admin_nav_plugins(), icon: Boxes, badge: pendingCount, order: 20 },
+		{ href: '/admin/users', label: m.admin_nav_users(), icon: UsersRound, badge: 0, order: 30 },
+		{ href: '/admin/pages', label: m.admin_nav_pages(), icon: FileText, badge: 0, order: 40 },
+		{ href: '/admin/infra', label: m.admin_nav_infrastructure(), icon: ServerCog, badge: 0, order: 50 },
+		{ href: '/admin/branding', label: m.admin_nav_branding(), icon: Palette, badge: 0, order: 60 },
+		{ href: '/admin/home', label: m.admin_nav_home(), icon: House, badge: 0, order: 70 },
+		{ href: '/admin/instance', label: m.admin_nav_instance(), icon: SlidersHorizontal, badge: 0, order: 80 },
+		{ href: '/admin/features', label: m.admin_nav_features(), icon: ToggleRight, badge: 0, order: 85 },
+		{ href: '/admin/kinds', label: m.admin_nav_kinds(), icon: Tags, badge: 0, order: 90 },
+		{ href: '/admin/manifest', label: m.admin_nav_manifest(), icon: FileJson, badge: 0, order: 100 },
+		{ href: '/admin/docs', label: m.admin_nav_docs(), icon: BookText, badge: 0, order: 110 },
+		{ href: '/admin/i18n', label: m.admin_nav_languages(), icon: Languages, badge: 0, order: 120 },
+		{ href: '/admin/tokens', label: m.admin_nav_tokens(), icon: KeyRound, badge: 0, order: 130 },
+		{ href: '/admin/audit', label: m.admin_nav_audit(), icon: ListChecks, badge: 0, order: 140 },
 	])
+
+	const sections = $derived(
+		[
+			...CORE_SECTIONS,
+			...pluginNav.map((p) => ({
+				href: p.href,
+				label: (m as unknown as Record<string, () => string>)[p.labelKey]?.() ?? p.labelKey,
+				icon: ICON_MAP[p.icon] ?? Plug,
+				badge: 0,
+				order: p.order ?? 200,
+			})),
+		].sort((a, b) => (a.order ?? 200) - (b.order ?? 200)),
+	)
 
 	function isActive(href: string) {
 		if (href === '/admin') return page.url.pathname === '/admin'

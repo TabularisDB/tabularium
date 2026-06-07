@@ -10,6 +10,7 @@
 	import UserRoundCog from '@lucide/svelte/icons/user-round-cog'
 	import Mail from '@lucide/svelte/icons/mail'
 	import ChevronRight from '@lucide/svelte/icons/chevron-right'
+	import type { Component } from 'svelte'
 	import Button from '$components/ui/Button.svelte'
 	import Card from '$components/ui/Card.svelte'
 	import CardContent from '$components/ui/CardContent.svelte'
@@ -43,6 +44,21 @@
 	let providers = $state<ProviderInfo[]>([])
 	let transfers = $state<Transfer[]>([])
 
+	type PluginSettingsEntry = {
+		id: string
+		href: string
+		labelKey: string
+		icon: string
+		order?: number
+	}
+	let pluginCards = $state<PluginSettingsEntry[]>([])
+
+	// String → icon component lookup for plugin-contributed settings cards.
+	// SP1: hand-maintain. Future TODO: dynamic icon loading.
+	const ICON_MAP: Record<string, Component> = {
+		mail: Mail,
+	}
+
 	async function loadTransfers() {
 		try {
 			const { data, error } = await eden.auth.me.transfers.get()
@@ -63,6 +79,17 @@
 		const list = ((providersRes.data ?? { providers: [] }) as { providers: ProviderInfo[] }).providers
 		providers = list
 		await loadTransfers()
+		try {
+			const res = await fetch('/api/plugin-contributions')
+			if (res.ok) {
+				const json = (await res.json()) as { points: { 'user-settings-nav-entry'?: PluginSettingsEntry[] } }
+				pluginCards = (json.points['user-settings-nav-entry'] ?? []).slice().sort(
+					(a, b) => (a.order ?? 200) - (b.order ?? 200),
+				)
+			}
+		} catch {
+			// fail open
+		}
 	})
 
 	async function respond(transferId: string, action: 'accept' | 'reject' | 'cancel') {
@@ -202,24 +229,33 @@
 			</CardContent>
 		</Card>
 
-		<Card>
-			<CardHeader>
-				<CardTitle class="text-base flex items-center gap-2">
-					<Mail class="h-4 w-4" />
-					Email & notifications
-				</CardTitle>
-				<CardDescription>Your address, locale, and notification preferences.</CardDescription>
-			</CardHeader>
-			<CardContent>
-				<a
-					href="/settings/email"
-					class="flex items-center justify-between gap-3 rounded-md border border-border bg-card/50 px-4 py-3 hover:bg-accent hover:text-accent-foreground transition-colors"
-				>
-					<span class="text-sm font-medium">Manage email & preferences</span>
-					<ChevronRight class="h-4 w-4 text-muted-foreground" />
-				</a>
-			</CardContent>
-		</Card>
+		{#each pluginCards as card (card.id)}
+			{@const Icon = ICON_MAP[card.icon] ?? Mail}
+			{@const messages = m as unknown as Record<string, () => string>}
+			{@const titleFn = messages[card.labelKey]}
+			{@const descFn = messages[`${card.labelKey}_description`]}
+			{@const actionFn = messages[`${card.labelKey}_action`]}
+			<Card>
+				<CardHeader>
+					<CardTitle class="text-base flex items-center gap-2">
+						<Icon class="h-4 w-4" />
+						{titleFn ? titleFn() : card.labelKey}
+					</CardTitle>
+					{#if descFn}
+						<CardDescription>{descFn()}</CardDescription>
+					{/if}
+				</CardHeader>
+				<CardContent>
+					<a
+						href={card.href}
+						class="flex items-center justify-between gap-3 rounded-md border border-border bg-card/50 px-4 py-3 hover:bg-accent hover:text-accent-foreground transition-colors"
+					>
+						<span class="text-sm font-medium">{actionFn ? actionFn() : (titleFn ? titleFn() : card.labelKey)}</span>
+						<ChevronRight class="h-4 w-4 text-muted-foreground" />
+					</a>
+				</CardContent>
+			</Card>
+		{/each}
 
 		{#if pendingTransfers.length > 0}
 			<Card>
