@@ -88,6 +88,20 @@ export interface PluginMeta {
   id: string
   version: string
   provides?: string[]
+  /**
+   * Other plugin ids this plugin needs to function.
+   *
+   * The kernel auto-seeds missing requires (loads them even when not in
+   * `infra.plugins.enabled`) and topo-orders so deps load before dependents.
+   * Cycles abort the chain with a clear error. Unknown required ids are
+   * logged + skipped, and the dependent plugin loads anyway (the missing dep
+   * may be optional behaviour the plugin can fall back from).
+   *
+   * Example: `plugin-smtp` declares `requires: ['email']` because it
+   * registers against the `email-provider` extension point that only makes
+   * sense when the email orchestrator is loaded.
+   */
+  requires?: string[]
   contributions?: PluginContributions
 }
 

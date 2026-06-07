@@ -9,6 +9,8 @@ import { registry } from './registry'
 const log = logger.child({ module: 'plugin-loader' })
 
 const loaded = new Set<string>()
+const inProgress = new Set<string>()
+const seededBy = new Map<string, string>()
 const ENABLED_SETTING_KEY = 'infra.plugins.enabled'
 const DEFAULT_ENABLED: string[] = ['email', 'turbosmtp']
 
@@ -21,6 +23,13 @@ export function __setLoaderForTests(loader: LoaderOverride | null): void {
 
 export function __clearLoadedForTests(): void {
   loaded.clear()
+  inProgress.clear()
+  seededBy.clear()
+}
+
+/** Test-only readback of which plugins got auto-seeded by which requires. */
+export function __seededByForTests(): ReadonlyMap<string, string> {
+  return seededBy
 }
 
 /**
@@ -67,31 +76,79 @@ function getEnabledList(): string[] {
   return DEFAULT_ENABLED
 }
 
-async function loadOne(id: string): Promise<void> {
-  if (loaded.has(id)) {
+async function resolveModule(id: string): Promise<PluginModule | null> {
+  if (loaderOverride) {
+    return await loaderOverride(id)
+  }
+  const loader = resolvePluginLoader(id)
+  if (!loader) return null
+  return (await loader()) as PluginModule
+}
+
+/**
+ * Recursively ensure a plugin is loaded. Handles three concerns:
+ *
+ * 1. Auto-seed: a plugin's `meta.requires` are loaded transitively even when
+ *    they're absent from `infra.plugins.enabled`. The auto-seeded id is tracked
+ *    in `seededBy` so operators (and tests) can see who pulled it in.
+ * 2. Topo order: requires resolve before the dependent's `register(host)` runs,
+ *    so providers register against extension points before orchestrators read
+ *    them.
+ * 3. Cycle detection: `inProgress` set catches A → B → A. The error aborts the
+ *    chain that started it, but the outer `initPlugins` try/catch keeps other
+ *    plugins loading.
+ */
+async function ensureLoaded(id: string, requestedBy?: string): Promise<void> {
+  if (loaded.has(id)) return
+  if (inProgress.has(id)) {
     throw new Error(
-      `duplicate plugin id "${id}" — already loaded; refusing to register twice (would collide on table prefix pl_${id.toLowerCase().replace(/-/g, '_')}__)`,
+      `cyclic plugin dependency: ${id} requested by ${requestedBy ?? '(root)'} but already loading`,
     )
   }
-  let mod: PluginModule
-  if (loaderOverride) {
-    mod = await loaderOverride(id)
-  } else {
-    const loader = resolvePluginLoader(id)
-    if (!loader) {
-      log.warn({ id }, 'unknown plugin id — skipping')
-      return
-    }
-    mod = (await loader()) as PluginModule
+
+  const mod = await resolveModule(id)
+  if (!mod) {
+    log.warn({ id, requestedBy }, 'unknown plugin id — skipping')
+    return
   }
   if (mod.meta.id !== id) {
-    log.warn({ requested: id, declared: mod.meta.id }, 'plugin meta id mismatch — proceeding with declared id')
+    log.warn(
+      { requested: id, declared: mod.meta.id },
+      'plugin meta id mismatch — proceeding with declared id',
+    )
   }
-  const host = buildHost(mod.meta.id)
-  await mod.register(host)
-  recordContributions(mod.meta.id, mod.meta.contributions)
-  loaded.add(mod.meta.id)
-  log.info({ id: mod.meta.id, version: mod.meta.version }, 'plugin loaded')
+  const declaredId = mod.meta.id
+
+  if (loaded.has(declaredId)) return
+  if (inProgress.has(declaredId)) {
+    throw new Error(
+      `cyclic plugin dependency: ${declaredId} requested by ${requestedBy ?? '(root)'} but already loading`,
+    )
+  }
+
+  inProgress.add(declaredId)
+  try {
+    // Topo-load requires before this plugin's own register() runs.
+    for (const req of mod.meta.requires ?? []) {
+      if (req === declaredId) continue
+      if (!loaded.has(req)) {
+        if (requestedBy === undefined) seededBy.set(req, declaredId)
+        else if (!seededBy.has(req)) seededBy.set(req, declaredId)
+      }
+      await ensureLoaded(req, declaredId)
+    }
+
+    const host = buildHost(declaredId)
+    await mod.register(host)
+    recordContributions(declaredId, mod.meta.contributions)
+    loaded.add(declaredId)
+    log.info(
+      { id: declaredId, version: mod.meta.version, requestedBy },
+      'plugin loaded',
+    )
+  } finally {
+    inProgress.delete(declaredId)
+  }
 }
 
 export async function initPlugins(): Promise<void> {
@@ -100,9 +157,20 @@ export async function initPlugins(): Promise<void> {
   log.info({ enabled }, 'loading plugins')
   for (const id of enabled) {
     try {
-      await loadOne(id)
+      if (loaded.has(id)) {
+        // Already loaded transitively as a require of an earlier id — this is
+        // not a duplicate request, just an explicit confirmation.
+        continue
+      }
+      await ensureLoaded(id)
     } catch (err) {
       log.error({ err, id }, 'plugin failed to load — instance continues without it')
     }
+  }
+  if (seededBy.size > 0) {
+    log.info(
+      { seeded: Object.fromEntries(seededBy) },
+      'auto-seeded plugins via requires',
+    )
   }
 }

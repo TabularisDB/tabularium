@@ -5,6 +5,7 @@ export const meta: PluginMeta = {
   id: 'smtp',
   version: '1.0.0',
   provides: ['email-provider'],
+  requires: ['email'],
 }
 
 export async function register(host: PluginHost): Promise<void> {

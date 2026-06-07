@@ -7,6 +7,7 @@ export const meta: PluginMeta = {
   id: 'turbosmtp',
   version: '1.0.0',
   provides: ['email-provider', 'email-bootstrap-driver', 'email-suppression-source'],
+  requires: ['email'],
 }
 
 export async function register(host: PluginHost): Promise<void> {
