@@ -7,6 +7,12 @@ import { cache } from '$lib/cache'
 import { latestCacheKey } from '$routes/api/plugins/[slug]/latest'
 import { recordAudit } from '$lib/audit'
 import { jsonArrayOrNull } from '$lib/util'
+import { sendEmail } from '$lib/email/facade'
+import { resolveUserContact } from '$lib/email/contact'
+import { env } from '$lib/env'
+import { logger } from '$lib/logger'
+
+const log = logger.child({ module: 'admin-plugin-email' })
 
 const statusEnum = t.Union([t.Literal('approved'), t.Literal('pending'), t.Literal('rejected')])
 
@@ -26,6 +32,7 @@ export default new Elysia()
         set.status = 404
         return { error: 'Plugin not found' }
       }
+      const prevStatus = existing.status
       const patch: Partial<typeof plugins.$inferInsert> = { updatedAt: Date.now() }
       if (body.status !== undefined) {
         patch.status = body.status
@@ -57,6 +64,48 @@ export default new Elysia()
       }
       await db.update(plugins).set(patch).where(eq(plugins.id, params.id))
       await cache().del(latestCacheKey(params.id))
+
+      // Fire-and-forget owner-ops notifications on the approve/reject
+      // transition. Skip silently when the owner has no resolvable email
+      // (OAuth-only owners — P0 has no users.email column). The send is
+      // wrapped in queueMicrotask so the admin response is never blocked
+      // by SMTP latency.
+      const statusChanged = body.status !== undefined && body.status !== prevStatus
+      if (statusChanged && (body.status === 'approved' || body.status === 'rejected')) {
+        const newStatus = body.status
+        const reason = body.rejectionReason ?? 'No reason provided'
+        queueMicrotask(async () => {
+          try {
+            const contact = await resolveUserContact(existing.ownerId)
+            if (!contact) return
+            if (newStatus === 'approved') {
+              await sendEmail({
+                trigger: 'plugin.approved',
+                user: contact,
+                vars: {
+                  pluginName: existing.name,
+                  pluginSlug: existing.id,
+                  baseUrl: env.BASE_URL,
+                },
+              })
+            } else {
+              await sendEmail({
+                trigger: 'plugin.rejected',
+                user: contact,
+                vars: {
+                  pluginName: existing.name,
+                  pluginSlug: existing.id,
+                  reason,
+                  baseUrl: env.BASE_URL,
+                },
+              })
+            }
+          } catch (err) {
+            log.warn({ err, pluginId: existing.id, trigger: `plugin.${newStatus}` }, 'plugin moderation email failed')
+          }
+        })
+      }
+
       if (ownerChange) {
         await recordAudit({
           actorId: admin.id,
