@@ -15,6 +15,7 @@ import type {
 } from './types'
 import { buildTurboProvider } from './providers/turbo'
 import { buildSmtpProvider } from './providers/smtp'
+import { buildOptInHeaders } from './list-unsubscribe'
 
 const log = logger.child({ module: 'email' })
 
@@ -160,7 +161,19 @@ export async function sendEmail(input: SendEmailInput): Promise<SendOutcome> {
     return { logId, status: 'queued' }
   }
 
-  const msg: EmailMessage = { from, to, subject, htmlContent: html, textContent: text }
+  const headers = await buildOptInHeaders({
+    trigger: input.trigger,
+    user: input.user,
+    force: input.force,
+  })
+  const msg: EmailMessage = {
+    from,
+    to,
+    subject,
+    htmlContent: html,
+    textContent: text,
+    ...(headers ? { headers } : {}),
+  }
   try {
     const { providerMid } = await provider.send(msg)
     await db.insert(emailLog).values({
