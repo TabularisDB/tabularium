@@ -5,6 +5,14 @@ import { db } from '$db'
 import { users, identities, plugins, rootCredentials } from '$db/schema'
 import { getInstance } from '$lib/provider-instance'
 import { isProd } from '$lib/env'
+import { getSetting } from '$lib/settings'
+
+// Mirrors `EMAIL_SCOPE_RECOVERY_KEY_PREFIX` from `[instance]/callback.ts`.
+// Duplicated here so we don't pull the callback module (an Elysia route file)
+// into the me-route module graph — fsr only registers default exports as
+// routes, but cross-route imports still inflate the module footprint and
+// risk surprises with side-effectful top-level code.
+const EMAIL_SCOPE_RECOVERY_KEY_PREFIX = 'email.scope_recovery_needed.'
 
 const identitySchema = t.Object({
   id: t.String(),
@@ -20,6 +28,7 @@ const meSchema = t.Object({
   displayName: t.String(),
   role: t.Union([t.Literal('user'), t.Literal('admin')]),
   identities: t.Array(identitySchema),
+  emailScopeRecoveryNeeded: t.Boolean(),
 })
 
 export default new Elysia()
@@ -34,6 +43,9 @@ export default new Elysia()
       }
 
       const userIdentities = await db.query.identities.findMany({ where: { userId: user.sub } })
+
+      const emailScopeRecoveryNeeded =
+        getSetting(`${EMAIL_SCOPE_RECOVERY_KEY_PREFIX}${user.sub}`) === '1'
 
       return {
         id: user.sub,
@@ -50,6 +62,7 @@ export default new Elysia()
             username: i.username,
           }
         }),
+        emailScopeRecoveryNeeded,
       }
     },
     {

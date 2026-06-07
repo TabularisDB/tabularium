@@ -10,7 +10,7 @@ import { encryptToken } from '$lib/crypto'
 import { getInstance, type ProviderInstance } from '$lib/provider-instance'
 import { env, isProd } from '$lib/env'
 import { logger } from '$lib/logger'
-import { getSetting, setSetting, isSettingsInitialized } from '$lib/settings'
+import { getSetting, setSetting, deleteSetting, isSettingsInitialized } from '$lib/settings'
 import { recordAudit } from '$lib/audit'
 import { fireWelcomeEmail } from '$lib/email/welcome'
 import { safeReturnTo } from './index'
@@ -23,10 +23,16 @@ type ProviderProfile = {
   externalId: string
   username: string
   email: string | null
+  // True only when the GitHub `x-oauth-scopes` response header is present and
+  // does NOT contain `user:email`. Absent header (Enterprise / forks) leaves
+  // this false so we don't surface a false-positive recovery banner.
+  needsEmailScope: boolean
   accessToken: string
   refreshToken: string | null
   accessTokenExpiresAt: number | null
 }
+
+export const EMAIL_SCOPE_RECOVERY_KEY_PREFIX = 'email.scope_recovery_needed.'
 
 const DISPLAY_NAME_RE = /^[\p{L}\p{N}._\-\s]{1,60}$/u
 
@@ -110,6 +116,13 @@ async function exchangeGithub(inst: ProviderInstance, code: string, state: State
     headers: { Authorization: `Bearer ${tokenFields.accessToken}`, 'User-Agent': 'tabularium/1.0' },
   })
   const profile = (await profileRes.json()) as { id: number; login: string; email: string | null }
+  // GitHub returns granted scopes in `x-oauth-scopes`. Enterprise/forks may
+  // omit the header — treat absent-header as "unknown" so we don't trigger a
+  // false-positive recovery prompt.
+  const scopeHeader = profileRes.headers.get('x-oauth-scopes')
+  const grantedScopes = (scopeHeader ?? '').split(/,\s*/).filter(Boolean)
+  const hasEmailScope = grantedScopes.includes('user:email')
+  const needsEmailScope = scopeHeader !== null && !hasEmailScope
   let email = profile.email ?? null
   if (!email) {
     try {
@@ -129,7 +142,7 @@ async function exchangeGithub(inst: ProviderInstance, code: string, state: State
       // scope missing or rate limit — leave email null, scope-recovery handles it
     }
   }
-  return { externalId: String(profile.id), username: profile.login, email, ...tokenFields }
+  return { externalId: String(profile.id), username: profile.login, email, needsEmailScope, ...tokenFields }
 }
 
 async function exchangeGitlab(inst: ProviderInstance, code: string): Promise<ProviderProfile> {
@@ -142,7 +155,13 @@ async function exchangeGitlab(inst: ProviderInstance, code: string): Promise<Pro
     headers: { Authorization: `Bearer ${tokenFields.accessToken}` },
   })
   const profile = (await profileRes.json()) as { id: number; username: string; email: string | null }
-  return { externalId: String(profile.id), username: profile.username, email: profile.email ?? null, ...tokenFields }
+  return {
+    externalId: String(profile.id),
+    username: profile.username,
+    email: profile.email ?? null,
+    needsEmailScope: false,
+    ...tokenFields,
+  }
 }
 
 async function exchangeGitea(inst: ProviderInstance, code: string, state: StateData): Promise<ProviderProfile> {
@@ -155,7 +174,13 @@ async function exchangeGitea(inst: ProviderInstance, code: string, state: StateD
     headers: { Authorization: `Bearer ${tokenFields.accessToken}` },
   })
   const profile = (await profileRes.json()) as { id: number; login: string; email: string | null }
-  return { externalId: String(profile.id), username: profile.login, email: profile.email ?? null, ...tokenFields }
+  return {
+    externalId: String(profile.id),
+    username: profile.login,
+    email: profile.email ?? null,
+    needsEmailScope: false,
+    ...tokenFields,
+  }
 }
 
 async function exchange(inst: ProviderInstance, code: string, state: StateData): Promise<ProviderProfile> {
@@ -351,6 +376,19 @@ export default new Elysia().get(
         }
       }
 
+      // Persist a per-user "email scope recovery needed" flag. Only fires for
+      // GitHub instances where we OBSERVED a scope header that lacked
+      // `user:email` AND no email could be captured. On any other outcome
+      // (email captured, scope confirmed present, non-GitHub provider) the
+      // flag is cleared so stale state doesn't survive a successful re-auth.
+      const recoveryNeeded =
+        inst.kind === 'github' && profile.email == null && profile.needsEmailScope === true
+      if (recoveryNeeded) {
+        await setSetting(`${EMAIL_SCOPE_RECOVERY_KEY_PREFIX}${userId!}`, '1')
+      } else {
+        await deleteSetting(`${EMAIL_SCOPE_RECOVERY_KEY_PREFIX}${userId!}`)
+      }
+
       const sessionId = await createSession({
         userId: userId!,
         userAgent: request.headers.get('user-agent') ?? null,
@@ -385,8 +423,18 @@ export default new Elysia().get(
 
       const webBase = env.WEB_BASE_URL ?? env.BASE_URL
       const safeTarget = safeReturnTo(stateData.returnTo ?? undefined)
-      const target = safeTarget ?? (linkUserId ? '/settings' : '/welcome')
-      return redirect(`${webBase}${target}`, 302)
+      const defaultTarget = recoveryNeeded
+        ? linkUserId
+          ? '/settings/email'
+          : '/welcome'
+        : linkUserId
+          ? '/settings'
+          : '/welcome'
+      const target = safeTarget ?? defaultTarget
+      const hintedTarget = recoveryNeeded
+        ? `${target}${target.includes('?') ? '&' : '?'}email-scope=needed`
+        : target
+      return redirect(`${webBase}${hintedTarget}`, 302)
     } catch (e) {
       if (e instanceof OAuth2RequestError) {
         set.status = 400

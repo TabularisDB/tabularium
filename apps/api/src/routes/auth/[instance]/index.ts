@@ -30,6 +30,7 @@ async function buildAuthUrl(
   inst: ProviderInstance,
   state: string,
   linking: boolean,
+  reauthEmail: boolean,
 ): Promise<{ url: URL; codeVerifier?: string }> {
   const callback = `${env.BASE_URL}/auth/${inst.id}/callback`
 
@@ -42,7 +43,7 @@ async function buildAuthUrl(
       'public_repo',
       'admin:repo_hook',
     ])
-    if (linking) url.searchParams.set('prompt', 'consent')
+    if (linking || reauthEmail) url.searchParams.set('prompt', 'consent')
     if (inst.baseUrl === 'https://github.com') {
       const codeVerifier = generateCodeVerifier()
       url.searchParams.set('code_challenge', await s256Challenge(codeVerifier))
@@ -91,7 +92,7 @@ export default new Elysia().get(
 
     const state = generateState()
     const returnTo = safeReturnTo(query.return_to)
-    const { url, codeVerifier } = await buildAuthUrl(inst, state, linking)
+    const { url, codeVerifier } = await buildAuthUrl(inst, state, linking, query.reauth === 'email')
 
     cookie.oauth_state.set({
       value: { nonce: state, instanceId: inst.id, codeVerifier, linking, returnTo },
@@ -116,6 +117,7 @@ export default new Elysia().get(
     query: t.Object({
       link: t.Optional(t.String()),
       return_to: t.Optional(t.String()),
+      reauth: t.Optional(t.String()),
     }),
   },
 )
