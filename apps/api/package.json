@@ -42,6 +42,7 @@
     "@elysiajs/openapi": "^1.4.5",
     "@elysiajs/static": "^1.4.10",
     "@sinclair/typebox": "^0.34.49",
+    "@tabularium/core-schema": "workspace:*",
     "@tabularium/manifest": "workspace:*",
     "@tabularium/plugin-email": "workspace:*",
     "@tabularium/plugin-smtp": "workspace:*",
