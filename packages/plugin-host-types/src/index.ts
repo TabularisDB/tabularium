@@ -181,6 +181,31 @@ export interface HostCrypto {
   decryptToken(ciphertext: string): string
 }
 
+/**
+ * Build the kernel-enforced table name prefix for a plugin.
+ *
+ * Plugins MUST prefix every table they own with this value so they cannot
+ * collide with core tables or with other plugins. The prefix is computed from
+ * the plugin's `meta.id` — the plugin author does not choose it.
+ *
+ * Format: `pl_<id_normalized>__` (final double underscore is the separator).
+ * `<id_normalized>` = lowercase, hyphens replaced with underscores.
+ *
+ * Throws if the normalized id contains anything outside `[a-z0-9_]`.
+ *
+ * Two plugins with the same `meta.id` are rejected by the loader at boot, so
+ * two plugins cannot ever share a prefix at runtime.
+ */
+export function pluginTablePrefix(pluginId: string): string {
+  const normalized = pluginId.toLowerCase().replace(/-/g, '_')
+  if (!/^[a-z0-9_]+$/.test(normalized)) {
+    throw new Error(
+      `invalid plugin id for table prefix: ${pluginId} — must normalize to /^[a-z0-9_]+$/`,
+    )
+  }
+  return `pl_${normalized}__`
+}
+
 export interface PluginHost {
   /** The plugin's own id — set by the kernel before calling `register`. */
   id: string
