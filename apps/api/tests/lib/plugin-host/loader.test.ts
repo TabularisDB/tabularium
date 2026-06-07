@@ -125,12 +125,14 @@ test('unknown plugin id in enabled list is skipped (no override)', async () => {
   expect(listContributions()['admin-nav-entry']).toEqual([])
 })
 
-test('malformed infra.plugins.enabled → defaults are attempted (and gracefully skipped)', async () => {
+test('malformed infra.plugins.enabled → defaults are attempted gracefully', async () => {
   await setSetting(ENABLED_KEY, 'not-json[')
-  // No override → defaults ['email','turbosmtp'] are attempted via resolver,
-  // which calls dynamic import for packages that don't exist yet. The loader
-  // catches the import failure per-plugin so initPlugins itself must not throw.
+  // No override → defaults ['email','turbosmtp'] are attempted via resolver.
+  // initPlugins must not throw regardless of whether the defaults exist yet.
   await initPlugins()
-  // No plugin actually loaded.
-  expect(listContributions()['admin-nav-entry']).toEqual([])
+  // The two default plugins are first-party and exist after SP1 Task 3, so we
+  // can assert email's admin-nav-entry landed. (Earlier in SP1 this test asserted
+  // empty contributions; updated when the skeleton packages came online.)
+  const adminNav = listContributions()['admin-nav-entry']
+  expect(adminNav.some((c) => (c as { pluginId: string }).pluginId === 'email')).toBe(true)
 })
