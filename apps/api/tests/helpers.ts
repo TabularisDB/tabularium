@@ -40,6 +40,8 @@ export async function clearDb() {
   await db.delete(schema.identities)
   await db.delete(schema.auditLog)
   await db.delete(schema.emailLog)
+  await db.delete(schema.emailPreferences)
+  await db.delete(schema.emailSuppression)
   await db.delete(schema.rootCredentials)
   await db.delete(schema.users)
   await db.delete(schema.providerInstances)
@@ -59,6 +61,8 @@ export type TestUser = {
   accessToken: string
   identityId: string
   role: 'user' | 'admin'
+  email?: string | null
+  locale?: string
   // Pre-signed JWT for tests that need synchronous header construction
   // (see adminHeaders). Populated by makeUser/makeAdmin.
   jwt: string
@@ -78,6 +82,8 @@ export async function makeUser(overrides: Partial<TestUser> = {}): Promise<TestU
     externalId: String(Math.floor(Math.random() * 100000)),
     accessToken: 'test-access-token',
     role: 'user' as const,
+    email: overrides.email,
+    locale: overrides.locale,
     ...overrides,
   }
 
@@ -85,6 +91,8 @@ export async function makeUser(overrides: Partial<TestUser> = {}): Promise<TestU
     id: base.id,
     displayName: base.username,
     role: base.role,
+    ...(base.email !== undefined ? { email: base.email } : {}),
+    ...(base.locale !== undefined ? { locale: base.locale } : {}),
   })
   await db.insert(schema.identities).values({
     id: base.identityId,

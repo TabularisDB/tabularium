@@ -64,6 +64,9 @@ export async function connectDB(databaseUrl: string): Promise<void> {
   const { Database } = await import('bun:sqlite')
   const { drizzle } = await import('drizzle-orm/bun-sqlite')
   const sqlite = new Database(sqlitePath(databaseUrl))
+  // SQLite requires per-connection FK enforcement; without this, ON DELETE
+  // CASCADE / SET NULL clauses in schemas are silently no-ops.
+  sqlite.exec('PRAGMA foreign_keys = ON')
   _native = sqlite
   _instance = drizzle({ client: sqlite, relations })
 }

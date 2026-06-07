@@ -47,4 +47,8 @@ export const relations = defineRelations(schema, (r) => ({
   sessions: {
     user: r.one.users({ from: r.sessions.userId, to: r.users.id }),
   },
+  emailPreferences: {
+    user: r.one.users({ from: r.emailPreferences.userId, to: r.users.id }),
+  },
+  emailSuppression: {},
 }))

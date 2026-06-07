@@ -9,6 +9,8 @@ const ts = (name: string) => bigint(name, { mode: 'number' })
 export const users = pgTable('users', {
   id: text('id').primaryKey(),
   displayName: text('display_name').notNull(),
+  email: text('email').unique(),
+  locale: text('locale').notNull().default('en'),
   role: text('role', { enum: ['user', 'admin'] })
     .notNull()
     .default('user'),
@@ -371,4 +373,24 @@ export const emailLog = pgTable(
     byMid: index('email_log_mid_idx').on(t.providerMid),
     byTrigger: index('email_log_trigger_idx').on(t.trigger, t.sentAt),
   }),
+)
+
+export const emailPreferences = pgTable('email_preferences', {
+  userId: text('user_id')
+    .primaryKey()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  prefs: text('prefs').notNull(),
+  tokenNonce: text('token_nonce').notNull(),
+  updatedAt: ts('updated_at').notNull().$defaultFn(now),
+})
+
+export const emailSuppression = pgTable(
+  'email_suppression',
+  {
+    email: text('email').primaryKey(),
+    source: text('source', { enum: ['bounce', 'complaint', 'manual', 'unsubscribe'] }).notNull(),
+    reason: text('reason'),
+    addedAt: ts('added_at').notNull().$defaultFn(now),
+  },
+  (t) => ({ bySource: index('email_suppression_source_idx').on(t.source) }),
 )

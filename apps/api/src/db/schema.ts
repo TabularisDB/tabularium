@@ -6,6 +6,8 @@ const now = () => Date.now()
 export const users = sqliteTable('users', {
   id: text('id').primaryKey(),
   displayName: text('display_name').notNull(),
+  email: text('email').unique(),
+  locale: text('locale').notNull().default('en'),
   role: text('role', { enum: ['user', 'admin'] })
     .notNull()
     .default('user'),
@@ -386,4 +388,24 @@ export const emailLog = sqliteTable(
     byMid: index('email_log_mid_idx').on(t.providerMid),
     byTrigger: index('email_log_trigger_idx').on(t.trigger, t.sentAt),
   }),
+)
+
+export const emailPreferences = sqliteTable('email_preferences', {
+  userId: text('user_id')
+    .primaryKey()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  prefs: text('prefs').notNull(),
+  tokenNonce: text('token_nonce').notNull(),
+  updatedAt: integer('updated_at').notNull().$defaultFn(now),
+})
+
+export const emailSuppression = sqliteTable(
+  'email_suppression',
+  {
+    email: text('email').primaryKey(),
+    source: text('source', { enum: ['bounce', 'complaint', 'manual', 'unsubscribe'] }).notNull(),
+    reason: text('reason'),
+    addedAt: integer('added_at').notNull().$defaultFn(now),
+  },
+  (t) => ({ bySource: index('email_suppression_source_idx').on(t.source) }),
 )

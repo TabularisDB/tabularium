@@ -9,6 +9,8 @@ const id = (name: string) => varchar(name, { length: 64 })
 export const users = mysqlTable('users', {
   id: id('id').primaryKey(),
   displayName: varchar('display_name', { length: 120 }).notNull(),
+  email: varchar('email', { length: 320 }).unique(),
+  locale: varchar('locale', { length: 10 }).notNull().default('en'),
   role: varchar('role', { length: 16, enum: ['user', 'admin'] })
     .notNull()
     .default('user'),
@@ -371,4 +373,24 @@ export const emailLog = mysqlTable(
     byMid: index('email_log_mid_idx').on(t.providerMid),
     byTrigger: index('email_log_trigger_idx').on(t.trigger, t.sentAt),
   }),
+)
+
+export const emailPreferences = mysqlTable('email_preferences', {
+  userId: id('user_id')
+    .primaryKey()
+    .references(() => users.id, { onDelete: 'cascade' }),
+  prefs: text('prefs').notNull(),
+  tokenNonce: varchar('token_nonce', { length: 64 }).notNull(),
+  updatedAt: ts('updated_at').notNull().$defaultFn(now),
+})
+
+export const emailSuppression = mysqlTable(
+  'email_suppression',
+  {
+    email: varchar('email', { length: 320 }).primaryKey(),
+    source: varchar('source', { length: 16, enum: ['bounce', 'complaint', 'manual', 'unsubscribe'] }).notNull(),
+    reason: text('reason'),
+    addedAt: ts('added_at').notNull().$defaultFn(now),
+  },
+  (t) => ({ bySource: index('email_suppression_source_idx').on(t.source) }),
 )
