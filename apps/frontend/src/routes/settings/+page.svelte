@@ -8,6 +8,8 @@
 	import Check from '@lucide/svelte/icons/check'
 	import X from '@lucide/svelte/icons/x'
 	import UserRoundCog from '@lucide/svelte/icons/user-round-cog'
+	import Mail from '@lucide/svelte/icons/mail'
+	import ChevronRight from '@lucide/svelte/icons/chevron-right'
 	import Button from '$components/ui/Button.svelte'
 	import Card from '$components/ui/Card.svelte'
 	import CardContent from '$components/ui/CardContent.svelte'
@@ -197,6 +199,25 @@
 						{m.settings_sign_out()}
 					</Button>
 				</div>
+			</CardContent>
+		</Card>
+
+		<Card>
+			<CardHeader>
+				<CardTitle class="text-base flex items-center gap-2">
+					<Mail class="h-4 w-4" />
+					Email & notifications
+				</CardTitle>
+				<CardDescription>Your address, locale, and notification preferences.</CardDescription>
+			</CardHeader>
+			<CardContent>
+				<a
+					href="/settings/email"
+					class="flex items-center justify-between gap-3 rounded-md border border-border bg-card/50 px-4 py-3 hover:bg-accent hover:text-accent-foreground transition-colors"
+				>
+					<span class="text-sm font-medium">Manage email & preferences</span>
+					<ChevronRight class="h-4 w-4 text-muted-foreground" />
+				</a>
 			</CardContent>
 		</Card>
 
