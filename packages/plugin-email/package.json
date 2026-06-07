@@ -45,6 +45,7 @@
     "@types/mjml": "^5.0.0"
   },
   "dependencies": {
+    "@tabularium/core-schema": "workspace:*",
     "croner": "^10.0.1",
     "drizzle-orm": "^1.0.0-rc.2",
     "elysia": "^1.4.28",

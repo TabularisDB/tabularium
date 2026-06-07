@@ -1,7 +1,7 @@
 // MySQL mirror of schema.ts — see that file for the table-prefix rationale.
 import { mysqlTable, text, varchar, bigint, index } from 'drizzle-orm/mysql-core'
 import { pluginTablePrefix } from '@tabularium/plugin-host-types'
-import { users } from '../../../../apps/api/src/db/schema.mysql'
+import { users } from '@tabularium/core-schema/mysql'
 
 const PREFIX = pluginTablePrefix('email')
 // `pl_email__`

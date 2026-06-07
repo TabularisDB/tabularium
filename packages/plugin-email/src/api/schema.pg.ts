@@ -1,7 +1,7 @@
 // Postgres mirror of schema.ts — see that file for the table-prefix rationale.
 import { pgTable, text, bigint, index } from 'drizzle-orm/pg-core'
 import { pluginTablePrefix } from '@tabularium/plugin-host-types'
-import { users } from '../../../../apps/api/src/db/schema.pg'
+import { users } from '@tabularium/core-schema/pg'
 
 const PREFIX = pluginTablePrefix('email')
 // `pl_email__`

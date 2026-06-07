@@ -1,5 +1,9 @@
 // Email plugin tables — kernel-enforced prefix `pl_email__`.
 //
+// Plugins are TS modules running under Bun + Elysia + Drizzle. Core tables
+// the plugin FKs against come from `@tabularium/core-schema` — that's the
+// contract. No relative paths back into apps/api anywhere in this package.
+//
 // The TS export names (`emailLog`, `emailPreferences`, `emailSuppression`)
 // stay identical to the historic core-schema names so call sites don't
 // change. Only the DB table + index names get the prefix.
@@ -7,14 +11,10 @@
 // Format: `pl_<plugin_id_normalized>__<table>` — computed via the kernel
 // helper so the plugin author can't pick the prefix (and so two plugins
 // cannot ever share one — duplicate ids are rejected by the loader).
-//
-// FK target `users` is read from the core schema. This is the only remaining
-// reach-back into apps/api: the email plugin doesn't *own* the users table,
-// it just references it. The schema-package extraction is a future SP cleanup.
 
 import { sqliteTable, text, integer, index } from 'drizzle-orm/sqlite-core'
 import { pluginTablePrefix } from '@tabularium/plugin-host-types'
-import { users } from '../../../../apps/api/src/db/schema'
+import { users } from '@tabularium/core-schema'
 
 // Re-export the FK target so plugin call sites can read users via the
 // plugin's `schema` namespace without reaching into the core schema path.

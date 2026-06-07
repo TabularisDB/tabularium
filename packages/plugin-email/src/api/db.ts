@@ -1,25 +1,41 @@
-// Typed db handle + schema re-export for plugin-email modules.
+// Typed Drizzle handle for plugin-email modules.
 //
-// `host().db` is `unknown` in the host types (kept Elysia/Drizzle-free). The
-// plugin still wants typed access to the same Drizzle instance, so we cast
-// through a single helper that pulls the live DB type from core.
+// Plugins under Tabularium run on Bun + Elysia + Drizzle. `host.db` is the
+// shared Drizzle instance the host hands to plugins; we re-type it locally
+// using the merged schema (core tables + this plugin's tables) plus the
+// relations the plugin actually queries, so call sites get autocompletion
+// without reaching back into apps/api.
 //
-// ─────────────────────────────────────────────────────────────────────────────
-// KNOWN ACCEPTABLE COUPLING
-//
-// The `../../../../apps/api/src/db` reach-back below is the only remaining
-// place plugin-email imports from core, and it's purely a type import — at
-// runtime nothing crosses the boundary. The schemas themselves now live in
-// this package (./schema*.ts) with the kernel-enforced `pl_email__` prefix,
-// re-exported by core's schema entrypoint so drizzle-kit still sees them.
-// ─────────────────────────────────────────────────────────────────────────────
+// This contract is the whole point of @tabularium/core-schema: plugins FK
+// against core tables they import from there, and never from a relative
+// `../../apps/api/...` path.
 
-import type { DB } from '../../../../apps/api/src/db'
+import type { SQLiteBunDatabase } from 'drizzle-orm/bun-sqlite'
+import { defineRelations } from 'drizzle-orm'
 import { host } from './host-handles'
+import * as pluginSchema from './schema'
+import * as coreSchema from '@tabularium/core-schema'
+
+const mergedSchema = { ...coreSchema, ...pluginSchema }
+
+// Local relations covering only the tables this plugin queries through the
+// relational API (`db().query.x.findFirst(...)`). The host's runtime DB
+// instance was built with the api app's full relations set; this is just a
+// structurally-compatible view onto it for type-checking purposes.
+const relations = defineRelations(mergedSchema, (r) => ({
+  users: {},
+  rootCredentials: {},
+  emailPreferences: {
+    user: r.one.users({ from: r.emailPreferences.userId, to: r.users.id }),
+  },
+  emailSuppression: {},
+}))
+
+export type DB = SQLiteBunDatabase<typeof mergedSchema, typeof relations>
 
 export function db(): DB {
   return host().db as DB
 }
 
-export type { DB }
+export type { DB as PluginDB }
 export * as schema from './schema'
