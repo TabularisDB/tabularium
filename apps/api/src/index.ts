@@ -19,6 +19,8 @@ export async function createApp() {
   // elysia-fsr resolves `dir` relative to `dirname(Bun.main)` (this file),
   // not the process cwd. So `./routes` here = `apps/api/src/routes`.
   const router = await fsr({ dir: './routes', types: false })
+  const { listRoutes } = await import('$lib/plugin-host')
+  const pluginRoutes = listRoutes()
   const base = new Elysia({ systemRouter: false })
     .use(loggerMiddleware)
     .use(
@@ -87,6 +89,12 @@ export async function createApp() {
       }
     })
     .use(router)
+
+  // Mount plugin-contributed Elysia subapps (collected during initPlugins()).
+  for (const app of pluginRoutes) {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    base.use(app as any)
+  }
 
   const { generateNonce, cspHeader, injectNonce } = await import('$lib/csp')
 
@@ -192,9 +200,13 @@ async function bootNormalMode() {
   const { ensureSigningKey } = await import('$lib/registry-key')
   await ensureSigningKey()
 
-  // Email suppression sync is started by the plugin-email plugin's
-  // register(host); see Task 14 of the plugin-kernel plan for the boot
-  // wiring that initializes plugins.
+  // Load enabled plugins (reads `infra.plugins.enabled` from settings;
+  // defaults to ['email','turbosmtp']). Plugin register() calls subscribe
+  // to events, register providers, and mount their Elysia subapps; those
+  // subapps get applied in createApp() via listRoutes().
+  const { initPlugins } = await import('$lib/plugin-host')
+  await initPlugins()
+
   const { setServerMode } = await import('$lib/server-mode')
   setServerMode('normal')
 
