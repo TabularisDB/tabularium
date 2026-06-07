@@ -1,5 +1,5 @@
 import { Elysia, t } from 'elysia'
-import { listContributions } from '$lib/plugin-host'
+import { CORE_REQUIRED_PLUGINS, listContributions, listRequiredPlugins } from '$lib/plugin-host'
 
 const navEntrySchema = t.Object({
   id: t.String(),
@@ -24,17 +24,27 @@ const responseSchema = t.Object({
     'user-page-route': t.Array(pageRouteSchema),
     'public-page-route': t.Array(pageRouteSchema),
   }),
+  required: t.Object({
+    all: t.Array(t.String()),
+    core: t.Array(t.String()),
+  }),
 })
 
 export default new Elysia().get(
   '/',
   () => {
-    return { points: listContributions() as unknown as never }
+    return {
+      points: listContributions() as unknown as never,
+      required: {
+        all: listRequiredPlugins(),
+        core: [...CORE_REQUIRED_PLUGINS],
+      },
+    }
   },
   {
     detail: {
       tags: ['Plugins'],
-      summary: 'List plugin contribution metadata used by the frontend',
+      summary: 'List plugin contribution metadata + required plugin ids',
       operationId: 'getPluginContributions',
     },
     response: { 200: responseSchema },

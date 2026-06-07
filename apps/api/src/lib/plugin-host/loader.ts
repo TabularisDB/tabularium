@@ -5,12 +5,14 @@ import { resolvePluginLoader } from './resolver'
 import { buildHost } from './host'
 import { recordContributions } from './contributions'
 import { registry } from './registry'
+import { CORE_REQUIRED_PLUGINS, REQUIRED_SETTING_KEY } from './required'
 
 const log = logger.child({ module: 'plugin-loader' })
 
 const loaded = new Set<string>()
 const inProgress = new Set<string>()
 const seededBy = new Map<string, string>()
+const requiredSet = new Set<string>()
 const ENABLED_SETTING_KEY = 'infra.plugins.enabled'
 const DEFAULT_ENABLED: string[] = ['email', 'turbosmtp']
 
@@ -25,11 +27,17 @@ export function __clearLoadedForTests(): void {
   loaded.clear()
   inProgress.clear()
   seededBy.clear()
+  requiredSet.clear()
 }
 
 /** Test-only readback of which plugins got auto-seeded by which requires. */
 export function __seededByForTests(): ReadonlyMap<string, string> {
   return seededBy
+}
+
+/** Plugin ids marked required (CORE_REQUIRED_PLUGINS + infra.plugins.required). */
+export function listRequiredPlugins(): string[] {
+  return [...requiredSet].sort()
 }
 
 /**
@@ -74,6 +82,19 @@ function getEnabledList(): string[] {
   }
   log.warn({ raw }, 'infra.plugins.enabled is not a JSON string[]; using defaults')
   return DEFAULT_ENABLED
+}
+
+function getOperatorRequiredList(): string[] {
+  const raw = getSetting(REQUIRED_SETTING_KEY)
+  if (!raw) return []
+  try {
+    const parsed = JSON.parse(raw) as unknown
+    if (Array.isArray(parsed) && parsed.every((x) => typeof x === 'string')) return parsed
+  } catch {
+    // fall through
+  }
+  log.warn({ raw, key: REQUIRED_SETTING_KEY }, 'infra.plugins.required is not a JSON string[]; ignoring')
+  return []
 }
 
 async function resolveModule(id: string): Promise<PluginModule | null> {
@@ -153,20 +174,57 @@ async function ensureLoaded(id: string, requestedBy?: string): Promise<void> {
 
 export async function initPlugins(): Promise<void> {
   defineBuiltInPoints()
+  requiredSet.clear()
+  for (const id of CORE_REQUIRED_PLUGINS) requiredSet.add(id)
+  for (const id of getOperatorRequiredList()) requiredSet.add(id)
+
   const enabled = getEnabledList()
-  log.info({ enabled }, 'loading plugins')
-  for (const id of enabled) {
+  const enabledSet = new Set(enabled)
+  // Required plugins load first (their requires auto-seed naturally), then
+  // explicitly enabled plugins in their declared order. Dedup preserves the
+  // first occurrence — required wins.
+  const toLoad = [
+    ...requiredSet,
+    ...enabled.filter((id) => !requiredSet.has(id)),
+  ]
+
+  log.info(
+    {
+      required: [...requiredSet],
+      enabled,
+      toLoad,
+    },
+    'loading plugins',
+  )
+
+  for (const id of toLoad) {
     try {
-      if (loaded.has(id)) {
-        // Already loaded transitively as a require of an earlier id — this is
-        // not a duplicate request, just an explicit confirmation.
-        continue
-      }
+      if (loaded.has(id)) continue
       await ensureLoaded(id)
     } catch (err) {
       log.error({ err, id }, 'plugin failed to load — instance continues without it')
     }
   }
+
+  // Surface a clear warning if a required plugin failed to load — operators
+  // need to see this loudly.
+  for (const id of requiredSet) {
+    if (!loaded.has(id)) {
+      log.error(
+        { id, source: CORE_REQUIRED_PLUGINS.includes(id) ? 'core' : 'operator' },
+        'required plugin failed to load — instance is degraded',
+      )
+    }
+  }
+
+  // Quietly note when an admin removed a required plugin from the enabled list
+  // — the kernel loaded it anyway, but the enabled list lies.
+  for (const id of requiredSet) {
+    if (!enabledSet.has(id) && loaded.has(id)) {
+      log.info({ id }, 'required plugin auto-included (not in infra.plugins.enabled)')
+    }
+  }
+
   if (seededBy.size > 0) {
     log.info(
       { seeded: Object.fromEntries(seededBy) },

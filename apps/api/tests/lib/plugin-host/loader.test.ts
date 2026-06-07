@@ -5,16 +5,19 @@ import {
   __clearContributions,
   initPlugins,
   listContributions,
+  listRequiredPlugins,
   registry,
 } from '../../../src/lib/plugin-host'
 import { Registry } from '../../../src/lib/plugin-host/registry'
 import { initSettings, setSetting, deleteSetting } from '../../../src/lib/settings'
 
 const ENABLED_KEY = 'infra.plugins.enabled'
+const REQUIRED_KEY = 'infra.plugins.required'
 
 beforeEach(async () => {
   await initSettings()
   await deleteSetting(ENABLED_KEY)
+  await deleteSetting(REQUIRED_KEY)
   __clearLoadedForTests()
   __clearContributions()
   ;(registry as unknown as Registry).__clear()
@@ -310,4 +313,105 @@ test('malformed infra.plugins.enabled → defaults are attempted gracefully', as
   // empty contributions; updated when the skeleton packages came online.)
   const adminNav = listContributions()['admin-nav-entry']
   expect(adminNav.some((c) => (c as { pluginId: string }).pluginId === 'email')).toBe(true)
+})
+
+test('infra.plugins.required loads operator-required plugins even when not enabled', async () => {
+  const registerOrder: string[] = []
+  __setLoaderForTests(async (id) => {
+    if (id === 'email') {
+      return {
+        meta: { id: 'email', version: '1.0.0' },
+        register: async () => {
+          registerOrder.push('email')
+        },
+      }
+    }
+    if (id === 'other') {
+      return {
+        meta: { id: 'other', version: '1.0.0' },
+        register: async () => {
+          registerOrder.push('other')
+        },
+      }
+    }
+    throw new Error(`unknown ${id}`)
+  })
+
+  // 'email' isn't in enabled, but operator requires it.
+  await setSetting(ENABLED_KEY, JSON.stringify(['other']))
+  await setSetting(REQUIRED_KEY, JSON.stringify(['email']))
+  await initPlugins()
+
+  expect(registerOrder).toContain('email')
+  expect(registerOrder).toContain('other')
+  // Required plugins load BEFORE explicitly-enabled plugins.
+  expect(registerOrder[0]).toBe('email')
+  expect(listRequiredPlugins()).toContain('email')
+})
+
+test('infra.plugins.required composes with requires (auto-seed still works)', async () => {
+  const registerOrder: string[] = []
+  __setLoaderForTests(async (id) => {
+    if (id === 'email') {
+      return {
+        meta: { id: 'email', version: '1.0.0' },
+        register: async () => {
+          registerOrder.push('email')
+        },
+      }
+    }
+    if (id === 'turbosmtp') {
+      return {
+        meta: { id: 'turbosmtp', version: '1.0.0', requires: ['email'] },
+        register: async () => {
+          registerOrder.push('turbosmtp')
+        },
+      }
+    }
+    throw new Error(`unknown ${id}`)
+  })
+
+  // turbosmtp marked required; its own requires (email) should auto-seed.
+  await setSetting(ENABLED_KEY, JSON.stringify([]))
+  await setSetting(REQUIRED_KEY, JSON.stringify(['turbosmtp']))
+  await initPlugins()
+
+  expect(registerOrder).toEqual(['email', 'turbosmtp'])
+})
+
+test('malformed infra.plugins.required is ignored without crashing init', async () => {
+  __setLoaderForTests(async (id) => {
+    if (id === 'email') {
+      return {
+        meta: { id: 'email', version: '1.0.0' },
+        register: async () => {},
+      }
+    }
+    throw new Error(`unknown ${id}`)
+  })
+  await setSetting(ENABLED_KEY, JSON.stringify(['email']))
+  await setSetting(REQUIRED_KEY, 'not-json[')
+  await initPlugins()
+  // Still loaded normally — the malformed required setting is ignored.
+  expect(listRequiredPlugins()).toEqual([])
+})
+
+test('required plugin already in enabled list does not double-register', async () => {
+  let registrations = 0
+  __setLoaderForTests(async (id) => {
+    if (id === 'email') {
+      return {
+        meta: { id: 'email', version: '1.0.0' },
+        register: async () => {
+          registrations += 1
+        },
+      }
+    }
+    throw new Error(`unknown ${id}`)
+  })
+  await setSetting(ENABLED_KEY, JSON.stringify(['email']))
+  await setSetting(REQUIRED_KEY, JSON.stringify(['email']))
+  await initPlugins()
+
+  expect(registrations).toBe(1)
 })
