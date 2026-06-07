@@ -1,46 +1,36 @@
 import { Cron } from 'croner'
-import { TurboSmtp, type Region } from 'turbosmtp'
 import { db, schema } from './db'
 import { host } from './host-handles'
 import { log } from './logger'
+import type { SuppressionSource, SuppressionRow } from './types'
 
 let job: Cron | null = null
 
-export type SuppressionRow = { email: string; source: string; reason?: string | null }
-export type SuppressionDriver = {
-  list(fromDate: string, toDate: string): Promise<Array<SuppressionRow>>
-}
+// Legacy type alias — pre-cleanup the croner spoke to its own driver
+// interface. Tests still import this name from plugin-email, so keep it as
+// a structural alias of `SuppressionSource` (list-only).
+export type SuppressionDriver = Pick<SuppressionSource, 'list'>
 
 let driverOverride: SuppressionDriver | null = null
 export function __setSyncDriverForTests(d: SuppressionDriver | null): void {
   driverOverride = d
 }
 
-function getTurboRegion(): Region {
-  const r = host().settings.get('email.turbo.region')
-  return r === 'eu' ? 'eu' : 'global'
-}
+export type { SuppressionRow }
 
-function defaultDriver(): SuppressionDriver | null {
-  const apiKey = host().settings.get('email.turbo.api_key')
-  if (!apiKey) return null
-  const client = new TurboSmtp({ apiKey, region: getTurboRegion() })
-  return {
-    async list(fromDate, toDate) {
-      const page = await client.suppressions.list({ from: fromDate, to: toDate, limit: 500 })
-      const out: Array<SuppressionRow> = []
-      // turbosmtp-ts returns a Page<T> exposing .results; tail of the list will
-      // be caught on the next 15-minute tick if it exceeds limit=500.
-      const rows =
-        (page as { results?: Array<{ recipient?: string | null; source?: string | null; reason?: string | null }> })
-          .results ?? []
-      for (const r of rows) {
-        if (!r.recipient) continue
-        out.push({ email: r.recipient.toLowerCase(), source: r.source ?? 'bounce', reason: r.reason ?? null })
-      }
-      return out
-    },
+/**
+ * Iterate over every registered `email-suppression-source` and pull rows from
+ * the ones that are active. Returns the aggregated SuppressionRow list.
+ */
+async function pullFromSources(fromDate: string, toDate: string): Promise<Array<SuppressionRow>> {
+  const sources = host().registry.resolveAll<SuppressionSource>('email-suppression-source')
+  const out: Array<SuppressionRow> = []
+  for (const { impl } of sources) {
+    if (!impl.isActive()) continue
+    const rows = await impl.list(fromDate, toDate)
+    out.push(...rows)
   }
+  return out
 }
 
 function mapSource(upstream: string): 'bounce' | 'complaint' | 'manual' | 'unsubscribe' {
@@ -68,11 +58,15 @@ function ymd(d: Date): string {
 }
 
 export async function syncOnce(): Promise<{ added: number; checked: number }> {
-  const d = driverOverride ?? defaultDriver()
-  if (!d) return { added: 0, checked: 0 }
   const today = new Date()
   const start = new Date(today.getTime() - 90 * 24 * 60 * 60 * 1000)
-  const rows = await d.list(ymd(start), ymd(today))
+  const fromDate = ymd(start)
+  const toDate = ymd(today)
+
+  const rows: Array<SuppressionRow> = driverOverride
+    ? await driverOverride.list(fromDate, toDate)
+    : await pullFromSources(fromDate, toDate)
+  if (rows.length === 0) return { added: 0, checked: 0 }
   let added = 0
   for (const r of rows) {
     const email = r.email.toLowerCase()
