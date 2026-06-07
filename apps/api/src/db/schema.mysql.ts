@@ -351,46 +351,7 @@ export const downloadEvents = mysqlTable(
   }),
 )
 
-export const emailLog = mysqlTable(
-  'email_log',
-  {
-    id: id('id').primaryKey(),
-    userId: id('user_id').references(() => users.id, { onDelete: 'set null' }),
-    trigger: varchar('trigger', { length: 80 }).notNull(),
-    template: varchar('template', { length: 80 }).notNull(),
-    locale: varchar('locale', { length: 16 }).notNull(),
-    toAddress: varchar('to_address', { length: 320 }).notNull(),
-    fromAddress: varchar('from_address', { length: 320 }).notNull(),
-    subject: varchar('subject', { length: 500 }).notNull(),
-    provider: varchar('provider', { length: 40 }).notNull(),
-    providerMid: varchar('provider_mid', { length: 255 }),
-    status: varchar('status', { length: 40 }).notNull(),
-    error: text('error'),
-    sentAt: ts('sent_at').notNull().$defaultFn(now),
-  },
-  (t) => ({
-    byUserSent: index('email_log_user_sent_idx').on(t.userId, t.sentAt),
-    byMid: index('email_log_mid_idx').on(t.providerMid),
-    byTrigger: index('email_log_trigger_idx').on(t.trigger, t.sentAt),
-  }),
-)
-
-export const emailPreferences = mysqlTable('email_preferences', {
-  userId: id('user_id')
-    .primaryKey()
-    .references(() => users.id, { onDelete: 'cascade' }),
-  prefs: text('prefs').notNull(),
-  tokenNonce: varchar('token_nonce', { length: 64 }).notNull(),
-  updatedAt: ts('updated_at').notNull().$defaultFn(now),
-})
-
-export const emailSuppression = mysqlTable(
-  'email_suppression',
-  {
-    email: varchar('email', { length: 320 }).primaryKey(),
-    source: varchar('source', { length: 16, enum: ['bounce', 'complaint', 'manual', 'unsubscribe'] }).notNull(),
-    reason: text('reason'),
-    addedAt: ts('added_at').notNull().$defaultFn(now),
-  },
-  (t) => ({ bySource: index('email_suppression_source_idx').on(t.source) }),
-)
+// Email tables are owned by the email plugin (kernel-enforced prefix
+// `pl_email__`). Re-exported here so drizzle-kit's migration generator picks
+// them up via the dialect-specific schema entrypoint.
+export { emailLog, emailPreferences, emailSuppression } from '@tabularium/plugin-email/schema.mysql'

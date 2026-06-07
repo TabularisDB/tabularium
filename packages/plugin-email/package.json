@@ -16,6 +16,18 @@
       "types": "./src/api/types.ts",
       "default": "./src/api/types.ts"
     },
+    "./schema": {
+      "types": "./src/api/schema.ts",
+      "default": "./src/api/schema.ts"
+    },
+    "./schema.pg": {
+      "types": "./src/api/schema.pg.ts",
+      "default": "./src/api/schema.pg.ts"
+    },
+    "./schema.mysql": {
+      "types": "./src/api/schema.mysql.ts",
+      "default": "./src/api/schema.mysql.ts"
+    },
     "./frontend/*.svelte": "./src/frontend/*.svelte",
     "./frontend/*": {
       "types": "./src/frontend/*.ts",

@@ -5,15 +5,13 @@
 // through a single helper that pulls the live DB type from core.
 //
 // ─────────────────────────────────────────────────────────────────────────────
-// KNOWN ACCEPTABLE COUPLING (SP1)
+// KNOWN ACCEPTABLE COUPLING
 //
-// The two `../../../../apps/api/src/db*` reach-backs below are the only
-// remaining places plugin-email imports from core. drizzle-kit needs every
-// table definition under apps/api/src/db/schema for the migration generator
-// to see the email_log / email_preferences / email_suppression tables when
-// reading the core schema entry point. Moving the schemas into a per-plugin
-// package is the SP6 cleanup ("Move email schemas into plugin-email"); until
-// then this re-export is the documented seam.
+// The `../../../../apps/api/src/db` reach-back below is the only remaining
+// place plugin-email imports from core, and it's purely a type import — at
+// runtime nothing crosses the boundary. The schemas themselves now live in
+// this package (./schema*.ts) with the kernel-enforced `pl_email__` prefix,
+// re-exported by core's schema entrypoint so drizzle-kit still sees them.
 // ─────────────────────────────────────────────────────────────────────────────
 
 import type { DB } from '../../../../apps/api/src/db'
@@ -24,4 +22,4 @@ export function db(): DB {
 }
 
 export type { DB }
-export * as schema from '../../../../apps/api/src/db/schema'
+export * as schema from './schema'

@@ -351,46 +351,7 @@ export const downloadEvents = pgTable(
   }),
 )
 
-export const emailLog = pgTable(
-  'email_log',
-  {
-    id: text('id').primaryKey(),
-    userId: text('user_id').references(() => users.id, { onDelete: 'set null' }),
-    trigger: text('trigger').notNull(),
-    template: text('template').notNull(),
-    locale: text('locale').notNull(),
-    toAddress: text('to_address').notNull(),
-    fromAddress: text('from_address').notNull(),
-    subject: text('subject').notNull(),
-    provider: text('provider').notNull(),
-    providerMid: text('provider_mid'),
-    status: text('status').notNull(),
-    error: text('error'),
-    sentAt: ts('sent_at').notNull().$defaultFn(now),
-  },
-  (t) => ({
-    byUserSent: index('email_log_user_sent_idx').on(t.userId, t.sentAt),
-    byMid: index('email_log_mid_idx').on(t.providerMid),
-    byTrigger: index('email_log_trigger_idx').on(t.trigger, t.sentAt),
-  }),
-)
-
-export const emailPreferences = pgTable('email_preferences', {
-  userId: text('user_id')
-    .primaryKey()
-    .references(() => users.id, { onDelete: 'cascade' }),
-  prefs: text('prefs').notNull(),
-  tokenNonce: text('token_nonce').notNull(),
-  updatedAt: ts('updated_at').notNull().$defaultFn(now),
-})
-
-export const emailSuppression = pgTable(
-  'email_suppression',
-  {
-    email: text('email').primaryKey(),
-    source: text('source', { enum: ['bounce', 'complaint', 'manual', 'unsubscribe'] }).notNull(),
-    reason: text('reason'),
-    addedAt: ts('added_at').notNull().$defaultFn(now),
-  },
-  (t) => ({ bySource: index('email_suppression_source_idx').on(t.source) }),
-)
+// Email tables are owned by the email plugin (kernel-enforced prefix
+// `pl_email__`). Re-exported here so drizzle-kit's migration generator picks
+// them up via the dialect-specific schema entrypoint.
+export { emailLog, emailPreferences, emailSuppression } from '@tabularium/plugin-email/schema.pg'
