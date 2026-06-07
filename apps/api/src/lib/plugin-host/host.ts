@@ -5,6 +5,11 @@ import { cache } from '$lib/cache'
 import { storage } from '$lib/storage'
 import { logger } from '$lib/logger'
 import { getSetting, hasSetting, setSetting, deleteSetting } from '$lib/settings'
+import { recordAudit, actorFromAdmin } from '$lib/audit'
+import { env } from '$lib/env'
+import { encryptToken, decryptToken } from '$lib/crypto'
+import { adminMiddleware } from '$middleware/admin'
+import { authMiddleware } from '$middleware/auth'
 import { registry } from './registry'
 import { bus } from './events'
 import { recordRoutes } from './route-collector'
@@ -41,6 +46,37 @@ export function buildHost(id: string): PluginHost {
       has: (key) => hasSetting(key),
       set: (key, value, opts) => setSetting(key, value, opts),
       delete: (key) => deleteSetting(key),
+    },
+    audit: {
+      record: (args) =>
+        recordAudit({
+          actorId: args.actorId,
+          actorName: args.actorName,
+          action: args.action,
+          target: args.target ?? null,
+          meta: args.meta ?? null,
+          ip: args.ip ?? null,
+        }),
+      actorFromAdmin: (admin, request) => {
+        const a = actorFromAdmin({ id: admin.id, displayName: admin.displayName ?? '' }, request)
+        return {
+          actorId: a.actorId ?? null,
+          actorName: a.actorName ?? null,
+          ip: a.ip ?? null,
+        }
+      },
+    },
+    env: {
+      BASE_URL: env.BASE_URL,
+      WEB_BASE_URL: env.WEB_BASE_URL ?? null,
+    },
+    middleware: {
+      admin: adminMiddleware,
+      auth: authMiddleware,
+    },
+    crypto: {
+      encryptToken,
+      decryptToken,
     },
     mountRoutes: (app) => recordRoutes(app),
   }

@@ -129,6 +129,58 @@ export interface HostSettings {
   delete(key: string): Promise<void>
 }
 
+/**
+ * Audit-trail surface.
+ *
+ * The core owns the audit table; plugins shouldn't reach into `$db/schema`
+ * to write rows. `record()` mirrors `apps/api/src/lib/audit.recordAudit`;
+ * `actorFromAdmin()` mirrors the same module's helper for extracting actor
+ * metadata from an admin request.
+ */
+export interface HostAudit {
+  record(args: {
+    actorId: string | null
+    actorName: string | null
+    action: string
+    target?: string | null
+    meta?: Record<string, unknown> | null
+    ip?: string | null
+  }): Promise<void>
+  actorFromAdmin(
+    admin: { id: string; displayName: string | null },
+    request: Request,
+  ): { actorId: string | null; actorName: string | null; ip: string | null }
+}
+
+/**
+ * Environment surface — narrow subset of `apps/api/src/lib/env` that plugins
+ * are allowed to read. Anything more specialised should go through settings.
+ */
+export interface HostEnv {
+  BASE_URL: string
+  WEB_BASE_URL: string | null
+}
+
+/**
+ * Middleware seam — gives plugins core Elysia middleware without reaching
+ * into `$middleware`. Typed as `unknown` so this package stays Elysia-free.
+ * Plugin usage: `.use(host.middleware.admin as Elysia)`.
+ */
+export interface HostMiddleware {
+  admin: unknown
+  auth: unknown
+}
+
+/**
+ * At-rest crypto surface mirroring `apps/api/src/lib/crypto`. Used by plugins
+ * that need to encrypt/decrypt secrets outside of the kernel-owned settings
+ * store (e.g. an OAuth refresh token kept in another DB table).
+ */
+export interface HostCrypto {
+  encryptToken(plaintext: string): string
+  decryptToken(ciphertext: string): string
+}
+
 export interface PluginHost {
   /** The plugin's own id — set by the kernel before calling `register`. */
   id: string
@@ -143,6 +195,10 @@ export interface PluginHost {
   registry: HostRegistry
   events: HostEvents
   settings: HostSettings
+  audit: HostAudit
+  env: HostEnv
+  middleware: HostMiddleware
+  crypto: HostCrypto
   /**
    * Mount an Elysia subapp from the plugin onto the core router.
    *
