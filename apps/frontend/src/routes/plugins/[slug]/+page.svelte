@@ -663,6 +663,41 @@
 					{/if}
 				</section>
 
+				<!-- REQUIRES -->
+				{#if plugin.requires && plugin.requires.length > 0}
+					<section class="space-y-4">
+						<div>
+							<h2 class="text-2xl font-semibold tracking-tight">{m.plugin_detail_requires()}</h2>
+							<p class="text-xs text-muted-foreground mt-1">{m.plugin_detail_requires_subtitle()}</p>
+						</div>
+						<ul class="space-y-2">
+							{#each plugin.requires as req (req.id)}
+								<li
+									class="flex items-center justify-between gap-3 rounded-lg border border-border bg-card px-4 py-3"
+								>
+									<div class="min-w-0 space-y-0.5">
+										<div class="flex items-center gap-2 flex-wrap">
+											<a href={`/plugins/${req.id}`} class="font-mono text-sm hover:underline">{req.id}</a>
+											{#if req.version}
+												<span class="font-mono text-[11px] text-muted-foreground">· {req.version}</span>
+											{/if}
+											{#if req.optional}
+												<span
+													class="inline-flex items-center rounded-full bg-foreground/5 px-2 py-0.5 text-[10px] uppercase tracking-wide text-muted-foreground"
+													>{m.plugin_detail_requires_optional()}</span
+												>
+											{/if}
+										</div>
+										{#if req.reason}
+											<p class="text-xs text-muted-foreground">{req.reason}</p>
+										{/if}
+									</div>
+								</li>
+							{/each}
+						</ul>
+					</section>
+				{/if}
+
 				<!-- SCREENSHOTS -->
 				{#if plugin.screenshots.length > 0}
 					<section class="space-y-4">
