@@ -90,9 +90,7 @@
 {#if data.invalid}
 	<div class="mx-auto max-w-md py-16 text-center space-y-4">
 		<h1 class="text-2xl font-semibold tracking-tight">This link has expired</h1>
-		<p class="text-sm text-muted-foreground">
-			Sign in to your account to update your email preferences.
-		</p>
+		<p class="text-sm text-muted-foreground">Sign in to your account to update your email preferences.</p>
 		<div class="pt-2">
 			<Button href="/login?returnTo=/settings/email">Sign in to manage preferences</Button>
 		</div>
@@ -167,9 +165,7 @@
 			<Button onclick={save} disabled={busy}>
 				{busy ? 'Saving…' : 'Save preferences'}
 			</Button>
-			<Button variant="outline" onclick={unsubscribeAll} disabled={busy}>
-				Unsubscribe from all opt-in mail
-			</Button>
+			<Button variant="outline" onclick={unsubscribeAll} disabled={busy}>Unsubscribe from all opt-in mail</Button>
 		</div>
 	</div>
 {/if}

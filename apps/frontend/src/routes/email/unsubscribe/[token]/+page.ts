@@ -12,10 +12,7 @@ export type PreferenceData = {
 
 export type InvalidData = { invalid: true }
 
-export const load = async ({
-	fetch,
-	params,
-}): Promise<PreferenceData | InvalidData> => {
+export const load = async ({ fetch, params }): Promise<PreferenceData | InvalidData> => {
 	const res = await fetch(`/email/preferences/${params.token}`)
 	if (res.status === 401) return { invalid: true }
 	if (!res.ok) throw error(res.status, await res.text())

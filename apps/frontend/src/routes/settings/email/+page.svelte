@@ -123,10 +123,7 @@
 	</header>
 
 	{#if !data.profile.email}
-		<div
-			class="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900"
-			role="status"
-		>
+		<div class="rounded-md border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-900" role="status">
 			Your account has no email address. Add one to receive notifications.
 		</div>
 	{/if}
@@ -179,12 +176,7 @@
 						<p class="text-xs text-muted-foreground">{cat.description}</p>
 					</div>
 					{#if cat.optIn}
-						<Select
-							id={`cat-${cat.key}`}
-							bind:value={prefs[cat.key]}
-							disabled={busy}
-							class="h-9 w-auto min-w-[10rem]"
-						>
+						<Select id={`cat-${cat.key}`} bind:value={prefs[cat.key]} disabled={busy} class="h-9 w-auto min-w-[10rem]">
 							<option value="instant">Instant</option>
 							<option value="daily">Daily digest</option>
 							<option value="weekly">Weekly digest</option>
@@ -197,9 +189,7 @@
 			{/each}
 			<div class="flex flex-wrap items-center gap-3 pt-2">
 				<Button onclick={savePrefs} disabled={busy}>Save preferences</Button>
-				<Button variant="outline" onclick={unsubscribeAll} disabled={busy}>
-					Unsubscribe from everything
-				</Button>
+				<Button variant="outline" onclick={unsubscribeAll} disabled={busy}>Unsubscribe from everything</Button>
 			</div>
 		</CardContent>
 	</Card>

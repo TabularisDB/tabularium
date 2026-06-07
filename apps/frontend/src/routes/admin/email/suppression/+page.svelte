@@ -225,12 +225,7 @@
 				<Button variant="outline" size="sm" disabled={data.page <= 1} onclick={() => goPage(data.page - 1)}>
 					Previous
 				</Button>
-				<Button
-					variant="outline"
-					size="sm"
-					disabled={data.page >= pageCount}
-					onclick={() => goPage(data.page + 1)}
-				>
+				<Button variant="outline" size="sm" disabled={data.page >= pageCount} onclick={() => goPage(data.page + 1)}>
 					Next
 				</Button>
 			</div>
