@@ -12,6 +12,7 @@ import { env, isProd } from '$lib/env'
 import { logger } from '$lib/logger'
 import { getSetting, setSetting, isSettingsInitialized } from '$lib/settings'
 import { recordAudit } from '$lib/audit'
+import { fireWelcomeEmail } from '$lib/email/welcome'
 import { safeReturnTo } from './index'
 
 const log = logger.child({ module: 'auth-callback' })
@@ -241,6 +242,16 @@ export default new Elysia().get(
             log.info({ userId, username: profile.username }, 'first user promoted to admin')
             if (isSettingsInitialized()) await setSetting(AUTO_ADMIN_FUSE_KEY, '1')
           }
+
+          // Brand-new OAuth signup (not linking). Fire-and-forget welcome email;
+          // OAuth provides no email today so the helper will silently no-op,
+          // but this stays correct if a provider ever yields one or if a prior
+          // rootCredentials row exists for the user.
+          const newUserId = userId
+          const newUsername = profile.username
+          queueMicrotask(() => {
+            void fireWelcomeEmail({ userId: newUserId, username: newUsername })
+          })
         }
 
         await db.insert(identities).values({
