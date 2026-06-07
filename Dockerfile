@@ -33,6 +33,22 @@ COPY . .
 RUN cd packages/manifest && bun run build
 RUN cd apps/frontend && bun run build
 
+# Plugin install simulator: stage each first-party plugin's source + manifest
+# into /repo/bundled-plugins/<id>/ so the runtime image can ship them
+# OUTSIDE of node_modules. The kernel's installer looks here when the
+# workspace path is absent (prod path). Per-plugin node_modules are NOT
+# copied — Bun walks up to /app/node_modules at runtime for transitive deps
+# (drizzle-orm, mjml, nodemailer, jose, etc.), which prod-deps still installs.
+RUN mkdir -p /repo/bundled-plugins \
+ && for id in email smtp turbosmtp discord-notifier; do \
+      mkdir -p "/repo/bundled-plugins/$id/src" \
+        && cp "/repo/packages/plugin-$id/package.json" "/repo/bundled-plugins/$id/package.json" \
+        && cp -r "/repo/packages/plugin-$id/src/." "/repo/bundled-plugins/$id/src/"; \
+      if [ -d "/repo/packages/plugin-$id/vendor" ]; then \
+        cp -r "/repo/packages/plugin-$id/vendor" "/repo/bundled-plugins/$id/vendor"; \
+      fi; \
+    done
+
 FROM docker.io/oven/bun:1.3-alpine@sha256:5acc90a93e91ff07bf72aa90a7c9f0fa189765aec90b47bdbf2152d2196383c0 AS prod-deps
 
 WORKDIR /repo
@@ -42,17 +58,13 @@ COPY packages/manifest/package.json ./packages/manifest/
 COPY packages/tsconfig/package.json ./packages/tsconfig/
 COPY packages/core-schema/package.json ./packages/core-schema/
 COPY packages/plugin-host-types/package.json ./packages/plugin-host-types/
-COPY packages/plugin-email/package.json ./packages/plugin-email/
-COPY packages/plugin-smtp/package.json ./packages/plugin-smtp/
-COPY packages/plugin-turbosmtp/package.json ./packages/plugin-turbosmtp/
-COPY packages/plugin-turbosmtp/vendor ./packages/plugin-turbosmtp/vendor
-COPY packages/plugin-discord-notifier/package.json ./packages/plugin-discord-notifier/
 
-# Synthesize a slim root package.json that only references the API + manifest
-# + the plugins the kernel loads at runtime. Drop devDependencies, the
-# frontend, CLI, and `@tabularium/client` workspaces — none of them are
-# imported by the API at runtime, and shipping them just enlarges
-# node_modules + attack surface.
+# Synthesize a slim root package.json that only references the kernel
+# workspaces (API + manifest + core-schema + plugin-host-types). Plugin
+# packages are NOT workspace members of the prod image — they're staged into
+# /app/bundled-plugins/ in the runtime stage and resolved by the installer.
+# This keeps the core image lean (kernel-only) and matches the eventual
+# registry-fetch flow where plugins land outside the kernel install.
 #
 # Trade-off: --no-save (not --frozen-lockfile) because the root bun.lock was
 # resolved against the full workspace set (apps/*, packages/*); reusing it
@@ -70,11 +82,7 @@ RUN printf '%s\n' \
   '    "packages/manifest",' \
   '    "packages/tsconfig",' \
   '    "packages/core-schema",' \
-  '    "packages/plugin-host-types",' \
-  '    "packages/plugin-email",' \
-  '    "packages/plugin-smtp",' \
-  '    "packages/plugin-turbosmtp",' \
-  '    "packages/plugin-discord-notifier"' \
+  '    "packages/plugin-host-types"' \
   '  ],' \
   '  "overrides": { "elysia": "^1.4.28" },' \
   '  "packageManager": "bun@1.3.12"' \
@@ -159,14 +167,13 @@ COPY --from=build --chown=app:app /repo/apps/api/tsconfig.json ./apps/api/tsconf
 COPY --from=build --chown=app:app /repo/apps/api/bunfig.toml ./apps/api/bunfig.toml
 COPY --from=build --chown=app:app /repo/packages/manifest/src ./packages/manifest/src
 COPY --from=build --chown=app:app /repo/packages/manifest/dist ./packages/manifest/dist
-# Plugin workspace packages: bun runs their src/ TS directly — no dist build.
+# Core workspace packages — kernel + plugin contract types. Bun runs TS directly.
 COPY --from=build --chown=app:app /repo/packages/core-schema/src ./packages/core-schema/src
 COPY --from=build --chown=app:app /repo/packages/plugin-host-types/src ./packages/plugin-host-types/src
-COPY --from=build --chown=app:app /repo/packages/plugin-email/src ./packages/plugin-email/src
-COPY --from=build --chown=app:app /repo/packages/plugin-smtp/src ./packages/plugin-smtp/src
-COPY --from=build --chown=app:app /repo/packages/plugin-turbosmtp/src ./packages/plugin-turbosmtp/src
-COPY --from=build --chown=app:app /repo/packages/plugin-turbosmtp/vendor ./packages/plugin-turbosmtp/vendor
-COPY --from=build --chown=app:app /repo/packages/plugin-discord-notifier/src ./packages/plugin-discord-notifier/src
+# Plugin install simulator inventory — the bundled-plugins dir is the prod
+# source location the installer falls back to when no workspace match exists.
+# Once registry.tabularium.wiki is live, swap this for a runtime HTTPS fetch.
+COPY --from=build --chown=app:app /repo/bundled-plugins /app/bundled-plugins
 COPY --from=build --chown=app:app /repo/apps/frontend/dist ./apps/frontend/dist
 
 RUN mkdir -p /app/apps/api/data && chown -R app:app /app/apps/api/data
