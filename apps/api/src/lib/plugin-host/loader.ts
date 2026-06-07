@@ -28,12 +28,26 @@ export function __clearLoadedForTests(): void {
  * against them. Idempotent so re-init in tests works.
  */
 function defineBuiltInPoints(): void {
-  try {
-    registry.definePoint({ id: 'email-provider', arity: 'single-active' })
-  } catch (err) {
-    // already-defined is fine on re-init
-    if (!(err instanceof Error) || !err.message.startsWith('extension point already defined')) {
-      throw err
+  const points = [
+    { id: 'email-provider', arity: 'single-active' as const },
+    // Contract for upstream provider bootstrap (TurboSMTP authorize + consumer-key
+    // dance). Plugins implementing this are kingmakers for the admin's
+    // "set me up from email + password" flow. Single-active: only one upstream
+    // can drive bootstrap at a time.
+    { id: 'email-bootstrap-driver', arity: 'single-active' as const },
+    // Contract for upstream suppression sources (TurboSMTP-style suppression
+    // list with add/remove + paginated list). Multi: in theory we could
+    // aggregate from several providers; in practice one is active.
+    { id: 'email-suppression-source', arity: 'multi' as const },
+  ]
+  for (const p of points) {
+    try {
+      registry.definePoint(p)
+    } catch (err) {
+      // already-defined is fine on re-init
+      if (!(err instanceof Error) || !err.message.startsWith('extension point already defined')) {
+        throw err
+      }
     }
   }
   // Nav / route contribution points are tracked via `contributions.ts`, not the
