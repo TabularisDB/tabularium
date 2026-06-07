@@ -1,0 +1,22 @@
+{
+  "name": "@tabularium/plugin-host-types",
+  "version": "0.1.0",
+  "description": "Type contracts shared between the Tabularium plugin host and first-party plugins.",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "module": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    }
+  },
+  "scripts": {
+    "check": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "@tabularium/tsconfig": "workspace:*"
+  }
+}
