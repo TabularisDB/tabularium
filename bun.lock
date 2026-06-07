@@ -16,7 +16,7 @@
     },
     "apps/api": {
       "name": "@tabularium/api",
-      "version": "0.15.0",
+      "version": "0.17.0",
       "dependencies": {
         "@elysiajs/cors": "^1.4.2",
         "@elysiajs/openapi": "^1.4.5",
@@ -120,6 +120,16 @@
       "devDependencies": {
         "@tabularium/tsconfig": "workspace:*",
         "typescript": "^5.7.0",
+      },
+    },
+    "packages/core-schema": {
+      "name": "@tabularium/core-schema",
+      "version": "0.1.0",
+      "dependencies": {
+        "drizzle-orm": "^1.0.0-rc.2",
+      },
+      "devDependencies": {
+        "@tabularium/tsconfig": "workspace:*",
       },
     },
     "packages/manifest": {
@@ -550,6 +560,8 @@
     "@tabularium/cli": ["@tabularium/cli@workspace:packages/cli"],
 
     "@tabularium/client": ["@tabularium/client@workspace:packages/client"],
+
+    "@tabularium/core-schema": ["@tabularium/core-schema@workspace:packages/core-schema"],
 
     "@tabularium/manifest": ["@tabularium/manifest@workspace:packages/manifest"],
 

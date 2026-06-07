@@ -1,0 +1,33 @@
+{
+  "name": "@tabularium/core-schema",
+  "version": "0.1.0",
+  "description": "Shared Drizzle schema for tables that plugins reference (users, settings, audit_log, plugins, etc.).",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "module": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/index.ts",
+      "default": "./src/index.ts"
+    },
+    "./pg": {
+      "types": "./src/index.pg.ts",
+      "default": "./src/index.pg.ts"
+    },
+    "./mysql": {
+      "types": "./src/index.mysql.ts",
+      "default": "./src/index.mysql.ts"
+    }
+  },
+  "scripts": {
+    "check": "tsc --noEmit"
+  },
+  "dependencies": {
+    "drizzle-orm": "^1.0.0-rc.2"
+  },
+  "devDependencies": {
+    "@tabularium/tsconfig": "workspace:*"
+  }
+}
