@@ -1,0 +1,6 @@
+export { registry } from './registry'
+export { bus } from './events'
+export { initPlugins, __setLoaderForTests, __clearLoadedForTests } from './loader'
+export { listContributions, __clearContributions } from './contributions'
+export { buildHost } from './host'
+export { resolvePluginLoader, listKnownPluginIds } from './resolver'
