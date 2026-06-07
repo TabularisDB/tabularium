@@ -6,21 +6,44 @@ import { resolveUserContact } from '../../src/lib/email/contact'
 
 beforeEach(clearDb)
 
-test('resolveUserContact returns null when user has no rootCredentials row', async () => {
+test('resolveUserContact returns null when user has no email anywhere', async () => {
   const user = await makeUser()
   const contact = await resolveUserContact(user.id)
   expect(contact).toBeNull()
 })
 
-test('resolveUserContact returns id+email+locale=en when rootCredentials exists', async () => {
+test('resolveUserContact reads users.email + users.locale when present', async () => {
+  const user = await makeUser({ email: 'u@example.com', locale: 'de' })
+  const contact = await resolveUserContact(user.id)
+  expect(contact).toEqual({ id: user.id, email: 'u@example.com', locale: 'de' })
+})
+
+test('resolveUserContact defaults locale to en when users.locale is missing', async () => {
+  const user = await makeUser({ email: 'u2@example.com' })
+  const contact = await resolveUserContact(user.id)
+  expect(contact?.locale).toBe('en')
+})
+
+test('resolveUserContact falls back to rootCredentials when users.email is null', async () => {
   const user = await makeUser()
   await db.insert(rootCredentials).values({
     userId: user.id,
-    email: 'owner@example.com',
+    email: 'admin@example.com',
     passwordHash: 'unused-hash',
   })
   const contact = await resolveUserContact(user.id)
-  expect(contact).toEqual({ id: user.id, email: 'owner@example.com', locale: 'en' })
+  expect(contact).toEqual({ id: user.id, email: 'admin@example.com', locale: 'en' })
+})
+
+test('resolveUserContact prefers users.email over rootCredentials', async () => {
+  const user = await makeUser({ email: 'primary@example.com' })
+  await db.insert(rootCredentials).values({
+    userId: user.id,
+    email: 'admin-fallback@example.com',
+    passwordHash: 'unused-hash',
+  })
+  const contact = await resolveUserContact(user.id)
+  expect(contact?.email).toBe('primary@example.com')
 })
 
 test('resolveUserContact returns null for an unknown userId', async () => {
