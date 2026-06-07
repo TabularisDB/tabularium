@@ -42,18 +42,41 @@ export function __resetInstallerRootsForTests(): void {
   bundledRoot = '/app/bundled-plugins'
 }
 
+// Plugin layout differs across the first-party set: plugin-email and
+// plugin-discord-notifier use src/api/index.ts, while plugin-smtp and
+// plugin-turbosmtp use src/index.ts directly. Walk the candidates plus the
+// package.json `main` field so both layouts resolve.
+const ENTRY_CANDIDATES = ['src/api/index.ts', 'src/index.ts']
+
+function readMainField(pkgJsonPath: string): string | null {
+  try {
+    const pkg = JSON.parse(readFileSync(pkgJsonPath, 'utf8')) as { main?: string; module?: string }
+    return pkg.main ?? pkg.module ?? null
+  } catch {
+    return null
+  }
+}
+
+function resolveEntryIn(dir: string): { entry: string; pkgJson: string } | null {
+  const pkgJson = resolve(dir, 'package.json')
+  const main = existsSync(pkgJson) ? readMainField(pkgJson) : null
+  if (main) {
+    const fromMain = resolve(dir, main)
+    if (existsSync(fromMain)) return { entry: fromMain, pkgJson }
+  }
+  for (const candidate of ENTRY_CANDIDATES) {
+    const entry = resolve(dir, candidate)
+    if (existsSync(entry)) return { entry, pkgJson }
+  }
+  return null
+}
+
 function workspaceEntry(id: string): { entry: string; pkgJson: string } | null {
-  const dir = resolve(workspaceRoot, `plugin-${id}`)
-  const entry = resolve(dir, 'src/api/index.ts')
-  if (!existsSync(entry)) return null
-  return { entry, pkgJson: resolve(dir, 'package.json') }
+  return resolveEntryIn(resolve(workspaceRoot, `plugin-${id}`))
 }
 
 function bundledEntry(id: string): { entry: string; pkgJson: string } | null {
-  const dir = resolve(bundledRoot, id)
-  const entry = resolve(dir, 'src/api/index.ts')
-  if (!existsSync(entry)) return null
-  return { entry, pkgJson: resolve(dir, 'package.json') }
+  return resolveEntryIn(resolve(bundledRoot, id))
 }
 
 function readVersion(packageJsonPath: string): string | null {
