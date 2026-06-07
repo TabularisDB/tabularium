@@ -122,6 +122,47 @@ export const ManifestSchema = Type.Object({
         'Minimum host runtime version (semver range or single version). The host refuses to load the plugin on older runtimes.',
     }),
   ),
+  requires: Type.Optional(
+    Type.Array(
+      Type.Object(
+        {
+          id: Type.String({
+            minLength: 1,
+            maxLength: 64,
+            pattern: '^[a-z][a-z0-9-]*$',
+            description:
+              'Slug of another registry plugin this one depends on. Must match an installable plugin on the same registry.',
+          }),
+          version: Type.Optional(
+            Type.String({
+              maxLength: 40,
+              description:
+                'Optional semver range (e.g. ">=1.2.0", "^2.0.0"). When omitted, any version of the required plugin is acceptable.',
+            }),
+          ),
+          optional: Type.Optional(
+            Type.Boolean({
+              description:
+                'When true, the host should warn but not block install if the required plugin is missing. Defaults to false (hard dependency).',
+            }),
+          ),
+          reason: Type.Optional(
+            Type.String({
+              maxLength: 200,
+              description:
+                'Human-readable explanation shown next to the dependency in the install UI ("needed for X feature").',
+            }),
+          ),
+        },
+        { description: 'A single dependency on another registry plugin.' },
+      ),
+      {
+        maxItems: 32,
+        description:
+          'Other registry plugins this plugin needs to function. Hosts (Tabularis and others) surface this during install: the consumer sees the list, can review them, and the host auto-resolves the install order. Self-references and cycles are rejected by the registry at submit time.',
+      },
+    ),
+  ),
 })
 
 export type Manifest = Static<typeof ManifestSchema>
