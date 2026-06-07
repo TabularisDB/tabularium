@@ -13,7 +13,13 @@ export default new Elysia()
       operationId: 'adminGetFeatures',
       security: [{ bearerAuth: [] }, { cookieAuth: [] }],
     },
-    response: { 200: t.Object({ submissionsEnabled: t.Boolean(), requestsEnabled: t.Boolean() }) },
+    response: {
+      200: t.Object({
+        submissionsEnabled: t.Boolean(),
+        requestsEnabled: t.Boolean(),
+        requiresAllowed: t.Boolean(),
+      }),
+    },
   })
   .patch(
     '/',
@@ -23,6 +29,9 @@ export default new Elysia()
       }
       if (body.requestsEnabled !== undefined) {
         await setSetting('features.requests_enabled', body.requestsEnabled ? 'true' : 'false')
+      }
+      if (body.requiresAllowed !== undefined) {
+        await setSetting('plugins.requires_allowed', body.requiresAllowed ? 'true' : 'false')
       }
       await recordAudit({
         ...actorFromAdmin(admin, request),
@@ -42,7 +51,14 @@ export default new Elysia()
       body: t.Object({
         submissionsEnabled: t.Optional(t.Boolean()),
         requestsEnabled: t.Optional(t.Boolean()),
+        requiresAllowed: t.Optional(t.Boolean()),
       }),
-      response: { 200: t.Object({ submissionsEnabled: t.Boolean(), requestsEnabled: t.Boolean() }) },
+      response: {
+        200: t.Object({
+          submissionsEnabled: t.Boolean(),
+          requestsEnabled: t.Boolean(),
+          requiresAllowed: t.Boolean(),
+        }),
+      },
     },
   )

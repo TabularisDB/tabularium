@@ -12,10 +12,11 @@
 	import { m } from '$lib/paraglide/messages'
 	import AdminPageHeader from '$components/admin/AdminPageHeader.svelte'
 
-	type Features = { submissionsEnabled: boolean; requestsEnabled: boolean }
+	type Features = { submissionsEnabled: boolean; requestsEnabled: boolean; requiresAllowed: boolean }
 
 	let submissionsEnabled = $state(true)
 	let requestsEnabled = $state(true)
+	let requiresAllowed = $state(true)
 	let loading = $state(true)
 	let saving = $state(false)
 
@@ -26,6 +27,7 @@
 			const f = data as Features
 			submissionsEnabled = f.submissionsEnabled
 			requestsEnabled = f.requestsEnabled
+			requiresAllowed = f.requiresAllowed
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : m.admin_features_load_failed())
 		} finally {
@@ -36,7 +38,11 @@
 	async function save() {
 		saving = true
 		try {
-			const { error } = await eden.api.admin.features.patch({ submissionsEnabled, requestsEnabled })
+			const { error } = await eden.api.admin.features.patch({
+				submissionsEnabled,
+				requestsEnabled,
+				requiresAllowed,
+			})
 			if (error)
 				throw new Error(
 					typeof error.value === 'string'
@@ -87,6 +93,21 @@
 			<label class="flex items-center gap-2 cursor-pointer text-sm">
 				<input type="checkbox" bind:checked={requestsEnabled} class="h-4 w-4 rounded border-input" />
 				<span>{m.admin_features_allow_requests()}</span>
+			</label>
+		</CardContent>
+	</Card>
+
+	<Card>
+		<CardHeader>
+			<CardTitle class="text-base">{m.admin_features_requires()}</CardTitle>
+			<CardDescription>
+				{m.admin_features_requires_subtitle()}
+			</CardDescription>
+		</CardHeader>
+		<CardContent>
+			<label class="flex items-center gap-2 cursor-pointer text-sm">
+				<input type="checkbox" bind:checked={requiresAllowed} class="h-4 w-4 rounded border-input" />
+				<span>{m.admin_features_allow_requires()}</span>
 			</label>
 		</CardContent>
 	</Card>
