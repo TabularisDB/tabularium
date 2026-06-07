@@ -20,6 +20,7 @@
 	import BookText from '@lucide/svelte/icons/book-text'
 	import KeyRound from '@lucide/svelte/icons/key-round'
 	import Languages from '@lucide/svelte/icons/languages'
+	import Mail from '@lucide/svelte/icons/mail'
 	import Menu from '@lucide/svelte/icons/menu'
 	import X from '@lucide/svelte/icons/x'
 	import { auth } from '$lib/stores/auth.svelte'
@@ -66,6 +67,7 @@
 		{ href: '/admin/pages', label: m.admin_nav_pages(), icon: FileText, badge: 0 },
 		{ href: '/admin/infra', label: m.admin_nav_infrastructure(), icon: ServerCog, badge: 0 },
 		{ href: '/admin/branding', label: m.admin_nav_branding(), icon: Palette, badge: 0 },
+		{ href: '/admin/email', label: m.admin_nav_email(), icon: Mail, badge: 0 },
 		{ href: '/admin/home', label: m.admin_nav_home(), icon: House, badge: 0 },
 		{ href: '/admin/instance', label: m.admin_nav_instance(), icon: SlidersHorizontal, badge: 0 },
 		{ href: '/admin/features', label: m.admin_nav_features(), icon: ToggleRight, badge: 0 },
