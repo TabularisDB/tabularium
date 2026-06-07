@@ -16,7 +16,12 @@
       "types": "./src/api/types.ts",
       "default": "./src/api/types.ts"
     },
-    "./frontend/*": "./src/frontend/*"
+    "./frontend/*.svelte": "./src/frontend/*.svelte",
+    "./frontend/*": {
+      "types": "./src/frontend/*.ts",
+      "svelte": "./src/frontend/*.svelte",
+      "default": "./src/frontend/*.ts"
+    }
   },
   "scripts": {
     "check": "tsc --noEmit"

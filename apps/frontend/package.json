@@ -37,6 +37,7 @@
 		"@lezer/highlight": "^1.2.3",
 		"@lucide/svelte": "^1.3.0",
 		"@tabularium/client": "workspace:*",
+		"@tabularium/plugin-email": "workspace:*",
 		"@tanstack/svelte-query": "^5.62.0",
 		"bits-ui": "^2.4.1",
 		"clsx": "^2.1.1",
