@@ -1,0 +1,8 @@
+{
+  "extends": "@tabularium/tsconfig/base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "baseUrl": "."
+  },
+  "include": ["src/**/*", "tests/**/*"]
+}

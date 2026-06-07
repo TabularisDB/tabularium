@@ -196,3 +196,8 @@ export const downloadEvents = sqliteTable(
 // picks them up — drizzle-kit reads a single schema entrypoint per dialect
 // and surfaces every exported table from it.
 export { emailLog, emailPreferences, emailSuppression } from '@tabularium/plugin-email/schema'
+
+// Discord-notifier plugin tables (kernel-enforced prefix `pl_discord_notifier__`).
+// Renamed on import to keep the per-plugin `webhookLog` symbol distinct from
+// any future plugin that wants the same neutral name.
+export { webhookLog as discordNotifierWebhookLog } from '@tabularium/plugin-discord-notifier/schema'

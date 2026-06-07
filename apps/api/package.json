@@ -44,6 +44,7 @@
     "@sinclair/typebox": "^0.34.49",
     "@tabularium/core-schema": "workspace:*",
     "@tabularium/manifest": "workspace:*",
+    "@tabularium/plugin-discord-notifier": "workspace:*",
     "@tabularium/plugin-email": "workspace:*",
     "@tabularium/plugin-smtp": "workspace:*",
     "@tabularium/plugin-turbosmtp": "workspace:*",

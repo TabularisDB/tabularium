@@ -5,6 +5,7 @@ const REGISTRY: Record<string, Loader> = {
   email: () => import('@tabularium/plugin-email'),
   smtp: () => import('@tabularium/plugin-smtp'),
   turbosmtp: () => import('@tabularium/plugin-turbosmtp'),
+  'discord-notifier': () => import('@tabularium/plugin-discord-notifier'),
 }
 
 export function resolvePluginLoader(id: string): Loader | null {

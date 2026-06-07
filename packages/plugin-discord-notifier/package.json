@@ -1,0 +1,48 @@
+{
+  "name": "@tabularium/plugin-discord-notifier",
+  "version": "1.0.0",
+  "description": "Tabularium notification plugin — relays lifecycle events to a Discord webhook.",
+  "private": true,
+  "type": "module",
+  "main": "./src/api/index.ts",
+  "module": "./src/api/index.ts",
+  "types": "./src/api/index.ts",
+  "exports": {
+    ".": {
+      "types": "./src/api/index.ts",
+      "default": "./src/api/index.ts"
+    },
+    "./schema": {
+      "types": "./src/api/schema.ts",
+      "default": "./src/api/schema.ts"
+    },
+    "./schema.pg": {
+      "types": "./src/api/schema.pg.ts",
+      "default": "./src/api/schema.pg.ts"
+    },
+    "./schema.mysql": {
+      "types": "./src/api/schema.mysql.ts",
+      "default": "./src/api/schema.mysql.ts"
+    },
+    "./frontend/*.svelte": "./src/frontend/*.svelte",
+    "./frontend/*": {
+      "types": "./src/frontend/*.ts",
+      "svelte": "./src/frontend/*.svelte",
+      "default": "./src/frontend/*.ts"
+    }
+  },
+  "scripts": {
+    "check": "tsc --noEmit",
+    "test": "bun test"
+  },
+  "devDependencies": {
+    "@tabularium/plugin-host-types": "workspace:*",
+    "@tabularium/tsconfig": "workspace:*"
+  },
+  "dependencies": {
+    "@tabularium/core-schema": "workspace:*",
+    "drizzle-orm": "^1.0.0-rc.2",
+    "elysia": "^1.4.28",
+    "ulid": "^3.0.2"
+  }
+}

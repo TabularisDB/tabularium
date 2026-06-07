@@ -181,3 +181,6 @@ export const downloadEvents = pgTable(
 // `pl_email__`). Re-exported here so drizzle-kit's migration generator picks
 // them up via the dialect-specific schema entrypoint.
 export { emailLog, emailPreferences, emailSuppression } from '@tabularium/plugin-email/schema.pg'
+
+// Discord-notifier plugin tables — see schema.ts for the rename rationale.
+export { webhookLog as discordNotifierWebhookLog } from '@tabularium/plugin-discord-notifier/schema.pg'

@@ -16,7 +16,7 @@
     },
     "apps/api": {
       "name": "@tabularium/api",
-      "version": "0.17.0",
+      "version": "0.18.0",
       "dependencies": {
         "@elysiajs/cors": "^1.4.2",
         "@elysiajs/openapi": "^1.4.5",
@@ -24,6 +24,7 @@
         "@sinclair/typebox": "^0.34.49",
         "@tabularium/core-schema": "workspace:*",
         "@tabularium/manifest": "workspace:*",
+        "@tabularium/plugin-discord-notifier": "workspace:*",
         "@tabularium/plugin-email": "workspace:*",
         "@tabularium/plugin-smtp": "workspace:*",
         "@tabularium/plugin-turbosmtp": "workspace:*",
@@ -142,6 +143,20 @@
         "ajv-formats": "^3.0.1",
       },
       "devDependencies": {
+        "@tabularium/tsconfig": "workspace:*",
+      },
+    },
+    "packages/plugin-discord-notifier": {
+      "name": "@tabularium/plugin-discord-notifier",
+      "version": "1.0.0",
+      "dependencies": {
+        "@tabularium/core-schema": "workspace:*",
+        "drizzle-orm": "^1.0.0-rc.2",
+        "elysia": "^1.4.28",
+        "ulid": "^3.0.2",
+      },
+      "devDependencies": {
+        "@tabularium/plugin-host-types": "workspace:*",
         "@tabularium/tsconfig": "workspace:*",
       },
     },
@@ -566,6 +581,8 @@
     "@tabularium/core-schema": ["@tabularium/core-schema@workspace:packages/core-schema"],
 
     "@tabularium/manifest": ["@tabularium/manifest@workspace:packages/manifest"],
+
+    "@tabularium/plugin-discord-notifier": ["@tabularium/plugin-discord-notifier@workspace:packages/plugin-discord-notifier"],
 
     "@tabularium/plugin-email": ["@tabularium/plugin-email@workspace:packages/plugin-email"],
 
