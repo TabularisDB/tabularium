@@ -2,7 +2,19 @@ import { eq } from 'drizzle-orm'
 import { db } from '$db'
 import { plugins } from '$db/schema'
 import { resolveAbsolute } from './url'
+import { logger } from './logger'
+import { getSetting } from './settings'
 import { ManifestSchema, type Manifest, type ResolvedManifest } from './manifest'
+
+const log = logger.child({ module: 'manifest-apply' })
+
+// Admin opt-out for the manifest's `requires[]` field. Default ON. When the
+// setting is explicitly 'false', a non-empty `requires[]` is silently dropped
+// at ingest time (the rest of the manifest still applies) and a warn line is
+// emitted so operators can see when it fires.
+export function isRequiresAllowed(): boolean {
+  return getSetting('plugins.requires_allowed') !== 'false'
+}
 
 export class ManifestVersionMismatchError extends Error {
   readonly declared: string
@@ -46,6 +58,7 @@ export type PluginManifestUpdate = {
   license: string | null
   iconUrl: string | null
   screenshots: string | null
+  requires: string | null
   readme: string | null
   documentationUrl: string | null
   supportEmail: string | null
@@ -85,12 +98,27 @@ export function manifestPatch(
 
   const extensions = extractExtensions(parsed as unknown as Record<string, unknown>)
 
+  const requiresAllowed = isRequiresAllowed()
+  const requiresList = parsed.requires ?? []
+  if (!requiresAllowed && requiresList.length > 0) {
+    // Silent drop is the right behavior here: rejecting the whole release
+    // would block plugin authors from publishing on instances that disable
+    // the feature, but the rest of the manifest is still valid. Operators
+    // see this warn line in the logs so they can audit.
+    log.warn(
+      { slug: parsed.name ?? null, count: requiresList.length },
+      'manifest requires[] dropped — plugins.requires_allowed=false',
+    )
+  }
+  const requires = requiresAllowed && requiresList.length > 0 ? JSON.stringify(requiresList) : null
+
   const patch: PluginManifestUpdate = {
     category: parsed.category ?? null,
     tags: jsonArray(tagList),
     license: parsed.license ?? null,
     iconUrl,
     screenshots: jsonArray(screenshots),
+    requires,
     readme: readmePayload,
     documentationUrl: parsed.documentation_url ?? null,
     supportEmail: parsed.support?.email ?? null,
