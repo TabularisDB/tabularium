@@ -53,3 +53,16 @@ export type SendOutcome =
   | { logId: string; status: 'queued' }
   | { logId: string; status: 'suppressed'; reason: string }
   | { logId: string; status: 'failed'; error: string }
+
+export type EmailBucket = 'instant' | 'daily' | 'weekly' | 'off'
+export type EmailPreferences = Record<EmailCategory, EmailBucket>
+
+export const OPT_IN_CATEGORIES: EmailCategory[] = ['owner_ops', 'plugin_updates', 'newsletter']
+export const TRANSACTIONAL_CATEGORIES: EmailCategory[] = ['account']
+
+export const DEFAULT_PREFERENCES: EmailPreferences = {
+  account: 'instant',
+  owner_ops: 'instant',
+  plugin_updates: 'instant',
+  newsletter: 'off',
+}
