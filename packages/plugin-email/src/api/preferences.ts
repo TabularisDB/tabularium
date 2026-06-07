@@ -1,6 +1,5 @@
 import { eq } from 'drizzle-orm'
-import { db } from '$db'
-import { emailPreferences } from '$db/schema'
+import { db, schema } from './db'
 import { initPreferences } from './unsubscribe-token'
 import {
   DEFAULT_PREFERENCES,
@@ -18,7 +17,7 @@ const VALID_BUCKETS: Record<EmailBucket, true> = {
 }
 
 export async function loadPreferences(userId: string): Promise<EmailPreferences> {
-  const row = await db.query.emailPreferences.findFirst({ where: { userId } })
+  const row = await db().query.emailPreferences.findFirst({ where: { userId } })
   if (!row) return { ...DEFAULT_PREFERENCES }
   let parsed: Partial<EmailPreferences>
   try {
@@ -43,10 +42,10 @@ export async function savePreferences(
   }
   // Transactional category is always-on regardless of input.
   next.account = 'instant'
-  await db
-    .update(emailPreferences)
+  await db()
+    .update(schema.emailPreferences)
     .set({ prefs: JSON.stringify(next), updatedAt: Date.now() })
-    .where(eq(emailPreferences.userId, userId))
+    .where(eq(schema.emailPreferences.userId, userId))
   return next
 }
 

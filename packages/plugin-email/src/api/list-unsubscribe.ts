@@ -1,5 +1,5 @@
-import { env } from '$lib/env'
-import { getSetting } from '$lib/settings'
+import { env } from '../../../../apps/api/src/lib/env'
+import { host } from './host-handles'
 import { mintUnsubscribeToken } from './unsubscribe-token'
 import { TRIGGER_TO_CATEGORY } from './types'
 import type { EmailTrigger } from './types'
@@ -15,7 +15,7 @@ function extractDomain(fromAddress: string): string {
 }
 
 export function getMailtoDomain(): string {
-  const fromDefault = getSetting('email.from.default')
+  const fromDefault = host().settings.get('email.from.default')
   return fromDefault ? extractDomain(fromDefault) : 'tabularis.dev'
 }
 

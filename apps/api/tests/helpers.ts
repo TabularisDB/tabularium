@@ -11,6 +11,15 @@ import { initProviderInstances } from '../src/lib/provider-instance'
 import { initSettings } from '../src/lib/settings'
 import { initCache } from '../src/lib/cache'
 import { initStorage } from '../src/lib/storage'
+import {
+  initPlugins,
+  __clearLoadedForTests,
+  __clearContributions,
+  __clearRoutes,
+  listRoutes,
+  registry,
+  bus,
+} from '../src/lib/plugin-host'
 
 const DEFAULT_INSTANCE_ID = 'github'
 
@@ -51,6 +60,16 @@ export async function clearDb() {
   await initSettings()
   initCache()
   initStorage()
+  // Reset plugin host state so initPlugins() runs cleanly each test.
+  __clearLoadedForTests()
+  __clearContributions()
+  __clearRoutes()
+  registry.__clear()
+  bus.__clear()
+  await initPlugins()
+  // Invalidate the cached test Elysia app so the next buildApp() picks up
+  // freshly-mounted plugin routes from listRoutes().
+  cachedApp = null
 }
 
 export type TestUser = {
@@ -151,12 +170,17 @@ let cachedApp: Elysia | null = null
 
 export async function buildApp() {
   if (cachedApp) return cachedApp
-  cachedApp = new Elysia({ systemRouter: false }).use(
+  let app = new Elysia({ systemRouter: false }).use(
     await fsr({
       dir: resolve(import.meta.dir, '../src/routes'),
       types: false,
       logLevel: LogLevel.Silent,
     }),
   )
+  // Mount routes contributed by plugins via host.mountRoutes(). Cast to
+  // Elysia — recordRoutes types it as `unknown` so the public PluginHost
+  // type can stay Elysia-free.
+  for (const sub of listRoutes()) app = app.use(sub as Elysia)
+  cachedApp = app
   return cachedApp
 }

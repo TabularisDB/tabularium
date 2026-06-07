@@ -1,11 +1,9 @@
 import { Cron } from 'croner'
 import { TurboSmtp, type Region } from 'turbosmtp'
-import { logger } from '$lib/logger'
-import { db } from '$db'
-import { emailSuppression } from '$db/schema'
-import { getSetting } from '$lib/settings'
+import { db, schema } from './db'
+import { host } from './host-handles'
+import { log } from './logger'
 
-const log = logger.child({ module: 'email-suppression-sync' })
 let job: Cron | null = null
 
 export type SuppressionRow = { email: string; source: string; reason?: string | null }
@@ -19,12 +17,12 @@ export function __setSyncDriverForTests(d: SuppressionDriver | null): void {
 }
 
 function getTurboRegion(): Region {
-  const r = getSetting('email.turbo.region')
+  const r = host().settings.get('email.turbo.region')
   return r === 'eu' ? 'eu' : 'global'
 }
 
 function defaultDriver(): SuppressionDriver | null {
-  const apiKey = getSetting('email.turbo.api_key')
+  const apiKey = host().settings.get('email.turbo.api_key')
   if (!apiKey) return null
   const client = new TurboSmtp({ apiKey, region: getTurboRegion() })
   return {
@@ -78,8 +76,8 @@ export async function syncOnce(): Promise<{ added: number; checked: number }> {
   let added = 0
   for (const r of rows) {
     const email = r.email.toLowerCase()
-    const result = (await db
-      .insert(emailSuppression)
+    const result = (await db()
+      .insert(schema.emailSuppression)
       .values({ email, source: mapSource(r.source), reason: r.reason ?? null })
       .onConflictDoNothing()) as unknown as { rowsAffected?: number } | void
     // Drizzle's bun-sqlite insert resolves to `{rowsAffected: n}` in practice
@@ -94,16 +92,16 @@ export async function syncOnce(): Promise<{ added: number; checked: number }> {
 
 export function startSuppressionSync(): void {
   if (job) return
-  if (getSetting('email.provider') !== 'turbo') return
+  if (host().settings.get('email.provider') !== 'turbo') return
   job = new Cron('*/15 * * * *', { name: 'email-suppression-sync' }, async () => {
     try {
       const out = await syncOnce()
-      log.info({ added: out.added, checked: out.checked }, 'suppression sync tick')
+      log('email-suppression-sync').info('suppression sync tick', { added: out.added, checked: out.checked })
     } catch (err) {
-      log.warn({ err }, 'suppression sync failed')
+      log('email-suppression-sync').warn('suppression sync failed', { err })
     }
   })
-  log.info('suppression sync scheduled (every 15 min)')
+  log('email-suppression-sync').info('suppression sync scheduled (every 15 min)')
 }
 
 export function stopSuppressionSync(): void {

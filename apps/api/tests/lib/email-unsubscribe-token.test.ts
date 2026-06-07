@@ -6,7 +6,7 @@ import {
   rotateTokenNonce,
   verifyUnsubscribeToken,
   __resetSecretCacheForTests,
-} from '../../src/lib/email/unsubscribe-token'
+} from '@tabularium/plugin-email'
 import { deleteSetting } from '../../src/lib/settings'
 import { SignJWT } from 'jose'
 

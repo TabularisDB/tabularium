@@ -8,7 +8,7 @@ import { signJwt } from '$lib/jwt'
 import { createSession } from '$lib/sessions'
 import { isProd } from '$lib/env'
 import { logger } from '$lib/logger'
-import { fireWelcomeEmail } from '$lib/email/welcome'
+import { bus } from '$lib/plugin-host'
 import { rateLimit } from '$middleware/rate-limit'
 
 const log = logger.child({ module: 'auth-email-register' })
@@ -39,11 +39,13 @@ export default new Elysia().use(rateLimit({ bucket: 'auth-email-register', limit
     await db.insert(rootCredentials).values({ userId: id, email: normalizedEmail, passwordHash })
     log.info({ userId: id, email: normalizedEmail }, 'bootstrap admin registered')
 
-    // Fire-and-forget welcome email. Wrapped in queueMicrotask so the
-    // register response is not blocked by SMTP latency; failures are
-    // swallowed and warned inside fireWelcomeEmail.
-    queueMicrotask(() => {
-      void fireWelcomeEmail({ userId: id, username: finalDisplayName })
+    // Emit account.welcome domain event. The plugin-email subscriber
+    // resolves the contact, renders the template, and dispatches via the
+    // configured provider. The kernel bus runs handlers on queueMicrotask
+    // so the response is not blocked by SMTP latency.
+    bus.emit('account.welcome', {
+      user: { id, email: normalizedEmail, locale: 'en' },
+      username: finalDisplayName,
     })
 
     const sessionId = await createSession({

@@ -1,6 +1,6 @@
 {
   "name": "@tabularium/plugin-email",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Tabularium first-party email plugin — orchestrator for templates, render, dispatch, preferences, suppression.",
   "private": true,
   "type": "module",
@@ -12,6 +12,10 @@
       "types": "./src/api/index.ts",
       "default": "./src/api/index.ts"
     },
+    "./types": {
+      "types": "./src/api/types.ts",
+      "default": "./src/api/types.ts"
+    },
     "./frontend/*": "./src/frontend/*"
   },
   "scripts": {
@@ -19,6 +23,18 @@
   },
   "devDependencies": {
     "@tabularium/plugin-host-types": "workspace:*",
-    "@tabularium/tsconfig": "workspace:*"
+    "@tabularium/tsconfig": "workspace:*",
+    "@types/html-to-text": "^9.0.4",
+    "@types/mjml": "^5.0.0"
+  },
+  "dependencies": {
+    "croner": "^10.0.1",
+    "drizzle-orm": "^1.0.0-rc.2",
+    "elysia": "^1.4.28",
+    "html-to-text": "^10.0.0",
+    "jose": "^6.2.3",
+    "mjml": "^5.3.0",
+    "turbosmtp": "../plugin-turbosmtp/vendor/turbosmtp-0.1.0.tgz",
+    "ulid": "^3.0.2"
   }
 }

@@ -6,8 +6,8 @@ import {
   loadPreferences,
   savePreferences,
   unsubscribeAllOptIn,
-} from '../../src/lib/email/preferences'
-import { DEFAULT_PREFERENCES } from '../../src/lib/email/types'
+  DEFAULT_PREFERENCES,
+} from '@tabularium/plugin-email'
 
 beforeEach(clearDb)
 

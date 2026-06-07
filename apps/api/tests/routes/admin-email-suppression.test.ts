@@ -3,7 +3,7 @@ import { buildApp, clearDb, makeAdmin, adminHeaders } from '../helpers'
 import { db } from '../../src/db'
 import { emailSuppression } from '../../src/db/schema'
 import { setSetting } from '../../src/lib/settings'
-import { __setUpstreamDriverForTests } from '../../src/lib/email/suppression-driver'
+import { __setUpstreamDriverForTests } from '@tabularium/plugin-email'
 
 type ListResponse = {
   rows: Array<{ email: string; source: string; reason: string | null; addedAt: number }>

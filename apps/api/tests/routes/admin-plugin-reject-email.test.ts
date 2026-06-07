@@ -3,8 +3,8 @@ import { eq } from 'drizzle-orm'
 import { buildApp, clearDb, makeAdmin, makeUser, makePlugin, adminHeaders } from '../helpers'
 import { db } from '../../src/db'
 import { emailLog, rootCredentials } from '../../src/db/schema'
-import { __setProviderForTests } from '../../src/lib/email/facade'
-import type { EmailProvider } from '../../src/lib/email/types'
+import { __setProviderForTests } from '@tabularium/plugin-email'
+import type { EmailProvider } from '@tabularium/plugin-email/types'
 
 beforeEach(clearDb)
 

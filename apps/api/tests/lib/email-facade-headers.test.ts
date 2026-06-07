@@ -1,8 +1,7 @@
 import { test, expect, beforeEach } from 'bun:test'
 import { clearDb, makeUser } from '../helpers'
-import { sendEmail, __setProviderForTests } from '../../src/lib/email/facade'
-import { verifyUnsubscribeToken } from '../../src/lib/email/unsubscribe-token'
-import type { EmailMessage, EmailProvider } from '../../src/lib/email/types'
+import { sendEmail, __setProviderForTests, verifyUnsubscribeToken } from '@tabularium/plugin-email'
+import type { EmailMessage, EmailProvider } from '@tabularium/plugin-email/types'
 
 let captured: EmailMessage | null = null
 const stub: EmailProvider = {

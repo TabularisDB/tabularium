@@ -1,13 +1,12 @@
 import { Elysia, t } from 'elysia'
 import { eq } from 'drizzle-orm'
-import { adminMiddleware } from '$middleware/admin'
-import { db } from '$db'
-import { emailSuppression } from '$db/schema'
-import { recordAudit } from '$lib/audit'
-import { getUpstreamDriver } from '$lib/email/suppression-driver'
-import { logger } from '$lib/logger'
+import { adminMiddleware } from '../../../../../../../apps/api/src/middleware/admin'
+import { recordAudit } from '../../../../../../../apps/api/src/lib/audit'
+import { db, schema } from '../../../db'
+import { getUpstreamDriver } from '../../../suppression-driver'
+import { log as makeLog } from '../../../logger'
 
-const log = logger.child({ module: 'admin-suppression' })
+const log = makeLog('admin-suppression')
 
 export default new Elysia()
   .use(adminMiddleware)
@@ -15,7 +14,7 @@ export default new Elysia()
     '/',
     async ({ params, admin, request, set }) => {
       const email = decodeURIComponent(params.email).toLowerCase()
-      const existing = await db.query.emailSuppression.findFirst({ where: { email } })
+      const existing = await db().query.emailSuppression.findFirst({ where: { email } })
       if (!existing) {
         set.status = 404
         return { error: 'Suppression not found' }
@@ -29,10 +28,10 @@ export default new Elysia()
           upstreamSynced = true
         } catch (err) {
           upstreamError = err instanceof Error ? err.message : 'unknown'
-          log.warn({ err, email }, 'upstream suppression remove failed — proceeding with local removal')
+          log.warn('upstream suppression remove failed — proceeding with local removal', { err, email })
         }
       }
-      await db.delete(emailSuppression).where(eq(emailSuppression.email, email))
+      await db().delete(schema.emailSuppression).where(eq(schema.emailSuppression.email, email))
       await recordAudit({
         actorId: admin.id,
         actorName: admin.displayName,

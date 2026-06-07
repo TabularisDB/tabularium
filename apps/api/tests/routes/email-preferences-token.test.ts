@@ -4,8 +4,8 @@ import {
   mintUnsubscribeToken,
   rotateTokenNonce,
   __resetSecretCacheForTests,
-} from '../../src/lib/email/unsubscribe-token'
-import { loadPreferences } from '../../src/lib/email/preferences'
+  loadPreferences,
+} from '@tabularium/plugin-email'
 import { deleteSetting } from '../../src/lib/settings'
 
 beforeEach(async () => {

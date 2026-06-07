@@ -6,7 +6,7 @@ import {
   syncOnce,
   __setSyncDriverForTests,
   type SuppressionDriver,
-} from '../../src/lib/email/suppression-sync'
+} from '@tabularium/plugin-email'
 
 beforeEach(async () => {
   await clearDb()

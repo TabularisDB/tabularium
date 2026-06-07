@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test'
-import { renderTemplate } from '../../src/lib/email/render'
+import { renderTemplate } from '@tabularium/plugin-email'
 
 test('renderTemplate returns HTML and text for account.welcome', async () => {
   const out = await renderTemplate({

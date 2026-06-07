@@ -1,6 +1,6 @@
 {
   "name": "@tabularium/plugin-turbosmtp",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Tabularium first-party TurboSMTP email provider plugin.",
   "private": true,
   "type": "module",
@@ -17,7 +17,11 @@
     "check": "tsc --noEmit"
   },
   "devDependencies": {
+    "@tabularium/plugin-email": "workspace:*",
     "@tabularium/plugin-host-types": "workspace:*",
     "@tabularium/tsconfig": "workspace:*"
+  },
+  "dependencies": {
+    "turbosmtp": "./vendor/turbosmtp-0.1.0.tgz"
   }
 }

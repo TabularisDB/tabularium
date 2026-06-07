@@ -1,8 +1,7 @@
 import { SignJWT, jwtVerify } from 'jose'
 import { ulid } from 'ulid'
-import { db } from '$db'
-import { emailPreferences } from '$db/schema'
-import { getSetting, setSetting } from '$lib/settings'
+import { db, schema } from './db'
+import { host } from './host-handles'
 
 const SECRET_KEY = 'email.unsubscribe_secret'
 const ALG = 'HS256'
@@ -12,12 +11,12 @@ let secretBytesCache: Uint8Array | null = null
 
 async function getOrCreateSecret(): Promise<Uint8Array> {
   if (secretBytesCache) return secretBytesCache
-  let raw = getSetting(SECRET_KEY)
+  let raw = host().settings.get(SECRET_KEY)
   if (!raw) {
     const bytes = new Uint8Array(32)
     crypto.getRandomValues(bytes)
     raw = Buffer.from(bytes).toString('base64url')
-    await setSetting(SECRET_KEY, raw, { encrypted: true })
+    await host().settings.set(SECRET_KEY, raw, { encrypted: true })
   }
   secretBytesCache = new Uint8Array(Buffer.from(raw, 'base64url'))
   return secretBytesCache
@@ -34,12 +33,12 @@ export async function initPreferences(
   userId: string,
   defaults: DefaultPrefs = {},
 ): Promise<{ tokenNonce: string; prefs: DefaultPrefs }> {
-  const existing = await db.query.emailPreferences.findFirst({ where: { userId } })
+  const existing = await db().query.emailPreferences.findFirst({ where: { userId } })
   if (existing)
     return { tokenNonce: existing.tokenNonce, prefs: JSON.parse(existing.prefs) as DefaultPrefs }
   const tokenNonce = ulid()
   const prefs = defaults
-  await db.insert(emailPreferences).values({ userId, prefs: JSON.stringify(prefs), tokenNonce })
+  await db().insert(schema.emailPreferences).values({ userId, prefs: JSON.stringify(prefs), tokenNonce })
   return { tokenNonce, prefs }
 }
 
@@ -51,11 +50,11 @@ export async function initPreferences(
 export async function rotateTokenNonce(userId: string): Promise<string> {
   const tokenNonce = ulid()
   const updatedAt = Date.now()
-  await db
-    .insert(emailPreferences)
+  await db()
+    .insert(schema.emailPreferences)
     .values({ userId, prefs: '{}', tokenNonce, updatedAt })
     .onConflictDoUpdate({
-      target: emailPreferences.userId,
+      target: schema.emailPreferences.userId,
       set: { tokenNonce, updatedAt },
     })
   return tokenNonce
@@ -77,7 +76,7 @@ export async function verifyUnsubscribeToken(token: string): Promise<{ userId: s
     const secret = await getOrCreateSecret()
     const { payload } = await jwtVerify(token, secret)
     if (payload.scope !== 'prefs' || typeof payload.sub !== 'string') return null
-    const prefs = await db.query.emailPreferences.findFirst({ where: { userId: payload.sub } })
+    const prefs = await db().query.emailPreferences.findFirst({ where: { userId: payload.sub } })
     if (!prefs || prefs.tokenNonce !== payload.nonce) return null
     return { userId: payload.sub }
   } catch {

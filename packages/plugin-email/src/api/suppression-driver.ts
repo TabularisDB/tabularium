@@ -1,5 +1,5 @@
 import { TurboSmtp, type Region } from 'turbosmtp'
-import { getSetting } from '$lib/settings'
+import { host } from './host-handles'
 
 export type UpstreamDriver = {
   add(email: string, reason: string | null): Promise<void>
@@ -12,13 +12,13 @@ export function __setUpstreamDriverForTests(d: UpstreamDriver | null): void {
 }
 
 function getTurboRegion(): Region {
-  return getSetting('email.turbo.region') === 'eu' ? 'eu' : 'global'
+  return host().settings.get('email.turbo.region') === 'eu' ? 'eu' : 'global'
 }
 
 export function getUpstreamDriver(): UpstreamDriver | null {
   if (driverOverride) return driverOverride
-  if (getSetting('email.provider') !== 'turbo') return null
-  const apiKey = getSetting('email.turbo.api_key')
+  if (host().settings.get('email.provider') !== 'turbo') return null
+  const apiKey = host().settings.get('email.turbo.api_key')
   if (!apiKey) return null
   const client = new TurboSmtp({ apiKey, region: getTurboRegion() })
   return {

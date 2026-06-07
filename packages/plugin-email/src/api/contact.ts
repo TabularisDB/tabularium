@@ -1,4 +1,4 @@
-import { db } from '$db'
+import { db } from './db'
 
 /**
  * Resolve a user's email contact for transactional sends.
@@ -11,9 +11,9 @@ import { db } from '$db'
 export async function resolveUserContact(
   userId: string,
 ): Promise<{ id: string; email: string; locale: string } | null> {
-  const user = await db.query.users.findFirst({ where: { id: userId } })
+  const user = await db().query.users.findFirst({ where: { id: userId } })
   if (user?.email) return { id: userId, email: user.email, locale: user.locale ?? 'en' }
-  const rc = await db.query.rootCredentials.findFirst({ where: { userId } })
+  const rc = await db().query.rootCredentials.findFirst({ where: { userId } })
   if (rc?.email) return { id: userId, email: rc.email, locale: user?.locale ?? 'en' }
   return null
 }

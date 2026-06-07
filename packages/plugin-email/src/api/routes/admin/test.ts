@@ -1,6 +1,6 @@
 import { Elysia, t } from 'elysia'
-import { adminMiddleware } from '$middleware/admin'
-import { sendEmail } from '$lib/email/facade'
+import { adminMiddleware } from '../../../../../../apps/api/src/middleware/admin'
+import { sendEmail } from '../../facade'
 
 export default new Elysia().use(adminMiddleware).post(
   '/',

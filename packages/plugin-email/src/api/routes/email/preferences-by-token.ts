@@ -1,7 +1,7 @@
 import { Elysia, t } from 'elysia'
-import { db } from '$db'
-import { verifyUnsubscribeToken } from '$lib/email/unsubscribe-token'
-import { loadPreferences, savePreferences, unsubscribeAllOptIn } from '$lib/email/preferences'
+import { db } from '../../db'
+import { verifyUnsubscribeToken } from '../../unsubscribe-token'
+import { loadPreferences, savePreferences, unsubscribeAllOptIn } from '../../preferences'
 
 function maskEmail(email: string | null): string | null {
   if (!email) return null
@@ -35,7 +35,7 @@ export default new Elysia()
         set.status = 401
         return { error: 'Invalid or expired link' } as never
       }
-      const userRow = await db.query.users.findFirst({ where: { id: v.userId } })
+      const userRow = await db().query.users.findFirst({ where: { id: v.userId } })
       const prefs = await loadPreferences(v.userId)
       return { email: maskEmail(userRow?.email ?? null), prefs, categories: CATEGORIES }
     },

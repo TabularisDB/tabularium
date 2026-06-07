@@ -1,5 +1,5 @@
 import { test, expect } from 'bun:test'
-import type { EmailProvider, EmailMessage, EmailTrigger } from '../../src/lib/email/types'
+import type { EmailProvider, EmailMessage, EmailTrigger } from '@tabularium/plugin-email/types'
 
 test('EmailProvider interface compiles with a stub impl', () => {
   const stub: EmailProvider = {

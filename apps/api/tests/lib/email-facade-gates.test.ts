@@ -2,9 +2,8 @@ import { test, expect, beforeEach } from 'bun:test'
 import { db } from '../../src/db'
 import { emailSuppression } from '../../src/db/schema'
 import { clearDb, makeUser } from '../helpers'
-import { sendEmail, __setProviderForTests } from '../../src/lib/email/facade'
-import { savePreferences } from '../../src/lib/email/preferences'
-import type { EmailBucket, EmailProvider } from '../../src/lib/email/types'
+import { sendEmail, __setProviderForTests, savePreferences } from '@tabularium/plugin-email'
+import type { EmailBucket, EmailProvider } from '@tabularium/plugin-email/types'
 
 const stub: EmailProvider = {
   name: 'stub' as const,

@@ -1,10 +1,9 @@
 import { Elysia, t } from 'elysia'
 import { eq } from 'drizzle-orm'
-import { authMiddleware } from '$middleware/auth'
-import { db } from '$db'
-import { users } from '$db/schema'
-import { recordAudit } from '$lib/audit'
-import { rotateTokenNonce } from '$lib/email/unsubscribe-token'
+import { authMiddleware } from '../../../../../../apps/api/src/middleware/auth'
+import { recordAudit } from '../../../../../../apps/api/src/lib/audit'
+import { db, schema } from '../../db'
+import { rotateTokenNonce } from '../../unsubscribe-token'
 
 const emailProfileSchema = t.Object({
   email: t.Union([t.String(), t.Null()]),
@@ -21,7 +20,7 @@ export default new Elysia()
   .get(
     '/',
     async ({ user, set }) => {
-      const row = await db.query.users.findFirst({ where: { id: user.sub } })
+      const row = await db().query.users.findFirst({ where: { id: user.sub } })
       if (!row) {
         set.status = 401
         return { error: 'User not found' } as never
@@ -41,7 +40,7 @@ export default new Elysia()
   .patch(
     '/',
     async ({ user, body, set, request }) => {
-      const existing = await db.query.users.findFirst({ where: { id: user.sub } })
+      const existing = await db().query.users.findFirst({ where: { id: user.sub } })
       if (!existing) {
         set.status = 401
         return { error: 'User not found' } as never
@@ -55,7 +54,7 @@ export default new Elysia()
         const next = body.email && body.email.length > 0 ? body.email.toLowerCase() : null
         if (next !== prevEmail) {
           if (next) {
-            const dupe = await db.query.users.findFirst({ where: { email: next } })
+            const dupe = await db().query.users.findFirst({ where: { email: next } })
             if (dupe && dupe.id !== user.sub) {
               set.status = 409
               return { error: 'Email already in use' }
@@ -74,7 +73,7 @@ export default new Elysia()
         return { email: prevEmail, locale: existing.locale ?? 'en' }
       }
 
-      await db.update(users).set(patch).where(eq(users.id, user.sub))
+      await db().update(schema.users).set(patch).where(eq(schema.users.id, user.sub))
 
       if (emailChanged) {
         await rotateTokenNonce(user.sub)
@@ -88,7 +87,7 @@ export default new Elysia()
         })
       }
 
-      const fresh = await db.query.users.findFirst({ where: { id: user.sub } })
+      const fresh = await db().query.users.findFirst({ where: { id: user.sub } })
       return { email: fresh?.email ?? null, locale: fresh?.locale ?? 'en' }
     },
     {

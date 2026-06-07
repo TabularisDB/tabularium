@@ -1,7 +1,7 @@
 import { test, expect, beforeEach } from 'bun:test'
 import { buildApp, clearDb, makeAdmin, adminHeaders } from '../helpers'
-import { __setProviderForTests } from '../../src/lib/email/facade'
-import type { EmailProvider } from '../../src/lib/email/types'
+import { __setProviderForTests } from '@tabularium/plugin-email'
+import type { EmailProvider } from '@tabularium/plugin-email/types'
 
 beforeEach(clearDb)
 

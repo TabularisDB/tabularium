@@ -2,7 +2,7 @@ import { test, expect, beforeEach } from 'bun:test'
 import { db } from '../../src/db'
 import { rootCredentials } from '../../src/db/schema'
 import { clearDb, makeUser } from '../helpers'
-import { resolveUserContact } from '../../src/lib/email/contact'
+import { resolveUserContact } from '@tabularium/plugin-email'
 
 beforeEach(clearDb)
 

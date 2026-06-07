@@ -2,7 +2,17 @@
   "extends": "@tabularium/tsconfig/base.json",
   "compilerOptions": {
     "noEmit": true,
-    "rootDir": "src"
+    "baseUrl": ".",
+    "paths": {
+      "$db": ["../../apps/api/src/db/index"],
+      "$db/*": ["../../apps/api/src/db/*"],
+      "$lib": ["../../apps/api/src/lib/index"],
+      "$lib/*": ["../../apps/api/src/lib/*"],
+      "$middleware": ["../../apps/api/src/middleware/index"],
+      "$middleware/*": ["../../apps/api/src/middleware/*"],
+      "$routes": ["../../apps/api/src/routes/index"],
+      "$routes/*": ["../../apps/api/src/routes/*"]
+    }
   },
   "include": ["src/**/*"]
 }

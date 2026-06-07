@@ -1,13 +1,12 @@
 import { Elysia, t } from 'elysia'
 import { count, desc, eq } from 'drizzle-orm'
-import { adminMiddleware } from '$middleware/admin'
-import { db } from '$db'
-import { emailSuppression } from '$db/schema'
-import { recordAudit } from '$lib/audit'
-import { getUpstreamDriver } from '$lib/email/suppression-driver'
-import { logger } from '$lib/logger'
+import { adminMiddleware } from '../../../../../../../apps/api/src/middleware/admin'
+import { recordAudit } from '../../../../../../../apps/api/src/lib/audit'
+import { db, schema } from '../../../db'
+import { getUpstreamDriver } from '../../../suppression-driver'
+import { log as makeLog } from '../../../logger'
 
-const log = logger.child({ module: 'admin-suppression' })
+const log = makeLog('admin-suppression')
 
 const sourceEnum = t.Union([
   t.Literal('bounce'),
@@ -31,17 +30,17 @@ export default new Elysia()
       const page = Math.max(1, Number(query.page ?? '1'))
       const limit = Math.min(200, Math.max(1, Number(query.limit ?? '50')))
       const offset = (page - 1) * limit
-      const filter = query.source ? eq(emailSuppression.source, query.source) : undefined
-      const rows = await db
+      const filter = query.source ? eq(schema.emailSuppression.source, query.source) : undefined
+      const rows = await db()
         .select()
-        .from(emailSuppression)
+        .from(schema.emailSuppression)
         .where(filter)
-        .orderBy(desc(emailSuppression.addedAt))
+        .orderBy(desc(schema.emailSuppression.addedAt))
         .limit(limit)
         .offset(offset)
-      const [{ total }] = await db
+      const [{ total }] = await db()
         .select({ total: count() })
-        .from(emailSuppression)
+        .from(schema.emailSuppression)
         .where(filter)
       return { rows, total, page, limit }
     },
@@ -75,12 +74,12 @@ export default new Elysia()
           upstreamSynced = true
         } catch (err) {
           upstreamError = err instanceof Error ? err.message : 'unknown'
-          log.warn({ err, email }, 'upstream suppression add failed — proceeding with local-only')
+          log.warn('upstream suppression add failed — proceeding with local-only', { err, email })
         }
       }
       try {
-        await db
-          .insert(emailSuppression)
+        await db()
+          .insert(schema.emailSuppression)
           .values({ email, source: 'manual', reason: body.reason ?? null })
           .onConflictDoNothing()
       } catch (err) {

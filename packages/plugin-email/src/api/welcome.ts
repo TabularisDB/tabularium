@@ -1,9 +1,7 @@
+import { env } from '../../../../apps/api/src/lib/env'
 import { sendEmail } from './facade'
 import { resolveUserContact } from './contact'
-import { env } from '$lib/env'
-import { logger } from '$lib/logger'
-
-const log = logger.child({ module: 'email-welcome' })
+import { log } from './logger'
 
 /**
  * Fire the `account.welcome` trigger for a newly created user.
@@ -29,7 +27,7 @@ export async function fireWelcomeEmail({
   try {
     const contact = await resolveUserContact(userId)
     if (!contact) {
-      log.debug({ userId }, 'welcome email skipped — no resolvable contact')
+      log('email-welcome').debug('welcome email skipped — no resolvable contact', { userId })
       return
     }
     await sendEmail({
@@ -38,6 +36,6 @@ export async function fireWelcomeEmail({
       vars: { username, baseUrl: env.BASE_URL },
     })
   } catch (err) {
-    log.warn({ err, userId, trigger: 'account.welcome' }, 'welcome email failed')
+    log('email-welcome').warn('welcome email failed', { err, userId, trigger: 'account.welcome' })
   }
 }

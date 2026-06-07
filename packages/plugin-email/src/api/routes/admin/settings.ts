@@ -1,7 +1,7 @@
 import { Elysia, t } from 'elysia'
-import { adminMiddleware } from '$middleware/admin'
-import { getSetting, hasSetting, setSetting, deleteSetting } from '$lib/settings'
-import { restartSuppressionSync } from '$lib/email/suppression-sync'
+import { adminMiddleware } from '../../../../../../apps/api/src/middleware/admin'
+import { host } from '../../host-handles'
+import { restartSuppressionSync } from '../../suppression-sync'
 
 const fromSchema = t.Object({
   default: t.String(),
@@ -56,7 +56,7 @@ const putBodySchema = t.Object({
 })
 
 function parseOverrides(): Record<string, string> {
-  const raw = getSetting('email.from.overrides')
+  const raw = host().settings.get('email.from.overrides')
   if (!raw) return {}
   try {
     const parsed = JSON.parse(raw) as Record<string, unknown>
@@ -70,29 +70,40 @@ function parseOverrides(): Record<string, string> {
   }
 }
 
+function syncActiveProvider(): void {
+  const kind = host().settings.get('email.provider')
+  if (kind !== 'turbo' && kind !== 'smtp') return
+  const name = kind === 'turbo' ? 'turbosmtp' : 'smtp'
+  try {
+    host().registry.setActive('email-provider', name)
+  } catch {
+    // provider plugin not loaded — no-op
+  }
+}
+
 export default new Elysia().use(adminMiddleware).get(
   '/',
   () => {
-    const provider = (getSetting('email.provider') as 'turbo' | 'smtp' | undefined) ?? null
-    const portRaw = getSetting('email.smtp.port')
+    const provider = (host().settings.get('email.provider') as 'turbo' | 'smtp' | undefined) ?? null
+    const portRaw = host().settings.get('email.smtp.port')
     return {
       provider,
       from: {
-        default: getSetting('email.from.default') ?? '',
+        default: host().settings.get('email.from.default') ?? '',
         overrides: parseOverrides(),
       },
       turbo: {
-        apiKeySet: hasSetting('email.turbo.api_key'),
-        consumerKey: getSetting('email.turbo.consumer_key') ?? null,
-        consumerSecretSet: hasSetting('email.turbo.consumer_secret'),
-        region: (getSetting('email.turbo.region') as 'global' | 'eu') ?? 'global',
+        apiKeySet: host().settings.has('email.turbo.api_key'),
+        consumerKey: host().settings.get('email.turbo.consumer_key') ?? null,
+        consumerSecretSet: host().settings.has('email.turbo.consumer_secret'),
+        region: (host().settings.get('email.turbo.region') as 'global' | 'eu') ?? 'global',
       },
       smtp: {
-        host: getSetting('email.smtp.host') ?? null,
+        host: host().settings.get('email.smtp.host') ?? null,
         port: portRaw ? Number(portRaw) : null,
-        user: getSetting('email.smtp.user') ?? null,
-        passSet: hasSetting('email.smtp.pass'),
-        tls: getSetting('email.smtp.tls') !== 'false',
+        user: host().settings.get('email.smtp.user') ?? null,
+        passSet: host().settings.has('email.smtp.pass'),
+        tls: host().settings.get('email.smtp.tls') !== 'false',
       },
     }
   },
@@ -104,26 +115,27 @@ export default new Elysia().use(adminMiddleware).get(
   .put(
     '/',
     async ({ body }) => {
-      if (body.provider) await setSetting('email.provider', body.provider)
-      else await deleteSetting('email.provider')
+      if (body.provider) await host().settings.set('email.provider', body.provider)
+      else await host().settings.delete('email.provider')
 
-      await setSetting('email.from.default', body.from.default)
-      await setSetting('email.from.overrides', JSON.stringify(body.from.overrides))
+      await host().settings.set('email.from.default', body.from.default)
+      await host().settings.set('email.from.overrides', JSON.stringify(body.from.overrides))
 
       if (body.turbo) {
-        if (body.turbo.apiKey !== undefined) await setSetting('email.turbo.api_key', body.turbo.apiKey, { encrypted: true })
-        if (body.turbo.consumerKey !== undefined) await setSetting('email.turbo.consumer_key', body.turbo.consumerKey)
-        if (body.turbo.consumerSecret !== undefined) await setSetting('email.turbo.consumer_secret', body.turbo.consumerSecret, { encrypted: true })
-        if (body.turbo.region !== undefined) await setSetting('email.turbo.region', body.turbo.region)
+        if (body.turbo.apiKey !== undefined) await host().settings.set('email.turbo.api_key', body.turbo.apiKey, { encrypted: true })
+        if (body.turbo.consumerKey !== undefined) await host().settings.set('email.turbo.consumer_key', body.turbo.consumerKey)
+        if (body.turbo.consumerSecret !== undefined) await host().settings.set('email.turbo.consumer_secret', body.turbo.consumerSecret, { encrypted: true })
+        if (body.turbo.region !== undefined) await host().settings.set('email.turbo.region', body.turbo.region)
       }
 
       if (body.smtp) {
-        if (body.smtp.host !== undefined) await setSetting('email.smtp.host', body.smtp.host)
-        if (body.smtp.port !== undefined) await setSetting('email.smtp.port', String(body.smtp.port))
-        if (body.smtp.user !== undefined) await setSetting('email.smtp.user', body.smtp.user)
-        if (body.smtp.pass !== undefined) await setSetting('email.smtp.pass', body.smtp.pass, { encrypted: true })
-        if (body.smtp.tls !== undefined) await setSetting('email.smtp.tls', body.smtp.tls ? 'true' : 'false')
+        if (body.smtp.host !== undefined) await host().settings.set('email.smtp.host', body.smtp.host)
+        if (body.smtp.port !== undefined) await host().settings.set('email.smtp.port', String(body.smtp.port))
+        if (body.smtp.user !== undefined) await host().settings.set('email.smtp.user', body.smtp.user)
+        if (body.smtp.pass !== undefined) await host().settings.set('email.smtp.pass', body.smtp.pass, { encrypted: true })
+        if (body.smtp.tls !== undefined) await host().settings.set('email.smtp.tls', body.smtp.tls ? 'true' : 'false')
       }
+      syncActiveProvider()
       restartSuppressionSync()
       return { ok: true }
     },

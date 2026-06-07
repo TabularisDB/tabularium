@@ -1,8 +1,8 @@
 import { Elysia, t } from 'elysia'
 import { TurboSmtp, type Region } from 'turbosmtp'
-import { adminMiddleware } from '$middleware/admin'
-import { setSetting } from '$lib/settings'
-import { recordAudit, actorFromAdmin } from '$lib/audit'
+import { adminMiddleware } from '../../../../../../apps/api/src/middleware/admin'
+import { recordAudit, actorFromAdmin } from '../../../../../../apps/api/src/lib/audit'
+import { host } from '../../host-handles'
 
 export type BootstrapDriver = {
   authorize(email: string, password: string, region: Region): Promise<{ auth: string }>
@@ -80,11 +80,11 @@ export default new Elysia().use(adminMiddleware).post(
 
       const created = await driver().createConsumerKey(apiKey, RESERVED_LABEL, region)
 
-      await setSetting('email.provider', 'turbo')
-      await setSetting('email.turbo.region', region)
-      await setSetting('email.turbo.api_key', apiKey, { encrypted: true })
-      await setSetting('email.turbo.consumer_key', created.consumer_key)
-      await setSetting('email.turbo.consumer_secret', created.consumer_secret, { encrypted: true })
+      await host().settings.set('email.provider', 'turbo')
+      await host().settings.set('email.turbo.region', region)
+      await host().settings.set('email.turbo.api_key', apiKey, { encrypted: true })
+      await host().settings.set('email.turbo.consumer_key', created.consumer_key)
+      await host().settings.set('email.turbo.consumer_secret', created.consumer_secret, { encrypted: true })
 
       const from = `"Tabularium" <${body.email}>`
       const { mid } = await driver().sendTestMail(apiKey, created.consumer_key, created.consumer_secret, region, body.email, from)

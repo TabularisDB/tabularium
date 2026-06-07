@@ -12,7 +12,7 @@ import { env, isProd } from '$lib/env'
 import { logger } from '$lib/logger'
 import { getSetting, setSetting, deleteSetting, isSettingsInitialized } from '$lib/settings'
 import { recordAudit } from '$lib/audit'
-import { fireWelcomeEmail } from '$lib/email/welcome'
+import { bus } from '$lib/plugin-host'
 import { safeReturnTo } from './index'
 
 const log = logger.child({ module: 'auth-callback' })
@@ -322,15 +322,17 @@ export default new Elysia().get(
             if (isSettingsInitialized()) await setSetting(AUTO_ADMIN_FUSE_KEY, '1')
           }
 
-          // Brand-new OAuth signup (not linking). Fire-and-forget welcome email;
-          // OAuth provides no email today so the helper will silently no-op,
-          // but this stays correct if a provider ever yields one or if a prior
-          // rootCredentials row exists for the user.
-          const newUserId = userId
-          const newUsername = profile.username
-          queueMicrotask(() => {
-            void fireWelcomeEmail({ userId: newUserId, username: newUsername })
-          })
+          // Brand-new OAuth signup (not linking). Emit the welcome event
+          // only when we know an email — OAuth providers may not surface
+          // one. The plugin-email subscriber also re-checks via the
+          // resolveUserContact fallback chain, but skipping the emit when
+          // we have no email keeps the bus chatter clean.
+          if (profile.email && emailToPersist) {
+            bus.emit('account.welcome', {
+              user: { id: userId, email: emailToPersist, locale: 'en' },
+              username: profile.username,
+            })
+          }
         }
 
         await db.insert(identities).values({

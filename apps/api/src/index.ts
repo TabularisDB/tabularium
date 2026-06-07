@@ -192,9 +192,9 @@ async function bootNormalMode() {
   const { ensureSigningKey } = await import('$lib/registry-key')
   await ensureSigningKey()
 
-  const { startSuppressionSync } = await import('$lib/email/suppression-sync')
-  startSuppressionSync()
-
+  // Email suppression sync is started by the plugin-email plugin's
+  // register(host); see Task 14 of the plugin-kernel plan for the boot
+  // wiring that initializes plugins.
   const { setServerMode } = await import('$lib/server-mode')
   setServerMode('normal')
 

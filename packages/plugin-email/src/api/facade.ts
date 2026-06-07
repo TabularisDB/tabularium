@@ -1,8 +1,7 @@
 import { ulid } from 'ulid'
-import { db } from '../../db'
-import { emailLog, emailSuppression } from '../../db/schema'
-import { getSetting } from '../settings'
-import { logger } from '../logger'
+import { db, schema } from './db'
+import { host } from './host-handles'
+import { log } from './logger'
 import { renderTemplate } from './render'
 import { loadPreferences } from './preferences'
 import { TRIGGER_TO_CATEGORY } from './types'
@@ -13,11 +12,7 @@ import type {
   SendEmailInput,
   SendOutcome,
 } from './types'
-import { buildTurboProvider } from './providers/turbo'
-import { buildSmtpProvider } from './providers/smtp'
 import { buildOptInHeaders } from './list-unsubscribe'
-
-const log = logger.child({ module: 'email' })
 
 let providerOverride: EmailProvider | null | undefined = undefined
 
@@ -26,16 +21,45 @@ export function __setProviderForTests(p: EmailProvider | null): void {
   providerOverride = p
 }
 
+/**
+ * Resolve the active EmailProvider.
+ *
+ * - Test seam: `__setProviderForTests(stub)` short-circuits.
+ * - Production: read `email.provider` setting → 'turbo' | 'smtp' | undefined.
+ *   When set, look up the matching provider in the host registry
+ *   (registered by plugin-smtp / plugin-turbosmtp). When unset OR the
+ *   provider plugin is not loaded, return null → facade queues the mail.
+ */
 export async function resolveProvider(): Promise<EmailProvider | null> {
   if (providerOverride !== undefined) return providerOverride
-  const kind = getSetting('email.provider')
-  if (kind === 'turbo') return buildTurboProvider()
-  if (kind === 'smtp') return buildSmtpProvider()
-  return null
+  // host() may throw in tests that skipped initPlugins(); be defensive so
+  // tests using __setProviderForTests aren't forced to also init plugins.
+  let kind: string | undefined
+  try {
+    kind = host().settings.get('email.provider')
+  } catch {
+    return null
+  }
+  if (kind !== 'turbo' && kind !== 'smtp') return null
+  const wanted = kind === 'turbo' ? 'turbosmtp' : 'smtp'
+  try {
+    return host().registry.resolve<EmailProvider>('email-provider')
+      // When more than one provider is registered, ensure the one matching
+      // the configured setting is selected. setActive is also called from
+      // register(host) and the admin PUT route to keep this in sync.
+      ?? null
+  } catch {
+    return null
+  }
+  // Note: when the provider plugin isn't loaded, resolve() returns null and
+  // we fall through to the "no provider configured" branch in sendEmail. The
+  // `wanted` name is reserved for the future when sendEmail needs to inspect
+  // it for telemetry; suppress unused-var lint for now.
+  void wanted
 }
 
 function resolveFrom(trigger: EmailTrigger): string {
-  const overridesRaw = getSetting('email.from.overrides')
+  const overridesRaw = host().settings.get('email.from.overrides')
   if (overridesRaw) {
     try {
       const overrides = JSON.parse(overridesRaw) as Record<string, string>
@@ -44,7 +68,7 @@ function resolveFrom(trigger: EmailTrigger): string {
       // ignore malformed JSON; fall through to default
     }
   }
-  return getSetting('email.from.default') ?? '"Tabularium" <noreply@tabularis.dev>'
+  return host().settings.get('email.from.default') ?? '"Tabularium" <noreply@tabularis.dev>'
 }
 
 export async function sendEmail(input: SendEmailInput): Promise<SendOutcome> {
@@ -65,7 +89,7 @@ export async function sendEmail(input: SendEmailInput): Promise<SendOutcome> {
     text = rendered.text
   } catch (err) {
     const error = err instanceof Error ? err.message : String(err)
-    await db.insert(emailLog).values({
+    await db().insert(schema.emailLog).values({
       id: logId,
       userId: input.user?.id ?? null,
       trigger: input.trigger,
@@ -85,9 +109,9 @@ export async function sendEmail(input: SendEmailInput): Promise<SendOutcome> {
   //   if the recipient is suppressed, we mark the log row and bail before
   //   reading any provider config. force: true bypasses (used by admin
   //   test-mail + security alerts).
-  const suppression = await db.query.emailSuppression.findFirst({ where: { email: to } })
+  const suppression = await db().query.emailSuppression.findFirst({ where: { email: to } })
   if (suppression && !input.force) {
-    await db.insert(emailLog).values({
+    await db().insert(schema.emailLog).values({
       id: logId,
       userId: input.user?.id ?? null,
       trigger: input.trigger,
@@ -110,7 +134,7 @@ export async function sendEmail(input: SendEmailInput): Promise<SendOutcome> {
     const prefs = await loadPreferences(input.user.id)
     const bucket = prefs[category] ?? 'instant'
     if (bucket === 'off') {
-      await db.insert(emailLog).values({
+      await db().insert(schema.emailLog).values({
         id: logId,
         userId: input.user.id,
         trigger: input.trigger,
@@ -126,7 +150,7 @@ export async function sendEmail(input: SendEmailInput): Promise<SendOutcome> {
       return { logId, status: 'suppressed', reason: 'preference:off' }
     }
     if (bucket === 'daily' || bucket === 'weekly') {
-      await db.insert(emailLog).values({
+      await db().insert(schema.emailLog).values({
         id: logId,
         userId: input.user.id,
         trigger: input.trigger,
@@ -146,7 +170,7 @@ export async function sendEmail(input: SendEmailInput): Promise<SendOutcome> {
   const provider = await resolveProvider()
 
   if (!provider) {
-    await db.insert(emailLog).values({
+    await db().insert(schema.emailLog).values({
       id: logId,
       userId: input.user?.id ?? null,
       trigger: input.trigger,
@@ -176,7 +200,7 @@ export async function sendEmail(input: SendEmailInput): Promise<SendOutcome> {
   }
   try {
     const { providerMid } = await provider.send(msg)
-    await db.insert(emailLog).values({
+    await db().insert(schema.emailLog).values({
       id: logId,
       userId: input.user?.id ?? null,
       trigger: input.trigger,
@@ -192,8 +216,8 @@ export async function sendEmail(input: SendEmailInput): Promise<SendOutcome> {
     return { logId, status: 'sent', providerMid }
   } catch (err) {
     const error = err instanceof Error ? err.message : String(err)
-    log.warn({ err, trigger: input.trigger, to }, 'email send failed')
-    await db.insert(emailLog).values({
+    log('email').warn('email send failed', { err, trigger: input.trigger, to })
+    await db().insert(schema.emailLog).values({
       id: logId,
       userId: input.user?.id ?? null,
       trigger: input.trigger,

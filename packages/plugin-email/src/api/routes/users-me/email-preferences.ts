@@ -1,6 +1,6 @@
 import { Elysia, t } from 'elysia'
-import { authMiddleware } from '$middleware/auth'
-import { loadPreferences, savePreferences } from '$lib/email/preferences'
+import { authMiddleware } from '../../../../../../apps/api/src/middleware/auth'
+import { loadPreferences, savePreferences } from '../../preferences'
 
 const bucket = t.Union([t.Literal('instant'), t.Literal('daily'), t.Literal('weekly'), t.Literal('off')])
 const prefsSchema = t.Record(t.String(), bucket)

@@ -1,6 +1,6 @@
 {
   "name": "@tabularium/plugin-smtp",
-  "version": "0.1.0",
+  "version": "1.0.0",
   "description": "Tabularium first-party SMTP email provider plugin (nodemailer).",
   "private": true,
   "type": "module",
@@ -17,7 +17,12 @@
     "check": "tsc --noEmit"
   },
   "devDependencies": {
+    "@tabularium/plugin-email": "workspace:*",
     "@tabularium/plugin-host-types": "workspace:*",
-    "@tabularium/tsconfig": "workspace:*"
+    "@tabularium/tsconfig": "workspace:*",
+    "@types/nodemailer": "^8.0.0"
+  },
+  "dependencies": {
+    "nodemailer": "^8.0.10"
   }
 }

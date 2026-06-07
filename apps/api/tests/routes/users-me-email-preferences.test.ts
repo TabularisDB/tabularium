@@ -1,6 +1,6 @@
 import { test, expect, beforeEach } from 'bun:test'
 import { buildApp, clearDb, makeUser, userHeaders } from '../helpers'
-import { DEFAULT_PREFERENCES } from '../../src/lib/email/types'
+import { DEFAULT_PREFERENCES } from '@tabularium/plugin-email'
 
 beforeEach(clearDb)
 

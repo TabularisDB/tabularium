@@ -1,18 +1,18 @@
 import nodemailer, { type Transporter } from 'nodemailer'
-import { getSetting } from '../../settings'
-import type { EmailMessage, EmailProvider, SendResult, VerifyResult } from '../types'
+import type { PluginHost } from '@tabularium/plugin-host-types'
+import type { EmailMessage, EmailProvider, SendResult, VerifyResult } from '@tabularium/plugin-email/types'
 
-function buildTransport(): Transporter | null {
-  const host = getSetting('email.smtp.host')
-  const portRaw = getSetting('email.smtp.port')
-  if (!host || !portRaw) return null
+function buildTransport(host: PluginHost): Transporter | null {
+  const smtpHost = host.settings.get('email.smtp.host')
+  const portRaw = host.settings.get('email.smtp.port')
+  if (!smtpHost || !portRaw) return null
   const port = Number(portRaw)
   if (!Number.isFinite(port) || port <= 0) return null
-  const user = getSetting('email.smtp.user')
-  const pass = getSetting('email.smtp.pass')
-  const tls = getSetting('email.smtp.tls') !== 'false'
+  const user = host.settings.get('email.smtp.user')
+  const pass = host.settings.get('email.smtp.pass')
+  const tls = host.settings.get('email.smtp.tls') !== 'false'
   return nodemailer.createTransport({
-    host,
+    host: smtpHost,
     port,
     secure: tls && port === 465, // STARTTLS on 587 is auto-detected by nodemailer
     requireTLS: tls && port !== 465,
@@ -20,8 +20,8 @@ function buildTransport(): Transporter | null {
   })
 }
 
-export async function buildSmtpProvider(): Promise<EmailProvider | null> {
-  const transport = buildTransport()
+export async function buildSmtpProvider(host: PluginHost): Promise<EmailProvider | null> {
+  const transport = buildTransport(host)
   if (!transport) return null
 
   return {
@@ -45,6 +45,26 @@ export async function buildSmtpProvider(): Promise<EmailProvider | null> {
         const reason = err instanceof Error ? err.message : 'unknown'
         return { ok: false, reason }
       }
+    },
+  }
+}
+
+/**
+ * Lazy SMTP provider shim — settings are read on every send/verify so admin
+ * reconfiguration takes effect without re-registering.
+ */
+export function lazySmtpProvider(host: PluginHost): EmailProvider {
+  return {
+    name: 'smtp',
+    async send(msg: EmailMessage): Promise<SendResult> {
+      const inner = await buildSmtpProvider(host)
+      if (!inner) throw new Error('SMTP not configured')
+      return inner.send(msg)
+    },
+    async verifyAuth(): Promise<VerifyResult> {
+      const inner = await buildSmtpProvider(host)
+      if (!inner) return { ok: false, reason: 'SMTP not configured' }
+      return inner.verifyAuth()
     },
   }
 }
