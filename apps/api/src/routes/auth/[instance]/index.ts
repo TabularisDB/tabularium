@@ -35,7 +35,13 @@ async function buildAuthUrl(
 
   if (inst.kind === 'github') {
     const gh = new GitHub(inst.clientId, inst.clientSecret, callback)
-    const url = gh.createAuthorizationURL(state, ['read:user', 'read:org', 'public_repo', 'admin:repo_hook'])
+    const url = gh.createAuthorizationURL(state, [
+      'read:user',
+      'user:email',
+      'read:org',
+      'public_repo',
+      'admin:repo_hook',
+    ])
     if (linking) url.searchParams.set('prompt', 'consent')
     if (inst.baseUrl === 'https://github.com') {
       const codeVerifier = generateCodeVerifier()

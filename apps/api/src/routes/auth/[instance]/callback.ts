@@ -22,6 +22,7 @@ const AUTO_ADMIN_FUSE_KEY = 'bootstrap.auto_admin_consumed'
 type ProviderProfile = {
   externalId: string
   username: string
+  email: string | null
   accessToken: string
   refreshToken: string | null
   accessTokenExpiresAt: number | null
@@ -108,8 +109,27 @@ async function exchangeGithub(inst: ProviderInstance, code: string, state: State
   const profileRes = await fetch(`${apiBase}/user`, {
     headers: { Authorization: `Bearer ${tokenFields.accessToken}`, 'User-Agent': 'tabularium/1.0' },
   })
-  const profile = (await profileRes.json()) as { id: number; login: string }
-  return { externalId: String(profile.id), username: profile.login, ...tokenFields }
+  const profile = (await profileRes.json()) as { id: number; login: string; email: string | null }
+  let email = profile.email ?? null
+  if (!email) {
+    try {
+      const emailsRes = await fetch(`${apiBase}/user/emails`, {
+        headers: {
+          Authorization: `Bearer ${tokenFields.accessToken}`,
+          'User-Agent': 'tabularium/1.0',
+          Accept: 'application/json',
+        },
+      })
+      if (emailsRes.ok) {
+        const list = (await emailsRes.json()) as Array<{ email: string; primary: boolean; verified: boolean }>
+        const primary = list.find((e) => e.primary && e.verified) ?? list.find((e) => e.verified) ?? null
+        email = primary?.email ?? null
+      }
+    } catch {
+      // scope missing or rate limit — leave email null, scope-recovery handles it
+    }
+  }
+  return { externalId: String(profile.id), username: profile.login, email, ...tokenFields }
 }
 
 async function exchangeGitlab(inst: ProviderInstance, code: string): Promise<ProviderProfile> {
@@ -121,8 +141,8 @@ async function exchangeGitlab(inst: ProviderInstance, code: string): Promise<Pro
   const profileRes = await fetch(`${inst.baseUrl}/api/v4/user`, {
     headers: { Authorization: `Bearer ${tokenFields.accessToken}` },
   })
-  const profile = (await profileRes.json()) as { id: number; username: string }
-  return { externalId: String(profile.id), username: profile.username, ...tokenFields }
+  const profile = (await profileRes.json()) as { id: number; username: string; email: string | null }
+  return { externalId: String(profile.id), username: profile.username, email: profile.email ?? null, ...tokenFields }
 }
 
 async function exchangeGitea(inst: ProviderInstance, code: string, state: StateData): Promise<ProviderProfile> {
@@ -134,8 +154,8 @@ async function exchangeGitea(inst: ProviderInstance, code: string, state: StateD
   const profileRes = await fetch(`${inst.baseUrl}/api/v1/user`, {
     headers: { Authorization: `Bearer ${tokenFields.accessToken}` },
   })
-  const profile = (await profileRes.json()) as { id: number; login: string }
-  return { externalId: String(profile.id), username: profile.login, ...tokenFields }
+  const profile = (await profileRes.json()) as { id: number; login: string; email: string | null }
+  return { externalId: String(profile.id), username: profile.login, email: profile.email ?? null, ...tokenFields }
 }
 
 async function exchange(inst: ProviderInstance, code: string, state: StateData): Promise<ProviderProfile> {
@@ -219,6 +239,23 @@ export default new Elysia().get(
             accessTokenExpiresAt: profile.accessTokenExpiresAt,
           })
           .where(eq(identities.id, identityId))
+
+        // Non-destructive email backfill: only fill when the user row has
+        // no email yet, and only if no other user already claims it.
+        if (profile.email) {
+          const existingUser = await db.query.users.findFirst({ where: { id: existingIdentity.userId } })
+          if (existingUser && !existingUser.email) {
+            const dupe = await db.query.users.findFirst({ where: { email: profile.email } })
+            if (!dupe) {
+              await db.update(users).set({ email: profile.email }).where(eq(users.id, existingIdentity.userId))
+            } else {
+              log.warn(
+                { email: profile.email, ourUserId: existingIdentity.userId, conflictUserId: dupe.id },
+                'email taken — skipping backfill on existing identity',
+              )
+            }
+          }
+        }
       }
 
       if (!existingIdentity) {
@@ -237,7 +274,24 @@ export default new Elysia().get(
             return { error: 'Instance state inconsistent — restore admin via email recovery instead' }
           }
           const role = adminCount === 0 ? 'admin' : 'user'
-          await db.insert(users).values({ id: userId, displayName: profile.username, role })
+
+          // users.email is UNIQUE. If another user already claims it (e.g. a
+          // partial earlier signup), persist without the email and log; the
+          // user can set it via the self-service endpoint (Task 4).
+          let emailToPersist: string | null = profile.email
+          if (emailToPersist) {
+            const dupe = await db.query.users.findFirst({ where: { email: emailToPersist } })
+            if (dupe) {
+              log.warn(
+                { email: emailToPersist, ourUserId: userId, conflictUserId: dupe.id },
+                'email taken — saving user without email',
+              )
+              emailToPersist = null
+            }
+          }
+          await db
+            .insert(users)
+            .values({ id: userId, displayName: profile.username, email: emailToPersist, locale: 'en', role })
           if (role === 'admin') {
             log.info({ userId, username: profile.username }, 'first user promoted to admin')
             if (isSettingsInitialized()) await setSetting(AUTO_ADMIN_FUSE_KEY, '1')
@@ -264,6 +318,23 @@ export default new Elysia().get(
           refreshToken: encryptedRefresh,
           accessTokenExpiresAt: profile.accessTokenExpiresAt,
         })
+
+        if (linkUserId && profile.email) {
+          // Non-destructive backfill on link: fill the linked user's email
+          // only if currently null and no other user already claims it.
+          const u = await db.query.users.findFirst({ where: { id: linkUserId } })
+          if (u && !u.email) {
+            const dupe = await db.query.users.findFirst({ where: { email: profile.email } })
+            if (!dupe) {
+              await db.update(users).set({ email: profile.email }).where(eq(users.id, linkUserId))
+            } else {
+              log.warn(
+                { email: profile.email, ourUserId: linkUserId, conflictUserId: dupe.id },
+                'email taken — skipping backfill on link',
+              )
+            }
+          }
+        }
 
         if (linkUserId) {
           const persist = getSetting('auth.email_recovery_persist') === '1'
