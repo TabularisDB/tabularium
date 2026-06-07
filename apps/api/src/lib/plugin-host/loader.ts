@@ -101,7 +101,7 @@ async function resolveModule(id: string): Promise<PluginModule | null> {
   if (loaderOverride) {
     return await loaderOverride(id)
   }
-  const loader = resolvePluginLoader(id)
+  const loader = await resolvePluginLoader(id)
   if (!loader) return null
   return (await loader()) as PluginModule
 }
