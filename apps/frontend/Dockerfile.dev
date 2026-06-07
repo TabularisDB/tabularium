@@ -12,6 +12,15 @@ COPY packages/client/package.json ./packages/client/
 COPY packages/cli/package.json ./packages/cli/
 COPY packages/manifest/package.json ./packages/manifest/
 COPY packages/tsconfig/package.json ./packages/tsconfig/
+COPY packages/core-schema/package.json ./packages/core-schema/
+COPY packages/plugin-host-types/package.json ./packages/plugin-host-types/
+COPY packages/plugin-email/package.json ./packages/plugin-email/
+COPY packages/plugin-smtp/package.json ./packages/plugin-smtp/
+COPY packages/plugin-turbosmtp/package.json ./packages/plugin-turbosmtp/
+COPY packages/plugin-discord-notifier/package.json ./packages/plugin-discord-notifier/
+# Frontend imports @tabularium/plugin-email/frontend/* — the file: vendor dep
+# in plugin-turbosmtp needs to be resolvable even if frontend doesn't load it.
+COPY packages/plugin-turbosmtp/vendor ./packages/plugin-turbosmtp/vendor
 
 RUN bun install --frozen-lockfile
 

@@ -11,6 +11,16 @@ COPY packages/client/package.json ./packages/client/
 COPY packages/cli/package.json ./packages/cli/
 COPY packages/manifest/package.json ./packages/manifest/
 COPY packages/tsconfig/package.json ./packages/tsconfig/
+COPY packages/core-schema/package.json ./packages/core-schema/
+COPY packages/plugin-host-types/package.json ./packages/plugin-host-types/
+COPY packages/plugin-email/package.json ./packages/plugin-email/
+COPY packages/plugin-smtp/package.json ./packages/plugin-smtp/
+COPY packages/plugin-turbosmtp/package.json ./packages/plugin-turbosmtp/
+COPY packages/plugin-discord-notifier/package.json ./packages/plugin-discord-notifier/
+# plugin-turbosmtp ships its vendored TurboSMTP SDK as a tgz inside its
+# workspace dir; bun install reads file: URLs at install time, so the tgz
+# must be present before `bun install` runs.
+COPY packages/plugin-turbosmtp/vendor ./packages/plugin-turbosmtp/vendor
 
 RUN bun install --frozen-lockfile
 
@@ -30,16 +40,24 @@ WORKDIR /repo
 COPY apps/api/package.json ./apps/api/
 COPY packages/manifest/package.json ./packages/manifest/
 COPY packages/tsconfig/package.json ./packages/tsconfig/
+COPY packages/core-schema/package.json ./packages/core-schema/
+COPY packages/plugin-host-types/package.json ./packages/plugin-host-types/
+COPY packages/plugin-email/package.json ./packages/plugin-email/
+COPY packages/plugin-smtp/package.json ./packages/plugin-smtp/
+COPY packages/plugin-turbosmtp/package.json ./packages/plugin-turbosmtp/
+COPY packages/plugin-turbosmtp/vendor ./packages/plugin-turbosmtp/vendor
+COPY packages/plugin-discord-notifier/package.json ./packages/plugin-discord-notifier/
 
 # Synthesize a slim root package.json that only references the API + manifest
-# (publishable runtime dep). Drop devDependencies, the frontend, CLI, and
-# `@tabularium/client` workspaces — none of them are imported by the API at
-# runtime, and shipping them just enlarges node_modules + attack surface.
+# + the plugins the kernel loads at runtime. Drop devDependencies, the
+# frontend, CLI, and `@tabularium/client` workspaces — none of them are
+# imported by the API at runtime, and shipping them just enlarges
+# node_modules + attack surface.
 #
 # Trade-off: --no-save (not --frozen-lockfile) because the root bun.lock was
 # resolved against the full workspace set (apps/*, packages/*); reusing it
 # here would fail validation. Direct deps in apps/api/package.json +
-# packages/manifest/package.json are pinned with caret ranges so resolution
+# packages/*/package.json are pinned with caret ranges so resolution
 # is bounded — but a transitive minor bump can land between builds. If you
 # need byte-for-byte reproducibility, build with a fixed image tag + Renovate.
 RUN printf '%s\n' \
@@ -47,7 +65,17 @@ RUN printf '%s\n' \
   '  "name": "@tabularium/registry",' \
   '  "private": true,' \
   '  "type": "module",' \
-  '  "workspaces": ["apps/api", "packages/manifest", "packages/tsconfig"],' \
+  '  "workspaces": [' \
+  '    "apps/api",' \
+  '    "packages/manifest",' \
+  '    "packages/tsconfig",' \
+  '    "packages/core-schema",' \
+  '    "packages/plugin-host-types",' \
+  '    "packages/plugin-email",' \
+  '    "packages/plugin-smtp",' \
+  '    "packages/plugin-turbosmtp",' \
+  '    "packages/plugin-discord-notifier"' \
+  '  ],' \
   '  "overrides": { "elysia": "^1.4.28" },' \
   '  "packageManager": "bun@1.3.12"' \
   '}' > package.json \
@@ -131,6 +159,14 @@ COPY --from=build --chown=app:app /repo/apps/api/tsconfig.json ./apps/api/tsconf
 COPY --from=build --chown=app:app /repo/apps/api/bunfig.toml ./apps/api/bunfig.toml
 COPY --from=build --chown=app:app /repo/packages/manifest/src ./packages/manifest/src
 COPY --from=build --chown=app:app /repo/packages/manifest/dist ./packages/manifest/dist
+# Plugin workspace packages: bun runs their src/ TS directly — no dist build.
+COPY --from=build --chown=app:app /repo/packages/core-schema/src ./packages/core-schema/src
+COPY --from=build --chown=app:app /repo/packages/plugin-host-types/src ./packages/plugin-host-types/src
+COPY --from=build --chown=app:app /repo/packages/plugin-email/src ./packages/plugin-email/src
+COPY --from=build --chown=app:app /repo/packages/plugin-smtp/src ./packages/plugin-smtp/src
+COPY --from=build --chown=app:app /repo/packages/plugin-turbosmtp/src ./packages/plugin-turbosmtp/src
+COPY --from=build --chown=app:app /repo/packages/plugin-turbosmtp/vendor ./packages/plugin-turbosmtp/vendor
+COPY --from=build --chown=app:app /repo/packages/plugin-discord-notifier/src ./packages/plugin-discord-notifier/src
 COPY --from=build --chown=app:app /repo/apps/frontend/dist ./apps/frontend/dist
 
 RUN mkdir -p /app/apps/api/data && chown -R app:app /app/apps/api/data

@@ -58,6 +58,12 @@ workspace_inputs = [
     "packages/cli/package.json",
     "packages/manifest/package.json",
     "packages/tsconfig/package.json",
+    "packages/core-schema/package.json",
+    "packages/plugin-host-types/package.json",
+    "packages/plugin-email/package.json",
+    "packages/plugin-smtp/package.json",
+    "packages/plugin-turbosmtp/package.json",
+    "packages/plugin-discord-notifier/package.json",
 ]
 
 docker_build(
@@ -69,6 +75,12 @@ docker_build(
         "packages/client",
         "packages/manifest",
         "packages/tsconfig",
+        "packages/core-schema",
+        "packages/plugin-host-types",
+        "packages/plugin-email",
+        "packages/plugin-smtp",
+        "packages/plugin-turbosmtp",
+        "packages/plugin-discord-notifier",
     ],
     ignore=[
         "apps/api/data",
@@ -82,6 +94,14 @@ docker_build(
         sync("./apps/api/index.ts", "/repo/apps/api/index.ts"),
         sync("./packages/manifest/src", "/repo/packages/manifest/src"),
         sync("./packages/client/src", "/repo/packages/client/src"),
+        # Plugin workspace packages — bun runs their src/ directly, so a
+        # plain sync is enough (no dist rebuild step like manifest).
+        sync("./packages/core-schema/src", "/repo/packages/core-schema/src"),
+        sync("./packages/plugin-host-types/src", "/repo/packages/plugin-host-types/src"),
+        sync("./packages/plugin-email/src", "/repo/packages/plugin-email/src"),
+        sync("./packages/plugin-smtp/src", "/repo/packages/plugin-smtp/src"),
+        sync("./packages/plugin-turbosmtp/src", "/repo/packages/plugin-turbosmtp/src"),
+        sync("./packages/plugin-discord-notifier/src", "/repo/packages/plugin-discord-notifier/src"),
         # The api imports @tabularium/manifest from its dist/ — rebuild on src change.
         run(
             "cd /repo/packages/manifest && bun run build",
@@ -100,6 +120,12 @@ docker_build(
         "packages/client",
         "packages/manifest",
         "packages/tsconfig",
+        "packages/core-schema",
+        "packages/plugin-host-types",
+        "packages/plugin-email",
+        "packages/plugin-smtp",
+        "packages/plugin-turbosmtp",
+        "packages/plugin-discord-notifier",
     ],
     ignore=[
         "**/node_modules",
@@ -113,6 +139,9 @@ docker_build(
         sync("./apps/frontend/vite.config.ts", "/repo/apps/frontend/vite.config.ts"),
         sync("./apps/frontend/svelte.config.js", "/repo/apps/frontend/svelte.config.js"),
         sync("./packages/client/src", "/repo/packages/client/src"),
+        # plugin-email/frontend/* is imported by the SvelteKit shims.
+        sync("./packages/plugin-email/src/frontend", "/repo/packages/plugin-email/src/frontend"),
+        sync("./packages/plugin-discord-notifier/src/frontend", "/repo/packages/plugin-discord-notifier/src/frontend"),
     ],
 )
 
