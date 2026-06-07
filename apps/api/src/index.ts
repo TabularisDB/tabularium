@@ -192,6 +192,9 @@ async function bootNormalMode() {
   const { ensureSigningKey } = await import('$lib/registry-key')
   await ensureSigningKey()
 
+  const { startSuppressionSync } = await import('$lib/email/suppression-sync')
+  startSuppressionSync()
+
   const { setServerMode } = await import('$lib/server-mode')
   setServerMode('normal')
 

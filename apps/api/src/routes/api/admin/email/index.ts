@@ -1,6 +1,7 @@
 import { Elysia, t } from 'elysia'
 import { adminMiddleware } from '$middleware/admin'
 import { getSetting, hasSetting, setSetting, deleteSetting } from '$lib/settings'
+import { restartSuppressionSync } from '$lib/email/suppression-sync'
 
 const fromSchema = t.Object({
   default: t.String(),
@@ -123,6 +124,7 @@ export default new Elysia().use(adminMiddleware).get(
         if (body.smtp.pass !== undefined) await setSetting('email.smtp.pass', body.smtp.pass, { encrypted: true })
         if (body.smtp.tls !== undefined) await setSetting('email.smtp.tls', body.smtp.tls ? 'true' : 'false')
       }
+      restartSuppressionSync()
       return { ok: true }
     },
     {
