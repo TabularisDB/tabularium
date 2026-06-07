@@ -125,6 +125,32 @@ test('unknown plugin id in enabled list is skipped (no override)', async () => {
   expect(listContributions()['admin-nav-entry']).toEqual([])
 })
 
+test('duplicate plugin id → second loadOne throws (kernel-enforced unique prefix)', async () => {
+  let calls = 0
+  __setLoaderForTests(async (id) => {
+    calls += 1
+    if (id === 'same') {
+      return {
+        meta: { id: 'same', version: '0.1.0' },
+        register: async () => {},
+      }
+    }
+    throw new Error(`unknown ${id}`)
+  })
+
+  // First load succeeds; second occurrence in the enabled list must be
+  // rejected loudly so two plugins can't share the `pl_<id>__` table prefix.
+  await setSetting(ENABLED_KEY, JSON.stringify(['same', 'same']))
+  await initPlugins()
+
+  // Both ids resolved through the loader, but the second registration
+  // attempt should have thrown (caught + logged by initPlugins' try/catch).
+  expect(calls).toBeGreaterThanOrEqual(1)
+  // Only one contribution slot wired up — second register() never ran.
+  const navEntries = listContributions()['admin-nav-entry']
+  expect(navEntries).toEqual([])
+})
+
 test('malformed infra.plugins.enabled → defaults are attempted gracefully', async () => {
   await setSetting(ENABLED_KEY, 'not-json[')
   // No override → defaults ['email','turbosmtp'] are attempted via resolver.

@@ -68,7 +68,11 @@ function getEnabledList(): string[] {
 }
 
 async function loadOne(id: string): Promise<void> {
-  if (loaded.has(id)) return
+  if (loaded.has(id)) {
+    throw new Error(
+      `duplicate plugin id "${id}" — already loaded; refusing to register twice (would collide on table prefix pl_${id.toLowerCase().replace(/-/g, '_')}__)`,
+    )
+  }
   let mod: PluginModule
   if (loaderOverride) {
     mod = await loaderOverride(id)
