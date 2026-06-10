@@ -69,37 +69,43 @@ function parseOverrides(): Record<string, string> {
   }
 }
 
-export default new Elysia().use(adminMiddleware).get(
-  '/',
-  () => {
-    const provider = (getSetting('email.provider') as 'turbo' | 'smtp' | undefined) ?? null
-    const portRaw = getSetting('email.smtp.port')
-    return {
-      provider,
-      from: {
-        default: getSetting('email.from.default') ?? '',
-        overrides: parseOverrides(),
+export default new Elysia()
+  .use(adminMiddleware)
+  .get(
+    '/',
+    () => {
+      const provider = (getSetting('email.provider') as 'turbo' | 'smtp' | undefined) ?? null
+      const portRaw = getSetting('email.smtp.port')
+      return {
+        provider,
+        from: {
+          default: getSetting('email.from.default') ?? '',
+          overrides: parseOverrides(),
+        },
+        turbo: {
+          apiKeySet: hasSetting('email.turbo.api_key'),
+          consumerKey: getSetting('email.turbo.consumer_key') ?? null,
+          consumerSecretSet: hasSetting('email.turbo.consumer_secret'),
+          region: (getSetting('email.turbo.region') as 'global' | 'eu') ?? 'global',
+        },
+        smtp: {
+          host: getSetting('email.smtp.host') ?? null,
+          port: portRaw ? Number(portRaw) : null,
+          user: getSetting('email.smtp.user') ?? null,
+          passSet: hasSetting('email.smtp.pass'),
+          tls: getSetting('email.smtp.tls') !== 'false',
+        },
+      }
+    },
+    {
+      detail: {
+        tags: ['Admin'],
+        summary: 'Read email provider settings (secrets masked)',
+        operationId: 'getEmailSettings',
       },
-      turbo: {
-        apiKeySet: hasSetting('email.turbo.api_key'),
-        consumerKey: getSetting('email.turbo.consumer_key') ?? null,
-        consumerSecretSet: hasSetting('email.turbo.consumer_secret'),
-        region: (getSetting('email.turbo.region') as 'global' | 'eu') ?? 'global',
-      },
-      smtp: {
-        host: getSetting('email.smtp.host') ?? null,
-        port: portRaw ? Number(portRaw) : null,
-        user: getSetting('email.smtp.user') ?? null,
-        passSet: hasSetting('email.smtp.pass'),
-        tls: getSetting('email.smtp.tls') !== 'false',
-      },
-    }
-  },
-  {
-    detail: { tags: ['Admin'], summary: 'Read email provider settings (secrets masked)', operationId: 'getEmailSettings' },
-    response: { 200: settingsViewSchema, 401: t.Object({ error: t.String() }) },
-  },
-)
+      response: { 200: settingsViewSchema, 401: t.Object({ error: t.String() }) },
+    },
+  )
   .put(
     '/',
     async ({ body }) => {
@@ -110,9 +116,11 @@ export default new Elysia().use(adminMiddleware).get(
       await setSetting('email.from.overrides', JSON.stringify(body.from.overrides))
 
       if (body.turbo) {
-        if (body.turbo.apiKey !== undefined) await setSetting('email.turbo.api_key', body.turbo.apiKey, { encrypted: true })
+        if (body.turbo.apiKey !== undefined)
+          await setSetting('email.turbo.api_key', body.turbo.apiKey, { encrypted: true })
         if (body.turbo.consumerKey !== undefined) await setSetting('email.turbo.consumer_key', body.turbo.consumerKey)
-        if (body.turbo.consumerSecret !== undefined) await setSetting('email.turbo.consumer_secret', body.turbo.consumerSecret, { encrypted: true })
+        if (body.turbo.consumerSecret !== undefined)
+          await setSetting('email.turbo.consumer_secret', body.turbo.consumerSecret, { encrypted: true })
         if (body.turbo.region !== undefined) await setSetting('email.turbo.region', body.turbo.region)
       }
 
@@ -128,6 +136,10 @@ export default new Elysia().use(adminMiddleware).get(
     {
       detail: { tags: ['Admin'], summary: 'Write email provider settings', operationId: 'putEmailSettings' },
       body: putBodySchema,
-      response: { 200: t.Object({ ok: t.Boolean() }), 400: t.Object({ error: t.String() }), 401: t.Object({ error: t.String() }) },
+      response: {
+        200: t.Object({ ok: t.Boolean() }),
+        400: t.Object({ error: t.String() }),
+        401: t.Object({ error: t.String() }),
+      },
     },
   )

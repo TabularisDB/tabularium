@@ -16,7 +16,9 @@ import { Cron } from 'croner'
 import { convert } from 'html-to-text'
 
 test('mjml compiles a minimal document', async () => {
-  const out = await mjml2html('<mjml><mj-body><mj-section><mj-column><mj-text>Hi</mj-text></mj-column></mj-section></mj-body></mjml>')
+  const out = await mjml2html(
+    '<mjml><mj-body><mj-section><mj-column><mj-text>Hi</mj-text></mj-column></mj-section></mj-body></mjml>',
+  )
   expect(out.html).toContain('Hi')
   expect(out.errors).toHaveLength(0)
 })

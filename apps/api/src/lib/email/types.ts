@@ -1,13 +1,10 @@
-export type EmailTrigger =
-  | 'account.welcome'
-  | 'plugin.approved'
-  | 'plugin.rejected'
+export type EmailTrigger = 'account.welcome' | 'plugin.approved' | 'plugin.rejected'
 
 export type EmailCategory =
-  | 'account'           // always-on transactional (welcome, security)
-  | 'owner_ops'         // plugin owner notifications (approved/rejected/yank-of-own-plugin)
-  | 'plugin_updates'    // opt-in: subscribed plugin published a new version
-  | 'newsletter'        // opt-in marketing (P4)
+  | 'account' // always-on transactional (welcome, security)
+  | 'owner_ops' // plugin owner notifications (approved/rejected/yank-of-own-plugin)
+  | 'plugin_updates' // opt-in: subscribed plugin published a new version
+  | 'newsletter' // opt-in marketing (P4)
 
 export const TRIGGER_TO_CATEGORY: Record<EmailTrigger, EmailCategory> = {
   'account.welcome': 'account',
@@ -28,7 +25,7 @@ export type SendEmailInput = {
 }
 
 export type EmailMessage = {
-  from: string                        // '"Name" <addr>' form
+  from: string // '"Name" <addr>' form
   to: string
   subject: string
   htmlContent: string

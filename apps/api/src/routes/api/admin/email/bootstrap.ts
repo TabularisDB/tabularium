@@ -8,7 +8,11 @@ export type BootstrapDriver = {
   authorize(email: string, password: string, region: Region): Promise<{ auth: string }>
   listConsumerKeys(apiKey: string, region: Region): Promise<Array<{ label: string; consumer_key: string }>>
   deleteConsumerKey(apiKey: string, key: string, region: Region): Promise<{ ok: boolean }>
-  createConsumerKey(apiKey: string, label: string, region: Region): Promise<{ consumer_key: string; consumer_secret: string }>
+  createConsumerKey(
+    apiKey: string,
+    label: string,
+    region: Region,
+  ): Promise<{ consumer_key: string; consumer_secret: string }>
   sendTestMail(
     apiKey: string,
     consumerKey: string,
@@ -29,8 +33,9 @@ const realDriver: BootstrapDriver = {
     const c = new TurboSmtp({ apiKey, region })
     const page = await c.consumerKeys.list()
     return page.results
-      .filter((r): r is typeof r & { label: string; consumerKey: string } =>
-        typeof r.label === 'string' && typeof r.consumerKey === 'string',
+      .filter(
+        (r): r is typeof r & { label: string; consumerKey: string } =>
+          typeof r.label === 'string' && typeof r.consumerKey === 'string',
       )
       .map((r) => ({ label: r.label, consumer_key: r.consumerKey }))
   },
@@ -87,7 +92,14 @@ export default new Elysia().use(adminMiddleware).post(
       await setSetting('email.turbo.consumer_secret', created.consumer_secret, { encrypted: true })
 
       const from = `"Tabularium" <${body.email}>`
-      const { mid } = await driver().sendTestMail(apiKey, created.consumer_key, created.consumer_secret, region, body.email, from)
+      const { mid } = await driver().sendTestMail(
+        apiKey,
+        created.consumer_key,
+        created.consumer_secret,
+        region,
+        body.email,
+        from,
+      )
 
       await recordAudit({
         ...actorFromAdmin(admin, request),
@@ -109,7 +121,11 @@ export default new Elysia().use(adminMiddleware).post(
     }
   },
   {
-    detail: { tags: ['Admin'], summary: 'Bootstrap TurboSMTP from email + password', operationId: 'bootstrapTurboEmail' },
+    detail: {
+      tags: ['Admin'],
+      summary: 'Bootstrap TurboSMTP from email + password',
+      operationId: 'bootstrapTurboEmail',
+    },
     body: t.Object({
       email: t.String({ minLength: 5, maxLength: 254 }),
       password: t.String({ minLength: 1, maxLength: 200 }),

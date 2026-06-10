@@ -5,13 +5,7 @@ import { getSetting } from '../settings'
 import { logger } from '../logger'
 import { renderTemplate } from './render'
 import { TRIGGER_TO_CATEGORY } from './types'
-import type {
-  EmailMessage,
-  EmailProvider,
-  EmailTrigger,
-  SendEmailInput,
-  SendOutcome,
-} from './types'
+import type { EmailMessage, EmailProvider, EmailTrigger, SendEmailInput, SendOutcome } from './types'
 import { buildTurboProvider } from './providers/turbo'
 import { buildSmtpProvider } from './providers/smtp'
 
