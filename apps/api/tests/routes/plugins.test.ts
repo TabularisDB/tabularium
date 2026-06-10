@@ -119,9 +119,7 @@ describe('GET /api/plugins/:slug/releases/:version', () => {
 
   it('returns 404 for unknown slug', async () => {
     const app = await buildApp()
-    const res = await app.handle(
-      new Request('http://localhost/api/plugins/nope/releases/1.0.0?os=linux&arch=x64'),
-    )
+    const res = await app.handle(new Request('http://localhost/api/plugins/nope/releases/1.0.0?os=linux&arch=x64'))
     expect(res.status).toBe(404)
   })
 

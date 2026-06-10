@@ -1,6 +1,6 @@
 import { test, expect, beforeEach } from 'bun:test'
 import { buildApp, clearDb, makeAdmin, adminHeaders } from '../helpers'
-import { setSetting, hasSetting, getSetting } from '../../src/lib/settings'
+import { hasSetting, getSetting } from '../../src/lib/settings'
 import { __setBootstrapClientForTests } from '../../src/routes/api/admin/email/bootstrap'
 
 beforeEach(clearDb)
