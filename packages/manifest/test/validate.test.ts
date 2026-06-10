@@ -88,16 +88,10 @@ describe('validateManifest', () => {
         theme: { 'x-theme': { type: 'string' } },
       },
     })
-    const ok = validateManifest(
-      { name: 'midnight', version: '1.0.0', kind: 'theme', 'x-theme': 'light' },
-      schema,
-    )
+    const ok = validateManifest({ name: 'midnight', version: '1.0.0', kind: 'theme', 'x-theme': 'light' }, schema)
     expect(ok.ok).toBe(true)
 
-    const bad = validateManifest(
-      { name: 'midnight', version: '1.0.0', kind: 'theme', 'x-theme': 42 },
-      schema,
-    )
+    const bad = validateManifest({ name: 'midnight', version: '1.0.0', kind: 'theme', 'x-theme': 42 }, schema)
     expect(bad.ok).toBe(false)
     if (!bad.ok) {
       expect(bad.errors.some((e) => e.path === '/x-theme' && e.code === 'type')).toBe(true)

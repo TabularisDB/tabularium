@@ -1,6 +1,5 @@
 import { test, expect, beforeEach } from 'bun:test'
 import { db } from '../../src/db'
-import { emailLog } from '../../src/db/schema'
 import { clearDb, makeUser } from '../helpers'
 import { sendEmail, __setProviderForTests } from '@tabularium/plugin-email'
 import type { EmailProvider } from '@tabularium/plugin-email/types'

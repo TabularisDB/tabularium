@@ -54,6 +54,7 @@ FROM docker.io/oven/bun:1.3-alpine@sha256:5acc90a93e91ff07bf72aa90a7c9f0fa189765
 WORKDIR /repo
 
 COPY apps/api/package.json ./apps/api/
+COPY apps/api/vendor ./apps/api/vendor
 COPY packages/manifest/package.json ./packages/manifest/
 COPY packages/tsconfig/package.json ./packages/tsconfig/
 COPY packages/core-schema/package.json ./packages/core-schema/
