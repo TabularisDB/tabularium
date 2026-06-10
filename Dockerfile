@@ -11,6 +11,12 @@ COPY packages/client/package.json ./packages/client/
 COPY packages/cli/package.json ./packages/cli/
 COPY packages/manifest/package.json ./packages/manifest/
 COPY packages/tsconfig/package.json ./packages/tsconfig/
+# The api ships a vendored TurboSMTP SDK as a tgz inside its workspace dir
+# and pins it via "turbosmtp": "./vendor/turbosmtp-0.1.0.tgz". Bun resolves
+# file: URLs at install time, so the tgz must be in the context before
+# `bun install` runs — otherwise the build dies with "ENOENT extracting
+# tarball from turbosmtp".
+COPY apps/api/vendor ./apps/api/vendor
 
 RUN bun install --frozen-lockfile
 
@@ -28,6 +34,7 @@ FROM docker.io/oven/bun:1.3-alpine@sha256:5acc90a93e91ff07bf72aa90a7c9f0fa189765
 WORKDIR /repo
 
 COPY apps/api/package.json ./apps/api/
+COPY apps/api/vendor ./apps/api/vendor
 COPY packages/manifest/package.json ./packages/manifest/
 COPY packages/tsconfig/package.json ./packages/tsconfig/
 

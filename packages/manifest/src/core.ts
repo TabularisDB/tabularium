@@ -8,15 +8,13 @@ export const SEMVER_VERSION_PATTERN = '^[0-9]+\\.[0-9]+\\.[0-9]+(?:-[0-9A-Za-z.-
 // Locked core. Operator-editable fields live in `manifest.extensions_schema`,
 // not here.
 export const ManifestSchema = Type.Object({
-  name: Type.Optional(
-    Type.String({
-      minLength: 1,
-      maxLength: 64,
-      pattern: '^[a-z][a-z0-9-]*$',
-      description:
-        'URL slug, canonical package name, and default display title. Must start with a letter; lowercase alphanumerics + hyphens only. Optional — registries fall back to a sanitized repo name when omitted.',
-    }),
-  ),
+  name: Type.String({
+    minLength: 1,
+    maxLength: 64,
+    pattern: '^[a-z][a-z0-9-]*$',
+    description:
+      'URL slug, canonical package name, and default display title. Must start with a letter; lowercase alphanumerics + hyphens only. REQUIRED — pinned at first submit; changing it later does not rename the existing slug. Use the README for prose / branding; no separate display-name field.',
+  }),
   version: Type.String({
     minLength: 1,
     maxLength: 40,
