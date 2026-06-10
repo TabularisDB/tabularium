@@ -16,7 +16,7 @@ describe('flattenSchemaProps', () => {
     const name = fields.find((f) => f.key === 'name')
     expect(name).toBeDefined()
     expect(name!.type).toBe('string')
-    expect(name!.required).toBe(false) // optional in core
+    expect(name!.required).toBe(true) // required in core
   })
 
   it('marks field required when present in schema.required array', () => {
