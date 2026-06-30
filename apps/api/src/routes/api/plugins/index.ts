@@ -131,7 +131,11 @@ export default new Elysia().get(
     const tagFilter = kindFilterActive ? kindParam! : tag
     const verifiedOnly = query.verified === '1'
     const extFilters = parseExtFilters(query as Record<string, string | undefined>)
-    const where: RelationalFilter = { status: 'approved' }
+    // manifestVersion is non-null only after a valid .tabularium has been
+    // resolved and applied at ingest. Gating on it keeps manifest-less repos
+    // (release published, no manifest asset) out of the public catalog — being
+    // approved alone is not enough to be listed.
+    const where: RelationalFilter = { status: 'approved', manifestVersion: { isNotNull: true } }
     if (category) where.category = category
     if (tagFilter) where.tags = { like: tagLikePattern(tagFilter) }
     if (query.featured === '1') where.featured = 1
@@ -161,7 +165,7 @@ export default new Elysia().get(
         rows = result.ids.map((id) => byId.get(id)).filter((p): p is (typeof fetched)[number] => Boolean(p))
       }
     } else {
-      const builderConditions = [eq(plugins.status, 'approved')]
+      const builderConditions = [eq(plugins.status, 'approved'), isNotNull(plugins.manifestVersion)]
       if (category) builderConditions.push(eq(plugins.category, category))
       if (tagFilter) builderConditions.push(like(plugins.tags, tagLikePattern(tagFilter)))
       if (query.featured === '1') builderConditions.push(eq(plugins.featured, 1))
@@ -190,10 +194,11 @@ export default new Elysia().get(
       }
     }
 
+    const listable = and(eq(plugins.status, 'approved'), isNotNull(plugins.manifestVersion))
     const categoryRows = await db
       .select({ value: plugins.category, count: count() })
       .from(plugins)
-      .where(eq(plugins.status, 'approved'))
+      .where(listable)
       .groupBy(plugins.category)
     const categories = categoryRows
       .filter((c: { value: string | null; count: number }) => c.value !== null)
@@ -203,7 +208,7 @@ export default new Elysia().get(
     const kinds = getKinds()
     let kindFacet: Array<{ key: string; label: string; count: number }> = []
     if (kinds.length > 0) {
-      const tagRows = await db.select({ tags: plugins.tags }).from(plugins).where(eq(plugins.status, 'approved'))
+      const tagRows = await db.select({ tags: plugins.tags }).from(plugins).where(listable)
       const counts = new Map<string, number>()
       for (const row of tagRows) {
         if (!row.tags) continue

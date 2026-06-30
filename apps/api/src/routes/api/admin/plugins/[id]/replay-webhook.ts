@@ -78,8 +78,8 @@ export default new Elysia().use(adminMiddleware).post(
     }
 
     queueMicrotask(async () => {
-      const sha = await refreshManifestAtRelease(plugin, normalized.tag, version)
-      if (sha) await persistRelease(plugin, normalized, { manifestSha256: sha })
+      const manifest = await refreshManifestAtRelease(plugin, normalized.tag, version)
+      if (manifest) await persistRelease(plugin, normalized, { manifestSha256: manifest.sha, manifestRaw: manifest.raw })
     })
 
     queueMicrotask(() => {

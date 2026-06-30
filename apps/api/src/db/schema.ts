@@ -130,6 +130,10 @@ export const releases = sqliteTable(
     yankReason: text('yank_reason'),
     assets: text('assets').notNull(), // JSON string
     manifestSha256: text('manifest_sha256'),
+    // Canonical raw .tabularium bytes, stored verbatim at ingest so the
+    // registry can serve the manifest itself — clients verify
+    // sha256(manifest_raw) === manifestSha256 (JWS-signed) without the forge.
+    manifestRaw: text('manifest_raw'),
     createdAt: integer('created_at').notNull().$defaultFn(now),
   },
   (t) => ({

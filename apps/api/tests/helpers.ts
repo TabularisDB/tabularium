@@ -132,6 +132,11 @@ export async function makePlugin(ownerId: string, overrides: Partial<typeof sche
     repoUrl: 'https://github.com/testuser/test-plugin',
     homepage: 'https://github.com/testuser/test-plugin',
     latestVersion: null,
+    // A catalog-listable plugin has had a manifest applied at ingest; the
+    // listing gate requires manifestVersion to be non-null. Default it so
+    // fixtures behave like real listable plugins — override with null to
+    // simulate a manifest-less repo that should stay unlisted.
+    manifestVersion: '1.0.0',
     webhookSecret: 'test-webhook-secret',
     ...overrides,
   }

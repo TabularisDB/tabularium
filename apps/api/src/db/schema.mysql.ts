@@ -123,6 +123,8 @@ export const releases = mysqlTable(
     yankReason: text('yank_reason'),
     assets: text('assets').notNull(),
     manifestSha256: varchar('manifest_sha256', { length: 64 }),
+    // Canonical raw .tabularium bytes — see schema.ts for rationale.
+    manifestRaw: text('manifest_raw'),
     createdAt: ts('created_at').notNull().$defaultFn(now),
   },
   (t) => ({

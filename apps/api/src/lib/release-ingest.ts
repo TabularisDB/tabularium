@@ -31,7 +31,7 @@ const log = logger.child({ module: 'release-ingest' })
 export async function persistRelease(
   plugin: { id: string; latestVersion: string | null },
   normalized: NormalizedRelease,
-  opts: { manifestSha256?: string | null } = {},
+  opts: { manifestSha256?: string | null; manifestRaw?: string | null } = {},
 ): Promise<{ version: string; assetMap: AssetMap }> {
   // Strict semver gate: rejecting here keeps lax tags ("v1.2", "release-foo")
   // out of the releases table entirely. Manifest-side validation already
@@ -45,14 +45,26 @@ export async function persistRelease(
     if (key) assetMap[key] = { url: asset.url }
   }
 
-  const sha = opts.manifestSha256 ?? null
+  // Only overwrite manifest columns when the caller actually resolved a
+  // manifest this pass. Asset-only re-ingests (rehash, asset backfill) leave
+  // a previously-signed manifestSha256/manifestRaw intact instead of nulling
+  // it — a wiped hash would make the integrity endpoint silently 404.
+  const set: { assets: string; manifestSha256?: string | null; manifestRaw?: string | null } = {
+    assets: serializeAssets(assetMap),
+  }
+  if (opts.manifestSha256 !== undefined) set.manifestSha256 = opts.manifestSha256
+  if (opts.manifestRaw !== undefined) set.manifestRaw = opts.manifestRaw
   await db
     .insert(releases)
-    .values({ id: ulid(), pluginId: plugin.id, version, assets: serializeAssets(assetMap), manifestSha256: sha })
-    .onConflictDoUpdate({
-      target: [releases.pluginId, releases.version],
-      set: { assets: serializeAssets(assetMap), manifestSha256: sha },
+    .values({
+      id: ulid(),
+      pluginId: plugin.id,
+      version,
+      assets: serializeAssets(assetMap),
+      manifestSha256: opts.manifestSha256 ?? null,
+      manifestRaw: opts.manifestRaw ?? null,
     })
+    .onConflictDoUpdate({ target: [releases.pluginId, releases.version], set })
 
   if (!plugin.latestVersion || compareSemver(version, plugin.latestVersion) > 0) {
     await db.update(plugins).set({ latestVersion: version, updatedAt: Date.now() }).where(eq(plugins.id, plugin.id))
@@ -186,7 +198,7 @@ export async function refreshManifestAtRelease(
   tag: string,
   version: string,
   assets: Array<{ name: string; url: string }> = [],
-): Promise<string | null> {
+): Promise<{ sha: string; raw: string } | null> {
   const ref = parseRepoUrl(plugin.repoUrl)
   if (!ref) return null
   const ownerIdentity = await db.query.identities.findFirst({
@@ -299,7 +311,7 @@ export async function refreshManifestAtRelease(
     await cache().del(latestCacheKey(plugin.id))
     const sha = manifestSha256(manifest.raw)
     log.info({ slug: plugin.id, version }, 'manifest refreshed at release')
-    return sha
+    return { sha, raw: manifest.raw }
   } catch (err) {
     const reason = err instanceof Error ? err.message : String(err)
     log.warn({ err, slug: plugin.id }, 'manifest apply failed after fetch succeeded')
@@ -389,6 +401,15 @@ async function recheckAssetsOnce(plugin: PluginRef, tag: string, version: string
   try {
     const patch = manifestPatch(manifest, { repoBase: rawContentBase(ref, tag), version: expectedVersion })
     await applyManifestToPlugin(plugin.id, patch)
+
+    // Persist the canonical manifest + its signed hash on the release row so
+    // the integrity and raw-manifest endpoints work for late-recovered
+    // releases too (this path runs when CI uploads the manifest seconds after
+    // the publish webhook, so the original persistRelease saw no manifest).
+    await db
+      .update(releases)
+      .set({ manifestSha256: manifestSha256(manifest.raw), manifestRaw: manifest.raw })
+      .where(and(eq(releases.pluginId, plugin.id), eq(releases.version, expectedVersion)))
 
     // Back-fill the binary asset URL map. The original webhook race left
     // releases.assets={} (the publish event fires before CI uploads the zips);

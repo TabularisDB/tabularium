@@ -11,7 +11,7 @@ import {
   assertManifestVersionMatches,
   ManifestVersionMismatchError,
 } from '$lib/manifest-apply'
-import { persistRelease, hashReleaseAssetsAsync } from '$lib/release-ingest'
+import { persistRelease, hashReleaseAssetsAsync, manifestSha256 } from '$lib/release-ingest'
 import { recordAudit } from '$lib/audit'
 import { getSetting } from '$lib/settings'
 import { logger } from '$lib/logger'
@@ -162,7 +162,10 @@ export default new Elysia().use(publisherTokenMiddleware).post(
         tag,
         assets: body.assets.map((a) => ({ name: a.name, url: a.url })),
       }
-      const { assetMap } = await persistRelease({ id: slug, latestVersion: null }, normalized)
+      const { assetMap } = await persistRelease({ id: slug, latestVersion: null }, normalized, {
+        manifestSha256: manifestSha256(body.manifest),
+        manifestRaw: body.manifest,
+      })
 
       // Apply manifest fields (category, tags, icon, extensions, …) to the
       // freshly-created plugin row.
@@ -261,7 +264,10 @@ export default new Elysia().use(publisherTokenMiddleware).post(
       tag,
       assets: body.assets.map((a) => ({ name: a.name, url: a.url })),
     }
-    const { assetMap } = await persistRelease({ id: slug, latestVersion: existing.latestVersion }, normalized)
+    const { assetMap } = await persistRelease({ id: slug, latestVersion: existing.latestVersion }, normalized, {
+      manifestSha256: manifestSha256(body.manifest),
+      manifestRaw: body.manifest,
+    })
 
     const patch = manifestPatch(
       { raw: body.manifest, parsed, readmeMarkdown: null, readmeLocales: null },

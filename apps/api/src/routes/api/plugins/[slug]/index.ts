@@ -30,6 +30,7 @@ const integritySchema = t.Object({
       attestation_bundle: t.Any(),
     }),
   ),
+  manifest_raw: t.Nullable(t.String()),
 })
 
 const releaseSchema = t.Object({
