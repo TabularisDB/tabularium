@@ -1,5 +1,5 @@
 import { existsSync, readFileSync } from 'node:fs'
-import { resolve } from 'node:path'
+import { dirname, resolve } from 'node:path'
 import { logger } from '$lib/logger'
 import { getSetting, hasSetting, setSetting, isSettingsInitialized } from '$lib/settings'
 
@@ -184,8 +184,118 @@ export function listInstalled(): InstalledPlugin[] {
   return [...installs.values()]
 }
 
+/**
+ * Walk up from a plugin entry-point file until we find a sibling `package.json`,
+ * then return that directory. Used to anchor docs/README probing without
+ * encoding the workspace vs bundled layout difference at the call site.
+ *
+ * Returns null when no package.json shows up before the filesystem root —
+ * defensive case that shouldn't fire for real installs since the installer
+ * resolved the entry through a package.json in the first place.
+ */
+export function pluginPackageDir(entryPoint: string): string | null {
+  let current = dirname(entryPoint)
+  for (let i = 0; i < 8; i++) {
+    if (existsSync(resolve(current, 'package.json'))) return current
+    const parent = dirname(current)
+    if (parent === current) return null
+    current = parent
+  }
+  return null
+}
+
+/**
+ * Read the localized README for an installed plugin.
+ *
+ * Looks for `<pkgDir>/docs/README.<locale>.md`; falls back to `README.en.md`
+ * if the requested locale doesn't exist; returns null when neither does.
+ * Plugin authors get the convention from the docs alongside `requires` /
+ * `contributions`; the kernel never demands a README, but the admin plugins
+ * page renders this string into the details modal when it's present.
+ */
+export function readPluginReadme(entryPoint: string, locale: string): string | null {
+  const pkgDir = pluginPackageDir(entryPoint)
+  if (!pkgDir) return null
+  const candidates = [resolve(pkgDir, 'docs', `README.${locale}.md`)]
+  // Always fall back to en — keeps the modal non-empty when an admin runs in
+  // a locale the plugin author hasn't translated yet.
+  if (locale !== 'en') candidates.push(resolve(pkgDir, 'docs', 'README.en.md'))
+  for (const path of candidates) {
+    if (!existsSync(path)) continue
+    try {
+      return readFileSync(path, 'utf8')
+    } catch {
+      // unreadable — try next candidate
+    }
+  }
+  return null
+}
+
+export interface AvailableProbe {
+  id: string
+  version: string | null
+  source: 'workspace' | 'bundled' | null
+  description: string | null
+  entryPoint: string | null
+}
+
+function readDescription(packageJsonPath: string): string | null {
+  try {
+    const pkg = JSON.parse(readFileSync(packageJsonPath, 'utf8')) as { description?: string }
+    return pkg.description ?? null
+  } catch {
+    return null
+  }
+}
+
+/**
+ * Probe a known plugin id for its package metadata WITHOUT touching the
+ * installer's persistent record. Used by the admin plugins page to surface
+ * "Available" plugins (workspace/bundled but never installed) so the operator
+ * can see version + description before clicking Install.
+ *
+ * Returns nulls in every field when no source resolves so the caller can still
+ * render the row with at-least-the-id.
+ */
+export function probeAvailable(id: string): AvailableProbe {
+  const ws = workspaceEntry(id)
+  if (ws) {
+    return {
+      id,
+      version: readVersion(ws.pkgJson),
+      source: 'workspace',
+      description: readDescription(ws.pkgJson),
+      entryPoint: ws.entry,
+    }
+  }
+  const bd = bundledEntry(id)
+  if (bd) {
+    return {
+      id,
+      version: readVersion(bd.pkgJson),
+      source: 'bundled',
+      description: readDescription(bd.pkgJson),
+      entryPoint: bd.entry,
+    }
+  }
+  return { id, version: null, source: null, description: null, entryPoint: null }
+}
+
 export function getInstalled(id: string): InstalledPlugin | null {
   return installs.get(id) ?? null
+}
+
+/**
+ * Drop the in-process install record for a plugin. The persisted
+ * `plugins.installed.<id>` setting is the caller's responsibility — this
+ * function only touches the in-memory `installs` map.
+ *
+ * Returns true when a record was actually removed. Used by the admin uninstall
+ * endpoint so the GET /api/admin/infra/plugins listing reflects the deletion
+ * immediately rather than waiting for next boot.
+ */
+export function deleteInstalled(id: string): boolean {
+  return installs.delete(id)
 }
 
 export function __clearInstallsForTests(): void {

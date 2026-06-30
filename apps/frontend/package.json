@@ -5,11 +5,11 @@
 	"type": "module",
 	"scripts": {
 		"dev": "NODE_OPTIONS=--no-deprecation vite dev --port 5180",
-		"build": "vite build",
+		"build": "bun scripts/sync-plugin-messages.ts && vite build",
 		"preview": "vite preview",
-		"prepare": "svelte-kit sync || echo ''",
-		"check": "paraglide-js compile --project project.inlang --outdir src/lib/paraglide --silent && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
-		"check:watch": "paraglide-js compile --project project.inlang --outdir src/lib/paraglide --silent && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
+		"prepare": "bun scripts/sync-plugin-messages.ts && svelte-kit sync || echo ''",
+		"check": "bun scripts/sync-plugin-messages.ts && paraglide-js compile --project project.inlang --outdir src/lib/paraglide --silent && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json",
+		"check:watch": "bun scripts/sync-plugin-messages.ts && paraglide-js compile --project project.inlang --outdir src/lib/paraglide --silent && svelte-kit sync && svelte-check --tsconfig ./tsconfig.json --watch",
 		"machine-translate": "inlang machine translate --project project.inlang"
 	},
 	"devDependencies": {
@@ -39,6 +39,7 @@
 		"@tabularium/client": "workspace:*",
 		"@tabularium/plugin-discord-notifier": "workspace:*",
 		"@tabularium/plugin-email": "workspace:*",
+		"@tabularium/plugin-turbosmtp": "workspace:*",
 		"@tanstack/svelte-query": "^5.62.0",
 		"bits-ui": "^2.4.1",
 		"clsx": "^2.1.1",

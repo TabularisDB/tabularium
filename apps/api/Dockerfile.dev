@@ -10,7 +10,7 @@ RUN apk add --no-cache bash
 
 WORKDIR /repo
 
-COPY package.json bun.lock turbo.json ./
+COPY package.json bun.lock bunfig.toml turbo.json ./
 COPY apps/api/package.json ./apps/api/
 COPY apps/frontend/package.json ./apps/frontend/
 COPY packages/client/package.json ./packages/client/

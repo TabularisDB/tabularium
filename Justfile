@@ -18,11 +18,32 @@ dev:
       minikube start -p {{minikube_profile}}
     fi
     echo "Starting tilt..."
-    if pgrep -x tilt >/dev/null; then
-      echo "tilt is already running — open http://localhost:10350"
-    else
-      tilt up
+    default_port=10350
+    # If the default Tilt UI is responsive, leave it alone.
+    if curl -sf --max-time 2 -o /dev/null "http://localhost:${default_port}/api/view"; then
+      echo "tilt is already running — open http://localhost:${default_port}"
+      exit 0
     fi
+    # Default port held by something else (stale tilt, another tool, etc.)?
+    # Pick a free port in 10351..11349 instead of bailing.
+    port=$default_port
+    if (exec 3<>/dev/tcp/127.0.0.1/$port) 2>/dev/null; then
+      exec 3<&- 3>&-
+      for _ in $(seq 1 50); do
+        candidate=$((10351 + RANDOM % 999))
+        if ! (exec 3<>/dev/tcp/127.0.0.1/$candidate) 2>/dev/null; then
+          port=$candidate
+          break
+        fi
+        exec 3<&- 3>&-
+      done
+      if [ "$port" = "$default_port" ]; then
+        echo "could not find a free port near ${default_port} after 50 tries — giving up" >&2
+        exit 1
+      fi
+      echo "port ${default_port} busy — starting tilt on ${port} → open http://localhost:${port}"
+    fi
+    tilt up --port="$port"
 
 # Stop tilt-managed workloads. PVCs (postgres data, dragonfly data) survive.
 down:
@@ -48,8 +69,17 @@ reset:
       "DROP SCHEMA IF EXISTS public CASCADE; DROP SCHEMA IF EXISTS drizzle CASCADE; CREATE SCHEMA public; GRANT ALL ON SCHEMA public TO tabularium;"
     echo "→ Flushing dragonfly cache..."
     kubectl -n $ns exec deploy/dragonfly -- redis-cli FLUSHALL >/dev/null || true
-    echo "→ Bringing tabularium-api back up..."
+    # Bring api back up briefly so we can exec into it and reset the install marker.
+    # config.json lives on a PVC and survives DB schema drops — without flipping
+    # `installed:false` the next boot would see "installed" + empty DB and lock
+    # the user out (no /init wizard, no providers, /login/admin → 404).
+    echo "→ Resetting install marker in /data/config.json so /init runs again..."
     kubectl -n $ns scale deploy/tabularium-api --replicas=1
+    kubectl -n $ns rollout status deploy/tabularium-api --timeout=120s
+    kubectl -n $ns exec deploy/tabularium-api -- bun -e \
+      'const f="/data/config.json"; const c=await Bun.file(f).json(); c.installed=false; await Bun.write(f, JSON.stringify(c, null, 2)+"\n");'
+    echo "→ Restarting api to pick up the flipped marker..."
+    kubectl -n $ns rollout restart deploy/tabularium-api
     kubectl -n $ns rollout status deploy/tabularium-api --timeout=120s
     echo ""
     echo "✓ Reset complete. Open http://localhost:3000/init and click through the wizard."

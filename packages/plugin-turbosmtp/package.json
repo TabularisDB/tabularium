@@ -1,16 +1,26 @@
 {
   "name": "@tabularium/plugin-turbosmtp",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "description": "Tabularium first-party TurboSMTP email provider plugin.",
   "private": true,
   "type": "module",
-  "main": "./src/index.ts",
-  "module": "./src/index.ts",
-  "types": "./src/index.ts",
+  "main": "./src/api/index.ts",
+  "module": "./src/api/index.ts",
+  "types": "./src/api/index.ts",
   "exports": {
     ".": {
-      "types": "./src/index.ts",
-      "default": "./src/index.ts"
+      "types": "./src/api/index.ts",
+      "default": "./src/api/index.ts"
+    },
+    "./frontend/*.svelte": "./src/frontend/*.svelte",
+    "./frontend/*.load": {
+      "types": "./src/frontend/*.load.ts",
+      "default": "./src/frontend/*.load.ts"
+    },
+    "./frontend/*": {
+      "types": "./src/frontend/*.ts",
+      "svelte": "./src/frontend/*.svelte",
+      "default": "./src/frontend/*.ts"
     }
   },
   "scripts": {
@@ -22,6 +32,7 @@
     "@tabularium/tsconfig": "workspace:*"
   },
   "dependencies": {
+    "elysia": "^1.4.28",
     "turbosmtp": "./vendor/turbosmtp-0.1.0.tgz"
   }
 }

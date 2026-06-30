@@ -13,6 +13,22 @@ const loaded = new Set<string>()
 const inProgress = new Set<string>()
 const seededBy = new Map<string, string>()
 const requiredSet = new Set<string>()
+
+// Per-plugin metadata captured at load time so endpoints can answer
+// "what does plugin X require?" / "who depends on plugin Y?" without
+// re-importing the plugin module.
+type StoredMeta = { id: string; version: string; requires: string[] }
+const metaByPlugin = new Map<string, StoredMeta>()
+
+/** Loaded plugin's stored meta — id, version, requires array. */
+export function getPluginStoredMeta(id: string): StoredMeta | null {
+  return metaByPlugin.get(id) ?? null
+}
+
+/** Full snapshot of every loaded plugin's stored meta. */
+export function listPluginStoredMetas(): StoredMeta[] {
+  return [...metaByPlugin.values()]
+}
 const ENABLED_SETTING_KEY = 'infra.plugins.enabled'
 const DEFAULT_ENABLED: string[] = ['email', 'turbosmtp']
 
@@ -28,6 +44,7 @@ export function __clearLoadedForTests(): void {
   inProgress.clear()
   seededBy.clear()
   requiredSet.clear()
+  metaByPlugin.clear()
 }
 
 /** Test-only readback of which plugins got auto-seeded by which requires. */
@@ -38,6 +55,16 @@ export function __seededByForTests(): ReadonlyMap<string, string> {
 /** Plugin ids marked required (CORE_REQUIRED_PLUGINS + infra.plugins.required). */
 export function listRequiredPlugins(): string[] {
   return [...requiredSet].sort()
+}
+
+/** Plugin ids that successfully called register(host) — the live, mounted set. */
+export function listLoadedPlugins(): string[] {
+  return [...loaded].sort()
+}
+
+/** Plugin ids on the operator's `infra.plugins.enabled` list (or default). */
+export function listEnabledPlugins(): string[] {
+  return getEnabledList()
 }
 
 /**
@@ -163,6 +190,11 @@ async function ensureLoaded(id: string, requestedBy?: string): Promise<void> {
     await mod.register(host)
     recordContributions(declaredId, mod.meta.contributions)
     loaded.add(declaredId)
+    metaByPlugin.set(declaredId, {
+      id: declaredId,
+      version: mod.meta.version,
+      requires: [...(mod.meta.requires ?? [])],
+    })
     log.info(
       { id: declaredId, version: mod.meta.version, requestedBy },
       'plugin loaded',

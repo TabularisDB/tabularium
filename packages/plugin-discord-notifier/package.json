@@ -25,6 +25,10 @@
       "default": "./src/api/schema.mysql.ts"
     },
     "./frontend/*.svelte": "./src/frontend/*.svelte",
+    "./frontend/*.load": {
+      "types": "./src/frontend/*.load.ts",
+      "default": "./src/frontend/*.load.ts"
+    },
     "./frontend/*": {
       "types": "./src/frontend/*.ts",
       "svelte": "./src/frontend/*.svelte",

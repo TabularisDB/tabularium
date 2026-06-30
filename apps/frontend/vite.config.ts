@@ -33,7 +33,7 @@ export default defineConfig({
     },
   },
   optimizeDeps: {
-    exclude: ['svelte-sonner', 'bits-ui', 'mode-watcher', '@lucide/svelte', 'svelte-jsoneditor'],
+    exclude: ['svelte-sonner', 'bits-ui', 'mode-watcher', '@lucide/svelte', 'svelte-jsoneditor', 'layerchart'],
   },
   ssr: {
     noExternal: ['svelte-jsoneditor'],

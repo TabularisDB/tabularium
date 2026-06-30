@@ -51,6 +51,7 @@ k8s_yaml([
 workspace_inputs = [
     "package.json",
     "bun.lock",
+    "bunfig.toml",
     "turbo.json",
     "apps/api/package.json",
     "apps/frontend/package.json",

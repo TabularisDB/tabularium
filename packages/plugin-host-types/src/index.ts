@@ -61,10 +61,30 @@ export type EventHandler<K extends keyof DomainEvents> = (
 
 export interface NavEntryContribution {
   id: string
-  href: string
+  /**
+   * Target URL. Optional when the entry is a pure group label whose only role
+   * is to host `children`. If both `href` and `children` are set, the row
+   * navigates AND can be expanded/collapsed by the user.
+   */
+  href?: string
   labelKey: string
   icon: string
   order?: number
+  /**
+   * Attach this entry as a child of the entry with this id (top-level or
+   * nested). Used by satellite plugins (e.g. plugin-turbosmtp) to slot under
+   * an existing group (e.g. plugin-email's `email` entry) without owning the
+   * group declaration.
+   *
+   * If no entry with `parent` id is found at merge time, the entry falls back
+   * to top-level. The frontend logs a warning in dev.
+   */
+  parent?: string
+  /**
+   * Inline children — declares this entry as a group. Render as a collapsible
+   * section in the sidenav. Children are sorted by `order` within their group.
+   */
+  children?: NavEntryContribution[]
 }
 
 export interface PageRouteContribution {

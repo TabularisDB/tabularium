@@ -200,3 +200,18 @@ test('DELETE /api/admin/email/suppression/:email — 404 when no row exists', as
   const data = (await res.json()) as { error: string }
   expect(data.error).toBeTruthy()
 })
+
+test('POST /api/admin/email/suppression/sync — 412 when provider is not turbo', async () => {
+  const admin = await makeAdmin()
+  await setSetting('email.provider', 'smtp')
+  const app = await buildApp()
+  const res = await app.handle(
+    new Request('http://localhost/api/admin/email/suppression/sync', {
+      method: 'POST',
+      headers: adminHeaders(admin),
+    }),
+  )
+  expect(res.status).toBe(412)
+  const data = (await res.json()) as { error: string }
+  expect(data.error).toContain('TurboSMTP')
+})

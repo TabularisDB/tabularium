@@ -1,6 +1,6 @@
 {
   "name": "@tabularium/plugin-email",
-  "version": "1.0.0",
+  "version": "1.2.0",
   "description": "Tabularium first-party email plugin — orchestrator for templates, render, dispatch, preferences, suppression.",
   "private": true,
   "type": "module",
@@ -29,6 +29,10 @@
       "default": "./src/api/schema.mysql.ts"
     },
     "./frontend/*.svelte": "./src/frontend/*.svelte",
+    "./frontend/*.load": {
+      "types": "./src/frontend/*.load.ts",
+      "default": "./src/frontend/*.load.ts"
+    },
     "./frontend/*": {
       "types": "./src/frontend/*.ts",
       "svelte": "./src/frontend/*.svelte",

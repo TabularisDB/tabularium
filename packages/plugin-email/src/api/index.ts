@@ -8,7 +8,7 @@ import { resolveUserContact } from './contact'
 
 export const meta: PluginMeta = {
   id: 'email',
-  version: '1.0.0',
+  version: '1.2.0',
   provides: [],
   contributions: {
     'admin-nav-entry': [
@@ -18,6 +18,22 @@ export const meta: PluginMeta = {
         labelKey: 'admin_nav_email',
         icon: 'mail',
         order: 75,
+        children: [
+          {
+            id: 'email-settings',
+            href: '/admin/email',
+            labelKey: 'admin_nav_email_settings',
+            icon: 'sliders-horizontal',
+            order: 10,
+          },
+          {
+            id: 'email-suppression',
+            href: '/admin/email/suppression',
+            labelKey: 'admin_nav_email_suppression',
+            icon: 'shield-alert',
+            order: 20,
+          },
+        ],
       },
     ],
     'admin-page-route': [

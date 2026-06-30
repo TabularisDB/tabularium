@@ -1,6 +1,6 @@
 {
   "name": "@tabularium/plugin-host-types",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "description": "Type contracts shared between the Tabularium plugin host and first-party plugins.",
   "private": true,
   "type": "module",

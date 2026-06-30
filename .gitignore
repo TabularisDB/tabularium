@@ -7,3 +7,9 @@ dist/
 # Internal working files — not part of the public repo
 /docs/
 /TODO.md
+
+# Claude Code git worktrees — never commit these
+.claude/worktrees/
+
+# Generated knowledge graph — never commit
+graphify-out/

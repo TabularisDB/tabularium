@@ -3,6 +3,7 @@ import { count, desc, eq } from 'drizzle-orm'
 import { host } from '../../../host-handles'
 import { db, schema } from '../../../db'
 import { getUpstreamDriver } from '../../../suppression-driver'
+import { syncOnce } from '../../../suppression-sync'
 import { log as makeLog } from '../../../logger'
 
 const log = makeLog('admin-suppression')
@@ -74,6 +75,45 @@ export default function buildSuppressionListRoute() {
           }),
           response: {
             200: t.Object({ rows: t.Array(rowSchema), total: t.Number(), page: t.Number(), limit: t.Number() }),
+          },
+        },
+      )
+      .post(
+        '/sync',
+        async ({ admin, request, set }) => {
+          const provider = host().settings.get('email.provider')
+          if (provider !== 'turbo') {
+            set.status = 412
+            return { error: 'Suppression sync requires the TurboSMTP provider' }
+          }
+          try {
+            const out = await syncOnce()
+            await host().audit.record({
+              actorId: admin.id,
+              actorName: admin.displayName,
+              action: 'email.suppression_sync',
+              target: 'email:suppression',
+              meta: { added: out.added, checked: out.checked },
+              ip: request.headers.get('x-forwarded-for') ?? null,
+            })
+            return { ok: true, added: out.added, checked: out.checked }
+          } catch (err) {
+            log.warn('manual suppression sync failed', { err })
+            set.status = 502
+            return { error: err instanceof Error ? err.message : 'sync failed' }
+          }
+        },
+        {
+          detail: {
+            tags: ['Admin'],
+            summary: 'Manually trigger upstream suppression sync',
+            operationId: 'syncSuppression',
+            security: [{ bearerAuth: [] }, { cookieAuth: [] }],
+          },
+          response: {
+            200: t.Object({ ok: t.Boolean(), added: t.Number(), checked: t.Number() }),
+            412: t.Object({ error: t.String() }),
+            502: t.Object({ error: t.String() }),
           },
         },
       )

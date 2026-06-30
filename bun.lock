@@ -16,7 +16,7 @@
     },
     "apps/api": {
       "name": "@tabularium/api",
-      "version": "0.23.0",
+      "version": "0.23.1",
       "dependencies": {
         "@elysiajs/cors": "^1.4.2",
         "@elysiajs/openapi": "^1.4.5",
@@ -66,6 +66,7 @@
         "@tabularium/client": "workspace:*",
         "@tabularium/plugin-discord-notifier": "workspace:*",
         "@tabularium/plugin-email": "workspace:*",
+        "@tabularium/plugin-turbosmtp": "workspace:*",
         "@tanstack/svelte-query": "^5.62.0",
         "bits-ui": "^2.4.1",
         "clsx": "^2.1.1",
@@ -133,7 +134,7 @@
     },
     "packages/manifest": {
       "name": "@tabularium/manifest",
-      "version": "0.4.0",
+      "version": "0.4.1",
       "dependencies": {
         "@sinclair/typebox": "^0.34.49",
         "ajv": "^8.17.1",
@@ -199,8 +200,9 @@
     },
     "packages/plugin-turbosmtp": {
       "name": "@tabularium/plugin-turbosmtp",
-      "version": "1.0.0",
+      "version": "1.1.0",
       "dependencies": {
+        "elysia": "^1.4.28",
         "turbosmtp": "./vendor/turbosmtp-0.1.0.tgz",
       },
       "devDependencies": {

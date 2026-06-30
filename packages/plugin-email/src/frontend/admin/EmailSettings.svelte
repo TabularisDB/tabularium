@@ -264,11 +264,7 @@
 	}
 </script>
 
-<AdminPageHeader title="Email" subtitle="Configure how the registry sends notification emails.">
-	{#snippet actions()}
-		<Button variant="outline" size="sm" href="/admin/email/suppression">View suppression list →</Button>
-	{/snippet}
-</AdminPageHeader>
+<AdminPageHeader title="Email" subtitle="Configure how the registry sends notification emails." />
 
 <Card>
 	<CardHeader>

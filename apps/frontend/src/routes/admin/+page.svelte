@@ -5,12 +5,23 @@
 	import Boxes from '@lucide/svelte/icons/boxes'
 	import AlertTriangle from '@lucide/svelte/icons/triangle-alert'
 	import Activity from '@lucide/svelte/icons/activity'
+	import ClipboardList from '@lucide/svelte/icons/clipboard-list'
+	import UserPlus from '@lucide/svelte/icons/user-plus'
 	import Card from '$components/ui/Card.svelte'
 	import CardContent from '$components/ui/CardContent.svelte'
 	import Badge from '$components/ui/Badge.svelte'
+	import Button from '$components/ui/Button.svelte'
 	import { eden } from '$lib/eden'
+	import { auth } from '$lib/stores/auth.svelte'
 	import type { ProviderInstanceAdmin, AdminUser } from '$lib/types'
 	import { m } from '$lib/paraglide/messages'
+
+	const greeting = (() => {
+		const h = new Date().getHours()
+		if (h < 12) return m.admin_overview_hero_greeting_morning()
+		if (h < 18) return m.admin_overview_hero_greeting_afternoon()
+		return m.admin_overview_hero_greeting_evening()
+	})()
 
 	type AdminPluginRow = {
 		id: string
@@ -102,9 +113,35 @@
 	}
 </script>
 
-<header class="space-y-1">
-	<h1 class="text-2xl font-semibold tracking-tight">{m.admin_overview_title()}</h1>
-	<p class="text-sm text-muted-foreground">{m.admin_overview_subtitle()}</p>
+<header
+	class="rounded-xl border border-border bg-gradient-to-br from-primary/5 via-background to-background px-6 py-5 flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4"
+>
+	<div class="space-y-1">
+		<p class="text-xs font-semibold uppercase tracking-wider text-primary">{greeting}</p>
+		<h1 class="text-3xl font-semibold tracking-tight">
+			{auth.user?.displayName ?? auth.user?.username ?? m.admin_topbar_account()}
+		</h1>
+		<p class="text-sm text-muted-foreground">{m.admin_overview_hero_subtitle()}</p>
+	</div>
+	<div class="flex flex-wrap gap-2 shrink-0">
+		<Button href="/admin/plugins?status=pending" variant={counts.pluginsPending > 0 ? 'default' : 'outline'} size="sm">
+			<ClipboardList class="h-3.5 w-3.5" />
+			{m.admin_overview_quick_review()}
+			{#if counts.pluginsPending > 0}
+				<span class="ml-1 inline-flex h-4 min-w-4 items-center justify-center rounded-full bg-background/30 text-[10px] px-1">
+					{counts.pluginsPending}
+				</span>
+			{/if}
+		</Button>
+		<Button href="/admin/providers" variant="outline" size="sm">
+			<Plug class="h-3.5 w-3.5" />
+			{m.admin_overview_quick_add_provider()}
+		</Button>
+		<Button href="/admin/users" variant="outline" size="sm">
+			<UserPlus class="h-3.5 w-3.5" />
+			{m.admin_overview_quick_invite_user()}
+		</Button>
+	</div>
 </header>
 
 <div class="grid grid-cols-2 md:grid-cols-4 gap-4">

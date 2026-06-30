@@ -39,6 +39,7 @@
 	let dbName = $state('registry')
 	let dbUser = $state('registry')
 	let dbPass = $state('')
+	let useSsl = $state(false)
 	let sqlitePath = $state('./data/registry.sqlite')
 
 	let probeState = $state<'idle' | 'probing' | 'ok' | 'failed'>('idle')
@@ -50,7 +51,8 @@
 		const scheme = dialect === 'pg' ? 'postgres' : 'mysql'
 		const auth = dbUser ? `${encodeURIComponent(dbUser)}${dbPass ? `:${encodeURIComponent(dbPass)}` : ''}@` : ''
 		const portPart = port ? `:${port}` : ''
-		return `${scheme}://${auth}${host.trim()}${portPart}/${encodeURIComponent(dbName.trim())}`
+		const sslPart = useSsl ? (dialect === 'pg' ? '?sslmode=require' : '?ssl=true') : ''
+		return `${scheme}://${auth}${host.trim()}${portPart}/${encodeURIComponent(dbName.trim())}${sslPart}`
 	})
 
 	$effect(() => {
@@ -122,6 +124,10 @@
 			dbUser = decodeURIComponent(u.username || '')
 			dbPass = decodeURIComponent(u.password || '')
 			dbName = decodeURIComponent(u.pathname.replace(/^\//, '')) || 'registry'
+			const sslmode = u.searchParams.get('sslmode')
+			const ssl = u.searchParams.get('ssl')
+			useSsl =
+				sslmode === 'require' || sslmode === 'verify-ca' || sslmode === 'verify-full' || ssl === 'true' || ssl === '1'
 		} catch {
 			useUrlInput = true
 		}
@@ -317,6 +323,18 @@
 									/>
 								</div>
 							</div>
+							<label class="flex items-start gap-3 cursor-pointer select-none pt-1">
+								<input
+									type="checkbox"
+									bind:checked={useSsl}
+									disabled={phase === 'submitting'}
+									class="h-4 w-4 rounded border-input mt-0.5"
+								/>
+								<span class="space-y-0.5">
+									<span class="block text-sm">{m.init_db_ssl()}</span>
+									<span class="block text-xs text-muted-foreground">{m.init_db_ssl_hint()}</span>
+								</span>
+							</label>
 						{/if}
 					{:else}
 						<div class="space-y-2">
