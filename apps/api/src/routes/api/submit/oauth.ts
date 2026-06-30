@@ -13,7 +13,7 @@ import { getSetting } from '$lib/settings'
 import { resolveManifest, rawContentBase, ManifestValidationError } from '$lib/manifest'
 import { manifestPatch, applyManifestToPlugin } from '$lib/manifest-apply'
 import { fetchLatestRelease } from '$lib/release-fetch'
-import { persistRelease, hashReleaseAssetsAsync } from '$lib/release-ingest'
+import { persistRelease, hashReleaseAssetsAsync, manifestSha256 } from '$lib/release-ingest'
 import { getFeatures } from '$lib/features'
 import { logger } from '$lib/logger'
 
@@ -153,7 +153,14 @@ export default new Elysia()
           // the same work; persistRelease + hashReleaseAssetsAsync are
           // factored out so both call sites stay in sync.
           if (latestRelease.published) {
-            const { version, assetMap } = await persistRelease({ id: slug, latestVersion: null }, latestRelease)
+            const manifestOpts = manifest
+              ? { manifestSha256: manifestSha256(manifest.raw), manifestRaw: manifest.raw }
+              : {}
+            const { version, assetMap } = await persistRelease(
+              { id: slug, latestVersion: null },
+              latestRelease,
+              manifestOpts,
+            )
             queueMicrotask(() => {
               void hashReleaseAssetsAsync(
                 { id: slug, ownerId: user.sub, repoUrl: body.repoUrl },

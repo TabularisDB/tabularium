@@ -131,6 +131,7 @@ describe('GET /api/plugins verified filter & sort', () => {
       repoUrl: 'r',
       homepage: 'h',
       webhookSecret: 'ws',
+      manifestVersion: '1.0.0',
       updatedAt: t,
     })
     await db.insert(plugins).values({
@@ -145,6 +146,7 @@ describe('GET /api/plugins verified filter & sort', () => {
       webhookSecret: 'ws',
       verifiedAt: t,
       verifiedBy: u.id,
+      manifestVersion: '1.0.0',
       updatedAt: t,
     })
 

@@ -77,7 +77,7 @@ async function searchPgIds(term: string, opts: SearchOptions): Promise<SearchRes
   const prefixQuery = sql`to_tsquery('english', ${prefix + ':*'})`
   const fullQuery = sql`(${tsQuery} || ${prefixQuery})`
 
-  const filters = [eq(plugins.status, opts.status)]
+  const filters = [eq(plugins.status, opts.status), isNotNull(plugins.manifestVersion)]
   if (opts.category) filters.push(eq(plugins.category, opts.category))
   if (opts.featured) filters.push(eq(plugins.featured, 1))
   if (opts.verified) filters.push(isNotNull(plugins.verifiedAt))
@@ -112,7 +112,7 @@ async function searchSqliteIds(term: string, opts: SearchOptions): Promise<Searc
     .map((t) => `"${t}"*`)
     .join(' AND ')
 
-  const filters = [eq(plugins.status, opts.status)]
+  const filters = [eq(plugins.status, opts.status), isNotNull(plugins.manifestVersion)]
   if (opts.category) filters.push(eq(plugins.category, opts.category))
   if (opts.featured) filters.push(eq(plugins.featured, 1))
   if (opts.verified) filters.push(isNotNull(plugins.verifiedAt))
@@ -151,6 +151,7 @@ async function searchMysqlIds(term: string, opts: SearchOptions): Promise<Search
   const like = `%${escapeLike(term)}%`
   const filters = [
     eq(plugins.status, opts.status),
+    isNotNull(plugins.manifestVersion),
     sql`(${plugins.name} LIKE ${like} OR ${plugins.description} LIKE ${like} OR ${plugins.id} LIKE ${like})`,
   ]
   if (opts.category) filters.push(eq(plugins.category, opts.category))

@@ -12,6 +12,11 @@ export type IntegrityAsset = {
 export type IntegrityResult = {
   jws: string
   assets: IntegrityAsset[]
+  // Canonical raw .tabularium served by the registry. Clients verify
+  // sha256(manifest_raw) === the JWS-signed manifest_sha256, so they never
+  // need to fetch the manifest from the forge. Null on legacy releases
+  // ingested before raw storage existed.
+  manifest_raw: string | null
 }
 
 export type BuildIntegrityInput = {
@@ -70,5 +75,5 @@ export async function buildIntegrity(input: BuildIntegrityInput): Promise<Integr
     attestation_bundle: parseAttestationBundle(row.attestationBundle ?? null),
   }))
 
-  return { jws, assets }
+  return { jws, assets, manifest_raw: release.manifestRaw ?? null }
 }

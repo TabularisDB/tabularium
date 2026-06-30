@@ -129,6 +129,8 @@ export const releases = pgTable(
     yankReason: text('yank_reason'),
     assets: text('assets').notNull(),
     manifestSha256: text('manifest_sha256'),
+    // Canonical raw .tabularium bytes — see index.ts for rationale.
+    manifestRaw: text('manifest_raw'),
     createdAt: ts('created_at').notNull().$defaultFn(now),
   },
   (t) => ({

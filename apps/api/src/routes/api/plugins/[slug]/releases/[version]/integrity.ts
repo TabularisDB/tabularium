@@ -42,6 +42,7 @@ export default new Elysia().get(
         version: release.version,
         jws: signed.jws,
         assets: signed.assets,
+        manifest_raw: signed.manifest_raw,
       }
     }
 
@@ -67,6 +68,7 @@ export default new Elysia().get(
           version: t.String(),
           jws: t.String(),
           assets: t.Array(signedAssetSchema),
+          manifest_raw: t.Nullable(t.String()),
         }),
         t.Object({
           slug: t.String(),
