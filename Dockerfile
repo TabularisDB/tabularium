@@ -7,6 +7,12 @@ WORKDIR /repo
 COPY package.json bun.lock turbo.json ./
 COPY apps/api/package.json ./apps/api/
 COPY apps/frontend/package.json ./apps/frontend/
+# apps/website + apps/docs are separate Vercel-deployed sites, not part of the
+# runtime image — but they're `apps/*` workspaces, so their package.json must
+# be present for `bun install --frozen-lockfile` to reconcile the monorepo
+# lockfile. The prod-deps stage below still excludes them from the final image.
+COPY apps/website/package.json ./apps/website/
+COPY apps/docs/package.json ./apps/docs/
 COPY packages/client/package.json ./packages/client/
 COPY packages/cli/package.json ./packages/cli/
 COPY packages/manifest/package.json ./packages/manifest/
