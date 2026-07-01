@@ -1,0 +1,641 @@
+/* ==========================================================================
+   Tabularium Docs — Custom Theme
+   Light + automatic dark mode via prefers-color-scheme.
+   Brand: #6366f1 (stays constant across modes).
+   ========================================================================== */
+
+/* === Theme tokens === */
+:root {
+	--brand: #6366f1;
+	--brand-strong: #4f46e5;
+	--brand-soft: rgba(99, 102, 241, 0.12);
+
+	--bg: #ffffff;
+	--bg-soft: #f8fafc;
+	--bg-elev: #f1f5f9;
+	--fg: #1f2937;
+	--fg-muted: #475569;
+	--fg-subtle: #64748b;
+	--border: #e2e8f0;
+	--border-strong: #cbd5e1;
+	--code-bg: #f1f5f9;
+	--code-fg: #1f2937;
+	--shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.04);
+	--shadow-md: 0 4px 16px rgba(15, 23, 42, 0.06);
+
+	--font-sans: -apple-system, BlinkMacSystemFont, "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+	--font-mono: "JetBrains Mono", "Fira Code", "SF Mono", Menlo, Consolas, monospace;
+}
+
+@media (prefers-color-scheme: dark) {
+	:root {
+		--bg: #0f172a;
+		--bg-soft: #0b1322;
+		--bg-elev: #1e293b;
+		--fg: #e2e8f0;
+		--fg-muted: #94a3b8;
+		--fg-subtle: #64748b;
+		--border: #334155;
+		--border-strong: #475569;
+		--code-bg: #1e293b;
+		--code-fg: #e2e8f0;
+		--shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.4);
+		--shadow-md: 0 4px 20px rgba(0, 0, 0, 0.5);
+	}
+}
+
+/* Keep Docsify's own --theme-color in sync so its internal styles
+   (links, buttons it generates) follow our palette. */
+:root {
+	--theme-color: var(--brand);
+}
+
+/* === Base === */
+html,
+body {
+	background: var(--bg);
+	color: var(--fg);
+	font-family: var(--font-sans);
+	-webkit-font-smoothing: antialiased;
+	-moz-osx-font-smoothing: grayscale;
+}
+
+body {
+	color: var(--fg);
+	background: var(--bg);
+}
+
+::selection {
+	background: var(--brand-soft);
+	color: var(--fg);
+}
+
+/* === Markdown content === */
+.markdown-section {
+	max-width: 880px;
+	color: var(--fg);
+	font-size: 16px;
+	line-height: 1.7;
+	padding: 32px 36px 64px;
+}
+
+.markdown-section p,
+.markdown-section li {
+	max-width: 70ch;
+	line-height: 1.7;
+	color: var(--fg);
+}
+
+.markdown-section h1,
+.markdown-section h2,
+.markdown-section h3,
+.markdown-section h4,
+.markdown-section h5,
+.markdown-section h6 {
+	color: var(--fg);
+	font-family: var(--font-sans);
+	font-weight: 600;
+	line-height: 1.2;
+	letter-spacing: -0.01em;
+}
+
+.markdown-section h1 {
+	font-size: 2rem;
+	font-weight: 700;
+	margin-top: 0;
+	margin-bottom: 1rem;
+}
+
+.markdown-section h2 {
+	font-size: 1.5rem;
+	margin-top: 2.25rem;
+	margin-bottom: 0.85rem;
+	padding-bottom: 0.45rem;
+	border-bottom: 1px solid var(--border);
+}
+
+.markdown-section h3 {
+	font-size: 1.25rem;
+	margin-top: 1.75rem;
+	margin-bottom: 0.65rem;
+}
+
+.markdown-section h4 {
+	font-size: 1.05rem;
+	margin-top: 1.5rem;
+	margin-bottom: 0.5rem;
+	color: var(--fg-muted);
+}
+
+.markdown-section a {
+	color: var(--brand);
+	text-decoration: none;
+	border-bottom: 1px solid transparent;
+	transition: border-color 0.15s ease, color 0.15s ease;
+}
+
+.markdown-section a:hover {
+	color: var(--brand-strong);
+	border-bottom-color: var(--brand);
+}
+
+.markdown-section strong {
+	color: var(--fg);
+	font-weight: 600;
+}
+
+.markdown-section hr {
+	border: none;
+	border-top: 1px solid var(--border);
+	margin: 2rem 0;
+}
+
+/* === Code === */
+.markdown-section code {
+	font-family: var(--font-mono);
+	background: var(--code-bg);
+	color: var(--code-fg);
+	border-radius: 0.3rem;
+	padding: 0.12em 0.4em;
+	font-size: 0.875em;
+	border: 1px solid var(--border);
+}
+
+.markdown-section pre {
+	background: var(--code-bg);
+	border: 1px solid var(--border);
+	border-radius: 0.5rem;
+	padding: 1rem 1.15rem;
+	box-shadow: var(--shadow-sm);
+	overflow-x: auto;
+	line-height: 1.55;
+}
+
+.markdown-section pre > code {
+	background: transparent;
+	border: none;
+	padding: 0;
+	font-size: 0.875rem;
+	color: var(--code-fg);
+}
+
+/* PrismJS token colours — gentle tweak for dark mode legibility */
+@media (prefers-color-scheme: dark) {
+	.markdown-section pre,
+	.markdown-section pre[data-lang]::after {
+		color: var(--code-fg);
+	}
+	.token.comment,
+	.token.prolog,
+	.token.doctype,
+	.token.cdata { color: #64748b; }
+	.token.string,
+	.token.attr-value { color: #86efac; }
+	.token.keyword,
+	.token.boolean,
+	.token.atrule { color: #c4b5fd; }
+	.token.function,
+	.token.class-name { color: #93c5fd; }
+	.token.number,
+	.token.constant { color: #fcd34d; }
+	.token.operator,
+	.token.punctuation { color: var(--fg-muted); }
+	.token.tag,
+	.token.selector { color: #fda4af; }
+	.token.property { color: #67e8f9; }
+}
+
+.docsify-copy-code-button {
+	background: var(--bg-elev) !important;
+	color: var(--fg-muted) !important;
+	border: 1px solid var(--border) !important;
+	border-radius: 0.35rem !important;
+	font-size: 0.7rem !important;
+	font-weight: 500 !important;
+}
+
+.docsify-copy-code-button:hover {
+	color: var(--fg) !important;
+	border-color: var(--border-strong) !important;
+}
+
+/* === Tables === */
+.markdown-section table {
+	display: table;
+	width: 100%;
+	border-collapse: collapse;
+	border-spacing: 0;
+	margin: 1.25rem 0;
+	font-size: 0.95rem;
+	border: 1px solid var(--border);
+	border-radius: 0.5rem;
+	overflow: hidden;
+}
+
+.markdown-section table th,
+.markdown-section table td {
+	border: none;
+	border-bottom: 1px solid var(--border);
+	padding: 0.6rem 0.9rem;
+	text-align: left;
+	background: transparent;
+}
+
+.markdown-section table thead th {
+	background: var(--bg-elev);
+	font-weight: 600;
+	color: var(--fg);
+	border-bottom: 1px solid var(--border-strong);
+}
+
+.markdown-section table tbody tr:last-child td {
+	border-bottom: none;
+}
+
+.markdown-section table tbody tr:nth-child(even) td {
+	background: var(--bg-soft);
+}
+
+/* === Blockquotes === */
+.markdown-section blockquote {
+	border-left: 3px solid var(--brand);
+	background: transparent;
+	margin: 1.25rem 0;
+	padding: 0.25rem 0 0.25rem 1rem;
+	color: var(--fg-muted);
+	font-style: italic;
+}
+
+.markdown-section blockquote p {
+	color: var(--fg-muted);
+	margin: 0.35rem 0;
+}
+
+/* === Lists === */
+.markdown-section ul,
+.markdown-section ol {
+	padding-left: 1.4rem;
+}
+
+.markdown-section li + li {
+	margin-top: 0.25rem;
+}
+
+/* === Sidebar === */
+.sidebar {
+	background: var(--bg-soft);
+	border-right: 1px solid var(--border);
+	padding: 1.25rem 0 2rem;
+	color: var(--fg);
+}
+
+.sidebar > h1,
+.sidebar .app-name {
+	margin: 1rem 0 1.25rem;
+	padding: 0 1.25rem;
+}
+
+.sidebar .app-name-link {
+	color: var(--fg);
+	font-weight: 700;
+	letter-spacing: -0.01em;
+	display: inline-flex;
+	align-items: center;
+	gap: 0.55rem;
+}
+
+.sidebar .app-name-link img {
+	height: 1.5em;
+	vertical-align: -0.3em;
+}
+
+.sidebar-nav {
+	padding: 0 0.75rem;
+	line-height: 1.5;
+}
+
+.sidebar-nav ul {
+	margin: 0;
+	padding: 0;
+}
+
+.sidebar-nav > ul > li {
+	margin-top: 1rem;
+	padding: 0;
+	list-style: none;
+}
+
+.sidebar-nav > ul > li:first-child {
+	margin-top: 0;
+}
+
+/* Top-level section labels: uppercase mini-eyebrow */
+.sidebar-nav > ul > li > p,
+.sidebar-nav > ul > li > strong,
+.sidebar-nav > ul > li > .section-link {
+	display: block;
+	font-size: 0.7rem;
+	font-weight: 600;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+	color: var(--fg-subtle);
+	padding: 0 0.65rem;
+	margin: 0 0 0.4rem;
+}
+
+/* Docsify renders the bold top-level bullets as plain text inside <li>.
+   Catch the case where the section label is the li's own text node by
+   styling direct ul > li that itself contains a sub-ul. */
+.sidebar-nav > ul > li {
+	color: var(--fg-subtle);
+	font-size: 0.7rem;
+	font-weight: 600;
+	letter-spacing: 0.08em;
+	text-transform: uppercase;
+}
+
+.sidebar-nav > ul > li > ul {
+	margin-top: 0.4rem;
+}
+
+/* Reset the inner items back to normal text style */
+.sidebar-nav > ul > li > ul > li {
+	color: var(--fg-muted);
+	font-size: 0.92rem;
+	font-weight: 400;
+	letter-spacing: 0;
+	text-transform: none;
+	margin: 0;
+	list-style: none;
+}
+
+.sidebar-nav a,
+.sidebar-nav li a {
+	display: block;
+	padding: 0.35rem 0.65rem;
+	border-radius: 0.4rem;
+	color: var(--fg-muted);
+	text-decoration: none;
+	transition: background 0.12s ease, color 0.12s ease;
+	border-bottom: none;
+}
+
+.sidebar-nav a:hover {
+	color: var(--fg);
+	background: var(--bg-elev);
+	text-decoration: none;
+}
+
+.sidebar-nav li.active > a,
+.sidebar-nav li.active > a:hover {
+	color: var(--brand);
+	background: var(--brand-soft);
+	font-weight: 500;
+	border-right: none;
+}
+
+.sidebar-toggle {
+	background: transparent;
+}
+
+.sidebar-toggle span {
+	background-color: var(--fg-muted);
+}
+
+/* === Search plugin === */
+.sidebar .search {
+	margin: 0 1rem 1rem;
+	padding-bottom: 1rem;
+	border-bottom: 1px solid var(--border);
+}
+
+.sidebar .search input {
+	background: var(--bg);
+	border: 1px solid var(--border);
+	border-radius: 0.4rem;
+	padding: 0.45rem 0.6rem;
+	color: var(--fg);
+	font-size: 0.9rem;
+	width: 100%;
+	transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+
+.sidebar .search input:focus {
+	border-color: var(--brand);
+	box-shadow: 0 0 0 3px var(--brand-soft);
+	outline: none;
+}
+
+.sidebar .search .clear-button {
+	color: var(--fg-muted);
+}
+
+.sidebar .search .results-panel {
+	color: var(--fg);
+}
+
+.sidebar .search .matching-post {
+	border-bottom: 1px solid var(--border);
+}
+
+.sidebar .search .matching-post a {
+	color: var(--brand);
+}
+
+.sidebar .search h2 {
+	color: var(--fg);
+}
+
+.sidebar .search p {
+	color: var(--fg-muted);
+}
+
+/* === Navbar === */
+.app-nav {
+	margin: 25px 60px 0 0;
+}
+
+.app-nav a {
+	color: var(--fg-muted);
+	font-size: 0.95rem;
+	border-bottom: none;
+	transition: color 0.15s ease;
+}
+
+.app-nav a:hover,
+.app-nav a.active {
+	color: var(--brand);
+	border-bottom: none;
+}
+
+.app-nav li ul {
+	background: var(--bg);
+	border: 1px solid var(--border);
+	border-radius: 0.4rem;
+	box-shadow: var(--shadow-md);
+	padding: 0.35rem 0;
+}
+
+.app-nav li ul li a {
+	color: var(--fg);
+	padding: 0.35rem 0.85rem;
+}
+
+.app-nav li ul li a:hover {
+	background: var(--bg-elev);
+	color: var(--brand);
+}
+
+/* === Cover page === */
+section.cover {
+	background: var(--bg) !important;
+}
+
+section.cover.show {
+	background: radial-gradient(ellipse at top, var(--bg-soft) 0%, var(--bg) 70%) !important;
+}
+
+@media (prefers-color-scheme: dark) {
+	section.cover.show {
+		background:
+			radial-gradient(ellipse 80% 60% at 50% 0%, rgba(99, 102, 241, 0.18) 0%, transparent 60%),
+			var(--bg) !important;
+	}
+}
+
+section.cover .cover-main {
+	color: var(--fg);
+	margin: 0 16px;
+}
+
+section.cover .cover-main > p:not(:last-child) {
+	color: var(--fg-muted);
+}
+
+section.cover h1 {
+	color: var(--fg);
+	font-weight: 700;
+	letter-spacing: -0.02em;
+}
+
+section.cover h1 a {
+	color: var(--fg);
+}
+
+section.cover blockquote {
+	color: var(--fg-muted);
+	border-left: none;
+	font-style: normal;
+}
+
+section.cover blockquote p {
+	color: var(--fg-muted);
+	font-size: 1.15rem;
+}
+
+section.cover ul {
+	color: var(--fg-muted);
+	line-height: 1.8;
+}
+
+/* Primary + secondary cover buttons.
+   The primary button is the FIRST anchor in the final paragraph;
+   the secondary is the SECOND anchor. Fixes the invisible-text bug
+   by setting an explicit foreground colour. */
+section.cover .cover-main > p:last-child a {
+	border-radius: 0.5rem;
+	padding: 0.65rem 1.4rem;
+	font-weight: 500;
+	letter-spacing: 0;
+	transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease, transform 0.1s ease;
+	border-bottom: none;
+}
+
+section.cover .cover-main > p:last-child a:first-child {
+	background: var(--brand);
+	border: 1px solid var(--brand);
+	color: #fff;
+}
+
+section.cover .cover-main > p:last-child a:first-child:hover {
+	background: var(--brand-strong);
+	border-color: var(--brand-strong);
+	color: #fff;
+	transform: translateY(-1px);
+}
+
+section.cover .cover-main > p:last-child a:last-child {
+	background: transparent;
+	border: 1px solid var(--brand);
+	color: var(--brand);
+}
+
+@media (prefers-color-scheme: dark) {
+	section.cover .cover-main > p:last-child a:last-child {
+		color: var(--fg);
+		border-color: var(--brand);
+	}
+}
+
+section.cover .cover-main > p:last-child a:last-child:hover {
+	background: var(--brand-soft);
+	border-color: var(--brand);
+	color: var(--brand);
+}
+
+@media (prefers-color-scheme: dark) {
+	section.cover .cover-main > p:last-child a:last-child:hover {
+		color: var(--fg);
+	}
+}
+
+/* === Pagination (next/prev links if Docsify renders them) === */
+.docsify-pagination-container {
+	border-top: 1px solid var(--border);
+	margin-top: 3rem;
+	padding-top: 1.5rem;
+}
+
+.pagination-item a {
+	color: var(--fg-muted);
+	border-bottom: none;
+}
+
+.pagination-item a:hover {
+	color: var(--brand);
+}
+
+.pagination-item-title {
+	color: var(--fg);
+}
+
+/* === Misc Docsify chrome === */
+.content {
+	background: var(--bg);
+}
+
+body .progress {
+	background-color: var(--brand);
+}
+
+img {
+	max-width: 100%;
+}
+
+/* === Scrollbars (subtle) === */
+@media (prefers-color-scheme: dark) {
+	::-webkit-scrollbar {
+		width: 10px;
+		height: 10px;
+	}
+	::-webkit-scrollbar-track {
+		background: var(--bg);
+	}
+	::-webkit-scrollbar-thumb {
+		background: var(--border-strong);
+		border-radius: 5px;
+	}
+	::-webkit-scrollbar-thumb:hover {
+		background: var(--fg-subtle);
+	}
+}

@@ -1,0 +1,11 @@
+- [Guide](/)
+- [Install](/install.md)
+- [API](/api.md)
+- [Deploy](/deploy.md)
+- Languages
+  - [English](/)
+  - [Deutsch](/de/)
+  - [Español](/es/)
+  - [Français](/fr/)
+  - [Italiano](/it/)
+  - [中文](/zh-CN/)

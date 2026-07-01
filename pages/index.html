@@ -1,0 +1,515 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<title>Tabularium — The Self-Hosted Plugin Registry You Control</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta name="description" content="A complete self-hosted plugin registry. OAuth submission across GitHub, GitLab, Gitea, Forgejo. Release-tracked versioning. Typed catalog API. Deploys with one Docker command." />
+<meta name="robots" content="index, follow, max-image-preview:large" />
+<meta name="googlebot" content="index, follow, max-image-preview:large" />
+<meta name="theme-color" content="#6366f1" />
+<meta property="og:title" content="Tabularium — The Self-Hosted Plugin Registry You Control" />
+<meta property="og:description" content="A complete self-hosted plugin registry. OAuth submission across GitHub, GitLab, Gitea, Forgejo. Release-tracked versioning. Typed catalog API." />
+<meta property="og:image" content="https://tabularium.wiki/assets/banner.svg" />
+<meta property="og:image:type" content="image/svg+xml" />
+<meta property="og:image:width" content="1200" />
+<meta property="og:image:height" content="630" />
+<meta property="og:image:alt" content="Tabularium — self-hosted plugin registry" />
+<meta property="og:type" content="website" />
+<meta property="og:url" content="https://tabularium.wiki/" />
+<meta property="og:site_name" content="Tabularium" />
+<meta property="og:locale" content="en_US" />
+<meta name="twitter:card" content="summary_large_image" />
+<meta name="twitter:title" content="Tabularium — The Self-Hosted Plugin Registry You Control" />
+<meta name="twitter:description" content="A complete self-hosted plugin registry. OAuth submission across GitHub, GitLab, Gitea, Forgejo. Release-tracked versioning. Typed catalog API." />
+<meta name="twitter:image" content="https://tabularium.wiki/assets/banner.svg" />
+<meta name="twitter:image:alt" content="Tabularium — self-hosted plugin registry" />
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml" />
+<link rel="canonical" href="https://tabularium.wiki/" />
+<style>
+*,*::before,*::after{box-sizing:border-box}
+html{scroll-behavior:smooth;-webkit-text-size-adjust:100%}
+body{
+  margin:0;
+  font-family:-apple-system,BlinkMacSystemFont,"Inter","Segoe UI",sans-serif;
+  font-feature-settings:"cv11","ss01","ss03";
+  background:#fafafa;
+  color:#0f172a;
+  line-height:1.6;
+  -webkit-font-smoothing:antialiased;
+}
+:root{
+  --brand:#6366f1;
+  --brand-soft:rgba(99,102,241,0.10);
+  --brand-strong:#4f46e5;
+  --bg:#fafafa;
+  --bg-alt:#ffffff;
+  --bg-tint:#f4f4f7;
+  --fg:#0f172a;
+  --muted:#475569;
+  --hairline:rgba(15,23,42,0.08);
+  --hairline-strong:rgba(15,23,42,0.14);
+  --code-bg:#0f172a;
+  --code-fg:#e2e8f0;
+}
+@media (prefers-color-scheme: dark){
+  body{background:#0a0a0c;color:#e2e8f0}
+  :root{
+    --bg:#0a0a0c;
+    --bg-alt:#101014;
+    --bg-tint:#0e0e12;
+    --fg:#f1f5f9;
+    --muted:#cbd5e1;
+    --hairline:rgba(255,255,255,0.08);
+    --hairline-strong:rgba(255,255,255,0.14);
+    --brand-soft:rgba(99,102,241,0.16);
+    --code-bg:#08080b;
+    --code-fg:#e2e8f0;
+  }
+}
+a{color:inherit;text-decoration:none}
+img,svg{display:block;max-width:100%}
+h1,h2,h3,h4{font-weight:600;letter-spacing:-0.02em;line-height:1.15;margin:0}
+p{margin:0}
+.container{max-width:1120px;margin:0 auto;padding:0 1.5rem}
+
+/* ============ NAV ============ */
+.nav{
+  position:sticky;top:0;z-index:50;
+  height:68px;
+  display:flex;align-items:center;
+  background:color-mix(in srgb,var(--bg) 75%,transparent);
+  backdrop-filter:saturate(160%) blur(14px);
+  -webkit-backdrop-filter:saturate(160%) blur(14px);
+  border-bottom:1px solid var(--hairline);
+}
+.nav-inner{display:flex;align-items:center;justify-content:space-between;width:100%}
+.nav-brand{display:flex;align-items:center;gap:0.6rem;font-weight:600;letter-spacing:-0.01em}
+.nav-brand img{height:34px;width:auto;display:block}
+.nav-links{display:flex;align-items:center;gap:0.25rem}
+.nav-links a{
+  padding:0.5rem 0.9rem;
+  border-radius:0.4rem;
+  font-size:0.92rem;
+  color:var(--muted);
+  transition:color 120ms ease,background 120ms ease;
+}
+.nav-links a:hover{color:var(--fg);background:var(--bg-tint)}
+.nav-cta{
+  margin-left:0.4rem;
+  background:var(--brand);
+  color:#fff !important;
+  padding:0.5rem 0.95rem !important;
+  border-radius:0.45rem;
+  font-weight:500;
+}
+.nav-cta:hover{background:var(--brand-strong) !important}
+@media (max-width:560px){
+  .nav-links a:not(.nav-cta){display:none}
+}
+
+/* ============ HERO ============ */
+.hero{
+  position:relative;
+  min-height:80vh;
+  display:flex;align-items:center;
+  padding:6rem 1.5rem 5rem;
+  overflow:hidden;
+}
+.hero::before{
+  content:"";
+  position:absolute;inset:0;
+  background:
+    radial-gradient(60% 50% at 50% 0%, rgba(99,102,241,0.16), transparent 70%),
+    radial-gradient(40% 35% at 85% 20%, rgba(99,102,241,0.10), transparent 70%);
+  pointer-events:none;
+}
+.hero-inner{position:relative;max-width:880px;margin:0 auto;text-align:center}
+.eyebrow{
+  display:inline-flex;align-items:center;gap:0.5rem;
+  padding:0.35rem 0.9rem;
+  border-radius:999px;
+  border:1px solid var(--hairline-strong);
+  background:var(--brand-soft);
+  color:var(--brand);
+  font-size:0.82rem;font-weight:500;
+  letter-spacing:0.01em;
+  margin-bottom:1.6rem;
+}
+.eyebrow-dot{width:6px;height:6px;border-radius:50%;background:var(--brand);box-shadow:0 0 0 3px rgba(99,102,241,0.20)}
+.hero h1{
+  font-size:clamp(2.5rem,6vw,5.5rem);
+  letter-spacing:-0.035em;
+  line-height:1.02;
+  margin-bottom:1.5rem;
+}
+.hero h1 .accent{
+  background:linear-gradient(135deg,#6366f1 0%,#8b5cf6 100%);
+  -webkit-background-clip:text;
+  background-clip:text;
+  color:transparent;
+}
+.hero p.lead{
+  font-size:clamp(1.05rem,1.6vw,1.25rem);
+  color:var(--muted);
+  max-width:640px;margin:0 auto 0.65rem;
+}
+.hero p.lead-secondary{
+  font-size:clamp(0.95rem,1.3vw,1.05rem);
+  color:var(--muted);
+  opacity:0.85;
+  max-width:640px;margin:0 auto 2.4rem;
+}
+.feature p strong{color:var(--fg);font-weight:600}
+.cta-row{display:flex;flex-wrap:wrap;justify-content:center;gap:0.85rem;margin-bottom:1.5rem}
+.btn{
+  display:inline-flex;align-items:center;gap:0.45rem;
+  padding:0.85rem 1.6rem;
+  border-radius:0.5rem;
+  font-weight:500;font-size:0.98rem;
+  transition:transform 120ms ease,background 120ms ease,border-color 120ms ease,color 120ms ease;
+  border:1px solid transparent;
+  cursor:pointer;
+}
+.btn-primary{background:var(--brand);color:#fff;border-color:var(--brand)}
+.btn-primary:hover{background:var(--brand-strong);border-color:var(--brand-strong);transform:translateY(-1px)}
+.btn-secondary{color:var(--fg);border-color:var(--hairline-strong);background:transparent}
+.btn-secondary:hover{border-color:var(--brand);color:var(--brand);transform:translateY(-1px)}
+.btn .arrow{transition:transform 120ms ease}
+.btn:hover .arrow{transform:translateX(2px)}
+.subtle{font-size:0.85rem;color:var(--muted);opacity:0.85}
+
+/* ============ FEATURES ============ */
+.section{padding:6rem 1.5rem;border-top:1px solid var(--hairline)}
+.section-alt{background:var(--bg-alt)}
+.section-head{text-align:center;max-width:680px;margin:0 auto 3.5rem}
+.section-head h2{
+  font-size:clamp(1.8rem,3.4vw,2.6rem);
+  margin-bottom:0.85rem;
+  letter-spacing:-0.03em;
+}
+.section-head p{color:var(--muted);font-size:1.05rem}
+.features{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:1.25rem;
+  max-width:1080px;margin:0 auto;
+}
+@media (max-width:880px){.features{grid-template-columns:1fr}}
+.feature{
+  padding:1.6rem;
+  background:var(--bg-alt);
+  border:1px solid var(--hairline);
+  border-radius:0.8rem;
+  transition:border-color 160ms ease,transform 160ms ease;
+}
+.section-alt .feature{background:var(--bg-tint)}
+.feature:hover{border-color:var(--hairline-strong);transform:translateY(-2px)}
+.feature-icon{
+  width:38px;height:38px;
+  display:grid;place-items:center;
+  background:var(--brand-soft);
+  border-radius:0.55rem;
+  color:var(--brand);
+  margin-bottom:1.1rem;
+}
+.feature-icon svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
+.feature h3{font-size:1.08rem;margin-bottom:0.5rem;letter-spacing:-0.015em}
+.feature p{color:var(--muted);font-size:0.95rem;line-height:1.55}
+
+/* ============ MANIFEST DEMO ============ */
+.demo-wrap{max-width:760px;margin:0 auto}
+.demo{
+  background:var(--code-bg);
+  border-radius:0.85rem;
+  border:1px solid var(--hairline-strong);
+  overflow:hidden;
+  box-shadow:0 30px 60px -30px rgba(99,102,241,0.35);
+}
+.demo-header{
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0.7rem 1rem;
+  background:rgba(255,255,255,0.03);
+  border-bottom:1px solid rgba(255,255,255,0.06);
+}
+.dots{display:flex;gap:0.35rem}
+.dots span{width:10px;height:10px;border-radius:50%;background:rgba(255,255,255,0.18)}
+.demo-file{
+  font-family:ui-monospace,"JetBrains Mono","SF Mono",Menlo,monospace;
+  font-size:0.78rem;color:rgba(226,232,240,0.65);
+  letter-spacing:0.02em;
+}
+.demo pre{
+  margin:0;
+  padding:1.4rem 1.5rem;
+  font-family:ui-monospace,"JetBrains Mono","SF Mono",Menlo,monospace;
+  font-size:0.88rem;
+  line-height:1.7;
+  color:var(--code-fg);
+  overflow-x:auto;
+}
+.tk{color:#94a3b8}
+.tk-key{color:#a5b4fc}
+.tk-str{color:#86efac}
+.tk-num{color:#fde68a}
+.tk-com{color:#64748b;font-style:italic}
+
+/* ============ HOW IT WORKS ============ */
+.steps{
+  display:grid;
+  grid-template-columns:repeat(3,1fr);
+  gap:1.5rem;
+  max-width:1080px;margin:0 auto;
+}
+@media (max-width:880px){.steps{grid-template-columns:1fr}}
+.step{
+  padding:2rem 1.6rem;
+  background:var(--bg-alt);
+  border:1px solid var(--hairline);
+  border-radius:0.8rem;
+  position:relative;
+}
+.section-alt .step{background:var(--bg-tint)}
+.step-num{
+  display:inline-flex;align-items:center;justify-content:center;
+  width:34px;height:34px;
+  border-radius:50%;
+  background:var(--brand);color:#fff;
+  font-weight:600;font-size:0.95rem;
+  margin-bottom:1rem;
+  font-feature-settings:"tnum";
+}
+.step h3{font-size:1.15rem;margin-bottom:0.6rem;letter-spacing:-0.015em}
+.step p{color:var(--muted);font-size:0.95rem;line-height:1.6}
+
+/* ============ CLOSING CTA ============ */
+.closer{
+  padding:7rem 1.5rem;
+  text-align:center;
+  border-top:1px solid var(--hairline);
+  position:relative;overflow:hidden;
+}
+.closer::before{
+  content:"";position:absolute;inset:0;
+  background:radial-gradient(60% 80% at 50% 50%, rgba(99,102,241,0.14), transparent 70%);
+  pointer-events:none;
+}
+.closer-inner{position:relative;max-width:620px;margin:0 auto}
+.closer h2{
+  font-size:clamp(2rem,4.5vw,3.4rem);
+  letter-spacing:-0.03em;margin-bottom:1rem;
+}
+.closer p{color:var(--muted);font-size:1.1rem;margin-bottom:2.2rem}
+
+/* ============ FOOTER ============ */
+.footer{
+  padding:3rem 1.5rem 2.5rem;
+  border-top:1px solid var(--hairline);
+  background:var(--bg-alt);
+}
+.footer-inner{
+  max-width:1120px;margin:0 auto;
+  display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;
+  gap:1.5rem;
+  font-size:0.88rem;color:var(--muted);
+}
+.footer-brand{display:flex;align-items:center;gap:0.65rem}
+.footer-brand img{height:20px;width:auto;opacity:0.85}
+.footer-links{display:flex;flex-wrap:wrap;gap:1.25rem}
+.footer-links a{transition:color 120ms ease}
+.footer-links a:hover{color:var(--brand)}
+.badge-mit{
+  display:inline-flex;align-items:center;gap:0.4rem;
+  padding:0.18rem 0.55rem;
+  border:1px solid var(--hairline-strong);
+  border-radius:0.3rem;
+  font-size:0.75rem;font-weight:500;
+  color:var(--muted);
+}
+.badge-mit::before{
+  content:"";width:6px;height:6px;border-radius:50%;background:#22c55e;
+}
+</style>
+</head>
+<body>
+
+<header class="nav">
+  <div class="container nav-inner">
+    <a href="./" class="nav-brand" aria-label="Tabularium home">
+      <img src="assets/wordmark.svg" alt="Tabularium" />
+    </a>
+    <nav class="nav-links" aria-label="Primary">
+      <a href="docs/">Docs</a>
+      <a href="https://codeberg.org/Tabularium/Tabularium" target="_blank" rel="noopener noreferrer">Codeberg</a>
+      <a href="docs/#/install" class="nav-cta">Get started</a>
+    </nav>
+  </div>
+</header>
+
+<main>
+
+  <section class="hero">
+    <div class="hero-inner">
+      <span class="eyebrow"><span class="eyebrow-dot"></span>Self-hosted plugin registry</span>
+      <h1>The plugin registry<br/><span class="accent">you control</span></h1>
+      <p class="lead">The registry your ecosystem deserves. Bring your own git host. Ship releases automatically. Build any client on the typed API.</p>
+      <p class="lead-secondary">Self-host with one Docker command.</p>
+      <div class="cta-row">
+        <a href="docs/#/install" class="btn btn-primary">Get started <span class="arrow">&rarr;</span></a>
+        <a href="https://codeberg.org/Tabularium/Tabularium" target="_blank" rel="noopener noreferrer" class="btn btn-secondary">View on Codeberg</a>
+      </div>
+      <p class="subtle">Apache 2.0 &middot; Self-hosted &middot; No vendor lock-in</p>
+    </div>
+  </section>
+
+  <section class="section section-alt" id="features">
+    <div class="container">
+      <div class="section-head">
+        <h2>A complete plugin registry</h2>
+        <p>Everything you need to publish, version, and discover plugins — built like the registries you already trust, but running on your own infrastructure.</p>
+      </div>
+      <div class="features">
+
+        <div class="feature">
+          <div class="feature-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M3 12h18M12 3a14 14 0 0 1 0 18M12 3a14 14 0 0 0 0 18"/></svg>
+          </div>
+          <h3>Provider-agnostic submission</h3>
+          <p>OAuth flow across <strong>GitHub, GitLab, Gitea, and Forgejo</strong>. Plugin authors connect the git host they already use, pick a repo, done — Tabularium installs the release webhook for them.</p>
+        </div>
+
+        <div class="feature">
+          <div class="feature-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M4 4v6h6"/><path d="M20 20v-6h-6"/><path d="M4 10a8 8 0 0 1 14-4M20 14a8 8 0 0 1-14 4"/></svg>
+          </div>
+          <h3>Release-tracked versioning</h3>
+          <p>Every git tag becomes a release row. <strong>Version, assets, min-runtime, manifest snapshot — captured automatically per release.</strong> Per-version downloads, per-platform asset matching, integrity hashes.</p>
+        </div>
+
+        <div class="feature">
+          <div class="feature-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><path d="M9 18 3 12l6-6"/><path d="m15 6 6 6-6 6"/></svg>
+          </div>
+          <h3>Typed catalog API</h3>
+          <p><strong>Full OpenAPI spec, plus an Eden Treaty TypeScript client and an async Rust SDK</strong> (<code>tabularium-sdk</code> on crates.io). Build a plugin browser, an updater, an installer — fully type-checked end-to-end. Same API powers the built-in UI.</p>
+        </div>
+
+        <div class="feature">
+          <div class="feature-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><ellipse cx="12" cy="5" rx="8" ry="3"/><path d="M4 5v6c0 1.7 3.6 3 8 3s8-1.3 8-3V5"/><path d="M4 11v6c0 1.7 3.6 3 8 3s8-1.3 8-3v-6"/></svg>
+          </div>
+          <h3>Your data, your dialect</h3>
+          <p><strong>SQLite, Postgres, or MySQL.</strong> Auto-detected from the connection URL. Multi-dialect migrations bundled. Switch backends without forking the codebase.</p>
+        </div>
+
+        <div class="feature">
+          <div class="feature-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg>
+          </div>
+          <h3>Configurable taxonomy</h3>
+          <p><strong>Admin-defined plugin kinds</strong> — themes, snippets, SQL templates, whatever your ecosystem needs. End-user apps consume the kinds via the public API as filter chips. The registry adapts to your shape.</p>
+        </div>
+
+        <div class="feature">
+          <div class="feature-icon" aria-hidden="true">
+            <svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
+          </div>
+          <h3>White-label ready</h3>
+          <p><strong>Brand it as your own.</strong> Custom name, colours, logo, favicon, analytics, robots policy, footer text. Configurable manifest filename so submissions look like yours, not ours.</p>
+        </div>
+
+      </div>
+    </div>
+  </section>
+
+  <section class="section" id="manifest">
+    <div class="container">
+      <div class="section-head">
+        <h2>One manifest file per plugin</h2>
+        <p>Drop a <code>.tabularium</code> at the repo root. Tabularium reads it on every release.</p>
+      </div>
+      <div class="demo-wrap">
+        <div class="demo">
+          <div class="demo-header">
+            <div class="dots"><span></span><span></span><span></span></div>
+            <span class="demo-file">.tabularium</span>
+            <span style="width:32px"></span>
+          </div>
+<pre><span class="tk-com"># Plugin manifest — read on every release</span>
+<span class="tk-key">name</span><span class="tk">:</span> <span class="tk-str">midnight-theme</span>
+<span class="tk-key">description</span><span class="tk">:</span> <span class="tk-str">A calm, contrast-friendly dark theme.</span>
+<span class="tk-key">kind</span><span class="tk">:</span> <span class="tk-str">theme</span>
+<span class="tk-key">license</span><span class="tk">:</span> <span class="tk-str">MIT</span>
+<span class="tk-key">homepage</span><span class="tk">:</span> <span class="tk-str">https://example.com/midnight</span>
+
+<span class="tk-key">tags</span><span class="tk">:</span>
+  <span class="tk">-</span> <span class="tk-str">dark</span>
+  <span class="tk">-</span> <span class="tk-str">minimal</span>
+
+<span class="tk-key">icon</span><span class="tk">:</span> <span class="tk-str">./assets/icon.svg</span>
+<span class="tk-key">screenshots</span><span class="tk">:</span>
+  <span class="tk">-</span> <span class="tk-key">url</span><span class="tk">:</span> <span class="tk-str">./assets/preview.png</span>
+    <span class="tk-key">caption</span><span class="tk">:</span> <span class="tk-str">Editor view</span>
+
+<span class="tk-key">min_runtime_version</span><span class="tk">:</span> <span class="tk-str">'2.0.0'</span>
+</pre>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section section-alt" id="how">
+    <div class="container">
+      <div class="section-head">
+        <h2>How it works</h2>
+        <p>Three steps from empty server to a running registry your community can publish to.</p>
+      </div>
+      <div class="steps">
+        <div class="step">
+          <span class="step-num">1</span>
+          <h3>Self-host</h3>
+          <p>One Bun process, one database URL. The install wizard runs migrations and prints a bootstrap admin password on first boot.</p>
+        </div>
+        <div class="step">
+          <span class="step-num">2</span>
+          <h3>Connect providers</h3>
+          <p>Register OAuth apps on the git hosts you accept — GitHub, GitLab, Gitea, Forgejo. Paste the credentials into the admin UI.</p>
+        </div>
+        <div class="step">
+          <span class="step-num">3</span>
+          <h3>Authors submit</h3>
+          <p>Plugin authors sign in with their git account, pick a repo, and Tabularium installs the release webhook. New tags become new versions.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="closer">
+    <div class="closer-inner">
+      <h2>Stop curating plugin lists by hand.</h2>
+      <p>Self-host Tabularium with one Docker command. Authors push a tag — your catalog stays current.</p>
+      <a href="docs/#/install" class="btn btn-primary">Read the install guide <span class="arrow">&rarr;</span></a>
+    </div>
+  </section>
+
+</main>
+
+<footer class="footer">
+  <div class="footer-inner">
+    <div class="footer-brand">
+      <img src="assets/logo.svg" alt="" />
+      <span>&copy; 2026 Tabularium</span>
+      <span class="badge-mit">Apache 2.0</span>
+    </div>
+    <nav class="footer-links" aria-label="Footer">
+      <a href="docs/">Docs</a>
+      <a href="https://codeberg.org/Tabularium/Tabularium" target="_blank" rel="noopener noreferrer">Codeberg</a>
+      <a href="https://codeberg.org/Tabularium/Tabularium/src/branch/main/LICENSE" target="_blank" rel="noopener noreferrer">License</a>
+      <a href="docs/#/install">Install</a>
+      <a href="docs/#/api">API</a>
+    </nav>
+  </div>
+</footer>
+
+</body>
+</html>
