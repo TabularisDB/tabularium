@@ -26,7 +26,7 @@ Tabularium hosts a directory of plugins (or any GitHub/GitLab/Gitea release-ship
 - Backend: [Elysia](https://elysiajs.com) on Bun, Drizzle ORM, postgres-js / mysql2 / bun:sqlite
 - Frontend: SvelteKit (SPA) + Eden Treaty + Paraglide JS
 - Cache: Bun.redis (Dragonfly-compatible) or in-memory
-- Docs: Docsify — no build step, deploys to any static host
+- Docs: [Sveltepress](https://sveltepress.site) (SvelteKit), deployed on Vercel
 
 ## Quick start
 
