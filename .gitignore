@@ -7,3 +7,9 @@ dist/
 # Internal working files — not part of the public repo
 /docs/
 /TODO.md
+
+apps/website/.svelte-kit/
+apps/website/.vercel/
+apps/docs/.svelte-kit/
+apps/docs/.vercel/
+apps/docs/dist/
