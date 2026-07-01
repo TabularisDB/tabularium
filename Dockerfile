@@ -17,12 +17,6 @@ COPY packages/client/package.json ./packages/client/
 COPY packages/cli/package.json ./packages/cli/
 COPY packages/manifest/package.json ./packages/manifest/
 COPY packages/tsconfig/package.json ./packages/tsconfig/
-# The api ships a vendored TurboSMTP SDK as a tgz inside its workspace dir
-# and pins it via "turbosmtp": "./vendor/turbosmtp-0.1.0.tgz". Bun resolves
-# file: URLs at install time, so the tgz must be in the context before
-# `bun install` runs — otherwise the build dies with "ENOENT extracting
-# tarball from turbosmtp".
-COPY apps/api/vendor ./apps/api/vendor
 
 RUN bun install --frozen-lockfile
 
@@ -40,7 +34,6 @@ FROM docker.io/oven/bun:1.3-alpine@sha256:5acc90a93e91ff07bf72aa90a7c9f0fa189765
 WORKDIR /repo
 
 COPY apps/api/package.json ./apps/api/
-COPY apps/api/vendor ./apps/api/vendor
 COPY packages/manifest/package.json ./packages/manifest/
 COPY packages/tsconfig/package.json ./packages/tsconfig/
 
@@ -125,8 +118,11 @@ LABEL org.opencontainers.image.title="Tabularium Registry" \
 WORKDIR /app
 
 RUN addgroup -S app && adduser -S -G app app
-# wget ships with BusyBox in alpine — only tini + CA roots needed here.
-RUN apk add --no-cache tini ca-certificates
+# Upgrade base apk packages first to pick up security patches published after
+# the pinned base-image digest was cut (e.g. libcrypto3/libssl3 CVE fixes),
+# then install runtime extras. wget ships with BusyBox — only tini + CA roots
+# are added here.
+RUN apk upgrade --no-cache && apk add --no-cache tini ca-certificates
 
 # prod-deps brought in node_modules + a bare apps/api/package.json + bare
 # packages/*/package.json. Workspace symlinks under node_modules/@tabularium/*
