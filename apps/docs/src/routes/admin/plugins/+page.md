@@ -20,7 +20,7 @@ The admin plugin table covers every plugin in the registry, regardless of status
 | Reject (with reason) | Status → rejected, reason rendered on the owner's dashboard |
 | Refresh manifest | Re-fetches `.tabularium` at HEAD; updates description, tags, README, screenshots |
 | Pin / feature | Marks the plugin for the home page featured slot, with an order index |
-| Verify / unverify | Marks the plugin as audit-verified (see [Verification](#verification)) |
+| Verify / unverify | Marks the plugin as audit-verified (see [Verification](#Verification)) |
 | Transfer | Initiates a transfer to another user (recipient gets a pending request on `/settings`) |
 | Delete | Removes plugin + releases + transfer history (irreversible) |
 

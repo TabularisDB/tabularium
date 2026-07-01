@@ -13,7 +13,7 @@ For authors releasing plugins through a Tabularium registry. Covers validating y
 A release is the combination of:
 
 1. A manifest file (`tabularium.yaml`, `tabularium.json`, `.tabularium`, …) at the root of your repository — see [Manifest](/manifest/)
-2. A versioned release on your forge (GitHub, Forgejo, GitLab, Gitea) with one or more downloadable assets — **including the manifest itself as one of the assets** (see [Upload the manifest as a release asset](#upload-the-manifest-as-a-release-asset) below)
+2. A versioned release on your forge (GitHub, Forgejo, GitLab, Gitea) with one or more downloadable assets — **including the manifest itself as one of the assets** (see [Upload the manifest as a release asset](#Upload-the-manifest-as-a-release-asset) below)
 
 The registry watches your release webhooks, fetches the manifest from the release assets, computes a SHA-256 of every release asset within its hash budget, and signs the bundle.
 
