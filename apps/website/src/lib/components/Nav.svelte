@@ -1,4 +1,6 @@
-<script lang="ts"></script>
+<script lang="ts">
+  import GitHubStars from './GitHubStars.svelte'
+</script>
 
 <header class="sticky top-0 z-50 border-b border-zinc-800 bg-zinc-950/75 backdrop-blur">
   <div class="mx-auto flex h-[68px] max-w-6xl items-center justify-between px-6">
@@ -30,6 +32,7 @@
       >
         Docs
       </a>
+      <GitHubStars />
       <a
         href="https://docs.tabularium.wiki/install/"
         class="ml-1 rounded-lg bg-brand px-4 py-2 font-medium text-white transition hover:bg-brand-dark"
