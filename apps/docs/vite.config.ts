@@ -14,7 +14,7 @@ export default defineConfig({
         logo: '/favicon.svg',
         themeColor: { light: '#f2f2f2', dark: '#18181b' },
         highlighter: {
-          languages: ['svelte', 'sh', 'js', 'ts', 'json', 'yaml', 'md', 'docker'],
+          languages: ['svelte', 'sh', 'bash', 'js', 'ts', 'json', 'yaml', 'md', 'markdown', 'docker', 'html', 'toml', 'rust'],
         },
       }),
       siteConfig: {
