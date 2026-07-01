@@ -20,7 +20,7 @@ with this `docker-compose.yml`:
 ```yaml
 services:
   registry:
-    image: codeberg.org/tabularium/tabularium:latest
+    image: ghcr.io/tabularisdb/tabularium:latest
     restart: unless-stopped
     ports:
       - "3000:3000"
@@ -107,7 +107,7 @@ docker compose restart
 ## Building from source
 
 ```bash
-git clone https://codeberg.org/Tabularium/Tabularium
+git clone https://github.com/TabularisDB/tabularium
 cd Tabularium
 bun install
 docker compose -f compose.dev.yml up -d   # Postgres + Dragonfly for dev

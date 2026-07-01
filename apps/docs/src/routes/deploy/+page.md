@@ -11,7 +11,7 @@ Production-ready compose snippet with Postgres + Dragonfly:
 ```yaml
 services:
   registry:
-    image: codeberg.org/tabularium/tabularium:latest
+    image: ghcr.io/tabularisdb/tabularium:latest
     restart: unless-stopped
     ports:
       - "3000:3000"
