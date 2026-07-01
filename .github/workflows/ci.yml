@@ -1,0 +1,54 @@
+# Lint, test, type-check and build on every PR and push to main.
+# Consolidates the old Forgejo build/check/lint/test workflows into one file
+# with parallel jobs. Bun is installed per-job (GitHub runners don't ship it);
+# @tabularium/manifest is built first because apps/{api,frontend} import from
+# its dist/ at check/build time.
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  node:
+    name: ${{ matrix.task.name }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        task:
+          - { name: lint, dir: '.', cmd: 'bun run lint' }
+          - { name: test, dir: '.', cmd: 'bun run test' }
+          - { name: check-frontend, dir: 'apps/frontend', cmd: 'bun run check' }
+          - { name: check-api, dir: 'apps/api', cmd: 'bun run check' }
+          - { name: build-frontend, dir: 'apps/frontend', cmd: 'bun run build' }
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.12
+
+      - name: Install deps
+        run: bun install --frozen-lockfile
+
+      - name: Build @tabularium/manifest dist
+        run: cd packages/manifest && bun run build
+
+      - name: ${{ matrix.task.name }}
+        working-directory: ${{ matrix.task.dir }}
+        run: ${{ matrix.task.cmd }}
+
+  rust:
+    name: check-rust
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: dtolnay/rust-toolchain@stable
+
+      - name: Cargo check
+        working-directory: packages/tabularium-rs
+        run: cargo check --all-targets

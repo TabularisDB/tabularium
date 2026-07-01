@@ -16,7 +16,7 @@
     },
     "apps/api": {
       "name": "@tabularium/api",
-      "version": "0.12.2",
+      "version": "0.13.0",
       "dependencies": {
         "@elysiajs/cors": "^1.4.2",
         "@elysiajs/openapi": "^1.4.5",

@@ -1,0 +1,74 @@
+# Build the Tabularium container image and publish it to the GitHub
+# Container Registry (ghcr.io/<owner>/tabularium) on each published release.
+#
+# Uses the built-in GITHUB_TOKEN (packages: write) — no registry secret to
+# manage. Ported from the old Forgejo/Codeberg docker-build workflow: same
+# build → Trivy gate → push flow, retargeted at ghcr and GitHub-hosted runners.
+name: Build Docker image
+
+on:
+  release:
+    types: [published]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve image + tag
+        id: meta
+        run: |
+          set -eu
+          OWNER=$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')
+          IMAGE="ghcr.io/$OWNER/tabularium"
+          if [ "${{ github.event_name }}" = "release" ]; then
+            VERSION="${{ github.event.release.tag_name }}"
+            VERSION="${VERSION#v}"
+          else
+            VERSION="dev-${GITHUB_SHA:0:7}"
+          fi
+          echo "image=${IMAGE}"     >> "$GITHUB_OUTPUT"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
+          echo "sha=${GITHUB_SHA}"  >> "$GITHUB_OUTPUT"
+
+      - name: Log in to GitHub Container Registry
+        run: |
+          echo "${{ secrets.GITHUB_TOKEN }}" \
+            | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Build image
+        run: |
+          docker build \
+            -f Dockerfile \
+            -t "${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.version }}" \
+            -t "${{ steps.meta.outputs.image }}:latest" \
+            -t "${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.sha }}" \
+            --build-arg VERSION="${{ steps.meta.outputs.version }}" \
+            --build-arg REVISION="${{ steps.meta.outputs.sha }}" \
+            --build-arg CREATED="$(date -u +%Y-%m-%dT%H:%M:%SZ)" \
+            .
+
+      - name: Scan image for HIGH/CRITICAL CVEs
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: "${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.version }}"
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+
+      - name: Push image
+        run: |
+          docker push "${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.version }}"
+          docker push "${{ steps.meta.outputs.image }}:latest"
+          docker push "${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.sha }}"
+
+      - name: Logout
+        if: always()
+        run: docker logout ghcr.io || true

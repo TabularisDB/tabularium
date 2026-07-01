@@ -1,7 +1,7 @@
 # Publish a @tabularium/* package to npm.
 #
 # Triggers on tags shaped `<package>-v<semver>` so the two publishable packages
-# can release independently:
+# release independently:
 #
 #   manifest-v0.1.0  → publishes packages/manifest
 #   cli-v0.1.0       → publishes packages/cli
@@ -11,7 +11,6 @@
 #
 # Secrets:
 #   NPM_TOKEN — an npm automation token with publish rights on @tabularium/*.
-
 name: npm publish
 
 on:
@@ -33,15 +32,16 @@ on:
 
 jobs:
   publish:
-    # Host mode on lyna — the docker-in-docker container path fails to pull
-    # `node:24-bookworm-slim` from docker hub on this runner (anonymous pull
-    # rate limit). lyna already has bun + git pre-installed, same as test.yml.
-    runs-on: lyna
+    runs-on: ubuntu-latest
     permissions:
       contents: read
     steps:
       - name: Checkout
         uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.3.12
 
       - name: Resolve package + expected version
         id: pkg
@@ -65,9 +65,9 @@ jobs:
             exit 1
           fi
           PKG_NAME=$(bun -e "console.log(require('./${DIR}/package.json').name)")
-          echo "name=${PKG_NAME}"     >> "$GITHUB_OUTPUT"
-          echo "dir=${DIR}"           >> "$GITHUB_OUTPUT"
-          echo "version=${VERSION}"   >> "$GITHUB_OUTPUT"
+          echo "name=${PKG_NAME}"   >> "$GITHUB_OUTPUT"
+          echo "dir=${DIR}"         >> "$GITHUB_OUTPUT"
+          echo "version=${VERSION}" >> "$GITHUB_OUTPUT"
 
       - name: Install workspace deps
         run: bun install --frozen-lockfile
@@ -85,8 +85,7 @@ jobs:
         run: bun test
 
       - name: Configure npm auth
-        run: |
-          echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
+        run: echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > ~/.npmrc
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
 

@@ -1,16 +1,15 @@
 # Publish the tabularium Rust client to crates.io.
 #
-# Triggers on tags shaped `tabularium-rs-v<semver>` so the Rust client can
-# release independently from the npm packages. Tag version must match
-# `packages/tabularium-rs/Cargo.toml [package].version`.
+# Triggers on tags shaped `tabularium-rs-v<semver>` so the Rust client releases
+# independently from the npm packages. Tag version must match
+# packages/tabularium-rs/Cargo.toml [package].version.
 #
-# Also supports workflow_dispatch with an explicit version for republishes
-# or first-time pushes from a local tag.
+# Also supports workflow_dispatch with an explicit version for republishes or
+# first-time pushes from a local tag.
 #
 # Secrets:
-#   CARGO_REGISTRY_TOKEN — a crates.io API token with publish rights on
-#                          the `tabularium` crate.
-
+#   CARGO_REGISTRY_TOKEN — a crates.io API token with publish rights on the
+#                          `tabularium` crate.
 name: crates.io publish
 
 on:
@@ -31,7 +30,7 @@ on:
 
 jobs:
   publish:
-    runs-on: lyna
+    runs-on: ubuntu-latest
     permissions:
       contents: read
     env:
@@ -40,21 +39,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
-      - name: Ensure rust toolchain (latest stable)
-        # Always install via rustup (don't reuse a stale system cargo) — the
-        # crate declares `rust-version = "1.75"` and progenitor's generated
-        # bindings exercise newer dep features, so pinning to "latest stable"
-        # avoids surprises when lyna's apt-managed rustc lags behind.
-        run: |
-          if ! command -v rustup >/dev/null 2>&1; then
-            curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs | sh -s -- -y --default-toolchain stable --profile minimal --no-modify-path
-          fi
-          export PATH="$HOME/.cargo/bin:$PATH"
-          rustup default stable
-          rustup update stable
-          echo "$HOME/.cargo/bin" >> "$GITHUB_PATH"
-          cargo --version
-          rustc --version
+      - uses: dtolnay/rust-toolchain@stable
 
       - name: Resolve expected version
         id: pkg
@@ -76,28 +61,7 @@ jobs:
 
       - name: Cargo build
         working-directory: packages/tabularium-rs
-        # Capture build output into the step summary so failures are diagnosable
-        # even when the runner's log endpoint is unreachable from outside the UI.
-        run: |
-          set +e
-          {
-            echo "## Cargo build diagnostics"
-            echo '```'
-            echo "pwd: $(pwd)"
-            echo "cargo: $(command -v cargo) -> $(cargo --version)"
-            echo "rustc: $(command -v rustc) -> $(rustc --version)"
-            echo "PATH: $PATH"
-            echo "ls -la:"
-            ls -la
-            echo '```'
-            echo
-            echo '### `cargo build --release --verbose` output'
-            echo '```'
-          } >> "$GITHUB_STEP_SUMMARY"
-          cargo build --release --verbose 2>&1 | tee -a "$GITHUB_STEP_SUMMARY"
-          rc=${PIPESTATUS[0]}
-          echo '```' >> "$GITHUB_STEP_SUMMARY"
-          exit "$rc"
+        run: cargo build --release --verbose
 
       - name: Cargo test
         working-directory: packages/tabularium-rs
