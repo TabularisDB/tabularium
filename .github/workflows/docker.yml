@@ -10,6 +10,11 @@ on:
   release:
     types: [published]
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version tag to build (e.g. 0.13.0). Defaults to dev-<sha> if empty.'
+        required: false
+        type: string
 
 permissions:
   contents: read
@@ -31,6 +36,8 @@ jobs:
           if [ "${{ github.event_name }}" = "release" ]; then
             VERSION="${{ github.event.release.tag_name }}"
             VERSION="${VERSION#v}"
+          elif [ -n "${{ inputs.version }}" ]; then
+            VERSION="${{ inputs.version }}"
           else
             VERSION="dev-${GITHUB_SHA:0:7}"
           fi
@@ -56,7 +63,7 @@ jobs:
             .
 
       - name: Scan image for HIGH/CRITICAL CVEs
-        uses: aquasecurity/trivy-action@0.28.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: "${{ steps.meta.outputs.image }}:${{ steps.meta.outputs.version }}"
           severity: HIGH,CRITICAL
