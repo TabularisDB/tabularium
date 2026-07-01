@@ -12,4 +12,5 @@ apps/website/.svelte-kit/
 apps/website/.vercel/
 apps/docs/.svelte-kit/
 apps/docs/.vercel/
+apps/docs/.sveltepress/
 apps/docs/dist/

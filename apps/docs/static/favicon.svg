@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 32 32" width="32" height="32" role="img" aria-labelledby="fav-title" fill="#6366f1">
+  <title id="fav-title">Tabularium</title>
+  <path d="M4 23 h24 v4 a1.5 1.5 0 0 1 -1.5 1.5 h-21 a1.5 1.5 0 0 1 -1.5 -1.5 z" opacity="0.35"/>
+  <path d="M5 17 h22 v4 a1.5 1.5 0 0 1 -1.5 1.5 h-19 a1.5 1.5 0 0 1 -1.5 -1.5 z" opacity="0.6"/>
+  <path d="M6.5 4 h14 a2 2 0 0 1 2 2 v1 h-4 a1.5 1.5 0 0 0 -1.5 1.5 v6.5 h-10.5 a2 2 0 0 1 -2 -2 v-7 a2 2 0 0 1 2 -2 z"/>
+  <rect x="19" y="9" width="4" height="6" rx="1"/>
+</svg>
