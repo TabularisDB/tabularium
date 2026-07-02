@@ -23,7 +23,21 @@ export default defineConfig({
           gradient: { start: '#6366f1', end: '#a855f7' },
         },
         highlighter: {
-          languages: ['svelte', 'sh', 'bash', 'js', 'ts', 'json', 'yaml', 'md', 'markdown', 'docker', 'html', 'toml', 'rust'],
+          languages: [
+            'svelte',
+            'sh',
+            'bash',
+            'js',
+            'ts',
+            'json',
+            'yaml',
+            'md',
+            'markdown',
+            'docker',
+            'html',
+            'toml',
+            'rust',
+          ],
         },
       }),
       siteConfig: {

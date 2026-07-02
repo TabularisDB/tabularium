@@ -4,10 +4,7 @@
   "title": "Tabularium plugin manifest",
   "description": "Plugin authors drop a .tabularium / .tabularium.yaml / .tabularium.yml / .tabularium.json at the repo root.",
   "type": "object",
-  "required": [
-    "name",
-    "version"
-  ],
+  "required": ["name", "version"],
   "properties": {
     "name": {
       "minLength": 1,
@@ -65,9 +62,7 @@
       "type": "array",
       "items": {
         "type": "object",
-        "required": [
-          "url"
-        ],
+        "required": ["url"],
         "properties": {
           "url": {
             "minLength": 1,
