@@ -49,7 +49,7 @@ Sign in at `/login` with `admin@example.com` + that password. The install wizard
 | `TOKEN_ENC_KEY` | exactly 64 hex chars (AES-256-GCM at-rest key) |
 | `BASE_URL` | `http(s)://…` — public origin, used in OAuth callbacks and webhook URLs |
 
-Everything else is optional. See [Deploy → Env vars](/deploy/) for the full list.
+Everything else is optional. See [Deploy → Env vars](/deploy/docker/#Env-vars) for the full list.
 
 ## If you want…
 
