@@ -51,7 +51,10 @@ export default {
     },
     {
       title: 'Deploy',
-      items: [{ title: 'Docker', to: '/deploy/' }],
+      items: [
+        { title: 'Docker', to: '/deploy/docker/' },
+        { title: 'Helm', to: '/deploy/helm/' },
+      ],
     },
   ],
 }
