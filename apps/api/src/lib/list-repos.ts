@@ -22,7 +22,7 @@ type GithubFlavoredRepo = {
   description: string | null
   private: boolean
   owner: { login: string }
-  permissions?: { admin?: boolean; push?: boolean }
+  permissions?: { admin?: boolean; maintain?: boolean }
   archived?: boolean
 }
 
@@ -51,7 +51,8 @@ async function listGithubFlavored(
     if (!Array.isArray(data) || data.length === 0) break
     for (const r of data) {
       if (r.archived) continue
-      const writable = r.permissions?.admin || r.permissions?.push
+      // ponytail: mirror checkOwnership — maintain+ submits. Gitea lacks `maintain`, admin is its ceiling.
+      const writable = r.permissions?.admin || r.permissions?.maintain
       if (r.permissions && !writable) continue
       repos.push({
         providerInstanceId: instanceId,
