@@ -31,7 +31,9 @@ describe('POST /api/submit/oauth', () => {
 
     const fetchSpy = spyOn(global, 'fetch').mockImplementation((async (url: string | URL | Request) => {
       if (String(url).includes('api.github.com/repos')) {
-        return new Response(JSON.stringify({ owner: { login: 'alice' } }), { status: 200 })
+        return new Response(JSON.stringify({ owner: { login: 'alice' }, permissions: { maintain: true } }), {
+          status: 200,
+        })
       }
       return new Response('Not found', { status: 404 })
     }) as unknown as typeof fetch)
@@ -81,7 +83,9 @@ describe('POST /api/submit/oauth', () => {
 
     const fetchSpy = spyOn(global, 'fetch').mockImplementation((async (url: string | URL | Request) => {
       if (String(url).includes('api.github.com/repos')) {
-        return new Response(JSON.stringify({ owner: { login: 'alice' } }), { status: 200 })
+        return new Response(JSON.stringify({ owner: { login: 'alice' }, permissions: { maintain: true } }), {
+          status: 200,
+        })
       }
       return new Response('Not found', { status: 404 })
     }) as unknown as typeof fetch)
@@ -146,7 +150,9 @@ describe('POST /api/submit/oauth', () => {
     const fetchSpy = spyOn(global, 'fetch').mockImplementation((async (url: string | URL | Request) => {
       const u = String(url)
       if (u.includes('api.github.com/repos') && u.endsWith('/repos/alice/my-plugin')) {
-        return new Response(JSON.stringify({ owner: { login: 'alice' } }), { status: 200 })
+        return new Response(JSON.stringify({ owner: { login: 'alice' }, permissions: { maintain: true } }), {
+          status: 200,
+        })
       }
       if (u.includes('/releases/latest')) {
         return new Response(JSON.stringify({ tag_name: 'v0.1.0', assets: [] }), { status: 200 })

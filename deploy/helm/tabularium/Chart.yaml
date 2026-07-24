@@ -4,7 +4,7 @@ description: Self-hosted plugin registry (Tabularium). Bun + Elysia + SvelteKit 
 type: application
 home: https://tabularium.wiki
 sources:
-  - https://codeberg.org/NewtTheWolf/Tabularium
+  - https://github.com/TabularisDB/tabularium
 keywords:
   - registry
   - plugins
@@ -13,12 +13,12 @@ keywords:
   - sveltekit
 maintainers:
   - name: NewtTheWolf
-    url: https://codeberg.org/NewtTheWolf
+    url: https://github.com/TabularisDB
 icon: https://tabularium.wiki/assets/icon.png
 
 # Chart SemVer — bump when templates change.
-version: 0.11.1
+version: 0.13.0
 
 # Tabularium app version this chart was tested against — keep in sync with
 # the image tag default in values.yaml.
-appVersion: "0.11.1"
+appVersion: "0.13.0"

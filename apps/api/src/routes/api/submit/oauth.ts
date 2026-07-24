@@ -64,7 +64,7 @@ export default new Elysia()
         }
         throw e
       }
-      const ownership = await checkOwnership(accessToken, ref, identity.username)
+      const ownership = await checkOwnership(accessToken, ref)
 
       if (!ownership.owned) {
         set.status = 403

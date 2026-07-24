@@ -3,7 +3,7 @@
 
 # ---- Image -----------------------------------------------------------------
 image:
-  repository: codeberg.org/tabularium/tabularium
+  repository: ghcr.io/tabularisdb/tabularium
   # If unset, falls back to .Chart.AppVersion.
   tag: ""
   pullPolicy: IfNotPresent
