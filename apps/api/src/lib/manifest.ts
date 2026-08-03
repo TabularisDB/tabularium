@@ -278,6 +278,11 @@ export async function resolveManifest(
   options: { ref?: string } = {},
 ): Promise<ResolvedManifest | null> {
   const fetch = fetcherFor(accessToken, ref, options.ref)
+  // Distinguish "file found but invalid" from "no file at all": if any
+  // candidate existed but failed validation, rethrow that error after the
+  // loop so callers can surface the actual validation errors instead of a
+  // misleading "no manifest file found".
+  let invalid: ManifestValidationError | null = null
   for (const candidate of manifestCandidates()) {
     try {
       const got = await fetch(candidate.path)
@@ -327,11 +332,13 @@ export async function resolveManifest(
     } catch (err) {
       if (err instanceof UpstreamUnauthorizedError) throw err
       if (err instanceof ManifestValidationError) {
+        invalid = err
         log.warn({ path: candidate.path, errors: err.errors }, 'manifest invalid — trying next candidate')
       } else {
         log.warn({ err, path: candidate.path }, 'manifest fetch/parse failed — trying next candidate')
       }
     }
   }
+  if (invalid) throw invalid
   return null
 }
