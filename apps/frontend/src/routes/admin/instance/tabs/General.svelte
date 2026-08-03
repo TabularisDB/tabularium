@@ -18,9 +18,7 @@
 	let loading = $state(true)
 	let saving = $state(false)
 
-	const dirty = $derived(
-		requireApproval !== initial.requireApproval || docsExternalUrl !== initial.docsExternalUrl,
-	)
+	const dirty = $derived(requireApproval !== initial.requireApproval || docsExternalUrl !== initial.docsExternalUrl)
 
 	function extractError(error: unknown): string {
 		const e = error as { value?: unknown; status?: number }
