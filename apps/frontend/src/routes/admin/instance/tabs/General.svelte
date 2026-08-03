@@ -7,16 +7,20 @@
 	import CardHeader from '$components/ui/CardHeader.svelte'
 	import CardTitle from '$components/ui/CardTitle.svelte'
 	import Badge from '$components/ui/Badge.svelte'
+	import Input from '$components/ui/Input.svelte'
 	import StickySaveBar from '$components/admin/StickySaveBar.svelte'
 	import { eden } from '$lib/eden'
 	import { m } from '$lib/paraglide/messages'
 
 	let requireApproval = $state(false)
-	let initial = $state(false)
+	let docsExternalUrl = $state('')
+	let initial = $state({ requireApproval: false, docsExternalUrl: '' })
 	let loading = $state(true)
 	let saving = $state(false)
 
-	const dirty = $derived(requireApproval !== initial)
+	const dirty = $derived(
+		requireApproval !== initial.requireApproval || docsExternalUrl !== initial.docsExternalUrl,
+	)
 
 	function extractError(error: unknown): string {
 		const e = error as { value?: unknown; status?: number }
@@ -29,9 +33,10 @@
 		try {
 			const { data, error } = await eden.api.admin.instance.get()
 			if (error) throw new Error(extractError(error))
-			const res = data as { requireApproval: boolean }
+			const res = data as { requireApproval: boolean; docsExternalUrl: string | null }
 			requireApproval = res.requireApproval
-			initial = res.requireApproval
+			docsExternalUrl = res.docsExternalUrl ?? ''
+			initial = { requireApproval, docsExternalUrl }
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : m.admin_instance_load_failed())
 		} finally {
@@ -42,10 +47,14 @@
 	async function save() {
 		saving = true
 		try {
-			const { error } = await eden.api.admin.instance.put({ requireApproval })
+			const { error } = await eden.api.admin.instance.put({
+				requireApproval,
+				docsExternalUrl: docsExternalUrl.trim() === '' ? null : docsExternalUrl.trim(),
+			})
 			if (error) throw new Error(extractError(error))
 			toast.success(m.admin_instance_saved())
-			initial = requireApproval
+			docsExternalUrl = docsExternalUrl.trim()
+			initial = { requireApproval, docsExternalUrl }
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : m.admin_instance_save_failed())
 		} finally {
@@ -54,7 +63,8 @@
 	}
 
 	function discard() {
-		requireApproval = initial
+		requireApproval = initial.requireApproval
+		docsExternalUrl = initial.docsExternalUrl
 	}
 
 	onMount(load)
@@ -85,6 +95,25 @@
 					<input type="checkbox" bind:checked={requireApproval} class="h-4 w-4 rounded border-input" />
 					<span class="text-sm">{m.admin_instance_require_approval()}</span>
 				</label>
+			{/if}
+		</CardContent>
+	</Card>
+
+	<Card>
+		<CardHeader>
+			<CardTitle class="text-base">{m.admin_instance_docs_url_title()}</CardTitle>
+			<CardDescription>{m.admin_instance_docs_url_subtitle()}</CardDescription>
+		</CardHeader>
+		<CardContent class="space-y-4">
+			{#if loading}
+				<p class="text-sm text-muted-foreground">{m.common_loading()}</p>
+			{:else}
+				<Input
+					type="url"
+					bind:value={docsExternalUrl}
+					placeholder="https://tabularis.dev/wiki/plugin-development"
+					class="max-w-xl"
+				/>
 			{/if}
 		</CardContent>
 	</Card>

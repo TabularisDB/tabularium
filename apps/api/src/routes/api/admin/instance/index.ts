@@ -72,6 +72,7 @@ export default new Elysia()
     '/',
     async () => ({
       requireApproval: getSetting('instance.require_approval') === '1',
+      docsExternalUrl: getSetting('docs.external_url') ?? null,
       rateLimits: await bucketStates(),
       manifest: manifestState(),
       assetSizeCapBytes: getAssetSizeCap(),
@@ -86,6 +87,7 @@ export default new Elysia()
       response: {
         200: t.Object({
           requireApproval: t.Boolean(),
+          docsExternalUrl: t.Nullable(t.String()),
           rateLimits: t.Array(
             t.Object({
               id: t.String(),
@@ -115,6 +117,17 @@ export default new Elysia()
     async ({ body, set, admin, request }) => {
       if (body.requireApproval !== undefined) {
         await setSetting('instance.require_approval', body.requireApproval ? '1' : '0')
+      }
+      if (body.docsExternalUrl !== undefined) {
+        if (body.docsExternalUrl === null || body.docsExternalUrl === '') {
+          if (hasSetting('docs.external_url')) await deleteSetting('docs.external_url')
+        } else {
+          if (!/^https?:\/\/.+/.test(body.docsExternalUrl)) {
+            set.status = 400
+            return { error: 'docsExternalUrl must be an http(s) URL' }
+          }
+          await setSetting('docs.external_url', body.docsExternalUrl)
+        }
       }
       if (body.rateLimits) {
         const valid: Set<string> = new Set(BUCKETS.map((b) => b.id))
@@ -211,6 +224,7 @@ export default new Elysia()
       },
       body: t.Object({
         requireApproval: t.Optional(t.Boolean()),
+        docsExternalUrl: t.Optional(t.Nullable(t.String({ maxLength: 500 }))),
         rateLimits: t.Optional(
           t.Array(
             t.Object({

@@ -8,6 +8,7 @@
 	import { auth } from '$lib/stores/auth.svelte'
 	import { branding } from '$lib/stores/branding.svelte'
 	import { features } from '$lib/stores/features.svelte'
+	import { instanceInfo } from '$lib/stores/instance-info.svelte'
 	import { homeCopy } from '$lib/stores/home-copy.svelte'
 	import { i18n } from '$lib/stores/i18n.svelte'
 
@@ -19,6 +20,7 @@
 		branding.refresh()
 		features.refresh()
 		homeCopy.refresh()
+		instanceInfo.refresh()
 	})
 </script>
 

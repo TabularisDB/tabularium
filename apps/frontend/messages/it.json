@@ -182,6 +182,8 @@
 	"admin_instance_rate_limits": "Rate limit",
 	"admin_instance_rate_limits_subtitle": "Limite per bucket (max richieste) nella finestra (secondi). Soggetto = utente autenticato se presente, altrimenti IP client.",
 	"admin_instance_require_approval": "Richiedi approvazione admin per i nuovi plugin",
+	"admin_instance_docs_url_title": "URL documentazione esterna",
+	"admin_instance_docs_url_subtitle": "Se impostato, i link Docs nell'header e nel footer puntano a questo URL (ad es. il sito web del prodotto) invece delle pagine integrate. Lascia vuoto per mantenere la documentazione integrata.",
 	"admin_instance_reset_failed": "Reimpostazione fallita",
 	"admin_instance_reset_to_default": "{id} reimpostato al default",
 	"admin_instance_save_failed": "Salvataggio fallito",

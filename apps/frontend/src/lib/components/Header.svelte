@@ -12,12 +12,13 @@
 	import { auth } from '$lib/stores/auth.svelte'
 	import { branding } from '$lib/stores/branding.svelte'
 	import { features } from '$lib/stores/features.svelte'
+	import { instanceInfo } from '$lib/stores/instance-info.svelte'
 	import { m } from '$lib/paraglide/messages'
 
 	const navLinks = $derived(
 		[
 			{ href: '/plugins', label: m.nav_plugins(), show: true },
-			{ href: '/docs/plugin-development', label: m.nav_docs(), show: true },
+			{ href: instanceInfo.docsExternalUrl ?? '/docs/plugin-development', label: m.nav_docs(), show: true },
 			{ href: '/requests', label: m.nav_requests(), show: features.requestsEnabled },
 			{ href: '/submit', label: m.nav_submit(), show: features.submissionsEnabled },
 		].filter((l) => l.show),
