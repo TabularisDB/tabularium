@@ -2,6 +2,7 @@ import { Elysia, t } from 'elysia'
 import { adminMiddleware } from '$middleware/admin'
 import { getKind, updateKind, deleteKind, KindError } from '$lib/kinds'
 import { recordAudit, actorFromAdmin } from '$lib/audit'
+import { triggerDeployHook } from '$lib/deploy-hook'
 
 // Loose schema: the lib's validateKindDef enforces the locale whitelist and
 // per-field length caps. The Elysia layer just admits the field shape so
@@ -117,6 +118,7 @@ export default new Elysia()
           target: `kind:${updated.key}`,
           meta: { key: updated.key },
         })
+        triggerDeployHook('kind.update')
         return { kind: updated }
       } catch (err) {
         if (err instanceof KindError) {
@@ -154,6 +156,7 @@ export default new Elysia()
           target: `kind:${params.key}`,
           meta: { key: params.key },
         })
+        triggerDeployHook('kind.delete')
         set.status = 204
         return null
       } catch (err) {

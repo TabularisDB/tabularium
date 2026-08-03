@@ -2,6 +2,7 @@ import { Elysia, t } from 'elysia'
 import { adminMiddleware } from '$middleware/admin'
 import { getDocsConfig, addCustomSection, DocsCustomError } from '$lib/docs-custom'
 import { recordAudit, actorFromAdmin } from '$lib/audit'
+import { triggerDeployHook } from '$lib/deploy-hook'
 
 const positionSchema = t.Union([
   t.Literal('page_top'),
@@ -47,6 +48,7 @@ export default new Elysia()
           target: `docs_section:${created.id}`,
           meta: { id: created.id },
         })
+        triggerDeployHook('docs.section_create')
         set.status = 201
         return { section: created }
       } catch (err) {

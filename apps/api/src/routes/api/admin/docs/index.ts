@@ -2,6 +2,7 @@ import { Elysia, t } from 'elysia'
 import { adminMiddleware } from '$middleware/admin'
 import { getDocsConfig, setIntroMarkdown, setOutroMarkdown, DocsCustomError } from '$lib/docs-custom'
 import { recordAudit, actorFromAdmin } from '$lib/audit'
+import { triggerDeployHook } from '$lib/deploy-hook'
 
 const translationMapSchema = t.Optional(t.Record(t.String(), t.String()))
 
@@ -40,6 +41,7 @@ export default new Elysia()
           target: 'docs:config',
           meta: { fields: Object.keys(body) },
         })
+        triggerDeployHook('docs.config_update')
         return { config: getDocsConfig() }
       } catch (err) {
         if (err instanceof DocsCustomError) {

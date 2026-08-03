@@ -1,6 +1,7 @@
 import { Elysia, t } from 'elysia'
 import { adminMiddleware } from '$middleware/admin'
 import { recordAudit, actorFromAdmin } from '$lib/audit'
+import { triggerDeployHook } from '$lib/deploy-hook'
 import { getExtensionsDelta, setExtensionsDelta, buildMergedSchema, type ExtensionsDelta } from '$lib/manifest-schema'
 
 export default new Elysia()
@@ -41,6 +42,7 @@ export default new Elysia()
         target: 'manifest',
         meta: { keys: Object.keys(body.extensions ?? {}) },
       })
+      triggerDeployHook('manifest.extensions.update')
       return { ok: true }
     },
     {

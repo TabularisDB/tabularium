@@ -2,6 +2,7 @@ import { Elysia, t } from 'elysia'
 import { adminMiddleware } from '$middleware/admin'
 import { updateCustomSection, removeCustomSection, DocsCustomError } from '$lib/docs-custom'
 import { recordAudit, actorFromAdmin } from '$lib/audit'
+import { triggerDeployHook } from '$lib/deploy-hook'
 
 const positionSchema = t.Union([
   t.Literal('page_top'),
@@ -38,6 +39,7 @@ export default new Elysia()
           target: `docs_section:${updated.id}`,
           meta: { id: updated.id },
         })
+        triggerDeployHook('docs.section_update')
         return { section: updated }
       } catch (err) {
         if (err instanceof DocsCustomError) {
@@ -74,6 +76,7 @@ export default new Elysia()
           target: `docs_section:${params.id}`,
           meta: { id: params.id },
         })
+        triggerDeployHook('docs.section_delete')
         set.status = 204
         return null
       } catch (err) {
