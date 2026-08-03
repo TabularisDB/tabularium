@@ -30,9 +30,12 @@ export default new Elysia().use(adminMiddleware).get(
   '/',
   async ({ query }) => {
     const builderWhere = query.status ? eq(plugins.status, query.status) : undefined
-    const filter = query.status ? { status: query.status } : undefined
     const [{ total }] = await db.select({ total: count() }).from(plugins).where(builderWhere)
-    const rows = await db.query.plugins.findMany({ where: filter })
+    // Omit `where` entirely when unfiltered — drizzle's relational API throws
+    // on an explicit `where: undefined` ("Unexpected 'undefined' in filter value").
+    const rows = query.status
+      ? await db.query.plugins.findMany({ where: { status: query.status } })
+      : await db.query.plugins.findMany()
     return {
       total,
       plugins: rows.map((p) => ({
