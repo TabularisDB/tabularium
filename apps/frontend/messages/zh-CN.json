@@ -182,6 +182,8 @@
 	"admin_instance_rate_limits": "限流",
 	"admin_instance_rate_limits_subtitle": "每个 bucket 在窗口(秒)内的请求上限。Subject = 已认证用户(若存在),否则为客户端 IP。",
 	"admin_instance_require_approval": "新插件需要管理员审批",
+	"admin_instance_docs_url_title": "外部文档 URL",
+	"admin_instance_docs_url_subtitle": "设置后，页眉和页脚中的文档链接将指向此 URL（例如产品网站），而不是内置文档页面。留空则继续使用内置文档。",
 	"admin_instance_reset_failed": "重置失败",
 	"admin_instance_reset_to_default": "{id} 已重置为默认值",
 	"admin_instance_save_failed": "保存失败",

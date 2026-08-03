@@ -5,6 +5,7 @@
 	import { branding } from '$lib/stores/branding.svelte'
 	import { features } from '$lib/stores/features.svelte'
 	import { i18n } from '$lib/stores/i18n.svelte'
+	import { instanceInfo } from '$lib/stores/instance-info.svelte'
 	import { m } from '$lib/paraglide/messages'
 	import type { PageSummary } from '$lib/types'
 
@@ -105,7 +106,10 @@
 		<div class="lg:col-span-3 space-y-4">
 			<div class="font-medium text-foreground text-xs uppercase tracking-wider">{m.footer_developers()}</div>
 			<div class="flex flex-col gap-2.5 text-muted-foreground">
-				<a href="/docs/plugin-development" class="hover:text-foreground transition-colors w-fit">
+				<a
+					href={instanceInfo.docsExternalUrl ?? '/docs/plugin-development'}
+					class="hover:text-foreground transition-colors w-fit"
+				>
 					{m.docs_plugin_dev_title()}
 				</a>
 				<a

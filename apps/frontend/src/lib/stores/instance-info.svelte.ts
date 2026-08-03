@@ -8,10 +8,12 @@ export type AppUrlScheme = {
 
 export type InstanceInfo = {
   appUrlSchemes: AppUrlScheme[]
+  docsExternalUrl: string | null
 }
 
 const DEFAULTS: InstanceInfo = {
   appUrlSchemes: [],
+  docsExternalUrl: null,
 }
 
 function createInstanceInfoStore() {
@@ -24,8 +26,10 @@ function createInstanceInfoStore() {
       if (error) throw error
       const i = data as InstanceInfo
       state.appUrlSchemes = i.appUrlSchemes ?? []
+      state.docsExternalUrl = i.docsExternalUrl ?? null
     } catch {
       state.appUrlSchemes = DEFAULTS.appUrlSchemes
+      state.docsExternalUrl = DEFAULTS.docsExternalUrl
     } finally {
       loaded = true
     }
@@ -47,6 +51,9 @@ function createInstanceInfoStore() {
   return {
     get appUrlSchemes() {
       return state.appUrlSchemes
+    },
+    get docsExternalUrl() {
+      return state.docsExternalUrl
     },
     get loaded() {
       return loaded
