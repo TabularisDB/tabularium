@@ -1,7 +1,7 @@
 import { db } from '$db'
 import { parseRepoUrl } from '$lib/providers'
 import { getValidAccessToken, OAuthExpiredError, UpstreamUnauthorizedError, reauthErrorBody } from '$lib/oauth-tokens'
-import { resolveManifest, rawContentBase } from '$lib/manifest'
+import { resolveManifest, rawContentBase, ManifestValidationError } from '$lib/manifest'
 import { manifestPatch, applyManifestToPlugin } from '$lib/manifest-apply'
 import { cache } from '$lib/cache'
 import { latestCacheKey } from '$routes/api/plugins/[slug]/latest'
@@ -45,6 +45,7 @@ export async function refreshManifestForPlugin(
     manifest = await resolveManifest(token, ref, { ref: branch })
   } catch (e) {
     if (e instanceof UpstreamUnauthorizedError) return { status: 401, body: reauthErrorBody(e) }
+    if (e instanceof ManifestValidationError) return { status: 422, body: { error: e.message } }
     throw e
   }
   if (!manifest) {
