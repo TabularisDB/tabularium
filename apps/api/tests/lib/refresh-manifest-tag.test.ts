@@ -37,8 +37,9 @@ describe('refreshManifestForPlugin tag fallback', () => {
   it('still 404s with both tried refs in the message when neither exists', async () => {
     const u = await makeUser()
     const plugin = await makePlugin(u.id, { id: 'alpha', latestVersion: '1.0.0' })
-    const spy = spyOn(global, 'fetch').mockImplementation((async () =>
-      new Response('not found', { status: 404 })) as unknown as typeof fetch)
+    const spy = spyOn(global, 'fetch').mockImplementation(
+      (async () => new Response('not found', { status: 404 })) as unknown as typeof fetch,
+    )
 
     const result = await refreshManifestForPlugin(plugin, {})
     expect(result).toMatchObject({ status: 404 })
