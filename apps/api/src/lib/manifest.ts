@@ -249,7 +249,12 @@ export async function resolveManifestFromReleaseAssets(
   if (assets.length === 0) return null
   const byName = new Map(assets.map((a) => [a.name, a]))
   for (const candidate of manifestCandidates()) {
-    const asset = byName.get(candidate.path)
+    // GitHub rejects release asset names with a leading dot and silently
+    // renames them on upload (".tabularium" → "default.tabularium"), so a
+    // dotfile candidate must also match its renamed form.
+    const asset =
+      byName.get(candidate.path) ??
+      (candidate.path.startsWith('.') ? byName.get(`default${candidate.path}`) : undefined)
     if (!asset) continue
     try {
       const got = await fetchAssetContent(asset.url, accessToken)

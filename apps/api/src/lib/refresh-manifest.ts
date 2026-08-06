@@ -39,17 +39,28 @@ export async function refreshManifestForPlugin(
     if (e instanceof OAuthExpiredError) return { status: 401, body: reauthErrorBody(e) }
     throw e
   }
-  const branch = options.branch ?? plugin.latestVersion ?? 'HEAD'
-  let manifest
+  // latestVersion stores the bare semver ("0.1.1") while release tags are
+  // commonly v-prefixed ("v0.1.1") — try both when we derived the ref ourselves.
+  const gitRefs = options.branch
+    ? [options.branch]
+    : plugin.latestVersion
+      ? [plugin.latestVersion, `v${plugin.latestVersion}`]
+      : ['HEAD']
+  let manifest: Awaited<ReturnType<typeof resolveManifest>> = null
+  let branch = gitRefs[0]
   try {
-    manifest = await resolveManifest(token, ref, { ref: branch })
+    for (const gitRef of gitRefs) {
+      branch = gitRef
+      manifest = await resolveManifest(token, ref, { ref: gitRef })
+      if (manifest) break
+    }
   } catch (e) {
     if (e instanceof UpstreamUnauthorizedError) return { status: 401, body: reauthErrorBody(e) }
     if (e instanceof ManifestValidationError) return { status: 422, body: { error: e.message } }
     throw e
   }
   if (!manifest) {
-    return { status: 404, body: { error: `No .tabularium file found in ${plugin.repoUrl} @ ${branch}` } }
+    return { status: 404, body: { error: `No .tabularium file found in ${plugin.repoUrl} @ ${gitRefs.join(' or ')}` } }
   }
   const patch = manifestPatch(manifest, { repoBase: rawContentBase(ref, branch), version: branch })
   await applyManifestToPlugin(plugin.id, patch)

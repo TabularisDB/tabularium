@@ -42,6 +42,17 @@ describe('resolveManifestFromReleaseAssets', () => {
     spy.mockRestore()
   })
 
+  it('matches the GitHub-renamed form of a dotfile candidate (default.tabularium)', async () => {
+    const spy = mockAssetFetch({
+      'https://example.com/default.tabularium': { body: SAMPLE_JSON },
+    })
+    const manifest = await resolveManifestFromReleaseAssets('test-token', [
+      { name: 'default.tabularium', url: 'https://example.com/default.tabularium' },
+    ])
+    expect(manifest?.parsed.name).toBe('alpha')
+    spy.mockRestore()
+  })
+
   it('returns null when no asset name matches the candidate list', async () => {
     const spy = mockAssetFetch({})
     const manifest = await resolveManifestFromReleaseAssets('test-token', [
