@@ -7,7 +7,7 @@ import { cache } from '$lib/cache'
 import { latestCacheKey } from '$routes/api/plugins/[slug]/latest'
 import { recordAudit, actorFromAdmin } from '$lib/audit'
 
-const actionEnum = t.Union([t.Literal('approve'), t.Literal('reject'), t.Literal('delete')])
+const actionEnum = t.Union([t.Literal('approve'), t.Literal('reject'), t.Literal('delete'), t.Literal('transfer')])
 
 export default new Elysia().use(adminMiddleware).post(
   '/',
@@ -21,6 +21,11 @@ export default new Elysia().use(adminMiddleware).post(
       return { error: 'bulk action limited to 100 ids per request' }
     }
 
+    if (body.action === 'transfer' && !body.ownerId) {
+      set.status = 400
+      return { error: 'ownerId is required for the transfer action' }
+    }
+
     const targets = await db.query.plugins.findMany({ where: { id: { in: body.ids } } })
     const found = new Set(targets.map((p) => p.id))
     const missing = body.ids.filter((id) => !found.has(id))
@@ -29,6 +34,17 @@ export default new Elysia().use(adminMiddleware).post(
     if (body.action === 'delete') {
       await db.delete(releases).where(inArray(releases.pluginId, body.ids))
       await db.delete(plugins).where(inArray(plugins.id, body.ids))
+      affected = targets.length
+    } else if (body.action === 'transfer') {
+      const newOwner = await db.query.users.findFirst({ where: { id: body.ownerId } })
+      if (!newOwner) {
+        set.status = 400
+        return { error: 'New owner user not found' }
+      }
+      await db
+        .update(plugins)
+        .set({ ownerId: body.ownerId, updatedAt: Date.now() })
+        .where(inArray(plugins.id, body.ids))
       affected = targets.length
     } else {
       const status = body.action === 'approve' ? 'approved' : 'rejected'
@@ -47,7 +63,14 @@ export default new Elysia().use(adminMiddleware).post(
       ...actorFromAdmin(admin, request),
       action: `plugin.bulk.${body.action}`,
       target: `plugins:${body.ids.length}`,
-      meta: { ids: body.ids, missing, affected, rejectionReason: body.rejectionReason ?? null },
+      meta: {
+        ids: body.ids,
+        missing,
+        affected,
+        rejectionReason: body.rejectionReason ?? null,
+        ownerId: body.ownerId ?? null,
+        fromOwners: body.action === 'transfer' ? Object.fromEntries(targets.map((p) => [p.id, p.ownerId])) : null,
+      },
     })
 
     return { ok: true, action: body.action, affected, missing }
@@ -55,9 +78,10 @@ export default new Elysia().use(adminMiddleware).post(
   {
     detail: {
       tags: ['Admin'],
-      summary: 'Bulk-approve / reject / delete plugins',
+      summary: 'Bulk-approve / reject / delete / transfer plugins',
       description:
-        'Apply the same action to up to 100 plugins in one round-trip. `delete` cascades to releases. `reject` accepts an optional reason. Single audit-log entry per call.',
+        'Apply the same action to up to 100 plugins in one round-trip. `delete` cascades to releases. `reject` accepts an optional reason. ' +
+        '`transfer` reassigns ownership to the user given in `ownerId`, bypassing the consent flow. Single audit-log entry per call.',
       operationId: 'bulkPluginAction',
       security: [{ bearerAuth: [] }, { cookieAuth: [] }],
     },
@@ -65,6 +89,7 @@ export default new Elysia().use(adminMiddleware).post(
       ids: t.Array(t.String(), { maxItems: 100 }),
       action: actionEnum,
       rejectionReason: t.Optional(t.String({ maxLength: 500 })),
+      ownerId: t.Optional(t.String()),
     }),
     response: {
       200: t.Object({

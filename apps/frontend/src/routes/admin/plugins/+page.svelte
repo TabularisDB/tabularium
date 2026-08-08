@@ -4,6 +4,7 @@
 	import Check from '@lucide/svelte/icons/check'
 	import X from '@lucide/svelte/icons/x'
 	import Trash2 from '@lucide/svelte/icons/trash-2'
+	import ArrowRightLeft from '@lucide/svelte/icons/arrow-right-left'
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw'
 	import Webhook from '@lucide/svelte/icons/webhook'
 	import Star from '@lucide/svelte/icons/star'
@@ -102,9 +103,10 @@
 		selected = new Set(plugins.map((p) => p.id))
 	}
 
-	async function bulk(action: 'approve' | 'reject' | 'delete') {
+	async function bulk(action: 'approve' | 'reject' | 'delete' | 'transfer') {
 		if (selected.size === 0) return
 		let rejectionReason: string | undefined
+		let ownerId: string | undefined
 		if (action === 'reject') {
 			const r = prompt(m.admin_plugins_bulk_reject_prompt({ count: selected.size }))
 			if (r === null) return
@@ -112,14 +114,27 @@
 		} else if (action === 'delete') {
 			bulkDeleteOpen = true
 			return
+		} else if (action === 'transfer') {
+			const o = prompt(m.admin_plugins_bulk_transfer_prompt({ count: selected.size }))
+			if (!o?.trim()) return
+			ownerId = o.trim()
 		}
-		await runBulk(action, rejectionReason)
+		await runBulk(action, rejectionReason, ownerId)
 	}
 
-	async function runBulk(action: 'approve' | 'reject' | 'delete', rejectionReason?: string) {
+	async function runBulk(
+		action: 'approve' | 'reject' | 'delete' | 'transfer',
+		rejectionReason?: string,
+		ownerId?: string,
+	) {
 		bulkBusy = true
 		try {
-			const { data, error } = await eden.api.admin.plugins.bulk.post({ ids: [...selected], action, rejectionReason })
+			const { data, error } = await eden.api.admin.plugins.bulk.post({
+				ids: [...selected],
+				action,
+				rejectionReason,
+				ownerId,
+			})
 			if (error)
 				throw new Error(
 					typeof error.value === 'string'
@@ -304,6 +319,10 @@
 			<Button size="sm" variant="outline" onclick={() => bulk('reject')} disabled={bulkBusy}>
 				<X class="h-3.5 w-3.5" />
 				{m.admin_plugins_reject()}
+			</Button>
+			<Button size="sm" variant="outline" onclick={() => bulk('transfer')} disabled={bulkBusy}>
+				<ArrowRightLeft class="h-3.5 w-3.5" />
+				{m.admin_plugins_transfer()}
 			</Button>
 			<Button size="sm" variant="destructive" onclick={() => bulk('delete')} disabled={bulkBusy}>
 				<Trash2 class="h-3.5 w-3.5" />
