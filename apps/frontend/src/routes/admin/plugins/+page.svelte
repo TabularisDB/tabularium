@@ -22,6 +22,9 @@
 	import Button from '$components/ui/Button.svelte'
 	import Input from '$components/ui/Input.svelte'
 	import ConfirmDialog from '$components/ui/ConfirmDialog.svelte'
+	import Modal from '$components/ui/Modal.svelte'
+	import Select from '$components/ui/Select.svelte'
+	import Label from '$components/ui/Label.svelte'
 	import { eden } from '$lib/eden'
 	import { m } from '$lib/paraglide/messages'
 	import AdminPageHeader from '$components/admin/AdminPageHeader.svelte'
@@ -44,6 +47,13 @@
 		updatedAt: number
 	}
 
+	type AdminUser = {
+		id: string
+		displayName: string
+		email: string | null
+		role: 'user' | 'admin'
+	}
+
 	let allPlugins = $state<AdminPlugin[]>([])
 	let loading = $state(true)
 	let filter = $state<'all' | 'approved' | 'pending' | 'rejected'>('all')
@@ -53,6 +63,10 @@
 	let bulkBusy = $state(false)
 	let deleteTarget = $state<AdminPlugin | null>(null)
 	let bulkDeleteOpen = $state(false)
+	let transferOpen = $state(false)
+	let transferOwnerId = $state('')
+	let users = $state<AdminUser[]>([])
+	let usersLoaded = $state(false)
 
 	const counts = $derived.by(() => {
 		const c = { all: allPlugins.length, approved: 0, pending: 0, rejected: 0 }
@@ -106,7 +120,6 @@
 	async function bulk(action: 'approve' | 'reject' | 'delete' | 'transfer') {
 		if (selected.size === 0) return
 		let rejectionReason: string | undefined
-		let ownerId: string | undefined
 		if (action === 'reject') {
 			const r = prompt(m.admin_plugins_bulk_reject_prompt({ count: selected.size }))
 			if (r === null) return
@@ -115,18 +128,42 @@
 			bulkDeleteOpen = true
 			return
 		} else if (action === 'transfer') {
-			const o = prompt(m.admin_plugins_bulk_transfer_prompt({ count: selected.size }))
-			if (!o?.trim()) return
-			ownerId = o.trim()
+			transferOwnerId = ''
+			transferOpen = true
+			void loadUsers()
+			return
 		}
-		await runBulk(action, rejectionReason, ownerId)
+		await runBulk(action, rejectionReason)
+	}
+
+	async function loadUsers() {
+		if (usersLoaded) return
+		try {
+			const { data, error } = await eden.api.admin.users.get({ query: { limit: '200' } })
+			if (error)
+				throw new Error(
+					typeof error.value === 'string'
+						? error.value
+						: ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`),
+				)
+			users = (data as { users: AdminUser[] }).users.sort((a, b) => a.displayName.localeCompare(b.displayName))
+			usersLoaded = true
+		} catch (e) {
+			toast.error(e instanceof Error ? e.message : m.admin_users_load_failed())
+		}
+	}
+
+	async function confirmTransfer() {
+		if (!transferOwnerId) return
+		const ok = await runBulk('transfer', undefined, transferOwnerId)
+		if (ok) transferOpen = false
 	}
 
 	async function runBulk(
 		action: 'approve' | 'reject' | 'delete' | 'transfer',
 		rejectionReason?: string,
 		ownerId?: string,
-	) {
+	): Promise<boolean> {
 		bulkBusy = true
 		try {
 			const { data, error } = await eden.api.admin.plugins.bulk.post({
@@ -147,8 +184,10 @@
 			toast.success(base + extra)
 			selected = new Set()
 			await load()
+			return true
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : m.admin_plugins_bulk_failed())
+			return false
 		} finally {
 			bulkBusy = false
 		}
@@ -504,6 +543,33 @@
 		onCancel={() => (deleteTarget = null)}
 	/>
 {/if}
+
+<Modal
+	bind:open={transferOpen}
+	title={m.admin_plugins_bulk_transfer_title({ count: selected.size })}
+	description={m.admin_plugins_bulk_transfer_description()}
+>
+	<div class="space-y-2">
+		<Label for="transfer-owner">{m.admin_plugins_bulk_transfer_owner_label()}</Label>
+		<Select id="transfer-owner" bind:value={transferOwnerId} disabled={bulkBusy}>
+			<option value="" disabled>{m.admin_plugins_bulk_transfer_placeholder()}</option>
+			{#each users as u (u.id)}
+				<option value={u.id}
+					>{u.displayName}{u.email ? ` — ${u.email}` : ''}{u.role === 'admin' ? ' (admin)' : ''}</option
+				>
+			{/each}
+		</Select>
+	</div>
+	{#snippet footer()}
+		<Button variant="ghost" size="sm" onclick={() => (transferOpen = false)} disabled={bulkBusy}>
+			{m.confirm_dialog_cancel()}
+		</Button>
+		<Button size="sm" onclick={confirmTransfer} disabled={!transferOwnerId || bulkBusy}>
+			<ArrowRightLeft class="h-3.5 w-3.5" />
+			{bulkBusy ? m.confirm_dialog_busy() : m.admin_plugins_transfer()}
+		</Button>
+	{/snippet}
+</Modal>
 
 <ConfirmDialog
 	bind:open={bulkDeleteOpen}

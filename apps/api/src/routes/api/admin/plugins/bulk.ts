@@ -1,5 +1,5 @@
 import { Elysia, t } from 'elysia'
-import { inArray } from 'drizzle-orm'
+import { eq, inArray } from 'drizzle-orm'
 import { adminMiddleware } from '$middleware/admin'
 import { db } from '$db'
 import { plugins, releases } from '$db/schema'
@@ -41,10 +41,15 @@ export default new Elysia().use(adminMiddleware).post(
         set.status = 400
         return { error: 'New owner user not found' }
       }
-      await db
-        .update(plugins)
-        .set({ ownerId: body.ownerId, updatedAt: Date.now() })
-        .where(inArray(plugins.id, body.ids))
+      const now = Date.now()
+      // author is a per-plugin string (it embeds the repo URL), so the
+      // transfer can't be a single bulk UPDATE.
+      for (const p of targets) {
+        await db
+          .update(plugins)
+          .set({ ownerId: body.ownerId, author: `${newOwner.displayName} <${p.repoUrl}>`, updatedAt: now })
+          .where(eq(plugins.id, p.id))
+      }
       affected = targets.length
     } else {
       const status = body.action === 'approve' ? 'approved' : 'rejected'

@@ -51,9 +51,17 @@ export default new Elysia().use(authMiddleware).post(
     }
 
     if (status === 'accepted') {
+      const [newOwner, plugin] = await Promise.all([
+        db.query.users.findFirst({ where: { id: transfer.toUserId } }),
+        db.query.plugins.findFirst({ where: { id: transfer.pluginId } }),
+      ])
       await db
         .update(plugins)
-        .set({ ownerId: transfer.toUserId, updatedAt: now })
+        .set({
+          ownerId: transfer.toUserId,
+          ...(newOwner && plugin ? { author: `${newOwner.displayName} <${plugin.repoUrl}>` } : {}),
+          updatedAt: now,
+        })
         .where(eq(plugins.id, transfer.pluginId))
     }
 

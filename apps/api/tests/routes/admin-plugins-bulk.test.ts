@@ -40,6 +40,9 @@ describe('POST /api/admin/plugins/bulk (transfer)', () => {
 
     const rows = await db.query.plugins.findMany({ where: { id: { in: ['alpha', 'beta'] } } })
     expect(rows.map((p) => p.ownerId)).toEqual([newOwner.id, newOwner.id])
+    for (const row of rows) {
+      expect(row.author).toBe(`newowner <${row.repoUrl}>`)
+    }
   })
 
   it('rejects a transfer without ownerId', async () => {

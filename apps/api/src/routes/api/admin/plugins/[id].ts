@@ -54,6 +54,7 @@ export default new Elysia()
           return { error: 'New owner user not found' }
         }
         patch.ownerId = body.ownerId
+        if (ownerChange) patch.author = `${target.displayName} <${existing.repoUrl}>`
       }
       await db.update(plugins).set(patch).where(eq(plugins.id, params.id))
       await cache().del(latestCacheKey(params.id))
