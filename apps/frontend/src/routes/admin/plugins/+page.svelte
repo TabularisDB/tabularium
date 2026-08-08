@@ -306,12 +306,14 @@
 </div>
 
 {#if selected.size > 0}
-	<div class="flex items-center justify-between gap-3 rounded-md border border-primary/30 bg-primary/5 px-4 py-2">
-		<span class="text-sm">
+	<div
+		class="flex flex-col gap-3 rounded-md border border-primary/30 bg-primary/5 px-4 py-2 sm:flex-row sm:items-center sm:justify-between"
+	>
+		<span class="text-sm whitespace-nowrap">
 			<strong class="text-foreground">{selected.size}</strong>
 			{m.admin_plugins_selected()}
 		</span>
-		<div class="flex items-center gap-1.5">
+		<div class="flex flex-wrap items-center gap-1.5">
 			<Button size="sm" variant="default" onclick={() => bulk('approve')} disabled={bulkBusy}>
 				<Check class="h-3.5 w-3.5" />
 				{m.admin_plugins_approve()}
@@ -365,7 +367,9 @@
 				<span>{m.admin_plugins_select_all()}</span>
 			</label>
 			{#each plugins as p (p.id)}
-				<div class="flex items-center justify-between gap-3 rounded-md border border-border bg-card/50 px-4 py-3">
+				<div
+					class="flex flex-wrap items-center gap-3 rounded-md border border-border bg-card/50 px-4 py-3 sm:flex-nowrap sm:justify-between"
+				>
 					<input
 						type="checkbox"
 						checked={selected.has(p.id)}
@@ -373,7 +377,7 @@
 						class="h-4 w-4 rounded border-input flex-shrink-0"
 						aria-label={m.admin_plugins_select_aria({ name: p.name })}
 					/>
-					<div class="space-y-0.5 min-w-0 flex-1">
+					<div class="space-y-0.5 min-w-0 flex-1 basis-40">
 						<div class="flex items-center gap-2 flex-wrap">
 							<a href={`/plugins/${p.id}`} class="text-sm font-medium truncate hover:text-primary">{p.name}</a>
 							<Badge
@@ -406,7 +410,7 @@
 							<div class="text-xs text-destructive">{m.admin_plugins_reason({ reason: p.rejectionReason })}</div>
 						{/if}
 					</div>
-					<div class="flex items-center gap-1">
+					<div class="flex w-full flex-wrap items-center justify-end gap-1 sm:w-auto sm:flex-nowrap">
 						<Button
 							variant="ghost"
 							size="sm"
