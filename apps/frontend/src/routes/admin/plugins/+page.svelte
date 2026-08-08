@@ -4,6 +4,7 @@
 	import Check from '@lucide/svelte/icons/check'
 	import X from '@lucide/svelte/icons/x'
 	import Trash2 from '@lucide/svelte/icons/trash-2'
+	import ArrowRightLeft from '@lucide/svelte/icons/arrow-right-left'
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw'
 	import Webhook from '@lucide/svelte/icons/webhook'
 	import Star from '@lucide/svelte/icons/star'
@@ -102,9 +103,10 @@
 		selected = new Set(plugins.map((p) => p.id))
 	}
 
-	async function bulk(action: 'approve' | 'reject' | 'delete') {
+	async function bulk(action: 'approve' | 'reject' | 'delete' | 'transfer') {
 		if (selected.size === 0) return
 		let rejectionReason: string | undefined
+		let ownerId: string | undefined
 		if (action === 'reject') {
 			const r = prompt(m.admin_plugins_bulk_reject_prompt({ count: selected.size }))
 			if (r === null) return
@@ -112,14 +114,27 @@
 		} else if (action === 'delete') {
 			bulkDeleteOpen = true
 			return
+		} else if (action === 'transfer') {
+			const o = prompt(m.admin_plugins_bulk_transfer_prompt({ count: selected.size }))
+			if (!o?.trim()) return
+			ownerId = o.trim()
 		}
-		await runBulk(action, rejectionReason)
+		await runBulk(action, rejectionReason, ownerId)
 	}
 
-	async function runBulk(action: 'approve' | 'reject' | 'delete', rejectionReason?: string) {
+	async function runBulk(
+		action: 'approve' | 'reject' | 'delete' | 'transfer',
+		rejectionReason?: string,
+		ownerId?: string,
+	) {
 		bulkBusy = true
 		try {
-			const { data, error } = await eden.api.admin.plugins.bulk.post({ ids: [...selected], action, rejectionReason })
+			const { data, error } = await eden.api.admin.plugins.bulk.post({
+				ids: [...selected],
+				action,
+				rejectionReason,
+				ownerId,
+			})
 			if (error)
 				throw new Error(
 					typeof error.value === 'string'
@@ -291,12 +306,14 @@
 </div>
 
 {#if selected.size > 0}
-	<div class="flex items-center justify-between gap-3 rounded-md border border-primary/30 bg-primary/5 px-4 py-2">
-		<span class="text-sm">
+	<div
+		class="flex flex-col gap-3 rounded-md border border-primary/30 bg-primary/5 px-4 py-2 sm:flex-row sm:items-center sm:justify-between"
+	>
+		<span class="text-sm whitespace-nowrap">
 			<strong class="text-foreground">{selected.size}</strong>
 			{m.admin_plugins_selected()}
 		</span>
-		<div class="flex items-center gap-1.5">
+		<div class="flex flex-wrap items-center gap-1.5">
 			<Button size="sm" variant="default" onclick={() => bulk('approve')} disabled={bulkBusy}>
 				<Check class="h-3.5 w-3.5" />
 				{m.admin_plugins_approve()}
@@ -304,6 +321,10 @@
 			<Button size="sm" variant="outline" onclick={() => bulk('reject')} disabled={bulkBusy}>
 				<X class="h-3.5 w-3.5" />
 				{m.admin_plugins_reject()}
+			</Button>
+			<Button size="sm" variant="outline" onclick={() => bulk('transfer')} disabled={bulkBusy}>
+				<ArrowRightLeft class="h-3.5 w-3.5" />
+				{m.admin_plugins_transfer()}
 			</Button>
 			<Button size="sm" variant="destructive" onclick={() => bulk('delete')} disabled={bulkBusy}>
 				<Trash2 class="h-3.5 w-3.5" />
@@ -346,7 +367,9 @@
 				<span>{m.admin_plugins_select_all()}</span>
 			</label>
 			{#each plugins as p (p.id)}
-				<div class="flex items-center justify-between gap-3 rounded-md border border-border bg-card/50 px-4 py-3">
+				<div
+					class="flex flex-wrap items-center gap-3 rounded-md border border-border bg-card/50 px-4 py-3 sm:flex-nowrap sm:justify-between"
+				>
 					<input
 						type="checkbox"
 						checked={selected.has(p.id)}
@@ -354,7 +377,7 @@
 						class="h-4 w-4 rounded border-input flex-shrink-0"
 						aria-label={m.admin_plugins_select_aria({ name: p.name })}
 					/>
-					<div class="space-y-0.5 min-w-0 flex-1">
+					<div class="space-y-0.5 min-w-0 flex-1 basis-40">
 						<div class="flex items-center gap-2 flex-wrap">
 							<a href={`/plugins/${p.id}`} class="text-sm font-medium truncate hover:text-primary">{p.name}</a>
 							<Badge
@@ -387,7 +410,7 @@
 							<div class="text-xs text-destructive">{m.admin_plugins_reason({ reason: p.rejectionReason })}</div>
 						{/if}
 					</div>
-					<div class="flex items-center gap-1">
+					<div class="flex w-full flex-wrap items-center justify-end gap-1 sm:w-auto sm:flex-nowrap">
 						<Button
 							variant="ghost"
 							size="sm"
