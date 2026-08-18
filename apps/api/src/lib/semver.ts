@@ -8,9 +8,12 @@ const STRICT_SEMVER_RE = new RegExp(SEMVER_VERSION_PATTERN)
 
 // Returns negative if a < b, positive if a > b, 0 if equal or unparseable.
 // Coerces lax tag formats ("v1.2", "1.2") so legacy release tags still order.
+// `includePrerelease` is load-bearing: a plain coerce() drops the prerelease,
+// so every 1.0.0-beta.N would compare equal and a plugin's latestVersion would
+// stick at whichever prerelease of a series landed first.
 export function compareSemver(a: string, b: string): number {
-  const sa = semver.coerce(a)
-  const sb = semver.coerce(b)
+  const sa = semver.coerce(a, { includePrerelease: true })
+  const sb = semver.coerce(b, { includePrerelease: true })
   if (!sa || !sb) return 0
   return semver.compare(sa, sb)
 }

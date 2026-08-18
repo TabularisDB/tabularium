@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'bun:test'
-import { isStrictSemver, assertStrictSemver, tagToVersion, InvalidVersionError } from '../../src/lib/semver'
+import { compareSemver, isStrictSemver, assertStrictSemver, tagToVersion, InvalidVersionError } from '../../src/lib/semver'
 
 describe('isStrictSemver', () => {
   it('accepts X.Y.Z', () => {
@@ -39,6 +39,38 @@ describe('assertStrictSemver', () => {
   it('does not throw for good input', () => {
     expect(() => assertStrictSemver('1.2.3')).not.toThrow()
     expect(() => assertStrictSemver('1.2.3-alpha+build')).not.toThrow()
+  })
+})
+
+describe('compareSemver', () => {
+  it('orders plain releases', () => {
+    expect(compareSemver('1.2.4', '1.2.3')).toBeGreaterThan(0)
+    expect(compareSemver('1.2.3', '1.2.4')).toBeLessThan(0)
+    expect(compareSemver('1.2.3', '1.2.3')).toBe(0)
+    expect(compareSemver('0.10.0', '0.2.0')).toBeGreaterThan(0)
+  })
+
+  // Regression: coerce() without includePrerelease collapses every
+  // 1.0.0-beta.N to 1.0.0, so latestVersion froze at the first beta of a
+  // series while later betas kept ingesting as ordinary releases.
+  it('orders prereleases of the same version', () => {
+    expect(compareSemver('1.0.0-beta.7', '1.0.0-beta.5')).toBeGreaterThan(0)
+    expect(compareSemver('1.0.0-beta.5', '1.0.0-beta.7')).toBeLessThan(0)
+    expect(compareSemver('1.0.0-beta.10', '1.0.0-beta.9')).toBeGreaterThan(0)
+  })
+
+  it('ranks a stable release above its own prerelease', () => {
+    expect(compareSemver('2.0.0', '2.0.0-rc.1')).toBeGreaterThan(0)
+    expect(compareSemver('2.0.0-rc.1', '2.0.0')).toBeLessThan(0)
+  })
+
+  it('still coerces lax legacy tags', () => {
+    expect(compareSemver('v1.2', '1.1')).toBeGreaterThan(0)
+    expect(compareSemver('1.2', '1.2.0')).toBe(0)
+  })
+
+  it('returns 0 for unparseable input', () => {
+    expect(compareSemver('garbage', '1.0.0')).toBe(0)
   })
 })
 
