@@ -78,7 +78,11 @@ export default new Elysia().use(adminMiddleware).post(
     }
 
     queueMicrotask(async () => {
-      const manifest = await refreshManifestAtRelease(plugin, normalized.tag, version)
+      // Hand over the assets we already fetched. Without them the asset-first
+      // resolver sees an empty list, strict mode declares the manifest missing,
+      // and the replay quietly defers to a delayed recheck instead of doing the
+      // work the operator just asked for.
+      const manifest = await refreshManifestAtRelease(plugin, normalized.tag, version, normalized.assets)
       if (manifest)
         await persistRelease(plugin, normalized, {
           manifestSha256: manifest.sha,
