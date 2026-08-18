@@ -847,6 +847,7 @@
 	"plugin_detail_yank_success": "已撤回发布版本",
 	"plugin_detail_yank_title": "撤回发布版本 v{version}",
 	"plugin_detail_yanked_badge": "已撤回",
+	"plugin_prerelease_badge": "预发布",
 	"plugins_list_categories": "分类",
 	"plugins_list_clear_filters": "清除筛选",
 	"plugins_list_clear_tag": "清除 tag",

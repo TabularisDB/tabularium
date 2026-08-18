@@ -31,6 +31,7 @@
 	import VerifiedBadge from '$components/ui/VerifiedBadge.svelte'
 	import ConfirmDialog from '$components/ui/ConfirmDialog.svelte'
 	import YankDialog from '$components/ui/YankDialog.svelte'
+	import { isPrerelease } from '$lib/utils'
 	import { eden } from '$lib/eden'
 	import { auth } from '$lib/stores/auth.svelte'
 	import { branding } from '$lib/stores/branding.svelte'
@@ -476,6 +477,12 @@
 								class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-mono bg-primary/10 text-primary border border-primary/20"
 								>v{plugin.latestVersion}</span
 							>
+							{#if isPrerelease(plugin.latestVersion)}
+								<span
+									class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-mono bg-warning/15 text-warning border border-warning/30"
+									>{m.plugin_prerelease_badge()}</span
+								>
+							{/if}
 						{/if}
 						{#if plugin.license}
 							<span
@@ -552,6 +559,11 @@
 							{/if}
 							{#if latestRelease}
 								<span class="text-xs font-mono text-muted-foreground">v{latestRelease.version}</span>
+								{#if isPrerelease(latestRelease.version)}
+									<span class="font-mono text-[10px] px-2 py-0.5 rounded-full bg-warning/15 text-warning tracking-wide"
+										>{m.plugin_prerelease_badge()}</span
+									>
+								{/if}
 							{/if}
 						</div>
 					</div>
@@ -755,6 +767,12 @@
 												<span
 													class="font-mono text-[10px] px-2 py-0.5 rounded-full bg-foreground/5 text-muted-foreground tracking-wide"
 													>runtime ≥ {release.minRuntimeVersion}</span
+												>
+											{/if}
+											{#if isPrerelease(release.version)}
+												<span
+													class="font-mono text-[10px] px-2 py-0.5 rounded-full bg-warning/15 text-warning tracking-wide"
+													>{m.plugin_prerelease_badge()}</span
 												>
 											{/if}
 											{#if release.yankedAt}
