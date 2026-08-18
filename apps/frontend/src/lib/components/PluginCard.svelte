@@ -1,8 +1,9 @@
 <script lang="ts">
-	import { cn } from '$lib/utils'
+	import { cn, isPrerelease } from '$lib/utils'
 	import Badge from '$components/ui/Badge.svelte'
 	import VerifiedBadge from '$components/ui/VerifiedBadge.svelte'
 	import Boxes from '@lucide/svelte/icons/boxes'
+	import { m } from '$lib/paraglide/messages'
 	import type { Plugin } from '$lib/types'
 
 	let { plugin, class: className }: { plugin: Plugin; class?: string } = $props()
@@ -36,7 +37,14 @@
 					{/if}
 				</div>
 				{#if plugin.latestVersion}
-					<Badge variant="secondary" class="font-mono text-[10px] flex-shrink-0">v{plugin.latestVersion}</Badge>
+					<div class="flex items-center gap-1.5 flex-shrink-0">
+						<Badge variant="secondary" class="font-mono text-[10px]">v{plugin.latestVersion}</Badge>
+						{#if isPrerelease(plugin.latestVersion)}
+							<Badge variant="secondary" class="font-mono text-[10px] bg-warning/15 text-warning border-warning/30"
+								>{m.plugin_prerelease_badge()}</Badge
+							>
+						{/if}
+					</div>
 				{/if}
 			</div>
 			<p class="text-sm text-muted-foreground line-clamp-2">{plugin.description}</p>

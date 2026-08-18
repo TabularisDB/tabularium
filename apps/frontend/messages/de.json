@@ -847,6 +847,7 @@
 	"plugin_detail_yank_success": "Release geyankt",
 	"plugin_detail_yank_title": "Release v{version} yanken",
 	"plugin_detail_yanked_badge": "geyankt",
+	"plugin_prerelease_badge": "Vorabversion",
 	"plugins_list_categories": "Kategorien",
 	"plugins_list_clear_filters": "Filter zurücksetzen",
 	"plugins_list_clear_tag": "Tag entfernen",
