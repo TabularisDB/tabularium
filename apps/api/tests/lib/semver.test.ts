@@ -1,5 +1,11 @@
 import { describe, it, expect } from 'bun:test'
-import { compareSemver, isStrictSemver, assertStrictSemver, tagToVersion, InvalidVersionError } from '../../src/lib/semver'
+import {
+  compareSemver,
+  isStrictSemver,
+  assertStrictSemver,
+  tagToVersion,
+  InvalidVersionError,
+} from '../../src/lib/semver'
 
 describe('isStrictSemver', () => {
   it('accepts X.Y.Z', () => {
