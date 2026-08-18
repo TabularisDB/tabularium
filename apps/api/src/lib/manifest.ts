@@ -238,13 +238,96 @@ async function fetchAssetContent(url: string, accessToken: string): Promise<{ co
   return { content: text, bytes: new TextEncoder().encode(text).length }
 }
 
+// Resolves the README a manifest points at: the localized `readmes` map first,
+// then a single `readme` path, then the conventional root filenames. Shared by
+// both manifest paths so an asset-resolved release captures the same README a
+// git-ref-resolved one would.
+async function resolveReadme(
+  fetch: FileFetcher,
+  parsed: Manifest,
+): Promise<{ readmeMarkdown: string | null; readmeLocales: ReadmeMap | null }> {
+  let readmeMarkdown: string | null = null
+  let readmeLocales: ReadmeMap | null = null
+
+  if (parsed.readmes && Object.keys(parsed.readmes).length > 0) {
+    readmeLocales = {}
+    for (const [locale, path] of Object.entries(parsed.readmes)) {
+      try {
+        const r = await fetch(path)
+        if (r) readmeLocales[locale] = r.content
+      } catch (err) {
+        log.warn({ err, locale, path }, 'localized readme fetch failed')
+      }
+    }
+    if (Object.keys(readmeLocales).length === 0) readmeLocales = null
+  }
+  if (!readmeLocales && parsed.readme) {
+    try {
+      const r = await fetch(parsed.readme)
+      if (r) readmeMarkdown = r.content
+    } catch (err) {
+      log.warn({ err, readme: parsed.readme }, 'readme path fetch failed — manifest still applied')
+    }
+  }
+  if (!readmeLocales && !readmeMarkdown) {
+    for (const fallback of ['README.md', 'readme.md', 'README.markdown']) {
+      try {
+        const r = await fetch(fallback)
+        if (r) {
+          readmeMarkdown = r.content
+          break
+        }
+      } catch {
+        // try next
+      }
+    }
+  }
+  return { readmeMarkdown, readmeLocales }
+}
+
+// Reads the README for an already-ingested release, given the manifest that
+// shipped with it. Used by the backfill: releases stored before the per-release
+// README column existed still have their tag on the forge, and a tag is
+// immutable, so this recovers exactly what that version shipped with.
+export async function fetchReadmeAtTag(
+  accessToken: string | null,
+  ref: RepoRef,
+  tag: string,
+  parsed: Manifest,
+): Promise<{ readmeMarkdown: string | null; readmeLocales: ReadmeMap | null }> {
+  return resolveReadme(accessToken ? fetcherFor(accessToken, ref, tag) : makePublicRawFetcher(ref, tag), parsed)
+}
+
+// Unauthenticated read from the forge's raw-content host. A README in a public
+// repo needs no credentials, so the backfill can still recover history for a
+// plugin whose owner has no usable OAuth token left. A private repo answers
+// 404 here, which the caller treats as "nothing to recover" rather than an
+// error.
+function makePublicRawFetcher(ref: RepoRef, tag: string): FileFetcher {
+  const base = rawContentBase(ref, tag)
+  return async (path) => {
+    const res = await fetch(base + path.split('/').map(encodeURIComponent).join('/'))
+    if (!res.ok) return null
+    const len = Number(res.headers.get('content-length') ?? 0)
+    if (len > MAX_README_BYTES) throw new Error(`${path} exceeds size cap`)
+    const text = await res.text()
+    return { content: text, bytes: new TextEncoder().encode(text).length }
+  }
+}
+
 // Asset-first manifest resolution: scan the release's published assets for
 // any filename in the configured candidate list and ingest that. Avoids the
 // race + auth flakiness of the git-ref fetch path because release assets are
 // immutable per release and served by the forge's CDN.
+//
+// The README is not a release asset, so it is read from the repo at the
+// release's tag when `readmeAt` is supplied. A tag is immutable, so that is
+// the same content the release shipped with — without it the plugin's README
+// would be blank for every asset-resolved release.
 export async function resolveManifestFromReleaseAssets(
   accessToken: string,
   assets: ReleaseAsset[],
+  readmeAt?: { ref: RepoRef; tag: string },
 ): Promise<ResolvedManifest | null> {
   if (assets.length === 0) return null
   const byName = new Map(assets.map((a) => [a.name, a]))
@@ -264,7 +347,12 @@ export async function resolveManifestFromReleaseAssets(
         continue
       }
       const parsed = parseManifestText(got.content)
-      return { raw: got.content, parsed, readmeMarkdown: null, readmeLocales: null }
+      if (!readmeAt) return { raw: got.content, parsed, readmeMarkdown: null, readmeLocales: null }
+      const { readmeMarkdown, readmeLocales } = await resolveReadme(
+        fetcherFor(accessToken, readmeAt.ref, readmeAt.tag),
+        parsed,
+      )
+      return { raw: got.content, parsed, readmeMarkdown, readmeLocales }
     } catch (err) {
       if (err instanceof UpstreamUnauthorizedError) throw err
       if (err instanceof ManifestValidationError) {
@@ -297,42 +385,7 @@ export async function resolveManifest(
         continue
       }
       const parsed = parseManifestText(got.content)
-      let readmeMarkdown: string | null = null
-      let readmeLocales: ReadmeMap | null = null
-
-      if (parsed.readmes && Object.keys(parsed.readmes).length > 0) {
-        readmeLocales = {}
-        for (const [locale, path] of Object.entries(parsed.readmes)) {
-          try {
-            const r = await fetch(path)
-            if (r) readmeLocales[locale] = r.content
-          } catch (err) {
-            log.warn({ err, locale, path }, 'localized readme fetch failed')
-          }
-        }
-        if (Object.keys(readmeLocales).length === 0) readmeLocales = null
-      }
-      if (!readmeLocales && parsed.readme) {
-        try {
-          const r = await fetch(parsed.readme)
-          if (r) readmeMarkdown = r.content
-        } catch (err) {
-          log.warn({ err, readme: parsed.readme }, 'readme path fetch failed — manifest still applied')
-        }
-      }
-      if (!readmeLocales && !readmeMarkdown) {
-        for (const fallback of ['README.md', 'readme.md', 'README.markdown']) {
-          try {
-            const r = await fetch(fallback)
-            if (r) {
-              readmeMarkdown = r.content
-              break
-            }
-          } catch {
-            // try next
-          }
-        }
-      }
+      const { readmeMarkdown, readmeLocales } = await resolveReadme(fetch, parsed)
       return { raw: got.content, parsed, readmeMarkdown, readmeLocales }
     } catch (err) {
       if (err instanceof UpstreamUnauthorizedError) throw err

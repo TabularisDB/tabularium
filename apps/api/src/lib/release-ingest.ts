@@ -12,9 +12,18 @@ import { recordAudit } from './audit'
 import { fetchAttestation } from './attestation'
 import { logger } from './logger'
 import { compareSemver, tagToVersion } from './semver'
-import { resolveManifest, resolveManifestFromReleaseAssets, fetchReleaseAssetList, rawContentBase } from './manifest'
+import {
+  resolveManifest,
+  resolveManifestFromReleaseAssets,
+  fetchReleaseAssetList,
+  fetchReadmeAtTag,
+  parseManifestText,
+  rawContentBase,
+  type Manifest,
+} from './manifest'
 import {
   manifestPatch,
+  readmePayloadOf,
   applyManifestToPlugin,
   assertManifestVersionMatches,
   ManifestVersionMismatchError,
@@ -31,7 +40,12 @@ const log = logger.child({ module: 'release-ingest' })
 export async function persistRelease(
   plugin: { id: string; latestVersion: string | null },
   normalized: NormalizedRelease,
-  opts: { manifestSha256?: string | null; manifestRaw?: string | null } = {},
+  opts: {
+    manifestSha256?: string | null
+    manifestRaw?: string | null
+    readme?: string | null
+    minRuntimeVersion?: string | null
+  } = {},
 ): Promise<{ version: string; assetMap: AssetMap }> {
   // Strict semver gate: rejecting here keeps lax tags ("v1.2", "release-foo")
   // out of the releases table entirely. Manifest-side validation already
@@ -49,11 +63,19 @@ export async function persistRelease(
   // manifest this pass. Asset-only re-ingests (rehash, asset backfill) leave
   // a previously-signed manifestSha256/manifestRaw intact instead of nulling
   // it — a wiped hash would make the integrity endpoint silently 404.
-  const set: { assets: string; manifestSha256?: string | null; manifestRaw?: string | null } = {
+  const set: {
+    assets: string
+    manifestSha256?: string | null
+    manifestRaw?: string | null
+    readme?: string | null
+    minRuntimeVersion?: string | null
+  } = {
     assets: serializeAssets(assetMap),
   }
   if (opts.manifestSha256 !== undefined) set.manifestSha256 = opts.manifestSha256
   if (opts.manifestRaw !== undefined) set.manifestRaw = opts.manifestRaw
+  if (opts.readme !== undefined) set.readme = opts.readme
+  if (opts.minRuntimeVersion !== undefined) set.minRuntimeVersion = opts.minRuntimeVersion
   await db
     .insert(releases)
     .values({
@@ -63,6 +85,8 @@ export async function persistRelease(
       assets: serializeAssets(assetMap),
       manifestSha256: opts.manifestSha256 ?? null,
       manifestRaw: opts.manifestRaw ?? null,
+      readme: opts.readme ?? null,
+      minRuntimeVersion: opts.minRuntimeVersion ?? null,
     })
     .onConflictDoUpdate({ target: [releases.pluginId, releases.version], set })
 
@@ -198,7 +222,7 @@ export async function refreshManifestAtRelease(
   tag: string,
   version: string,
   assets: Array<{ name: string; url: string }> = [],
-): Promise<{ sha: string; raw: string } | null> {
+): Promise<{ sha: string; raw: string; readme: string | null; minRuntimeVersion: string | null } | null> {
   const ref = parseRepoUrl(plugin.repoUrl)
   if (!ref) return null
   const ownerIdentity = await db.query.identities.findFirst({
@@ -234,7 +258,7 @@ export async function refreshManifestAtRelease(
   // only when the operator allows it via the require_release_asset setting.
   let manifest: Awaited<ReturnType<typeof resolveManifest>> = null
   try {
-    manifest = await resolveManifestFromReleaseAssets(token, assets)
+    manifest = await resolveManifestFromReleaseAssets(token, assets, { ref, tag })
   } catch (err) {
     log.warn({ err, slug: plugin.id, tag }, 'asset-based manifest resolution errored')
   }
@@ -311,7 +335,12 @@ export async function refreshManifestAtRelease(
     await cache().del(latestCacheKey(plugin.id))
     const sha = manifestSha256(manifest.raw)
     log.info({ slug: plugin.id, version }, 'manifest refreshed at release')
-    return { sha, raw: manifest.raw }
+    return {
+      sha,
+      raw: manifest.raw,
+      readme: readmePayloadOf(manifest),
+      minRuntimeVersion: manifest.parsed.min_runtime_version ?? null,
+    }
   } catch (err) {
     const reason = err instanceof Error ? err.message : String(err)
     log.warn({ err, slug: plugin.id }, 'manifest apply failed after fetch succeeded')
@@ -372,7 +401,7 @@ async function recheckAssetsOnce(plugin: PluginRef, tag: string, version: string
   }
   let manifest: Awaited<ReturnType<typeof resolveManifest>> = null
   try {
-    manifest = await resolveManifestFromReleaseAssets(token, assets)
+    manifest = await resolveManifestFromReleaseAssets(token, assets, { ref, tag })
   } catch (err) {
     log.warn({ err, slug: plugin.id, tag, attempt }, 'asset recheck resolution errored')
   }
@@ -408,7 +437,12 @@ async function recheckAssetsOnce(plugin: PluginRef, tag: string, version: string
     // the publish webhook, so the original persistRelease saw no manifest).
     await db
       .update(releases)
-      .set({ manifestSha256: manifestSha256(manifest.raw), manifestRaw: manifest.raw })
+      .set({
+        manifestSha256: manifestSha256(manifest.raw),
+        manifestRaw: manifest.raw,
+        readme: readmePayloadOf(manifest),
+        minRuntimeVersion: manifest.parsed.min_runtime_version ?? null,
+      })
       .where(and(eq(releases.pluginId, plugin.id), eq(releases.version, expectedVersion)))
 
     // Back-fill the binary asset URL map. The original webhook race left
@@ -464,4 +498,68 @@ async function recheckAssetsOnce(plugin: PluginRef, tag: string, version: string
   } catch (err) {
     log.warn({ err, slug: plugin.id, tag }, 'asset recheck apply failed')
   }
+}
+
+// One-shot repair for releases ingested before READMEs were captured per
+// release. Walks the plugin's releases that have none, reads the README at
+// each release's tag, and stores it. Tags are immutable, so this recovers the
+// exact docs each version shipped with. Releases whose tag or README is gone
+// upstream are skipped, not failed — a partial backfill is still an
+// improvement over a blank history.
+export async function backfillReleaseReadmes(plugin: {
+  id: string
+  ownerId: string
+  repoUrl: string
+}): Promise<{ scanned: number; filled: number; skipped: number }> {
+  const ref = parseRepoUrl(plugin.repoUrl)
+  if (!ref) return { scanned: 0, filled: 0, skipped: 0 }
+  // A README in a public repo needs no credentials, so a missing or expired
+  // owner token downgrades to an unauthenticated raw-content read instead of
+  // failing the whole backfill. Private repos simply yield nothing.
+  const ownerIdentity = await db.query.identities.findFirst({
+    where: { userId: plugin.ownerId, providerInstanceId: ref.instance.id },
+  })
+  let token: string | null = null
+  if (ownerIdentity?.accessToken) {
+    try {
+      token = await getValidAccessToken(ownerIdentity, ref.instance)
+    } catch (err) {
+      log.warn({ err, slug: plugin.id }, 'owner token unusable — backfilling READMEs unauthenticated')
+    }
+  }
+
+  const rows = await db.query.releases.findMany({
+    where: { pluginId: plugin.id },
+    columns: { id: true, version: true, readme: true, manifestRaw: true },
+  })
+  const pending = rows.filter((r) => !r.readme)
+
+  let filled = 0
+  let skipped = 0
+  for (const row of pending) {
+    // The stored manifest tells us where that version kept its README; without
+    // one, resolveReadme still falls back to the conventional root filenames.
+    let parsed: Manifest
+    try {
+      parsed = row.manifestRaw ? parseManifestText(row.manifestRaw) : ({ readme: null } as unknown as Manifest)
+    } catch {
+      parsed = { readme: null } as unknown as Manifest
+    }
+    // Releases are stored without the "v", tags commonly carry it.
+    for (const tag of [`v${row.version}`, row.version]) {
+      try {
+        const got = await fetchReadmeAtTag(token, ref, tag, parsed)
+        const payload = readmePayloadOf({ raw: '', parsed, ...got })
+        if (!payload) continue
+        await db.update(releases).set({ readme: payload }).where(eq(releases.id, row.id))
+        filled++
+        break
+      } catch (err) {
+        log.warn({ err, slug: plugin.id, version: row.version, tag }, 'readme backfill failed for tag')
+      }
+    }
+  }
+  skipped = pending.length - filled
+  log.info({ slug: plugin.id, scanned: pending.length, filled, skipped }, 'release readme backfill done')
+  return { scanned: pending.length, filled, skipped }
 }

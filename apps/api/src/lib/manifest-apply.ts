@@ -46,7 +46,11 @@ export type PluginManifestUpdate = {
   license: string | null
   iconUrl: string | null
   screenshots: string | null
-  readme: string | null
+  // Optional on purpose: a pass that resolved no README leaves the stored one
+  // alone instead of nulling it. Mirrors the manifestSha256/manifestRaw guard
+  // in persistRelease — a blank overwrite used to wipe the README on every
+  // asset-resolved release.
+  readme?: string | null
   documentationUrl: string | null
   supportEmail: string | null
   issuesUrl: string | null
@@ -63,12 +67,19 @@ import { jsonArrayOrNull as jsonArray } from './util'
  * Convert a parsed manifest into a column patch for the `plugins` row.
  * `repoBase` is used to resolve relative icon/screenshot paths to absolute URLs.
  */
+// Storage shape for a resolved README: a JSON locale map when the manifest
+// declares `readmes`, otherwise plain markdown. Same encoding for the plugin
+// column and the per-release column, so pickReadme() reads either one.
+export function readmePayloadOf(m: ResolvedManifest): string | null {
+  return m.readmeLocales ? JSON.stringify(m.readmeLocales) : (m.readmeMarkdown ?? null)
+}
+
 export function manifestPatch(
   m: ResolvedManifest,
   opts: { repoBase: string; version: string | null },
 ): PluginManifestUpdate {
-  const { parsed, readmeMarkdown, readmeLocales } = m
-  const readmePayload = readmeLocales ? JSON.stringify(readmeLocales) : (readmeMarkdown ?? null)
+  const { parsed } = m
+  const readmePayload = readmePayloadOf(m)
 
   const iconUrl = parsed.icon ? resolveAbsolute(opts.repoBase, parsed.icon) : null
   const screenshots =
@@ -91,7 +102,6 @@ export function manifestPatch(
     license: parsed.license ?? null,
     iconUrl,
     screenshots: jsonArray(screenshots),
-    readme: readmePayload,
     documentationUrl: parsed.documentation_url ?? null,
     supportEmail: parsed.support?.email ?? null,
     issuesUrl: parsed.support?.issues_url ?? null,
@@ -100,6 +110,7 @@ export function manifestPatch(
     manifestVersion: opts.version,
     updatedAt: Date.now(),
   }
+  if (readmePayload !== null) patch.readme = readmePayload
   if (parsed.name) patch.name = parsed.name
   if (parsed.description) patch.description = parsed.description
   if (parsed.homepage) patch.homepage = parsed.homepage

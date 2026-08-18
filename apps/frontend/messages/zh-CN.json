@@ -823,6 +823,8 @@
 	"plugin_detail_refresh_rate_limited": "慢点 — 每分钟一次",
 	"plugin_detail_refresh_reauth_redirect": "OAuth 令牌已过期 — 正在重定向以重新授权…",
 	"plugin_detail_refresh_running": "正在加载…",
+	"plugin_detail_release_readme_missing": "此发布未记录 README。",
+	"plugin_detail_release_readme_title": "该版本的 README",
 	"plugin_detail_releases": "Releases",
 	"plugin_detail_releases_subtitle": "最新版本在上方徽章中高亮显示。SHA256 列显示已计算完整性哈希的版本。",
 	"plugin_detail_report_issue": "反馈问题",

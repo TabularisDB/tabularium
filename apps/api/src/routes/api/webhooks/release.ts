@@ -107,7 +107,12 @@ export default new Elysia().use(rateLimit({ bucket: 'webhook-release', limit: 60
       if (manifest) {
         // Re-persist the row with the now-known manifest sha + raw bytes
         // (persistRelease ran without them because the fetch is async).
-        await persistRelease(plugin, normalized, { manifestSha256: manifest.sha, manifestRaw: manifest.raw })
+        await persistRelease(plugin, normalized, {
+          manifestSha256: manifest.sha,
+          manifestRaw: manifest.raw,
+          readme: manifest.readme,
+          minRuntimeVersion: manifest.minRuntimeVersion,
+        })
       }
     })
 

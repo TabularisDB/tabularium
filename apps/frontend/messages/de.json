@@ -823,6 +823,8 @@
 	"plugin_detail_refresh_rate_limited": "Langsam — 1× pro Minute",
 	"plugin_detail_refresh_reauth_redirect": "OAuth-Token abgelaufen — leite zur Re-Autorisierung weiter…",
 	"plugin_detail_refresh_running": "Lade neu…",
+	"plugin_detail_release_readme_missing": "Für dieses Release wurde kein README erfasst.",
+	"plugin_detail_release_readme_title": "README dieser Version",
 	"plugin_detail_releases": "Releases",
 	"plugin_detail_releases_subtitle": "Die neueste Version ist im Badge oben hervorgehoben. Die SHA256-Spalte zeigt, wenn die Integrität gehasht wurde.",
 	"plugin_detail_report_issue": "Problem melden",

@@ -823,6 +823,8 @@
 	"plugin_detail_refresh_rate_limited": "Despacio — una vez por minuto",
 	"plugin_detail_refresh_reauth_redirect": "Token OAuth expirado — redirigiendo para re-autorizar…",
 	"plugin_detail_refresh_running": "Recargando…",
+	"plugin_detail_release_readme_missing": "No se guardó ningún README para esta versión.",
+	"plugin_detail_release_readme_title": "README de esta versión",
 	"plugin_detail_releases": "Releases",
 	"plugin_detail_releases_subtitle": "La última versión está resaltada en el badge de arriba. La columna SHA256 muestra cuando la integridad ha sido hasheada.",
 	"plugin_detail_report_issue": "Reportar problema",

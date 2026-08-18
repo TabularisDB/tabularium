@@ -134,6 +134,11 @@ export const releases = sqliteTable(
     // registry can serve the manifest itself — clients verify
     // sha256(manifest_raw) === manifestSha256 (JWS-signed) without the forge.
     manifestRaw: text('manifest_raw'),
+    // README markdown captured at this release's tag. Raw markdown, or a
+    // JSON locale map when the manifest declares `readmes` — same shape as
+    // plugins.readme, so pickReadme() handles both. NULL on releases
+    // ingested before this column existed.
+    readme: text('readme'),
     createdAt: integer('created_at').notNull().$defaultFn(now),
   },
   (t) => ({
