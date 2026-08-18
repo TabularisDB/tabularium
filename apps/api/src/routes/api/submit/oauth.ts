@@ -158,6 +158,7 @@ export default new Elysia()
                   manifestSha256: manifestSha256(manifest.raw),
                   manifestRaw: manifest.raw,
                   readme: readmePayloadOf(manifest),
+                  minRuntimeVersion: manifest.parsed.min_runtime_version ?? null,
                 }
               : {}
             const { version, assetMap } = await persistRelease(

@@ -40,7 +40,12 @@ const log = logger.child({ module: 'release-ingest' })
 export async function persistRelease(
   plugin: { id: string; latestVersion: string | null },
   normalized: NormalizedRelease,
-  opts: { manifestSha256?: string | null; manifestRaw?: string | null; readme?: string | null } = {},
+  opts: {
+    manifestSha256?: string | null
+    manifestRaw?: string | null
+    readme?: string | null
+    minRuntimeVersion?: string | null
+  } = {},
 ): Promise<{ version: string; assetMap: AssetMap }> {
   // Strict semver gate: rejecting here keeps lax tags ("v1.2", "release-foo")
   // out of the releases table entirely. Manifest-side validation already
@@ -63,12 +68,14 @@ export async function persistRelease(
     manifestSha256?: string | null
     manifestRaw?: string | null
     readme?: string | null
+    minRuntimeVersion?: string | null
   } = {
     assets: serializeAssets(assetMap),
   }
   if (opts.manifestSha256 !== undefined) set.manifestSha256 = opts.manifestSha256
   if (opts.manifestRaw !== undefined) set.manifestRaw = opts.manifestRaw
   if (opts.readme !== undefined) set.readme = opts.readme
+  if (opts.minRuntimeVersion !== undefined) set.minRuntimeVersion = opts.minRuntimeVersion
   await db
     .insert(releases)
     .values({
@@ -79,6 +86,7 @@ export async function persistRelease(
       manifestSha256: opts.manifestSha256 ?? null,
       manifestRaw: opts.manifestRaw ?? null,
       readme: opts.readme ?? null,
+      minRuntimeVersion: opts.minRuntimeVersion ?? null,
     })
     .onConflictDoUpdate({ target: [releases.pluginId, releases.version], set })
 
@@ -214,7 +222,7 @@ export async function refreshManifestAtRelease(
   tag: string,
   version: string,
   assets: Array<{ name: string; url: string }> = [],
-): Promise<{ sha: string; raw: string; readme: string | null } | null> {
+): Promise<{ sha: string; raw: string; readme: string | null; minRuntimeVersion: string | null } | null> {
   const ref = parseRepoUrl(plugin.repoUrl)
   if (!ref) return null
   const ownerIdentity = await db.query.identities.findFirst({
@@ -327,7 +335,12 @@ export async function refreshManifestAtRelease(
     await cache().del(latestCacheKey(plugin.id))
     const sha = manifestSha256(manifest.raw)
     log.info({ slug: plugin.id, version }, 'manifest refreshed at release')
-    return { sha, raw: manifest.raw, readme: readmePayloadOf(manifest) }
+    return {
+      sha,
+      raw: manifest.raw,
+      readme: readmePayloadOf(manifest),
+      minRuntimeVersion: manifest.parsed.min_runtime_version ?? null,
+    }
   } catch (err) {
     const reason = err instanceof Error ? err.message : String(err)
     log.warn({ err, slug: plugin.id }, 'manifest apply failed after fetch succeeded')
@@ -428,6 +441,7 @@ async function recheckAssetsOnce(plugin: PluginRef, tag: string, version: string
         manifestSha256: manifestSha256(manifest.raw),
         manifestRaw: manifest.raw,
         readme: readmePayloadOf(manifest),
+        minRuntimeVersion: manifest.parsed.min_runtime_version ?? null,
       })
       .where(and(eq(releases.pluginId, plugin.id), eq(releases.version, expectedVersion)))
 

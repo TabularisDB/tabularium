@@ -165,6 +165,7 @@ export default new Elysia().use(publisherTokenMiddleware).post(
       const { assetMap } = await persistRelease({ id: slug, latestVersion: null }, normalized, {
         manifestSha256: manifestSha256(body.manifest),
         manifestRaw: body.manifest,
+        minRuntimeVersion: parsed.min_runtime_version ?? null,
       })
 
       // Apply manifest fields (category, tags, icon, extensions, …) to the
@@ -267,6 +268,7 @@ export default new Elysia().use(publisherTokenMiddleware).post(
     const { assetMap } = await persistRelease({ id: slug, latestVersion: existing.latestVersion }, normalized, {
       manifestSha256: manifestSha256(body.manifest),
       manifestRaw: body.manifest,
+      minRuntimeVersion: parsed.min_runtime_version ?? null,
     })
 
     const patch = manifestPatch(

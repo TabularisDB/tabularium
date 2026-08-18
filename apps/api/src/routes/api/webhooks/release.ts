@@ -111,6 +111,7 @@ export default new Elysia().use(rateLimit({ bucket: 'webhook-release', limit: 60
           manifestSha256: manifest.sha,
           manifestRaw: manifest.raw,
           readme: manifest.readme,
+          minRuntimeVersion: manifest.minRuntimeVersion,
         })
       }
     })

@@ -84,6 +84,7 @@ export default new Elysia().use(adminMiddleware).post(
           manifestSha256: manifest.sha,
           manifestRaw: manifest.raw,
           readme: manifest.readme,
+          minRuntimeVersion: manifest.minRuntimeVersion,
         })
     })
 

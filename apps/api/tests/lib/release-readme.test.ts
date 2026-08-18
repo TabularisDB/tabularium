@@ -1,5 +1,8 @@
 import { describe, it, expect, spyOn, afterEach, beforeEach } from 'bun:test'
-import { clearDb } from '../helpers'
+import { clearDb, makeUser, makePlugin } from '../helpers'
+import { db } from '../../src/db'
+import { persistRelease } from '../../src/lib/release-ingest'
+import type { NormalizedRelease } from '../../src/lib/webhook'
 import { resolveManifestFromReleaseAssets } from '../../src/lib/manifest'
 import { manifestPatch, readmePayloadOf } from '../../src/lib/manifest-apply'
 import type { RepoRef } from '../../src/lib/providers'
@@ -20,6 +23,13 @@ const ref: RepoRef = {
   owner: 'alice',
   repo: 'my-plugin',
   fullName: 'alice/my-plugin',
+}
+
+const sampleRelease: NormalizedRelease = {
+  repoUrl: 'https://github.com/alice/my-plugin',
+  published: true,
+  tag: 'v1.0.0',
+  assets: [],
 }
 
 let spy: ReturnType<typeof spyOn> | null = null
@@ -131,5 +141,35 @@ describe('manifestPatch — README is never blanked', () => {
       },
     )
     expect(JSON.parse(patch.readme as string)).toEqual({ en: '# Hi' })
+  })
+})
+
+describe('persistRelease — manifest fields reach the release row', () => {
+  beforeEach(clearDb)
+
+  // Regression: min_runtime_version was declared in the manifest, validated by
+  // the schema and echoed back by the submit preview, but no ingest path ever
+  // wrote it to the release row — so /latest served null and clients could
+  // install a plugin their runtime was too old for.
+  it('stores min_runtime_version from the manifest', async () => {
+    const user = await makeUser({ username: 'alice' })
+    const plugin = await makePlugin(user.id, { id: 'alpha' })
+    await persistRelease({ id: plugin.id, latestVersion: null }, sampleRelease, {
+      minRuntimeVersion: '0.20.0',
+    })
+    const row = await db.query.releases.findFirst({ where: { pluginId: plugin.id, version: '1.0.0' } })
+    expect(row?.minRuntimeVersion).toBe('0.20.0')
+  })
+
+  it('leaves a stored min_runtime_version alone on an asset-only re-ingest', async () => {
+    const user = await makeUser({ username: 'alice' })
+    const plugin = await makePlugin(user.id, { id: 'alpha' })
+    await persistRelease({ id: plugin.id, latestVersion: null }, sampleRelease, {
+      minRuntimeVersion: '0.20.0',
+    })
+    // rehash and asset backfills re-persist without a manifest in hand
+    await persistRelease({ id: plugin.id, latestVersion: '1.0.0' }, sampleRelease)
+    const row = await db.query.releases.findFirst({ where: { pluginId: plugin.id, version: '1.0.0' } })
+    expect(row?.minRuntimeVersion).toBe('0.20.0')
   })
 })
