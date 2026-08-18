@@ -6,6 +6,7 @@ import { authMiddleware } from '$middleware/auth'
 import { projectPluginDetail } from '$lib/plugin-projection'
 import { renderMarkdown } from '$lib/markdown'
 import { cache, isString } from '$lib/cache'
+import { pickReadme, README_TTL } from '$lib/readme'
 import { buildIntegrity } from '$lib/release-integrity'
 
 const screenshotSchema = t.Object({
@@ -77,31 +78,7 @@ const pluginDetailSchema = t.Object({
   releases: t.Array(releaseSchema),
 })
 
-function pickReadme(
-  raw: string | null,
-  preferredLocale: string | undefined,
-): { markdown: string | null; locale: string | null; available: string[] } {
-  if (!raw) return { markdown: null, locale: null, available: [] }
-  if (!raw.startsWith('{')) return { markdown: raw, locale: null, available: [] }
-  try {
-    const map = JSON.parse(raw) as Record<string, unknown>
-    const available = Object.keys(map).filter((k) => typeof map[k] === 'string')
-    if (available.length === 0) return { markdown: null, locale: null, available: [] }
-    const pick = (locale: string | undefined): string | null => {
-      if (locale && typeof map[locale] === 'string') return locale
-      return null
-    }
-    const baseLocale = preferredLocale?.split('-')[0]
-    const chosen = pick(preferredLocale) ?? pick(baseLocale) ?? pick('en') ?? available[0]
-    return { markdown: map[chosen] as string, locale: chosen, available }
-  } catch {
-    return { markdown: raw, locale: null, available: [] }
-  }
-}
-
 const errorSchema = t.Object({ error: t.String() })
-
-const README_TTL = 600
 
 export default new Elysia()
   .get(

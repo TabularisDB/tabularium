@@ -11,7 +11,7 @@ import { getValidAccessToken, OAuthExpiredError } from '$lib/oauth-tokens'
 import { env } from '$lib/env'
 import { getSetting } from '$lib/settings'
 import { resolveManifest, rawContentBase, ManifestValidationError } from '$lib/manifest'
-import { manifestPatch, applyManifestToPlugin } from '$lib/manifest-apply'
+import { manifestPatch, readmePayloadOf, applyManifestToPlugin } from '$lib/manifest-apply'
 import { fetchLatestRelease } from '$lib/release-fetch'
 import { persistRelease, hashReleaseAssetsAsync, manifestSha256 } from '$lib/release-ingest'
 import { getFeatures } from '$lib/features'
@@ -154,7 +154,11 @@ export default new Elysia()
           // factored out so both call sites stay in sync.
           if (latestRelease.published) {
             const manifestOpts = manifest
-              ? { manifestSha256: manifestSha256(manifest.raw), manifestRaw: manifest.raw }
+              ? {
+                  manifestSha256: manifestSha256(manifest.raw),
+                  manifestRaw: manifest.raw,
+                  readme: readmePayloadOf(manifest),
+                }
               : {}
             const { version, assetMap } = await persistRelease(
               { id: slug, latestVersion: null },

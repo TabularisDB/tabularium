@@ -823,6 +823,8 @@
 	"plugin_detail_refresh_rate_limited": "Slow down — once per minute",
 	"plugin_detail_refresh_reauth_redirect": "OAuth token expired — redirecting to re-authorize…",
 	"plugin_detail_refresh_running": "Refetching…",
+	"plugin_detail_release_readme_missing": "No README was captured for this release.",
+	"plugin_detail_release_readme_title": "README at this version",
 	"plugin_detail_releases": "Releases",
 	"plugin_detail_releases_subtitle": "Latest version is highlighted in the badge above. SHA256 column shows when integrity has been hashed.",
 	"plugin_detail_report_issue": "Report issue",

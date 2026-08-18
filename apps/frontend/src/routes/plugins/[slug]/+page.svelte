@@ -110,6 +110,27 @@
 		untrack(() => load(locale))
 	})
 
+	// README as it stood at each release, loaded the first time a release row is
+	// expanded. Kept out of the plugin payload so the detail response does not
+	// have to carry a full README per version.
+	type VersionReadme = { loading: boolean; html: string | null; captured: boolean }
+	let versionReadmes = $state<Record<string, VersionReadme>>({})
+
+	async function loadVersionReadme(pluginId: string, version: string) {
+		if (versionReadmes[version]) return
+		versionReadmes[version] = { loading: true, html: null, captured: false }
+		try {
+			const res = await fetch(
+				`/api/plugins/${encodeURIComponent(pluginId)}/releases/${encodeURIComponent(version)}/readme?locale=${encodeURIComponent(locale)}`,
+			)
+			if (!res.ok) throw new Error(String(res.status))
+			const data = (await res.json()) as { readmeHtml: string | null; captured: boolean }
+			versionReadmes[version] = { loading: false, html: data.readmeHtml, captured: data.captured }
+		} catch {
+			versionReadmes[version] = { loading: false, html: null, captured: false }
+		}
+	}
+
 	const sortedReleases = $derived(
 		plugin?.releases ? [...plugin.releases].sort((a, b) => b.createdAt - a.createdAt) : [],
 	)
@@ -747,7 +768,14 @@
 							{#each sortedReleases as release (release.id)}
 								{@const totalSize = Object.values(release.assets).reduce((acc, a) => acc + (a.size ?? 0), 0)}
 								{@const platformCount = Object.keys(release.assets).length}
-								<details class="group border-b border-border [&_summary::-webkit-details-marker]:hidden">
+								{@const vr = versionReadmes[release.version]}
+								<details
+									class="group border-b border-border [&_summary::-webkit-details-marker]:hidden"
+									ontoggle={(e) => {
+										if (plugin && (e.currentTarget as HTMLDetailsElement).open)
+											void loadVersionReadme(plugin.id, release.version)
+									}}
+								>
 									<summary
 										class="grid grid-cols-[auto_1fr_auto] gap-4 items-center py-4 cursor-pointer list-none transition-opacity hover:opacity-90"
 									>
@@ -845,6 +873,22 @@
 												{/each}
 											</tbody>
 										</table>
+										<div class="px-2.5 pt-4">
+											<h3 class="text-xs font-mono uppercase tracking-[0.14em] text-muted-foreground mb-2">
+												{m.plugin_detail_release_readme_title()}
+											</h3>
+											{#if !vr || vr.loading}
+												<Skeleton class="h-24 w-full rounded-lg" />
+											{:else if vr.html}
+												<article
+													class="prose prose-sm dark:prose-invert max-w-none rounded-lg border border-border bg-card px-5 py-4 prose-headings:font-semibold prose-headings:tracking-tight prose-pre:font-mono prose-pre:text-[12.5px] prose-pre:rounded-md prose-pre:border prose-pre:border-border prose-code:font-mono"
+												>
+													{@html vr.html}
+												</article>
+											{:else}
+												<p class="text-xs text-muted-foreground italic">{m.plugin_detail_release_readme_missing()}</p>
+											{/if}
+										</div>
 									</div>
 								</details>
 							{/each}

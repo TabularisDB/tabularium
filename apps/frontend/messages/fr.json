@@ -823,6 +823,8 @@
 	"plugin_detail_refresh_rate_limited": "Doucement — une fois par minute",
 	"plugin_detail_refresh_reauth_redirect": "Jeton OAuth expiré — redirection pour ré-autoriser…",
 	"plugin_detail_refresh_running": "Rechargement…",
+	"plugin_detail_release_readme_missing": "Aucun README n'a été enregistré pour cette version.",
+	"plugin_detail_release_readme_title": "README de cette version",
 	"plugin_detail_releases": "Releases",
 	"plugin_detail_releases_subtitle": "La dernière version est mise en avant dans le badge ci-dessus. La colonne SHA256 s'affiche quand l'intégrité a été hachée.",
 	"plugin_detail_report_issue": "Signaler un problème",
