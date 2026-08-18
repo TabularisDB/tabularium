@@ -3,7 +3,7 @@ import { clearDb, makeUser, makePlugin } from '../helpers'
 import { db } from '../../src/db'
 import { persistRelease } from '../../src/lib/release-ingest'
 import type { NormalizedRelease } from '../../src/lib/webhook'
-import { resolveManifestFromReleaseAssets } from '../../src/lib/manifest'
+import { resolveManifestFromReleaseAssets, fetchReadmeAtTag } from '../../src/lib/manifest'
 import { manifestPatch, readmePayloadOf } from '../../src/lib/manifest-apply'
 import type { RepoRef } from '../../src/lib/providers'
 
@@ -171,5 +171,27 @@ describe('persistRelease — manifest fields reach the release row', () => {
     await persistRelease({ id: plugin.id, latestVersion: '1.0.0' }, sampleRelease)
     const row = await db.query.releases.findFirst({ where: { pluginId: plugin.id, version: '1.0.0' } })
     expect(row?.minRuntimeVersion).toBe('0.20.0')
+  })
+})
+
+describe('fetchReadmeAtTag — unauthenticated fallback', () => {
+  beforeEach(clearDb)
+
+  // The backfill has to work for plugins whose owner has no usable OAuth token
+  // left. A README in a public repo needs no credentials, so it reads from the
+  // raw-content host instead of the authenticated contents API.
+  it('reads from the raw host when no token is given', async () => {
+    mockFetch([['raw.githubusercontent.com', '# Public docs']])
+    const got = await fetchReadmeAtTag(null, ref, 'v1.0.0', { name: 'alpha', version: '1.0.0' } as never)
+    expect(got.readmeMarkdown).toContain('Public docs')
+    expect(requested.every((u) => !u.includes('api.github.com'))).toBe(true)
+    expect(requested.some((u) => u.includes('/v1.0.0/README.md'))).toBe(true)
+  })
+
+  it('yields nothing when the repo is not public', async () => {
+    mockFetch([])
+    const got = await fetchReadmeAtTag(null, ref, 'v1.0.0', { name: 'alpha', version: '1.0.0' } as never)
+    expect(got.readmeMarkdown).toBeNull()
+    expect(got.readmeLocales).toBeNull()
   })
 })

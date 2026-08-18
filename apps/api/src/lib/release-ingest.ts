@@ -513,11 +513,20 @@ export async function backfillReleaseReadmes(plugin: {
 }): Promise<{ scanned: number; filled: number; skipped: number }> {
   const ref = parseRepoUrl(plugin.repoUrl)
   if (!ref) return { scanned: 0, filled: 0, skipped: 0 }
+  // A README in a public repo needs no credentials, so a missing or expired
+  // owner token downgrades to an unauthenticated raw-content read instead of
+  // failing the whole backfill. Private repos simply yield nothing.
   const ownerIdentity = await db.query.identities.findFirst({
     where: { userId: plugin.ownerId, providerInstanceId: ref.instance.id },
   })
-  if (!ownerIdentity?.accessToken) throw new Error('owner has no stored access token')
-  const token = await getValidAccessToken(ownerIdentity, ref.instance)
+  let token: string | null = null
+  if (ownerIdentity?.accessToken) {
+    try {
+      token = await getValidAccessToken(ownerIdentity, ref.instance)
+    } catch (err) {
+      log.warn({ err, slug: plugin.id }, 'owner token unusable — backfilling READMEs unauthenticated')
+    }
+  }
 
   const rows = await db.query.releases.findMany({
     where: { pluginId: plugin.id },

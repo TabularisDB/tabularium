@@ -290,12 +290,29 @@ async function resolveReadme(
 // README column existed still have their tag on the forge, and a tag is
 // immutable, so this recovers exactly what that version shipped with.
 export async function fetchReadmeAtTag(
-  accessToken: string,
+  accessToken: string | null,
   ref: RepoRef,
   tag: string,
   parsed: Manifest,
 ): Promise<{ readmeMarkdown: string | null; readmeLocales: ReadmeMap | null }> {
-  return resolveReadme(fetcherFor(accessToken, ref, tag), parsed)
+  return resolveReadme(accessToken ? fetcherFor(accessToken, ref, tag) : makePublicRawFetcher(ref, tag), parsed)
+}
+
+// Unauthenticated read from the forge's raw-content host. A README in a public
+// repo needs no credentials, so the backfill can still recover history for a
+// plugin whose owner has no usable OAuth token left. A private repo answers
+// 404 here, which the caller treats as "nothing to recover" rather than an
+// error.
+function makePublicRawFetcher(ref: RepoRef, tag: string): FileFetcher {
+  const base = rawContentBase(ref, tag)
+  return async (path) => {
+    const res = await fetch(base + path.split('/').map(encodeURIComponent).join('/'))
+    if (!res.ok) return null
+    const len = Number(res.headers.get('content-length') ?? 0)
+    if (len > MAX_README_BYTES) throw new Error(`${path} exceeds size cap`)
+    const text = await res.text()
+    return { content: text, bytes: new TextEncoder().encode(text).length }
+  }
 }
 
 // Asset-first manifest resolution: scan the release's published assets for
