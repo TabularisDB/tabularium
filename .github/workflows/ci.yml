@@ -24,6 +24,8 @@ jobs:
           - { name: check-frontend, dir: 'apps/frontend', cmd: 'bun run check' }
           - { name: check-api, dir: 'apps/api', cmd: 'bun run check' }
           - { name: build-frontend, dir: 'apps/frontend', cmd: 'bun run build' }
+          - { name: vercel-cache-website, dir: '.', cmd: 'bun scripts/check-vercel-cache.ts website' }
+          - { name: vercel-cache-docs, dir: '.', cmd: 'bun scripts/check-vercel-cache.ts docs' }
     steps:
       - uses: actions/checkout@v4
 
