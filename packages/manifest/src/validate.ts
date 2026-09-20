@@ -2,7 +2,7 @@ import Ajv2020 from 'ajv/dist/2020'
 import addFormats from 'ajv-formats'
 import { mapAjvErrors, type ValidationError } from './errors'
 
-function makeAjv(options: { removeAdditional?: 'all' } = {}) {
+function makeAjv(options: { removeAdditional?: true } = {}) {
   const ajv = new Ajv2020({
     allErrors: true,
     strict: false,
@@ -27,7 +27,9 @@ export function validateManifest(
   const { lenient = false } = options
   // In lenient mode: removeAdditional strips unknown fields from the clone.
   // In strict mode: additionalProperties violations surface as errors.
-  const ajv = makeAjv(lenient ? { removeAdditional: 'all' } : {})
+  // Only strip where additionalProperties:false is declared. 'all' would
+  // erase id/version in the conditional legacy-name constraint.
+  const ajv = makeAjv(lenient ? { removeAdditional: true } : {})
   const validate = ajv.compile(schema)
   // Clone so ajv's data mutations (removeAdditional) don't leak to the caller.
   const dataCopy = structuredClone(parsed)

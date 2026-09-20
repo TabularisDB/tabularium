@@ -62,8 +62,17 @@ export async function refreshManifestForPlugin(
   if (!manifest) {
     return { status: 404, body: { error: `No .tabularium file found in ${plugin.repoUrl} @ ${gitRefs.join(' or ')}` } }
   }
-  const patch = manifestPatch(manifest, { repoBase: rawContentBase(ref, branch), version: branch })
-  await applyManifestToPlugin(plugin.id, patch)
+  try {
+    const patch = manifestPatch(manifest, {
+      pluginId: plugin.id,
+      repoBase: rawContentBase(ref, branch),
+      version: branch,
+    })
+    await applyManifestToPlugin(plugin.id, patch)
+  } catch (e) {
+    if (e instanceof ManifestValidationError) return { status: 422, body: { error: e.message } }
+    throw e
+  }
   await cache().del(latestCacheKey(plugin.id))
   return { ok: true, slug: plugin.id, ref: branch }
 }

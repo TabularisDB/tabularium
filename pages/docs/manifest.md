@@ -10,7 +10,9 @@ The live JSON Schema for your registry is at `/manifest.schema.json` — drop th
 
 ```yaml
 $schema: https://your-registry.example/manifest.schema.json
+id: awesome-plugin
 name: Awesome Plugin
+version: 1.0.0
 description: Does the thing
 kind: theme
 tags: [search, indexing]
@@ -23,7 +25,9 @@ These are the locked Tabularium core. Operators can't remove or shadow them.
 
 | Field | Type | Notes |
 |-------|------|-------|
-| `name` | string | **Required.** Package identifier *and* URL slug. Same shape as npm / crates.io: starts with a lowercase letter, alphanumerics + `-` only, 1–64 chars (`^[a-z][a-z0-9-]*$`). Pinned at first submit; changing it later does **not** rename the existing slug. Use the README for prose / branding; no separate display-name field. |
+| `id` | string | Stable plugin identifier and URL slug: 1–64 characters matching `^[a-z][a-z0-9-]*$`. Pinned at first submit. Recommended for new manifests; optional for legacy compatibility. |
+| `name` | string | **Required.** Human-readable display name, 1–120 characters, not whitespace-only. Without `id`, this remains the legacy identifier: a lowercase slug of 1–64 characters. |
+| `version` | string | **Required.** Semantic release version, matching the release tag without its optional `v` prefix. |
 | `description` | string | One-line summary (max 280) |
 | `category` | string | Used for filtering on `/plugins` (max 40) |
 | `kind` | string | One of the admin-defined values from `GET /api/kinds`. Lowercase letters/digits/dashes, max 40. Internally folded into `tags`. See [Admin → Kinds](admin/kinds.md). |
@@ -39,6 +43,12 @@ These are the locked Tabularium core. Operators can't remove or shadow them.
 | `min_runtime_version` | string | Per-release; declared in release assets too |
 
 A `$schema` field is allowed at the top — Tabularium strips it before persistence (it's an IDE hint, not data).
+
+### Migrating existing plugins
+
+Add `id` with the **existing registry slug** before changing `name` to a display name. For example, `{ "name": "jdbc-sqlite", "version": "1.0.0" }` becomes `{ "id": "jdbc-sqlite", "name": "SQLite JDBC", "version": "1.0.1" }` in the next release. Existing URLs, ownership, installed-driver IDs and update resolution remain unchanged. Manifests without `id` continue to work; historical release files and signatures must not be rewritten.
+
+An explicit `id` that differs from the pinned registry slug is rejected when publishing or applying manifest metadata. Legacy manifests without `id` retain the pre-existing pinned-slug behavior on refresh. Upgrade the registry and consuming host before adopting display names. Stored extension definitions for `id` are ignored in favor of the core definition; other extensions are preserved.
 
 ### Localized READMEs
 
@@ -60,7 +70,9 @@ Example: an operator running a Tabularis instance might add an `x-tabularis` pro
 
 ```yaml
 $schema: https://registry.tabularis.dev/manifest.schema.json
+id: midnight-theme
 name: Midnight Theme
+version: 1.0.0
 kind: theme
 
 x-tabularis:
@@ -91,7 +103,7 @@ The extensions delta is validated server-side before being persisted:
 - Max depth 6 for nested objects/arrays
 - Max 32 properties per object
 - Property names match `/^[A-Za-z_][A-Za-z0-9_-]*$/`
-- Cannot shadow a core field (name, description, kind, tags, ...)
+- Cannot shadow a core field (id, name, version, description, kind, tags, ...)
 
 ## Endpoints
 

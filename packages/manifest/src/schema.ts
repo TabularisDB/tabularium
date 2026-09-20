@@ -66,8 +66,15 @@ export function buildSchema(input: BuildSchemaInput): Record<string, unknown> {
   const coreProps = (input.coreSchema as unknown as { properties: Record<string, unknown> }).properties
   const coreRequired = (input.coreSchema as unknown as { required?: string[] }).required ?? []
   const schemaUrl = input.schemaUrl ?? DEFAULT_SCHEMA_URL
-  const globalExt = input.extensions ?? {}
-  const kindOverrides = input.kindOverrides ?? {}
+  // Previously id was an operator extension. Core fields now take precedence,
+  // including over persisted required flags, without discarding other extensions.
+  const withoutCore = (props: ExtensionsDelta): ExtensionsDelta =>
+    Object.fromEntries(Object.entries(props).filter(([key]) => !(key in coreProps)))
+  const globalExt = withoutCore(input.extensions ?? {})
+  const kindOverrides = Object.fromEntries(
+    Object.entries(input.kindOverrides ?? {}).map(([kind, props]) => [kind, withoutCore(props)]),
+  )
+  const coreAllOf = (input.coreSchema.allOf ?? []) as Record<string, unknown>[]
 
   if (input.kind) {
     const ext = kindOverrides[input.kind] ?? globalExt
@@ -77,6 +84,7 @@ export function buildSchema(input: BuildSchemaInput): Record<string, unknown> {
       $schema: 'https://json-schema.org/draft/2020-12/schema',
       $id: `${schemaUrl}?kind=${encodeURIComponent(input.kind)}`,
       title: `Tabularium plugin manifest — ${input.kind}`,
+      ...(coreAllOf.length > 0 ? { allOf: coreAllOf } : {}),
       type: 'object',
       additionalProperties: false,
       properties: { ...coreProps, ...extProps },
@@ -103,6 +111,7 @@ export function buildSchema(input: BuildSchemaInput): Record<string, unknown> {
     $schema: 'https://json-schema.org/draft/2020-12/schema',
     $id: schemaUrl,
     title: 'Tabularium plugin manifest',
+    ...(coreAllOf.length > 0 ? { allOf: coreAllOf } : {}),
     type: 'object',
     additionalProperties: false,
     properties: { ...coreProps, ...lenientExtensionProps },
@@ -115,18 +124,21 @@ export function buildSchema(input: BuildSchemaInput): Record<string, unknown> {
   // `then` clause that tightens additionalProperties without adding fields.
   const overrideKinds = Object.keys(kindOverrides).filter((k) => Object.keys(kindOverrides[k]).length > 0)
   if (overrideKinds.length > 0) {
-    schema.allOf = overrideKinds.map((kindKey) => {
-      const { cleaned, required } = splitRequiredFlag(kindOverrides[kindKey])
-      const thenClause: Record<string, unknown> = {
-        properties: { ...coreProps, ...cleaned },
-        additionalProperties: false,
-      }
-      if (required.length > 0) thenClause.required = [...coreRequired, ...required]
-      return {
-        if: { properties: { kind: { const: kindKey } }, required: ['kind'] },
-        then: thenClause,
-      }
-    })
+    schema.allOf = [
+      ...coreAllOf,
+      ...overrideKinds.map((kindKey) => {
+        const { cleaned, required } = splitRequiredFlag(kindOverrides[kindKey])
+        const thenClause: Record<string, unknown> = {
+          properties: { ...coreProps, ...cleaned },
+          additionalProperties: false,
+        }
+        if (required.length > 0) thenClause.required = [...coreRequired, ...required]
+        return {
+          if: { properties: { kind: { const: kindKey } }, required: ['kind'] },
+          then: thenClause,
+        }
+      }),
+    ]
   }
 
   return stripXTranslations(schema) as Record<string, unknown>

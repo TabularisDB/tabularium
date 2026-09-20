@@ -4,6 +4,12 @@ import { ManifestSchema } from '../src/core'
 import type { TSchema } from '@sinclair/typebox'
 
 describe('buildSchema', () => {
+  it('does not emit an invalid empty allOf for custom core schemas', () => {
+    for (const kind of [undefined, 'driver']) {
+      const schema = buildSchema({ coreSchema: { type: 'object', properties: {} } as TSchema, kind })
+      expect(schema.allOf).toBeUndefined()
+    }
+  })
   it('returns a JSON Schema 2020-12 object with the locked core fields', () => {
     const schema = buildSchema({ coreSchema: ManifestSchema as never })
     expect(schema.$schema).toBe('https://json-schema.org/draft/2020-12/schema')
@@ -50,8 +56,8 @@ describe('buildSchema', () => {
         snippet: { 'x-snippet': { type: 'string' } },
       },
     }) as { allOf?: AllOfClause[] }
-    expect(schema.allOf?.length).toBe(2)
-    const constants = schema.allOf!.map((c) => c.if?.properties?.kind?.const)
+    expect(schema.allOf?.length).toBe(3)
+    const constants = schema.allOf!.map((c) => c.if?.properties?.kind?.const).filter(Boolean)
     expect(new Set(constants)).toEqual(new Set(['theme', 'snippet']))
 
     const themeClause = schema.allOf!.find((c) => c.if?.properties?.kind?.const === 'theme')!
@@ -68,8 +74,8 @@ describe('buildSchema', () => {
         empty: {},
       },
     }) as { allOf?: Array<{ if?: { properties?: { kind?: { const?: string } } } }> }
-    expect(schema.allOf?.length).toBe(1)
-    expect(schema.allOf![0].if?.properties?.kind?.const).toBe('theme')
+    expect(schema.allOf?.length).toBe(2)
+    expect(schema.allOf![1].if?.properties?.kind?.const).toBe('theme')
   })
 
   it('falls back to global extensions when the requested kind has no override', () => {
@@ -131,7 +137,7 @@ describe('buildSchema', () => {
     // The branch's required must include the flagged field so non-theme
     // manifests aren't penalised but theme manifests are.
     const allOf = schema.allOf as Array<{ then: { required?: string[] } }>
-    expect(allOf?.[0]?.then?.required).toContain('x-theme-api')
+    expect(allOf?.[1]?.then?.required).toContain('x-theme-api')
     // Top-level required is just coreRequired (which can be undefined when
     // empty) — no leakage of kind-scoped required.
     const required = (schema.required ?? []) as string[]

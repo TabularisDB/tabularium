@@ -330,7 +330,7 @@ export async function refreshManifestAtRelease(
   }
 
   try {
-    const patch = manifestPatch(manifest, { repoBase: rawContentBase(ref, tag), version })
+    const patch = manifestPatch(manifest, { pluginId: plugin.id, repoBase: rawContentBase(ref, tag), version })
     await applyManifestToPlugin(plugin.id, patch)
     await cache().del(latestCacheKey(plugin.id))
     const sha = manifestSha256(manifest.raw)
@@ -428,7 +428,11 @@ async function recheckAssetsOnce(plugin: PluginRef, tag: string, version: string
   }
 
   try {
-    const patch = manifestPatch(manifest, { repoBase: rawContentBase(ref, tag), version: expectedVersion })
+    const patch = manifestPatch(manifest, {
+      pluginId: plugin.id,
+      repoBase: rawContentBase(ref, tag),
+      version: expectedVersion,
+    })
     await applyManifestToPlugin(plugin.id, patch)
 
     // Persist the canonical manifest + its signed hash on the release row so

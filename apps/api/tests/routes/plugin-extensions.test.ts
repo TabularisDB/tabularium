@@ -17,6 +17,7 @@ function buildManifest(extras: Record<string, unknown>): ResolvedManifest {
 }
 
 describe('manifestPatch — extensions capture', () => {
+  const opts = { pluginId: 'p', repoBase: '', version: null }
   it('captures non-core fields into the extensions blob', () => {
     const patch = manifestPatch(
       buildManifest({
@@ -24,7 +25,7 @@ describe('manifestPatch — extensions capture', () => {
         paradigms: ['document'],
         capabilities: { schemas: false },
       }),
-      { repoBase: '', version: null },
+      opts,
     )
     const ext = JSON.parse(patch.extensions ?? 'null')
     expect(ext).toEqual({
@@ -35,7 +36,7 @@ describe('manifestPatch — extensions capture', () => {
   })
 
   it('leaves extensions null when no non-core fields present', () => {
-    const patch = manifestPatch(buildManifest({}), { repoBase: '', version: null })
+    const patch = manifestPatch(buildManifest({}), opts)
     expect(patch.extensions).toBeNull()
   })
 
@@ -46,7 +47,7 @@ describe('manifestPatch — extensions capture', () => {
         tags: ['nosql'],
         engine: 'firestore',
       }),
-      { repoBase: '', version: null },
+      opts,
     )
     const ext = JSON.parse(patch.extensions ?? 'null')
     expect(ext).toEqual({ engine: 'firestore' })

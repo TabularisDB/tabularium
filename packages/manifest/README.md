@@ -10,6 +10,10 @@ bun add @tabularium/manifest
 npm i @tabularium/manifest
 ```
 
+## Plugin identity (0.4.0+)
+
+Use `{ "id": "jdbc-sqlite", "name": "SQLite JDBC", "version": "1.0.0" }` to separate stable identity from display name. `id` is a lowercase slug (1–64 characters); `name` is a nonblank display string (1–120 characters). Without `id`, the legacy `name` must remain a lowercase slug (1–64 characters). When migrating, set `id` to the existing registry slug; never rewrite historical signed manifests. Stored extension definitions cannot override these core fields.
+
 ## Exports
 
 ### Validation
@@ -19,7 +23,7 @@ import { parseManifest, validateManifest, buildSchema, fetchSchema, type Validat
 ```
 
 - **`parseManifest(text)`** — JSON → object. Throws `ParseError`. Tabularium is JSON-only.
-- **`validateManifest(parsed, schema, { lenient? })`** — ajv-backed JSON Schema 2020-12 validator. Returns `{ ok: true, normalized, errors: [] }` or `{ ok: false, normalized: null, errors }`. `lenient: true` strips unknown fields via `removeAdditional: 'all'` instead of erroring.
+- **`validateManifest(parsed, schema, { lenient? })`** — ajv-backed JSON Schema 2020-12 validator. Returns `{ ok: true, normalized, errors: [] }` or `{ ok: false, normalized: null, errors }`. `lenient: true` strips unknown fields where the schema declares `additionalProperties: false`, instead of erroring. Conditional property constraints do not remove other declared core fields.
 - **`buildSchema(opts)`** — merges the core `ManifestSchema` with operator-defined extension deltas (global + per-kind) into a single JSON Schema.
 - **`fetchSchema(url)`** — `GET <url>/manifest.schema.json` helper. Includes the response body in HTTP error messages.
 

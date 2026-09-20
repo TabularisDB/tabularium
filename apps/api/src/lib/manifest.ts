@@ -34,7 +34,21 @@ export class ManifestValidationError extends Error {
   }
 }
 
-export function parseManifestText(text: string): Manifest {
+export function assertManifestIdentity(parsed: Manifest, slug: string): void {
+  // Older releases used name for display updates after the slug was pinned.
+  // Preserve those releases; an explicit id must always match the pinned slug.
+  if (parsed.id !== undefined && parsed.id !== slug) {
+    throw new ManifestValidationError([
+      {
+        path: '/id',
+        code: 'identity',
+        message: `manifest id "${parsed.id}" does not match existing plugin "${slug}"`,
+      },
+    ])
+  }
+}
+
+export function parseManifestText(text: string, expectedId?: string): Manifest {
   let parsed: Record<string, unknown>
   try {
     parsed = parseManifest(text)
@@ -55,7 +69,9 @@ export function parseManifestText(text: string): Manifest {
   // matches one of the configured keys. This kicks in after schema validation
   // because `kind` is structurally optional at the schema level.
   enforceKindPolicy(result.normalized as Record<string, unknown>)
-  return result.normalized as Manifest
+  const manifest = result.normalized as Manifest
+  if (expectedId !== undefined) assertManifestIdentity(manifest, expectedId)
+  return manifest
 }
 
 function enforceKindPolicy(normalized: Record<string, unknown>): void {

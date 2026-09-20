@@ -224,8 +224,8 @@ describe('per-kind extensions', () => {
     })
     const schema = buildMergedSchema() as { allOf?: Array<{ if?: { properties?: { kind?: { const?: string } } } }> }
     expect(schema.allOf).toBeTruthy()
-    expect(schema.allOf!.length).toBe(2)
-    const constants = schema.allOf!.map((c) => c.if?.properties?.kind?.const)
+    expect(schema.allOf!.length).toBe(3)
+    const constants = schema.allOf!.map((c) => c.if?.properties?.kind?.const).filter(Boolean)
     expect(new Set(constants)).toEqual(new Set(['theme', 'snippet']))
   })
 

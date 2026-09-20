@@ -2,7 +2,7 @@ import { eq } from 'drizzle-orm'
 import { db } from '$db'
 import { plugins } from '$db/schema'
 import { resolveAbsolute } from './url'
-import { ManifestSchema, type Manifest, type ResolvedManifest } from './manifest'
+import { ManifestSchema, assertManifestIdentity, type Manifest, type ResolvedManifest } from './manifest'
 
 export class ManifestVersionMismatchError extends Error {
   readonly declared: string
@@ -76,9 +76,10 @@ export function readmePayloadOf(m: ResolvedManifest): string | null {
 
 export function manifestPatch(
   m: ResolvedManifest,
-  opts: { repoBase: string; version: string | null },
+  opts: { pluginId: string; repoBase: string; version: string | null },
 ): PluginManifestUpdate {
   const { parsed } = m
+  assertManifestIdentity(parsed, opts.pluginId)
   const readmePayload = readmePayloadOf(m)
 
   const iconUrl = parsed.icon ? resolveAbsolute(opts.repoBase, parsed.icon) : null
