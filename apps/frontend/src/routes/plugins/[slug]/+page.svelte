@@ -39,16 +39,15 @@
 	import { i18n, LOCALE_LABELS, type Locale } from '$lib/stores/i18n.svelte'
 	import { toast } from 'svelte-sonner'
 	import type { Plugin, PluginStats, Release } from '$lib/types'
+	import { fetchDownloadStatistics, formatDownloadCount, type DownloadStatisticsState } from '$lib/downloads'
 	import { m } from '$lib/paraglide/messages'
 
 	const slug = $derived(page.params.slug)
 	const locale = $derived(i18n.current)
 
-	type VersionStat = { version: string; total: number; platforms: Record<string, number> }
-
 	let plugin = $state<Plugin | null>(null)
 	let stats = $state<PluginStats | null>(null)
-	let downloadStats = $state<{ total: number; versions: VersionStat[] } | null>(null)
+	let downloadStats = $state<DownloadStatisticsState>({ status: 'loading' })
 	let loading = $state(true)
 	let notFound = $state(false)
 	let deleting = $state(false)
@@ -87,21 +86,22 @@
 		}
 	}
 
-	async function loadDownloadStats() {
-		try {
-			const { data, error } = await eden.api.plugins({ slug }).downloads.get()
-			if (error) return
-			downloadStats = data as { total: number; versions: VersionStat[] }
-		} catch {
-			// silent
-		}
-	}
-
 	onMount(() => {
 		void load(locale)
 		void loadStats()
-		void loadDownloadStats()
 		if (!instanceInfo.loaded) void instanceInfo.refresh()
+	})
+
+	$effect(() => {
+		const currentSlug = slug
+		let disposed = false
+		downloadStats = { status: 'loading' }
+		void fetchDownloadStatistics(() => eden.api.plugins({ slug: currentSlug }).downloads.get()).then((result) => {
+			if (!disposed) downloadStats = result
+		})
+		return () => {
+			disposed = true
+		}
 	})
 
 	$effect(() => {
@@ -531,7 +531,7 @@
 							>
 						{/if}
 						<span class="inline-flex items-center gap-1.5"
-							><Download class="h-3.5 w-3.5" />{formatNumber(plugin.downloads)}</span
+							><Download class="h-3.5 w-3.5" />{formatDownloadCount(plugin.downloads, locale)}</span
 						>
 					</div>
 				</div>
@@ -899,11 +899,11 @@
 				<!-- DOWNLOAD STATS PER VERSION -->
 				<section class="space-y-4">
 					<h2 class="text-2xl font-semibold tracking-tight">{m.plugin_detail_downloads_per_version()}</h2>
-					{#if downloadStats && downloadStats.versions.length > 0}
+					{#if downloadStats.status === 'ready' && downloadStats.data.versions.length > 0}
 						<div class="rounded-xl border border-border bg-card/50 p-4 sm:p-6 space-y-6">
-							<div style:height="{Math.max(180, downloadStats.versions.length * 28 + 60)}px">
+							<div style:height="{Math.max(180, downloadStats.data.versions.length * 28 + 60)}px">
 								<BarChart
-									data={downloadStats.versions.map((v) => ({ ...v, label: `v${v.version}` }))}
+									data={downloadStats.data.versions.map((v) => ({ ...v, label: `v${v.version}` }))}
 									x="total"
 									y="label"
 									orientation="horizontal"
@@ -911,20 +911,30 @@
 								/>
 							</div>
 							<ul class="space-y-1.5 text-xs">
-								{#each downloadStats.versions as v (v.version)}
+								{#each downloadStats.data.versions as v (v.version)}
 									<li class="flex flex-wrap items-center gap-x-3 gap-y-1">
 										<span class="font-mono text-foreground/80 min-w-[60px]">v{v.version}</span>
-										<span class="font-mono tabular-nums text-muted-foreground">{formatNumber(v.total)}</span>
+										<span class="font-mono tabular-nums text-muted-foreground"
+											>{formatDownloadCount(v.total, locale)}</span
+										>
 										<span class="flex flex-wrap gap-1.5">
 											{#each Object.entries(v.platforms) as [pl, n] (pl)}
 												<span class="font-mono text-[10px] px-1.5 py-0.5 rounded bg-foreground/5 text-muted-foreground">
-													{platformLabel(pl)} · {formatNumber(n)}
+													{platformLabel(pl)} · {formatDownloadCount(n, locale)}
 												</span>
 											{/each}
 										</span>
 									</li>
 								{/each}
 							</ul>
+						</div>
+					{:else if downloadStats.status === 'loading'}
+						<div role="status" class="rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">
+							{m.common_loading()}
+						</div>
+					{:else if downloadStats.status === 'unavailable'}
+						<div role="status" class="rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">
+							{m.plugin_detail_downloads_unavailable()}
 						</div>
 					{:else}
 						<div class="rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">
@@ -954,7 +964,7 @@
 							<Download class="h-3.5 w-3.5" />
 							<span>{m.plugin_detail_stat_downloads()}</span>
 						</div>
-						<div class="text-2xl font-semibold leading-none">{formatNumber(plugin.downloads)}</div>
+						<div class="text-2xl font-semibold leading-none">{formatDownloadCount(plugin.downloads, locale)}</div>
 					</div>
 					<div class="flex items-center justify-between py-3 border-b border-dashed border-border/70">
 						<div
