@@ -72,8 +72,8 @@ export default new Elysia()
       }
 
       // Resolve the manifest BEFORE picking the slug — if the manifest
-      // declares `id` (crates.io-style: lowercase, dashes only) that becomes
-      // the authoritative slug; otherwise fall back to a sanitized repo name.
+      // declares id, use it; legacy manifests use name. Only repositories
+      // without a manifest fall back to a sanitized repository name.
       // We fetch the latest release here too so we can ingest it below
       // without re-doing the work.
       const latestRelease = await fetchLatestRelease(accessToken, ref).catch((err) => {
@@ -87,16 +87,15 @@ export default new Elysia()
         }
       } catch (err) {
         if (err instanceof ManifestValidationError) {
-          log.warn(
-            { repo: ref.repo, errors: err.errors },
-            'manifest invalid at submit — slug will fall back to repo name',
-          )
+          log.warn({ repo: ref.repo, errors: err.errors }, 'manifest invalid at submit — rejected')
+          set.status = 422
+          return { error: err.message, errors: err.errors }
         } else {
           throw err
         }
       }
 
-      const slug = preflightManifest?.parsed.name ?? deriveSlug(ref.repo)
+      const slug = preflightManifest?.parsed.id ?? preflightManifest?.parsed.name ?? deriveSlug(ref.repo)
       const existing = await db.query.plugins.findFirst({ where: { id: slug } })
       if (existing) {
         set.status = 409
@@ -138,6 +137,7 @@ export default new Elysia()
           const manifest = preflightManifest
           if (manifest) {
             const patch = manifestPatch(manifest, {
+              pluginId: slug,
               repoBase: rawContentBase(ref, tag),
               version: tag,
             })
@@ -243,6 +243,7 @@ export default new Elysia()
         403: t.Object({ error: t.String() }),
         409: t.Object({ error: t.String() }),
         412: t.Object({ error: t.String() }),
+        422: t.Object({ error: t.String(), errors: t.Optional(t.Array(t.Any())) }),
       },
     },
   )

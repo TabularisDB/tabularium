@@ -99,7 +99,7 @@ export default new Elysia().use(publisherTokenMiddleware).post(
 
       let parsed
       try {
-        parsed = parseManifestText(body.manifest)
+        parsed = parseManifestText(body.manifest, slug)
       } catch (err) {
         if (err instanceof ManifestValidationError) {
           await recordAudit({
@@ -172,7 +172,7 @@ export default new Elysia().use(publisherTokenMiddleware).post(
       // freshly-created plugin row.
       const patch = manifestPatch(
         { raw: body.manifest, parsed, readmeMarkdown: null, readmeLocales: null },
-        { repoBase: rawContentBase(ref, tag), version },
+        { pluginId: slug, repoBase: rawContentBase(ref, tag), version },
       )
       await applyManifestToPlugin(slug, patch)
 
@@ -219,7 +219,7 @@ export default new Elysia().use(publisherTokenMiddleware).post(
 
     let parsed
     try {
-      parsed = parseManifestText(body.manifest)
+      parsed = parseManifestText(body.manifest, slug)
     } catch (err) {
       if (err instanceof ManifestValidationError) {
         await recordAudit({
@@ -273,7 +273,7 @@ export default new Elysia().use(publisherTokenMiddleware).post(
 
     const patch = manifestPatch(
       { raw: body.manifest, parsed, readmeMarkdown: null, readmeLocales: null },
-      { repoBase: rawContentBase(ref, tag), version },
+      { pluginId: slug, repoBase: rawContentBase(ref, tag), version },
     )
     await applyManifestToPlugin(slug, patch)
 

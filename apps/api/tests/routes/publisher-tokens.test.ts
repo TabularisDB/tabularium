@@ -189,6 +189,49 @@ describe('POST /api/publish/:slug', () => {
     expect(plugin?.category).toBe('misc')
   })
 
+  it('keeps identity, URLs and release resolution stable across display-name changes', async () => {
+    const u = await makeUser()
+    const { token } = await createPublisherToken({ userId: u.id, name: 'CI', scopes: ['publish:*'] })
+    for (const [version, name] of [
+      ['1.0.0', 'SQLite JDBC'],
+      ['1.0.1', 'SQLite JDBC Driver'],
+    ]) {
+      const res = await pubFetch('jdbc-sqlite', token, {
+        manifest: JSON.stringify({ id: 'jdbc-sqlite', name, version }),
+        version,
+        assets: [],
+        repoUrl: 'https://github.com/u/jdbc-sqlite',
+      })
+      expect(res.status).toBe(200)
+      const saved = await db.query.plugins.findFirst({ where: { id: 'jdbc-sqlite' } })
+      expect(saved?.name).toBe(name)
+      expect(saved?.latestVersion).toBe(version)
+    }
+    const app = await buildApp()
+    const detail = await app.handle(new Request('http://localhost/api/plugins/jdbc-sqlite'))
+    expect(detail.status).toBe(200)
+    expect(await detail.json()).toMatchObject({ id: 'jdbc-sqlite', name: 'SQLite JDBC Driver' })
+  })
+
+  it('rejects mismatched identity before creating or updating a release', async () => {
+    const u = await makeUser()
+    const { token } = await createPublisherToken({ userId: u.id, name: 'CI', scopes: ['publish:*'] })
+    for (const existing of [false, true]) {
+      if (existing) await makePlugin(u.id, { id: 'alpha', name: 'Original', repoUrl: 'https://github.com/u/alpha' })
+      const res = await pubFetch('alpha', token, {
+        manifest: JSON.stringify({ id: 'beta', name: 'New name', version: '1.0.0' }),
+        version: '1.0.0',
+        assets: [],
+        repoUrl: 'https://github.com/u/alpha',
+      })
+      expect(res.status).toBe(422)
+      const saved = await db.query.plugins.findFirst({ where: { id: 'alpha' } })
+      if (existing) expect(saved?.name).toBe('Original')
+      else expect(saved).toBeUndefined()
+      expect(await db.query.releases.findFirst({ where: { pluginId: 'alpha' } })).toBeUndefined()
+    }
+  })
+
   it('first push without publish:* returns 403', async () => {
     const u = await makeUser()
     const { token } = await createPublisherToken({ userId: u.id, name: 'CI', scopes: ['publish:beta'] })

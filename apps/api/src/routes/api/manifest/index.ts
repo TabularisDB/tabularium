@@ -3,7 +3,9 @@ import { getManifestConfig } from '$lib/manifest-config'
 import { buildMergedSchema } from '$lib/manifest-schema'
 import { getKinds } from '$lib/kinds'
 
-const EXAMPLE = `name: my-plugin
+const EXAMPLE = `id: my-plugin
+name: My Plugin
+version: 1.0.0
 description: A short tagline shown on the catalog card.
 category: databases
 kind: theme

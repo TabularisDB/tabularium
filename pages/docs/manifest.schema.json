@@ -2,15 +2,36 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://tabularium.wiki/manifest.schema.json",
   "title": "Tabularium plugin manifest",
-  "description": "Plugin authors drop a .tabularium / .tabularium.yaml / .tabularium.yml / .tabularium.json at the repo root.",
+  "allOf": [
+    {
+      "if": {
+        "required": ["id"]
+      },
+      "else": {
+        "properties": {
+          "name": {
+            "pattern": "^[a-z][a-z0-9-]*$",
+            "maxLength": 64
+          }
+        }
+      }
+    }
+  ],
   "type": "object",
-  "required": ["name", "version"],
+  "additionalProperties": false,
   "properties": {
-    "name": {
+    "id": {
       "minLength": 1,
       "maxLength": 64,
       "pattern": "^[a-z][a-z0-9-]*$",
-      "description": "URL slug, canonical package name, and default display title. Must start with a letter; lowercase alphanumerics + hyphens only. REQUIRED — pinned at first submit; changing it later does not rename the existing slug. Use the README for prose / branding; no separate display-name field.",
+      "description": "Stable plugin identifier and URL slug. Pinned at first submit. For legacy manifests without id, name supplies the identifier.",
+      "type": "string"
+    },
+    "name": {
+      "minLength": 1,
+      "maxLength": 120,
+      "pattern": "\\S",
+      "description": "Human-readable display name (e.g. \"SQLite JDBC\"). Without id, this must remain a lowercase slug (1–64 characters) for backwards compatibility.",
       "type": "string"
     },
     "version": {
@@ -129,5 +150,6 @@
       "description": "Minimum host runtime version (semver range or single version). The host refuses to load the plugin on older runtimes.",
       "type": "string"
     }
-  }
+  },
+  "required": ["name", "version"]
 }

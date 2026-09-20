@@ -138,7 +138,7 @@ describe('POST /api/submit/oauth', () => {
     expect(res.status).toBe(403)
   })
 
-  it('keeps submit lenient even when the manifest is invalid', async () => {
+  it('rejects an invalid manifest instead of silently claiming a different identity', async () => {
     const user = await makeUser({ username: 'alice' })
     const token = await signJwt({
       sub: user.id,
@@ -154,8 +154,8 @@ describe('POST /api/submit/oauth', () => {
           status: 200,
         })
       }
-      if (u.includes('/releases/latest')) {
-        return new Response(JSON.stringify({ tag_name: 'v0.1.0', assets: [] }), { status: 200 })
+      if (u.includes('/releases?')) {
+        return new Response(JSON.stringify([{ tag_name: 'v0.1.0', assets: [] }]), { status: 200 })
       }
       if (u.includes('/contents/.tabularium') || u.includes('/contents/tabularium.json')) {
         return new Response(JSON.stringify({ name: 42, version: '0.1.0', kind: 'theme' }), { status: 200 })
@@ -179,8 +179,8 @@ describe('POST /api/submit/oauth', () => {
     )
     fetchSpy.mockRestore()
 
-    // Lenient: submit still succeeds even though the manifest is bad
-    expect(res.status).toBe(200)
+    expect(res.status).toBe(422)
+    expect(await db.query.plugins.findFirst({ where: { id: 'my-plugin' } })).toBeUndefined()
   })
 
   it('ManifestValidationError carries structured errors usable for downstream surfaces', () => {

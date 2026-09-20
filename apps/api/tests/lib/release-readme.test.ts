@@ -113,6 +113,7 @@ describe('manifestPatch — README is never blanked', () => {
     const patch = manifestPatch(
       { ...base, readmeMarkdown: null, readmeLocales: null },
       {
+        pluginId: base.parsed.name,
         repoBase: 'https://raw.example/',
         version: '1.0.0',
       },
@@ -125,6 +126,7 @@ describe('manifestPatch — README is never blanked', () => {
     const patch = manifestPatch(
       { ...base, readmeMarkdown: '# Hi', readmeLocales: null },
       {
+        pluginId: base.parsed.name,
         repoBase: 'https://raw.example/',
         version: '1.0.0',
       },
@@ -136,6 +138,7 @@ describe('manifestPatch — README is never blanked', () => {
     const patch = manifestPatch(
       { ...base, readmeMarkdown: null, readmeLocales: { en: '# Hi' } },
       {
+        pluginId: base.parsed.name,
         repoBase: 'https://raw.example/',
         version: '1.0.0',
       },
