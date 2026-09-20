@@ -3,6 +3,9 @@
 	import Badge from '$components/ui/Badge.svelte'
 	import VerifiedBadge from '$components/ui/VerifiedBadge.svelte'
 	import Boxes from '@lucide/svelte/icons/boxes'
+	import Download from '@lucide/svelte/icons/download'
+	import { formatDownloadCount } from '$lib/downloads'
+	import { i18n } from '$lib/stores/i18n.svelte'
 	import { m } from '$lib/paraglide/messages'
 	import type { Plugin } from '$lib/types'
 
@@ -53,6 +56,14 @@
 	<div class="mt-4 flex items-center justify-between gap-2 text-xs text-muted-foreground">
 		<span class="truncate">{plugin.author.split('<')[0].trim()}</span>
 		<div class="flex items-center gap-1.5 flex-shrink-0">
+			<span
+				class="inline-flex items-center gap-1 font-mono tabular-nums"
+				title={`${m.plugin_detail_stat_downloads()}: ${formatDownloadCount(plugin.downloads, i18n.current, false)}`}
+				aria-label={`${m.plugin_detail_stat_downloads()}: ${formatDownloadCount(plugin.downloads, i18n.current, false)}`}
+			>
+				<Download class="h-3.5 w-3.5" aria-hidden="true" />
+				{formatDownloadCount(plugin.downloads, i18n.current)}
+			</span>
 			{#if plugin.category}
 				<Badge variant="outline" class="text-[10px]">{plugin.category}</Badge>
 			{/if}

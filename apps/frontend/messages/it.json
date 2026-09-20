@@ -808,6 +808,7 @@
 	"plugin_detail_downloads_empty": "Nessun download registrato ancora.",
 	"plugin_detail_downloads_per_version": "Download per versione",
 	"plugin_detail_downloads_total": "Download totali",
+	"plugin_detail_downloads_unavailable": "Le statistiche dei download non sono al momento disponibili.",
 	"plugin_detail_email_support": "Supporto via email",
 	"plugin_detail_featured": "In evidenza",
 	"plugin_detail_install_subtitle": "Risolvi l'URL dell'asset più recente per la piattaforma tramite l'API del catalogo:",
