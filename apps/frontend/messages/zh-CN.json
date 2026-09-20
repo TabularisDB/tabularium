@@ -808,6 +808,7 @@
 	"plugin_detail_downloads_empty": "尚无下载记录。",
 	"plugin_detail_downloads_per_version": "各版本下载量",
 	"plugin_detail_downloads_total": "总下载量",
+	"plugin_detail_downloads_unavailable": "下载统计信息暂时不可用。",
 	"plugin_detail_email_support": "邮件支持",
 	"plugin_detail_featured": "精选",
 	"plugin_detail_install_subtitle": "通过目录 API 解析最新且匹配当前平台的资源 URL:",

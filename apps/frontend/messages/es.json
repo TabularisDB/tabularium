@@ -808,6 +808,7 @@
 	"plugin_detail_downloads_empty": "Aún no hay descargas registradas.",
 	"plugin_detail_downloads_per_version": "Descargas por versión",
 	"plugin_detail_downloads_total": "Descargas totales",
+	"plugin_detail_downloads_unavailable": "Las estadísticas de descargas no están disponibles en este momento.",
 	"plugin_detail_email_support": "Soporte por email",
 	"plugin_detail_featured": "Destacado",
 	"plugin_detail_install_subtitle": "Resuelve la URL del asset que coincida con la plataforma más reciente vía la API del catálogo:",
