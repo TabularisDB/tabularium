@@ -2,7 +2,7 @@ import { Marked } from 'marked'
 import { gfmHeadingId, getHeadingList } from 'marked-gfm-heading-id'
 import markedShiki from 'marked-shiki'
 import { createHighlighter, type Highlighter } from 'shiki'
-import DOMPurify from 'isomorphic-dompurify'
+import sanitizeHtml from 'sanitize-html'
 
 const SHIKI_LANGS = [
   'bash',
@@ -151,6 +151,18 @@ const ALLOWED_ATTR = [
   'tabindex',
 ]
 
+// ponytail: sanitize-html (htmlparser2, no DOM) replaces isomorphic-dompurify —
+// jsdom leaks ~1 MiB per sanitize() under Bun and OOM-killed the registry pod.
+const SANITIZE_OPTS: sanitizeHtml.IOptions = {
+  allowedTags: ALLOWED_TAGS,
+  allowedAttributes: { '*': ALLOWED_ATTR },
+  allowedSchemes: ['http', 'https', 'mailto', 'tel'],
+  allowedSchemesByTag: { img: ['http', 'https', 'data'] },
+  allowedSchemesAppliedToAttributes: ['href', 'src', 'poster', 'cite'],
+  // shiki emits inline `style` for dual themes — pass through verbatim, as DOMPurify did.
+  parseStyleAttributes: false,
+}
+
 export type Heading = { level: 2 | 3; id: string; text: string }
 
 // SvelteKit's client-side router intercepts <a> clicks and tries to resolve
@@ -166,7 +178,7 @@ function reloadApiLinks(html: string): string {
 export async function renderMarkdown(raw: string): Promise<string> {
   if (!raw) return ''
   const html = await marked.parse(raw)
-  const safe = DOMPurify.sanitize(html, { ALLOWED_TAGS, ALLOWED_ATTR })
+  const safe = sanitizeHtml(html, SANITIZE_OPTS)
   return reloadApiLinks(safe)
 }
 
@@ -187,7 +199,7 @@ function stripTags(s: string): string {
 export async function renderMarkdownWithMeta(raw: string): Promise<{ html: string; headings: Heading[] }> {
   if (!raw) return { html: '', headings: [] }
   const html = await marked.parse(raw)
-  const safe = reloadApiLinks(DOMPurify.sanitize(html, { ALLOWED_TAGS, ALLOWED_ATTR }))
+  const safe = reloadApiLinks(sanitizeHtml(html, SANITIZE_OPTS))
   const raw_headings = getHeadingList()
   const headings: Heading[] = raw_headings
     .filter((h) => h.level === 2 || h.level === 3)
