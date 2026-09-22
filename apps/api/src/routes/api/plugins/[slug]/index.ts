@@ -127,7 +127,7 @@ export default new Elysia()
         tags: ['Plugins'],
         summary: 'Get plugin detail',
         description:
-          'Full plugin record including release history and the rendered README HTML (sanitized via DOMPurify, cached 10 min). Public — no auth required. Pass `?locale=` to request a localized README; falls back to base language, then `en`, then the first available.',
+          'Full plugin record including release history and the rendered README HTML (sanitized, cached 10 min). Public — no auth required. Pass `?locale=` to request a localized README; falls back to base language, then `en`, then the first available.',
         operationId: 'getPlugin',
       },
       params: t.Object({ slug: t.String() }),
