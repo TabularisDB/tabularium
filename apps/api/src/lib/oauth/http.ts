@@ -1,6 +1,7 @@
+import { icon } from './icons'
 import { env, isProd, allowedOrigins } from '$lib/env'
 import { verifySessionToken } from '$lib/access'
-import { page, loginPage, scopeLabel, escapeHtml as esc } from './pages'
+import { page, loginPage, permissionList, escapeHtml as esc } from './pages'
 import { putRecord, readRecord, consumeRecord } from './store'
 import {
   OAuthError,
@@ -99,7 +100,8 @@ export async function oauthResponse(action: () => Promise<Response>, request?: R
       if (request?.headers.get('accept')?.includes('text/html')) {
         const response = page(
           'Connection could not be completed',
-          `<p class="error" role="alert">${esc(e.message)}</p><p>Return to your assistant and start the connection again. Your existing connections are unchanged.</p><p><a href="/oauth/connections">Manage connected applications</a></p>`,
+          `<section class="card"><div class="notice error" role="alert">${icon('circle-alert')}<p>${esc(e.message)}</p></div><p>Return to your assistant and start the connection again. Your existing connections are unchanged.</p><a class="button" href="/oauth/connections">Manage connected applications</a></section>`,
+          { kind: 'error' },
         )
         return new Response(response.body, { status: e.status, headers: response.headers })
       }
@@ -127,15 +129,15 @@ export async function authorizationPage(request: Request) {
       pendingId = secret()
       await putRecord(pendingId, 'consent', { params }, Date.now() + 600_000)
     }
-    return loginPage(`/oauth/authorize?request=${pendingId}`)
+    return loginPage(`/oauth/authorize?request=${pendingId}`, client.client_name)
   }
   const csrf = secret()
   const id = secret()
   await putRecord(id, 'consent', { params, csrf }, Date.now() + 600_000, user.sub)
   const response = page(
     'Allow this connection?',
-    `<p><strong>${esc(client.client_name)}</strong> wants access as <strong>${esc(user.username)}</strong>.</p><section><h2>Requested permissions</h2><ul>${scopes.map((s) => `<li>${esc(scopeLabel(s))}</li>`).join('')}</ul><p class="muted">Access is limited by your current Tabularium permissions. This connection expires after 30 days and can be revoked at any time.</p></section><p class="muted">Registered callback: <code>${esc(params.redirect_uri)}</code></p><form method="post" action="/oauth/authorize"><input type="hidden" name="request" value="${id}"><input type="hidden" name="csrf" value="${csrf}"><div class="actions"><button name="decision" value="allow">Allow access</button><button name="decision" value="deny">Deny</button></div></form><p><a href="/oauth/connections">Manage connections</a></p>`,
-    new URL(params.redirect_uri).origin,
+    `<p class="lead"><strong>${esc(client.client_name)}</strong> wants to connect to your account.</p><section class="card"><div class="account"><span class="account-icon">${icon('user-round')}</span><div><small>Signed in as</small><strong>${esc(user.username)}</strong></div></div><h2>Requested access</h2>${permissionList(scopes)}<details class="details"><summary>${icon('link')}Connection details${icon('chevron-down', 'chevron')}</summary><p>Registered callback: <code>${esc(params.redirect_uri)}</code></p></details><form method="post" action="/oauth/authorize"><input type="hidden" name="request" value="${id}"><input type="hidden" name="csrf" value="${csrf}"><div class="actions"><button class="action" name="decision" value="deny">Deny</button><button class="action primary" name="decision" value="allow">${icon('check')}Allow access</button></div></form></section><p class="trust-note">${icon('clock')}<span>Access expires after 30 days. Your current permissions always apply.</span></p><p class="below-card"><a class="text-link" href="/oauth/connections">Manage connections</a></p>`,
+    { kind: 'consent', callbackOrigin: new URL(params.redirect_uri).origin },
   )
   response.headers.set('set-cookie', csrfCookie(csrf))
   return response
@@ -188,7 +190,8 @@ export async function connectionsPage(request: Request) {
   const list = await listGrants(user.sub)
   const response = page(
     'Connected applications',
-    `${new URL(request.url).searchParams.get('revoked') === '1' ? '<p class="success" role="status">Connection revoked. This application can no longer access your account.</p>' : ''}<p>Connections for <strong>${esc(user.username)}</strong>. Revoking a connection immediately disables its access and refresh tokens.</p>${list.length ? list.map((g) => `<section><h2>${esc(g.clientName)}</h2><p>${g.scopes.map((s) => `<span>${esc(scopeLabel(s))}</span>`).join(', ')}</p><p class="muted">Expires ${esc(new Date(g.expiresAt).toISOString().slice(0, 10))}</p><form action="/oauth/connections" method="post"><input type="hidden" name="csrf" value="${csrf}"><input type="hidden" name="grant" value="${g.id}"><button>Revoke connection</button></form></section>`).join('') : '<p>No active connections.</p>'}<a href="${esc(env.WEB_BASE_URL ?? env.BASE_URL)}">Back to Tabularium</a>`,
+    `<p class="lead">Manage application access for <strong>${esc(user.username)}</strong>.</p>${new URL(request.url).searchParams.get('revoked') === '1' ? `<div class="notice" role="status">${icon('check')}<p>Connection revoked. This application can no longer access your account.</p></div>` : ''}${list.length ? list.map((g) => `<section class="card connection-card"><div class="connection-title"><span class="app-mark">${icon('plug')}</span><div><h2>${esc(g.clientName)}</h2><small>Expires ${esc(new Date(g.expiresAt).toISOString().slice(0, 10))}</small></div></div>${permissionList(g.scopes)}<div class="connection-footer"><span class="status">Connected</span><form action="/oauth/connections" method="post"><input type="hidden" name="csrf" value="${csrf}"><input type="hidden" name="grant" value="${g.id}"><button class="action danger">${icon('unplug')}Revoke connection</button></form></div></section>`).join('') : `<section class="card"><div class="empty-state">${icon('plug')}<strong>No active connections.</strong><p>Applications you connect will appear here. You can review their permissions and revoke access at any time.</p></div></section>`}<p class="below-card"><a class="text-link" href="${esc(env.WEB_BASE_URL ?? env.BASE_URL)}/settings">Back to settings</a></p>`,
+    { kind: 'connections' },
   )
   response.headers.set('set-cookie', csrfCookie(csrf))
   return response
