@@ -1,35 +1,100 @@
 import { randomBytes } from 'node:crypto'
-import { listEnabledInstances } from '$lib/provider-instance'
+import { getBranding, defaultBranding, type Branding } from '$lib/branding'
+import { env } from '$lib/env'
+import { listEnabledInstances, type ProviderInstance } from '$lib/provider-instance'
+import { icon } from './icons'
+import { pageStyles } from './page-styles'
+
 export const escapeHtml = (value: string) =>
   value.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!)
-export function page(title: string, body: string, callbackOrigin = '') {
+
+function imageUrl(raw: string | null): string | null {
+  if (!raw || !/^(https?:\/\/|\/[^/\\])/.test(raw) || /[\x00-\x1f]/.test(raw)) return null
+  try {
+    const url = new URL(raw, env.BASE_URL)
+    if (!['https:', 'http:'].includes(url.protocol) || url.username || url.password) return null
+    return raw.startsWith('/') ? url.pathname + url.search : url.href
+  } catch {
+    return null
+  }
+}
+function color(raw: string, fallback: string) {
+  return /^#[0-9a-f]{6}$/i.test(raw) ? raw : fallback
+}
+function onPrimary(hex: string) {
+  const rgb = [1, 3, 5].map((i) => Number.parseInt(hex.slice(i, i + 2), 16) / 255)
+  const linear = rgb.map((c) => (c <= 0.04045 ? c / 12.92 : ((c + 0.055) / 1.055) ** 2.4))
+  const luminance = linear[0] * 0.2126 + linear[1] * 0.7152 + linear[2] * 0.0722
+  return (luminance + 0.05) / 0.0527 > 1.05 / (luminance + 0.05) ? '#08090a' : '#ffffff'
+}
+function brandMark(brand: Branding) {
+  const logo = imageUrl(brand.logoUrl)
+  return `<span class="brand-mark${logo ? ' custom' : ''}">${logo ? `<img src="${escapeHtml(logo)}" alt="" referrerpolicy="no-referrer">` : icon('boxes')}</span>`
+}
+function providerImage(provider: ProviderInstance) {
+  const custom = imageUrl(provider.logoUrl)
+  const slug =
+    provider.kind === 'github'
+      ? 'github'
+      : provider.kind === 'gitlab'
+        ? 'gitlab'
+        : new URL(provider.baseUrl).hostname === 'codeberg.org'
+          ? 'codeberg'
+          : 'forgejo'
+  return { src: custom ?? `https://cdn.simpleicons.org/${slug}`, github: !custom && slug === 'github' }
+}
+
+type PageOptions = { kind?: 'login' | 'consent' | 'connections' | 'error'; callbackOrigin?: string }
+export function page(title: string, body: string, options: PageOptions = {}) {
   const nonce = randomBytes(18).toString('base64')
+  const brand = getBranding()
+  const defaults = defaultBranding()
+  const primary = color(brand.primaryHex, defaults.primaryHex)
+  const accent = color(brand.accentHex, defaults.accentHex)
+  const success = color(brand.successHex, defaults.successHex)
+  const favicon = imageUrl(brand.faviconUrl) ?? '/favicon.svg'
+  const sources = [imageUrl(brand.logoUrl), favicon, ...listEnabledInstances().map((p) => providerImage(p).src)]
+  const imageOrigins = [
+    ...new Set(sources.filter((s): s is string => !!s).map((s) => new URL(s, env.BASE_URL).origin)),
+  ].join(' ')
+  const home = escapeHtml(env.WEB_BASE_URL ?? env.BASE_URL)
+  const kind = options.kind ?? 'login'
+  const symbol =
+    kind === 'error'
+      ? icon('circle-alert')
+      : kind === 'connections'
+        ? icon('plug')
+        : `${brandMark(brand)}<span class="connection-line">${icon('link')}</span><span class="app-mark">${icon('plug')}</span>`
+  // Match the main application's mode-watcher preference without loading its
+  // SPA or any administrator-supplied analytics on an authorization screen.
+  const themeScript = `(()=>{const root=document.documentElement;let mode;try{mode=localStorage.getItem('mode-watcher-mode')}catch{}root.dataset.theme=mode==='light'||mode==='dark'?mode:matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.addEventListener('DOMContentLoaded',()=>{const button=document.getElementById('theme-toggle');button.hidden=false;button.addEventListener('click',()=>{const next=root.dataset.theme==='dark'?'light':'dark';root.dataset.theme=next;try{localStorage.setItem('mode-watcher-mode',next)}catch{}})})})()`
   return new Response(
-    `<!doctype html><html lang="en"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>${escapeHtml(title)} · Tabularium</title><style nonce="${nonce}">
-  :root{color-scheme:light dark;--font-ui:system-ui,sans-serif;--paper:light-dark(#fff,#08090a);--ink:light-dark(#111827,#e5e7eb);--panel:light-dark(#f9fafb,#111214);--line:light-dark(#d1d5db,#374151);--muted:light-dark(#4b5563,#9ca3af);--accent:light-dark(#2563eb,#3b82f6);--on-accent:#fff;--link:light-dark(#1d4ed8,#93c5fd);--error:light-dark(#b91c1c,#fca5a5);--success:light-dark(#047857,#6ee7b7);font:16px/1.6 var(--font-ui);background:var(--paper);color:var(--ink)}
-  *{box-sizing:border-box}html,body{overflow-x:clip}body{max-width:668px;margin:clamp(24px,8vh,80px) auto;padding:24px;overflow-wrap:anywhere}h1{line-height:1.2;font-size:30px;letter-spacing:-.025em}h1,h2{min-width:0;overflow-wrap:anywhere;font-style:normal}h2{font-size:20px}header{font-size:12px;letter-spacing:.1em;text-transform:uppercase;color:var(--muted)}main{margin-top:32px}section{border:1px solid var(--line);border-radius:10px;padding:24px;margin:24px 0;background:var(--panel)}button,.button{display:inline-block;max-width:100%;border:1px solid var(--line);border-radius:6px;padding:10px 18px;min-height:44px;font:inherit;cursor:pointer;text-decoration:none;background:var(--panel);color:var(--ink);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;vertical-align:middle}button:hover,.button:hover{border-color:var(--accent)}button:active,.button:active{transform:translateY(1px)}:is(button,a):focus-visible{outline:2px solid var(--accent);outline-offset:4px}button:disabled{cursor:wait;opacity:.65}button[value=allow]{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}code{overflow-wrap:anywhere;font-size:13px}a{color:var(--link)}.muted{color:var(--muted);font-size:14px}.error{color:var(--error)}.success{color:var(--success)}ul{padding-left:22px}li{margin:8px 0}.actions{display:flex;gap:12px;flex-wrap:wrap}@media(max-width:414px){body{padding:20px;margin-top:24px}section{padding:18px}h1{font-size:27px}}
-  </style><header>Tabularium / Connections</header><main><h1>${escapeHtml(title)}</h1>${body}</main></html>`,
+    `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>${escapeHtml(title)} · ${escapeHtml(brand.name)}</title><link rel="icon" href="${escapeHtml(favicon)}"><script nonce="${nonce}">${themeScript}</script><style nonce="${nonce}">${pageStyles}:root{--brand-primary:${primary};--brand-accent:${accent};--brand-success:${success};--brand-on-primary:${onPrimary(primary)}}
+    </style></head><body><header class="site-header"><div class="header-inner"><a class="brand" href="${home}" aria-label="${escapeHtml(brand.name)} home">${brandMark(brand)}<span class="brand-name">${escapeHtml(brand.name)}</span></a><div class="header-actions"><a class="back-link" aria-label="Back to registry" href="${home}">${icon('arrow-left')}<span class="back-label">Back to registry</span></a><button class="icon-button" id="theme-toggle" type="button" aria-label="Switch color theme" title="Switch color theme" hidden>${icon('sun', 'sun-icon')}${icon('moon', 'moon-icon')}</button></div></div></header><main class="${kind}"><div class="page-heading"><div class="connection-symbol" aria-hidden="true">${symbol}</div><h1>${escapeHtml(title)}</h1></div>${body}</main><footer class="site-footer"><p>${escapeHtml(brand.footerText ?? brand.name)}</p></footer></body></html>`,
     {
       headers: {
         'content-type': 'text/html; charset=utf-8',
         'cache-control': 'no-store',
         'referrer-policy': 'same-origin',
         'x-frame-options': 'DENY',
-        'content-security-policy': `default-src 'none'; style-src 'nonce-${nonce}'; script-src 'none'; form-action 'self' ${callbackOrigin}; frame-ancestors 'none'; base-uri 'none'`,
+        'content-security-policy': `default-src 'none'; style-src 'nonce-${nonce}'; script-src 'nonce-${nonce}'; img-src 'self' ${imageOrigins}; form-action 'self' ${options.callbackOrigin ?? ''}; frame-ancestors 'none'; base-uri 'none'`,
       },
     },
   )
 }
-export function loginPage(returnTo: string) {
+
+export function loginPage(returnTo: string, clientName?: string) {
+  const brand = getBranding()
   const links = listEnabledInstances()
-    .map(
-      (p) =>
-        `<p><a class="button" title="Continue with ${escapeHtml(p.displayName)}" href="/auth/${encodeURIComponent(p.id)}?return_to=${encodeURIComponent(returnTo)}">Continue with ${escapeHtml(p.displayName)}</a></p>`,
-    )
+    .map((p) => {
+      const logo = providerImage(p)
+      return `<a class="provider" title="Continue with ${escapeHtml(p.displayName)}" href="/auth/${encodeURIComponent(p.id)}?return_to=${encodeURIComponent(returnTo)}"><img class="provider-image${logo.github ? ' github-default' : ''}" src="${escapeHtml(logo.src)}" alt="" referrerpolicy="no-referrer"><span class="provider-label">Continue with ${escapeHtml(p.displayName)}</span>${icon('arrow-right')}</a>`
+    })
     .join('')
   return page(
     'Sign in to connect',
-    `<p>Sign in to your Tabularium account. You will review the requested permissions before granting access.</p>${links || '<section><p>No sign-in providers are currently enabled.</p><p class="muted">Ask your administrator to enable a sign-in provider in the Tabularium settings, then try again.</p></section>'}`,
+    `<p class="lead">Sign in to <strong>${escapeHtml(brand.name)}</strong>${clientName ? ` to connect <strong>${escapeHtml(clientName)}</strong>.` : ' to manage your connected applications.'}</p><section class="card">${links ? `<div class="provider-list">${links}</div>` : `<div class="empty-state">${icon('plug')}<strong>No sign-in providers are currently enabled.</strong><p>Ask your administrator to enable a sign-in provider in the ${escapeHtml(brand.name)} settings, then try again.</p></div>`}<p class="trust-note">${icon('shield-check')}<span>You choose what this application can access.<br>You can revoke access at any time.</span></p></section>`,
+    { kind: 'login' },
   )
 }
 
@@ -43,4 +108,26 @@ export function scopeLabel(scope: string): string {
   if (common[scope]) return common[scope]
   const [, area, action] = scope.split(':')
   return `${action === 'read' ? 'Read' : 'Manage'} ${area.replaceAll('-', ' ')} as an administrator`
+}
+export function permissionList(scopes: string[]) {
+  const titles: Record<string, string> = {
+    'catalog:read': 'Browse the catalog',
+    'account:read': 'View your account',
+    'plugins:write': 'Manage your plugins',
+    'requests:write': 'Participate in community requests',
+  }
+  return `<ul class="permissions">${scopes
+    .map((scope) => {
+      const symbol = scope.startsWith('admin:')
+        ? 'shield-check'
+        : scope.startsWith('plugins:')
+          ? 'boxes'
+          : scope.startsWith('account:')
+            ? 'user-round'
+            : scope.startsWith('requests:')
+              ? 'message-square'
+              : 'eye'
+      return `<li><span class="permission-icon">${icon(symbol)}</span><div class="permission-text"><strong>${escapeHtml(titles[scope] ?? scopeLabel(scope))}</strong><span>${escapeHtml(titles[scope] ? scopeLabel(scope) : 'Limited to your current administrator permissions.')}</span></div></li>`
+    })
+    .join('')}</ul>`
 }
