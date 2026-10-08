@@ -9,6 +9,8 @@ Tabularium exposes a typed JSON API via Elysia + TypeBox. The full OpenAPI spec 
 - HTML: `GET /openapi`
 - JSON: `GET /openapi/json`
 
+For AI assistants, follow the [MCP tutorials](/mcp/) for generic clients, Codex and Claude.
+
 ## Surfaces
 
 | Surface | Auth | Purpose |

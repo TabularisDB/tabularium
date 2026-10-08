@@ -6,6 +6,7 @@ export default {
         { title: 'Overview', to: '/' },
         { title: 'Install', to: '/install/' },
         { title: 'Install wizard', to: '/install-wizard/' },
+        { title: 'MCP & AI assistants', to: '/mcp/' },
       ],
     },
     {

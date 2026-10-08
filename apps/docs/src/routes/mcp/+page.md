@@ -1,12 +1,18 @@
-# Connect to Tabularium with MCP
+---
+title: "MCP & AI assistants"
+---
+
+<!-- Keep these setup sections aligned with apps/api/MCP.md. -->
+
+# MCP & AI assistants
 
 Choose a tutorial:
 
-- [Generic MCP client](#generic-mcp-client)
-- [Codex: user, author or administrator](#connect-codex-as-a-user-or-administrator)
-- [Claude Code and Claude Web/Desktop](#connect-claude)
+- [Generic MCP client](#Generic-MCP-client)
+- [Codex: user, author or administrator](#Connect-Codex-as-a-user-or-administrator)
+- [Claude Code and Claude Web/Desktop](#Connect-Claude)
 
-The same tutorials are published in the [MCP guide on the documentation site](https://docs.tabularium.wiki/mcp/).
+For protocol details and deployment, see the [technical MCP reference](https://github.com/TabularisDB/tabularium/blob/main/apps/api/MCP.md).
 
 Remote MCP is served at **`<BASE_URL>/mcp`** by the existing API process. Use an MCP client supporting Streamable HTTP and OAuth authorization-code flow with S256 PKCE. Add that URL, sign in with your Tabularium account, and approve the requested permissions. Sign-in uses only the enabled provider instances from your Tabularium settings, including their configured display names. The MCP dialog does not offer password or administrator recovery login. The consent screen identifies the client, callback and permissions. OAuth pages inherit the instance name, logo, favicon, brand colors and footer; provider logo overrides and the registry theme preference are respected.
 
@@ -135,7 +141,7 @@ Set `scopes` to `["catalog:read", "account:read", "admin:plugins:read", "admin:p
 codex mcp login tabularium --scopes catalog:read,account:read,admin:plugins:read,admin:plugins:write
 ```
 
-Sign in using a Tabularium account whose role is `admin` for the administrator example. Add other exact `admin:<area>:read` / `admin:<area>:write` scopes from the [permission table](#permissions) only for the areas you want the client to access. Read and write are separate; neither implies the other.
+Sign in using a Tabularium account whose role is `admin` for the administrator example. Add other exact `admin:<area>:read` / `admin:<area>:write` scopes from the [permission table](#Permissions) only for the areas you want the client to access. Read and write are separate; neither implies the other.
 
 The login command opens an authorization URL. You may also copy that URL into your own browser on the same machine. Choose one of the instance's enabled sign-in providers, review the client name and requested permissions, and select **Allow access**. Codex completes the callback and stores its OAuth credentials. Do not copy a browser session cookie or an admin API token into the MCP configuration.
 
@@ -226,52 +232,3 @@ For Claude chat, use a remote connector. The steps differ from Claude Code's loc
 
 The Claude instructions are based on the official guides and installed CLI help; a production Claude OAuth round-trip has not been tested for this release. The native Codex integration has been tested end to end.
 
-## Tools
-
-Tools are explicitly allowlisted in `apps/api/src/lib/mcp/catalog.ts`; names derive from API operation IDs. Schemas derive from the existing route definitions, with arguments grouped into `params`, `query` and `body`. For example:
-
-```json
-{"name":"list_plugins","arguments":{"query":{"search":"postgres","limit":"10"}}}
-```
-
-```json
-{"name":"update_plugin","arguments":{"params":{"id":"my-plugin"},"body":{"status":"approved"}}}
-```
-
-Use `tools/list` for the exact supported fields. Calls use existing handlers in-process with a trusted request-local user context. There is no arbitrary HTTP tool, forwarded browser cookie, forwarded MCP token, or synthesized full-privilege JWT. Publishing reuses the existing publisher ownership policy. Tool results contain `{status, data}` and failures use `isError`. Output is limited to 256 KiB; a truncated response explicitly states that the operation already ran, so do not repeat a write merely to retrieve its response.
-
-Setup, login/account deletion, identity unlinking, token issuance/recovery, inbound webhooks, binary uploads and download redirects are not exposed as tools. Submission responses omit the webhook secret. Existing download and upload interfaces remain available outside MCP. Encrypted settings are redacted based on their stored encryption flag, including registry signing keys.
-
-## OAuth endpoints and lifecycle
-
-- `/.well-known/oauth-protected-resource/mcp` (also root protected-resource metadata)
-- `/.well-known/oauth-authorization-server`
-- `POST /oauth/register`: public dynamic client registration (`client_name`, `redirect_uris`, `token_endpoint_auth_method: "none"`)
-- `GET/POST /oauth/authorize`: login and explicit consent
-- `POST /oauth/token`: form-encoded `authorization_code` or `refresh_token` grants
-- `POST /oauth/revoke`: revoke a token's connection using `token` and `client_id`
-
-Clients must send `resource=<BASE_URL>/mcp` during authorization, code exchange and refresh. Exact registered redirect matching is required; HTTPS callbacks and HTTP loopback callbacks are supported. Authorization codes expire after five minutes. Access tokens last at most 15 minutes; refresh tokens rotate, and a connection has an absolute 30-day lifetime. Reusing a spent code or refresh token revokes the whole connection. Scope changes require fresh consent. Client registrations last one year.
-
-OAuth state is stored in `oauth_records` with hashed codes/access/refresh tokens. Atomic compare-and-set consumption supports multiple processes. Credentials from upstream Git providers are never returned. Audit events record user, OAuth client, grant and tool operation without request payloads or tokens. Expired records are pruned during registration after a 30-day replay-detection retention window.
-
-The transport is stateless request/response; it does not allocate MCP sessions or hold SSE streams open. Authenticated GET/DELETE return 405. POST supports the SDK's protocol negotiation. OAuth registration/token endpoints use the existing configurable `ratelimit.oauth` bucket; MCP uses `ratelimit.mcp`. Existing limiter storage/proxy settings still apply; use shared Redis and an edge rate limit for multi-replica public installations.
-
-## Deployment and local development
-
-Normal API startup applies the `20261008170000_oauth` migration automatically, alongside the existing migrations. To run migrations separately before a rollout, use these commands from `apps/api`:
-
-```sh
-# SQLite
-bun run migrate
-# PostgreSQL
-bunx drizzle-kit migrate --config drizzle.pg.config.ts
-# MySQL
-bunx drizzle-kit migrate --config drizzle.mysql.config.ts
-```
-
-Set `BASE_URL` to the externally reachable canonical origin, with HTTPS in production. Proxy `/mcp`, `/oauth/*`, `/.well-known/oauth-*` and existing `/auth/*` to the API, preserving Authorization and MCP headers. When frontend and API origins differ, provider login returns OAuth flows to `BASE_URL`. Development proxy entries are included. Browser-hosted clients must have their origin in `ALLOWED_ORIGINS`; desktop clients without Origin headers work directly. Before installation completes, OAuth/MCP endpoints return 503.
-
-## Verification
-
-From `apps/api`, run `bun test` and `bun run check`. The OAuth/MCP tests exercise the official SDK against the real route stack, consent/CSRF, PKCE/bindings, code and refresh replay/races, ownership, dynamic role changes, encrypted-setting redaction and revocation. Verification on 2026-10-08: 522 API tests passed; API and frontend typechecks passed. Browser login, consent, cross-origin callback, token exchange, MCP call and revocation were exercised. Full migrations plus registration, PKCE, access verification, refresh rotation and replay revocation also passed against isolated PostgreSQL 16 and MySQL 8.4 containers.
