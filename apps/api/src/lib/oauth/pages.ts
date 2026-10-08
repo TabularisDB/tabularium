@@ -109,25 +109,87 @@ export function scopeLabel(scope: string): string {
   const [, area, action] = scope.split(':')
   return `${action === 'read' ? 'Read' : 'Manage'} ${area.replaceAll('-', ' ')} as an administrator`
 }
-export function permissionList(scopes: string[]) {
-  const titles: Record<string, string> = {
-    'catalog:read': 'Browse the catalog',
-    'account:read': 'View your account',
-    'plugins:write': 'Manage your plugins',
-    'requests:write': 'Participate in community requests',
+const permissionTitles: Record<string, string> = {
+  'catalog:read': 'Browse the catalog',
+  'account:read': 'View your account',
+  'plugins:write': 'Manage your plugins',
+  'requests:write': 'Participate in community requests',
+}
+const adminTitles: Record<string, string> = {
+  plugins: 'Plugins',
+  users: 'Users',
+  manifest: 'Manifest',
+  docs: 'Documentation',
+  pages: 'Pages',
+  settings: 'Settings',
+  'provider-instances': 'Sign-in providers',
+  features: 'Features',
+  kinds: 'Plugin types',
+  branding: 'Branding',
+  'home-copy': 'Home page',
+  i18n: 'Languages',
+  instance: 'Instance',
+  infra: 'Infrastructure',
+  audit: 'Audit log',
+  diagnostics: 'Diagnostics',
+  requests: 'Community requests',
+}
+function permissionGroups(scopes: string[]) {
+  const standard: string[] = []
+  const admin = new Map<string, Set<string>>()
+  const other: string[] = []
+  for (const scope of new Set(scopes)) {
+    if (Object.hasOwn(permissionTitles, scope)) {
+      standard.push(scope)
+      continue
+    }
+    const match = /^admin:([^:]+):(read|write)$/.exec(scope)
+    if (match) {
+      const actions = admin.get(match[1]) ?? new Set<string>()
+      actions.add(match[2])
+      admin.set(match[1], actions)
+    } else other.push(scope)
   }
-  return `<ul class="permissions">${scopes
+  return { standard, admin, other }
+}
+export function permissionList(scopes: string[]) {
+  const groups = permissionGroups(scopes)
+  const standard = groups.standard
     .map((scope) => {
-      const symbol = scope.startsWith('admin:')
-        ? 'shield-check'
-        : scope.startsWith('plugins:')
-          ? 'boxes'
-          : scope.startsWith('account:')
-            ? 'user-round'
-            : scope.startsWith('requests:')
-              ? 'message-square'
-              : 'eye'
-      return `<li><span class="permission-icon">${icon(symbol)}</span><div class="permission-text"><strong>${escapeHtml(titles[scope] ?? scopeLabel(scope))}</strong><span>${escapeHtml(titles[scope] ? scopeLabel(scope) : 'Limited to your current administrator permissions.')}</span></div></li>`
+      const symbol = scope.startsWith('plugins:')
+        ? 'boxes'
+        : scope.startsWith('account:')
+          ? 'user-round'
+          : scope.startsWith('requests:')
+            ? 'message-square'
+            : 'eye'
+      return `<li><span class="permission-icon">${icon(symbol)}</span><div class="permission-text"><strong>${escapeHtml(permissionTitles[scope])}</strong><span>${escapeHtml(scopeLabel(scope))}</span></div></li>`
     })
-    .join('')}</ul>`
+    .join('')
+  const admin = [...groups.admin]
+    .map(([area, actions]) => {
+      // A write scope never implies read access: preserve the exact union granted.
+      const access =
+        actions.has('read') && actions.has('write') ? 'Read & write' : actions.has('read') ? 'Read' : 'Write'
+      return `<li data-permission="admin:${escapeHtml(area)}"><span>${escapeHtml(Object.hasOwn(adminTitles, area) ? adminTitles[area] : area.replaceAll('-', ' '))}</span><span class="permission-access">${escapeHtml(access)}</span></li>`
+    })
+    .join('')
+  const other = groups.other.map((scope) => `<li><code>${escapeHtml(scope)}</code></li>`).join('')
+  return `${standard ? `<ul class="permissions">${standard}</ul>` : ''}${admin ? `<section class="admin-permissions"><h3>${icon('shield-check')}Administration</h3><p>Your current administrator permissions apply.</p><ul class="permission-rows">${admin}</ul></section>` : ''}${other ? `<ul class="permission-rows">${other}</ul>` : ''}`
+}
+export function permissionDisclosure(scopes: string[]) {
+  const groups = permissionGroups(scopes)
+  const labels: Record<string, string> = {
+    'catalog:read': 'Catalog',
+    'account:read': 'Account',
+    'plugins:write': 'Publishing',
+    'requests:write': 'Community',
+  }
+  const badges = groups.standard.map((scope) => `<span class="access-chip">${labels[scope]}</span>`)
+  if (groups.admin.size)
+    badges.push(
+      `<span class="access-chip admin-access">${icon('shield-check')}Administration · ${groups.admin.size} ${groups.admin.size === 1 ? 'area' : 'areas'}</span>`,
+    )
+  if (groups.other.length) badges.push(`<span class="access-chip">${groups.other.length} other permissions</span>`)
+  return `<div class="permission-overview" aria-label="Access groups">${badges.join('')}</div><details class="permission-disclosure"><summary>View permissions${icon('chevron-down', 'chevron')}</summary>${permissionList(scopes)}</details>`
 }

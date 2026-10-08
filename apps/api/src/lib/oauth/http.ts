@@ -1,7 +1,7 @@
 import { icon } from './icons'
 import { env, isProd, allowedOrigins } from '$lib/env'
 import { verifySessionToken } from '$lib/access'
-import { page, loginPage, permissionList, escapeHtml as esc } from './pages'
+import { page, loginPage, permissionList, permissionDisclosure, escapeHtml as esc } from './pages'
 import { putRecord, readRecord, consumeRecord } from './store'
 import {
   OAuthError,
@@ -190,7 +190,7 @@ export async function connectionsPage(request: Request) {
   const list = await listGrants(user.sub)
   const response = page(
     'Connected applications',
-    `<p class="lead">Manage application access for <strong>${esc(user.username)}</strong>.</p>${new URL(request.url).searchParams.get('revoked') === '1' ? `<div class="notice" role="status">${icon('check')}<p>Connection revoked. This application can no longer access your account.</p></div>` : ''}${list.length ? list.map((g) => `<section class="card connection-card"><div class="connection-title"><span class="app-mark">${icon('plug')}</span><div><h2>${esc(g.clientName)}</h2><small>Expires ${esc(new Date(g.expiresAt).toISOString().slice(0, 10))}</small></div></div>${permissionList(g.scopes)}<div class="connection-footer"><span class="status">Connected</span><form action="/oauth/connections" method="post"><input type="hidden" name="csrf" value="${csrf}"><input type="hidden" name="grant" value="${g.id}"><button class="action danger">${icon('unplug')}Revoke connection</button></form></div></section>`).join('') : `<section class="card"><div class="empty-state">${icon('plug')}<strong>No active connections.</strong><p>Applications you connect will appear here. You can review their permissions and revoke access at any time.</p></div></section>`}<p class="below-card"><a class="text-link" href="${esc(env.WEB_BASE_URL ?? env.BASE_URL)}/settings">Back to settings</a></p>`,
+    `<p class="lead">Manage application access for <strong>${esc(user.username)}</strong>.</p>${new URL(request.url).searchParams.get('revoked') === '1' ? `<div class="notice" role="status">${icon('check')}<p>Connection revoked. This application can no longer access your account.</p></div>` : ''}${list.length ? list.map((g) => `<section class="card connection-card"><div class="connection-title"><span class="app-mark">${icon('plug')}</span><div><h2>${esc(g.clientName)}</h2><small>Expires ${esc(new Date(g.expiresAt).toISOString().slice(0, 10))}</small></div></div>${permissionDisclosure(g.scopes)}<div class="connection-footer"><span class="status">Connected</span><form action="/oauth/connections" method="post"><input type="hidden" name="csrf" value="${csrf}"><input type="hidden" name="grant" value="${g.id}"><button class="action danger">${icon('unplug')}Revoke connection</button></form></div></section>`).join('') : `<section class="card"><div class="empty-state">${icon('plug')}<strong>No active connections.</strong><p>Applications you connect will appear here. You can review their permissions and revoke access at any time.</p></div></section>`}<p class="below-card"><a class="text-link" href="${esc(env.WEB_BASE_URL ?? env.BASE_URL)}/settings">Back to settings</a></p>`,
     { kind: 'connections' },
   )
   response.headers.set('set-cookie', csrfCookie(csrf))
