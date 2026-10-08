@@ -8,9 +8,9 @@ title: "MCP & AI assistants"
 
 Choose a tutorial:
 
-- [Generic MCP client](#generic-mcp-client)
-- [Codex: user, author or administrator](#connect-codex-as-a-user-or-administrator)
-- [Claude Code and Claude Web/Desktop](#connect-claude)
+- [Generic MCP client](#Generic-MCP-client)
+- [Codex: user, author or administrator](#Connect-Codex-as-a-user-or-administrator)
+- [Claude Code and Claude Web/Desktop](#Connect-Claude)
 
 For protocol details and deployment, see the [technical MCP reference](https://github.com/TabularisDB/tabularium/blob/main/apps/api/MCP.md).
 
@@ -141,7 +141,7 @@ Set `scopes` to `["catalog:read", "account:read", "admin:plugins:read", "admin:p
 codex mcp login tabularium --scopes catalog:read,account:read,admin:plugins:read,admin:plugins:write
 ```
 
-Sign in using a Tabularium account whose role is `admin` for the administrator example. Add other exact `admin:<area>:read` / `admin:<area>:write` scopes from the [permission table](#permissions) only for the areas you want the client to access. Read and write are separate; neither implies the other.
+Sign in using a Tabularium account whose role is `admin` for the administrator example. Add other exact `admin:<area>:read` / `admin:<area>:write` scopes from the [permission table](#Permissions) only for the areas you want the client to access. Read and write are separate; neither implies the other.
 
 The login command opens an authorization URL. You may also copy that URL into your own browser on the same machine. Choose one of the instance's enabled sign-in providers, review the client name and requested permissions, and select **Allow access**. Codex completes the callback and stores its OAuth credentials. Do not copy a browser session cookie or an admin API token into the MCP configuration.
 
