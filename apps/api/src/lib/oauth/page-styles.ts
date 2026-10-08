@@ -115,6 +115,23 @@ button:active, .provider:active { transform: translateY(1px); }
 .connection-footer { display: flex; align-items: center; justify-content: space-between; gap: 12px; border-top: 1px solid var(--border); padding-top: 16px; }
 .connection-footer .status { display: inline-flex; align-items: center; gap: 7px; color: var(--muted); font-size: 12px; }
 .status::before { content: ''; width: 6px; height: 6px; border-radius: 50%; background: var(--brand-success); }
+.permission-overview { display: flex; flex-wrap: wrap; gap: 6px; margin: 20px 0 8px; }
+.access-chip { display: inline-flex; align-items: center; gap: 5px; border: 1px solid var(--border); border-radius: 5px; padding: 3px 8px; font-size: 12px; color: var(--muted); background: var(--subtle); }
+.access-chip .icon { width: 13px; height: 13px; }
+.admin-access { color: var(--foreground); }
+.permission-disclosure { margin-bottom: 16px; }
+.permission-disclosure > summary { display: flex; align-items: center; gap: 8px; cursor: pointer; min-height: 40px; color: var(--muted); font-size: 12px; list-style: none; }
+.permission-disclosure > summary::-webkit-details-marker { display: none; }
+.permission-disclosure > summary .icon { width: 14px; height: 14px; }
+.permission-disclosure[open] > summary .chevron { transform: rotate(180deg); }
+.admin-permissions { margin-top: 20px; }
+.admin-permissions h3 { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 550; margin: 0 0 4px; }
+.admin-permissions h3 .icon { width: 16px; height: 16px; color: var(--brand-primary); }
+.admin-permissions > p { color: var(--muted); font-size: 12px; margin: 0 0 12px; }
+.permission-rows { list-style: none; margin: 0; padding: 0; }
+.permission-rows li { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; padding: 8px 0; font-size: 12px; border-bottom: 1px solid var(--border); }
+.permission-rows li:last-child { border: 0; }
+.permission-access { color: var(--muted); flex: 0 0 auto; font-size: 11px; }
 @media(max-width: 560px) { .header-inner { height: 64px; padding: 0 20px; } .back-label { display: none; } .header-actions { gap: 6px; } main { padding: 36px 20px 24px; } h1 { font-size: 25px; } .card { padding: 22px; } .connection-footer { flex-wrap: wrap; } }
 @media(prefers-reduced-motion: reduce) { *, *::before, *::after { transition: none !important; transform: none !important; } }
 `

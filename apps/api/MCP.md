@@ -2,6 +2,8 @@
 
 Remote MCP is served at **`<BASE_URL>/mcp`** by the existing API process. Use an MCP client supporting Streamable HTTP and OAuth authorization-code flow with S256 PKCE. Add that URL, sign in with your Tabularium account, and approve the requested permissions. Sign-in uses only the enabled provider instances from your Tabularium settings, including their configured display names. The MCP dialog does not offer password or administrator recovery login. The consent screen identifies the client, callback and permissions. OAuth pages inherit the instance name, logo, favicon, brand colors and footer; provider logo overrides and the registry theme preference are respected.
 
+Connection cards summarize access groups and keep the full permission list under “View permissions”. Read and write grants are combined into one row per administrative area without implying extra access.
+
 Connections are managed from **Settings → MCP → Manage connected applications**, or directly at `<BASE_URL>/oauth/connections`. Revocation immediately invalidates that connection's access and refresh tokens. Browser logout ends the browser session; it does not revoke independently approved application connections.
 
 ## Permissions
@@ -71,4 +73,4 @@ Set `BASE_URL` to the externally reachable canonical origin, with HTTPS in produ
 
 ## Verification
 
-From `apps/api`, run `bun test` and `bun run check`. The OAuth/MCP tests exercise the official SDK against the real route stack, consent/CSRF, PKCE/bindings, code and refresh replay/races, ownership, dynamic role changes, encrypted-setting redaction and revocation. Verification on 2026-10-08: 518 API tests passed; API and frontend typechecks passed. Browser login, consent, cross-origin callback, token exchange, MCP call and revocation were exercised. Full migrations plus registration, PKCE, access verification, refresh rotation and replay revocation also passed against isolated PostgreSQL 16 and MySQL 8.4 containers.
+From `apps/api`, run `bun test` and `bun run check`. The OAuth/MCP tests exercise the official SDK against the real route stack, consent/CSRF, PKCE/bindings, code and refresh replay/races, ownership, dynamic role changes, encrypted-setting redaction and revocation. Verification on 2026-10-08: 522 API tests passed; API and frontend typechecks passed. Browser login, consent, cross-origin callback, token exchange, MCP call and revocation were exercised. Full migrations plus registration, PKCE, access verification, refresh rotation and replay revocation also passed against isolated PostgreSQL 16 and MySQL 8.4 containers.
