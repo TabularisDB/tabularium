@@ -379,3 +379,18 @@ export const emailLog = pgTable(
     byTrigger: index('email_log_trigger_idx').on(t.trigger, t.sentAt),
   }),
 )
+
+// OAuth state is typed by kind; credentials are addressed only by SHA-256.
+export const oauthRecords = pgTable(
+  'oauth_records',
+  {
+    id: text('id').primaryKey(),
+    kind: text('kind').notNull(),
+    userId: text('user_id').references(() => users.id, { onDelete: 'cascade' }),
+    payload: text('payload').notNull(),
+    expiresAt: ts('expires_at').notNull(),
+    consumedBy: text('consumed_by'),
+    revokedAt: ts('revoked_at'),
+  },
+  (t) => [index('oauth_records_user_idx').on(t.userId), index('oauth_records_expiry_idx').on(t.expiresAt)],
+)

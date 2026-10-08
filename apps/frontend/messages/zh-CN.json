@@ -1006,5 +1006,7 @@
 	"widget_popular_requests_heading": "社区热门需求",
 	"widget_recent_empty": "暂无插件。",
 	"widget_stats_open_requests": "未完成需求",
-	"widget_stats_plugins": "插件"
+	"widget_stats_plugins": "插件",
+	"settings_mcp_description": "将 AI 助手连接到你的 Tabularium 帐户并管理其访问权限。",
+	"settings_mcp_manage": "管理已连接的应用"
 }

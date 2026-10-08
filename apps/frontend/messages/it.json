@@ -1006,5 +1006,7 @@
 	"widget_popular_requests_heading": "Richieste più popolari della community",
 	"widget_recent_empty": "Ancora nessun plugin.",
 	"widget_stats_open_requests": "Richieste aperte",
-	"widget_stats_plugins": "Plugin"
+	"widget_stats_plugins": "Plugin",
+	"settings_mcp_description": "Collega gli assistenti IA al tuo account Tabularium e gestisci i loro accessi.",
+	"settings_mcp_manage": "Gestisci le applicazioni collegate"
 }

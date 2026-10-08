@@ -1,9 +1,10 @@
 import { Elysia, t } from 'elysia'
 import { adminMiddleware } from '$middleware/admin'
-import { getSetting, hasSetting, setSetting, deleteSetting } from '$lib/settings'
+import { getSetting, hasSetting, isSettingEncrypted, setSetting, deleteSetting } from '$lib/settings'
 
 // Keys that should be stored encrypted (admin-managed secrets).
 const ENCRYPTED_KEY_PATTERNS: RegExp[] = [
+  /\.private$/,
   /\.client_secret$/,
   /\.password$/,
   /\.token$/,
@@ -25,7 +26,7 @@ export default new Elysia()
         set.status = 404
         return { error: 'Setting not found' }
       }
-      if (isEncryptedKey(params.key)) {
+      if (isSettingEncrypted(params.key) || isEncryptedKey(params.key)) {
         // Never expose decrypted secret via this endpoint.
         return { key: params.key, value: null, encrypted: true }
       }
@@ -48,7 +49,9 @@ export default new Elysia()
   .put(
     '/',
     async ({ params, body }) => {
-      await setSetting(params.key, body.value, { encrypted: isEncryptedKey(params.key) })
+      await setSetting(params.key, body.value, {
+        encrypted: isSettingEncrypted(params.key) || isEncryptedKey(params.key),
+      })
       return { ok: true }
     },
     {

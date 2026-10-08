@@ -134,3 +134,7 @@ Apache 2.0 — see [LICENSE](LICENSE).
 ## Contributing
 
 Issues and PRs welcome on [Codeberg](https://codeberg.org/NewtTheWolf/Tabularium). For larger changes, open a discussion first so we can align on direction.
+
+### MCP integrations
+
+Connect an OAuth-capable MCP client to `<BASE_URL>/mcp`. See [MCP setup, permissions and deployment](apps/api/MCP.md).

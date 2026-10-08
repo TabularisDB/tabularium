@@ -174,6 +174,18 @@
 	{#if auth.user}
 		<Card>
 			<CardHeader>
+				<CardTitle>MCP</CardTitle>
+				<CardDescription>{m.settings_mcp_description()}</CardDescription>
+			</CardHeader>
+			<CardContent>
+				<a href="/oauth/connections" data-sveltekit-reload class="text-sm underline underline-offset-4"
+					>{m.settings_mcp_manage()}</a
+				>
+			</CardContent>
+		</Card>
+
+		<Card>
+			<CardHeader>
 				<CardTitle class="text-base">{m.settings_account()}</CardTitle>
 				<CardDescription>{m.settings_logged_in_as({ name: auth.user.displayName })}</CardDescription>
 			</CardHeader>

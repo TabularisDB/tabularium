@@ -1006,5 +1006,7 @@
 	"widget_popular_requests_heading": "Top community requests",
 	"widget_recent_empty": "No plugins yet.",
 	"widget_stats_open_requests": "Open requests",
-	"widget_stats_plugins": "Plugins"
+	"widget_stats_plugins": "Plugins",
+	"settings_mcp_description": "Connect AI assistants to your Tabularium account and manage their access.",
+	"settings_mcp_manage": "Manage connected applications"
 }

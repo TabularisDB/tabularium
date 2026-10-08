@@ -1,3 +1,4 @@
+import { mcpRoutes } from '../src/lib/mcp/server'
 // tests/helpers.ts
 import { Elysia } from 'elysia'
 import { fsr, LogLevel } from 'elysia-fsr'
@@ -31,6 +32,7 @@ async function ensureDefaultInstance() {
 }
 
 export async function clearDb() {
+  await db.delete(schema.oauthRecords)
   await db.delete(schema.pluginRequestClaims)
   await db.delete(schema.pluginRequestVotes)
   await db.delete(schema.pluginRequests)
@@ -155,5 +157,6 @@ export async function buildApp() {
       logLevel: LogLevel.Silent,
     }),
   )
+  cachedApp.use(mcpRoutes(cachedApp))
   return cachedApp
 }

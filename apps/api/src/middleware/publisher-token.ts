@@ -1,9 +1,24 @@
+import { delegatedAccess, allowsScope } from '$lib/access'
 import { Elysia } from 'elysia'
 import { verifyPublisherToken, type VerifiedPublisherToken } from '$lib/publisher-tokens'
 
 export const publisherTokenMiddleware = new Elysia({ name: 'publisher-token-middleware' }).derive(
   { as: 'scoped' },
-  async ({ headers, set }) => {
+  async ({ headers, set, request }) => {
+    const access = delegatedAccess(request)
+    if (access) {
+      if (!allowsScope(access.scopes, 'plugins:write')) {
+        set.status = 403
+        throw new Error('Forbidden — insufficient scope')
+      }
+      return {
+        publisher: {
+          id: access.grantId,
+          userId: access.user.sub,
+          scopes: ['publish:*', 'yank:*'],
+        } satisfies VerifiedPublisherToken,
+      }
+    }
     const authHeader = headers.authorization
     const bearer = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined
     if (!bearer) {

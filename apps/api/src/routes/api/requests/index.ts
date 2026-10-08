@@ -6,7 +6,7 @@ import { db } from '$db'
 import { pluginRequests, pluginRequestClaims } from '$db/schema'
 import { desc, count, eq, and, inArray } from 'drizzle-orm'
 import { getFeatures } from '$lib/features'
-import { verifyJwt } from '$lib/jwt'
+import { verifySessionToken, delegatedAccess } from '$lib/access'
 
 const requestSchema = t.Object({
   id: t.String(),
@@ -53,14 +53,14 @@ async function resolveOptionalViewer(
   const cookieToken = typeof raw === 'string' ? raw : undefined
   const token = bearerToken ?? cookieToken
   if (!token) return null
-  const payload = await verifyJwt(token)
+  const payload = await verifySessionToken(token)
   return payload ? { sub: payload.sub } : null
 }
 
 export default new Elysia()
   .get(
     '/',
-    async ({ query, headers, cookie }) => {
+    async ({ query, headers, cookie, request }) => {
       const page = clampInt(query.page, 1, 1, 10_000)
       const limit = clampInt(query.limit, 20, 1, 100)
       const offset = (page - 1) * limit
@@ -70,7 +70,7 @@ export default new Elysia()
 
       const rows = await db.select().from(pluginRequests).orderBy(desc(sort)).limit(limit).offset(offset)
 
-      const viewer = await resolveOptionalViewer(headers, cookie)
+      const viewer = delegatedAccess(request)?.user ?? (await resolveOptionalViewer(headers, cookie))
       const ids = rows.map((r) => r.id)
       const claimRows =
         ids.length === 0
