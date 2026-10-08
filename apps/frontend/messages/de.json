@@ -1006,5 +1006,7 @@
 	"widget_popular_requests_heading": "Top-Community-Wünsche",
 	"widget_recent_empty": "Noch keine Plugins.",
 	"widget_stats_open_requests": "Offene Wünsche",
-	"widget_stats_plugins": "Plugins"
+	"widget_stats_plugins": "Plugins",
+	"settings_mcp_description": "Verbinde KI-Assistenten mit deinem Tabularium-Konto und verwalte ihre Zugriffsrechte.",
+	"settings_mcp_manage": "Verbundene Anwendungen verwalten"
 }

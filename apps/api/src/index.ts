@@ -1,3 +1,4 @@
+import { mcpRoutes } from '$lib/mcp/server'
 import { Elysia } from 'elysia'
 import { openapi } from '@elysiajs/openapi'
 import staticPlugin from '@elysiajs/static'
@@ -26,8 +27,16 @@ export async function createApp() {
         origin: corsOrigins,
         credentials: true,
         methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS'],
-        allowedHeaders: ['Content-Type', 'Authorization', 'X-Hub-Signature-256', 'X-Gitlab-Token', 'X-Gitea-Signature'],
-        exposeHeaders: ['Content-Type'],
+        allowedHeaders: [
+          'Content-Type',
+          'Authorization',
+          'X-Hub-Signature-256',
+          'X-Gitlab-Token',
+          'X-Gitea-Signature',
+          'MCP-Protocol-Version',
+          'MCP-Session-Id',
+        ],
+        exposeHeaders: ['Content-Type', 'WWW-Authenticate', 'MCP-Session-Id'],
         maxAge: 600,
       }),
     )
@@ -86,7 +95,22 @@ export async function createApp() {
         return
       }
     })
+    .onRequest(({ request, set }) => {
+      const path = new URL(request.url).pathname
+      if (
+        !config.installed &&
+        (path === '/mcp' ||
+          path.startsWith('/mcp/') ||
+          path.startsWith('/oauth') ||
+          path.startsWith('/.well-known/oauth'))
+      ) {
+        set.status = 503
+        return { error: 'Setup required', code: 'setup_required' }
+      }
+    })
     .use(router)
+
+  base.use(mcpRoutes(base))
 
   const { generateNonce, cspHeader, injectNonce } = await import('$lib/csp')
 
@@ -109,6 +133,9 @@ export async function createApp() {
           if (
             path.startsWith('/api') ||
             path.startsWith('/auth') ||
+            path.startsWith('/oauth') ||
+            path.startsWith('/mcp') ||
+            path.startsWith('/.well-known/oauth') ||
             path.startsWith('/openapi') ||
             path.startsWith('/uploads')
           ) {
@@ -126,7 +153,15 @@ export async function createApp() {
       const p = new URL(request.url).pathname
       if (p.startsWith('/api/init/')) return
       if (p === '/api/i18n' || p.startsWith('/api/i18n/')) return
-      if (p.startsWith('/api/') || p.startsWith('/auth/') || p.startsWith('/uploads/') || p.startsWith('/openapi')) {
+      if (
+        p === '/mcp' ||
+        p.startsWith('/oauth') ||
+        p.startsWith('/.well-known/oauth') ||
+        p.startsWith('/api/') ||
+        p.startsWith('/auth/') ||
+        p.startsWith('/uploads/') ||
+        p.startsWith('/openapi')
+      ) {
         set.status = 503
         return { error: 'Setup required', code: 'setup_required' }
       }

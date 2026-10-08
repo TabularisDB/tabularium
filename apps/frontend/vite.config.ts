@@ -20,6 +20,9 @@ export default defineConfig({
     proxy: {
       '/api': process.env.API_PROXY_TARGET ?? 'http://localhost:3000',
       '/auth': process.env.API_PROXY_TARGET ?? 'http://localhost:3000',
+      '/oauth': process.env.API_PROXY_TARGET ?? 'http://localhost:3000',
+      '/mcp': process.env.API_PROXY_TARGET ?? 'http://localhost:3000',
+      '/.well-known': process.env.API_PROXY_TARGET ?? 'http://localhost:3000',
       '/openapi': process.env.API_PROXY_TARGET ?? 'http://localhost:3000',
       // Static-plugin-served upload assets (logos, favicons, plugin images).
       // Without this, the browser hits vite for /uploads/* and gets the SPA

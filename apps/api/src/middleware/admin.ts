@@ -1,6 +1,6 @@
 import { Elysia } from 'elysia'
 import { db } from '$db'
-import { verifyJwt } from '$lib/jwt'
+import { verifySessionToken, delegatedAccess, adminScope, allowsScope } from '$lib/access'
 import { logger } from '$lib/logger'
 import { isApiToken, verifyAdminToken } from '$lib/admin-tokens'
 
@@ -8,7 +8,27 @@ const log = logger.child({ module: 'admin-middleware' })
 
 export const adminMiddleware = new Elysia({ name: 'admin-middleware' }).derive(
   { as: 'scoped' },
-  async ({ headers, cookie, set }) => {
+  async ({ headers, cookie, set, request }) => {
+    const access = delegatedAccess(request)
+    const required = adminScope(new URL(request.url).pathname, request.method)
+    function requireScope(scopes: string[] | null) {
+      if (scopes !== null && (!required || !allowsScope(scopes, required))) {
+        set.status = 403
+        throw new Error('Forbidden — insufficient scope')
+      }
+    }
+    if (access) {
+      requireScope(access.scopes)
+      const row = await db.query.users.findFirst({
+        where: { id: access.user.sub },
+        columns: { id: true, role: true, displayName: true },
+      })
+      if (!row || row.role !== 'admin') {
+        set.status = 403
+        throw new Error('Forbidden — admin only')
+      }
+      return { user: access.user, admin: row, apiToken: { id: access.grantId, scopes: access.scopes } }
+    }
     const authHeader = headers.authorization
     const bearerToken = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined
     const rawCookieValue = cookie.auth?.value
@@ -28,6 +48,7 @@ export const adminMiddleware = new Elysia({ name: 'admin-middleware' }).derive(
         set.status = 401
         throw new Error('Unauthorized — invalid or revoked API token')
       }
+      requireScope(verified.scopes)
       const row = await db.query.users.findFirst({
         where: { id: verified.userId },
         columns: { id: true, role: true, displayName: true },
@@ -41,7 +62,7 @@ export const adminMiddleware = new Elysia({ name: 'admin-middleware' }).derive(
       return { user: fauxJwt, admin: row, apiToken: { id: verified.id, scopes: verified.scopes } }
     }
 
-    const jwtUser = await verifyJwt(token)
+    const jwtUser = await verifySessionToken(token)
     if (!jwtUser) {
       set.status = 401
       throw new Error('Unauthorized')

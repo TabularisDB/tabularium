@@ -41,6 +41,7 @@
     "@elysiajs/cors": "^1.4.2",
     "@elysiajs/openapi": "^1.4.5",
     "@elysiajs/static": "^1.4.10",
+    "@modelcontextprotocol/sdk": "1.32.1",
     "@sinclair/typebox": "^0.34.49",
     "@tabularium/manifest": "workspace:*",
     "arctic": "^3.7.0",

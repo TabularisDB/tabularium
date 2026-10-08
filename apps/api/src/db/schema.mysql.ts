@@ -379,3 +379,18 @@ export const emailLog = mysqlTable(
     byTrigger: index('email_log_trigger_idx').on(t.trigger, t.sentAt),
   }),
 )
+
+// OAuth state is typed by kind; credentials are addressed only by SHA-256.
+export const oauthRecords = mysqlTable(
+  'oauth_records',
+  {
+    id: id('id').primaryKey(),
+    kind: varchar('kind', { length: 16 }).notNull(),
+    userId: id('user_id').references(() => users.id, { onDelete: 'cascade' }),
+    payload: text('payload').notNull(),
+    expiresAt: ts('expires_at').notNull(),
+    consumedBy: id('consumed_by'),
+    revokedAt: ts('revoked_at'),
+  },
+  (t) => [index('oauth_records_user_idx').on(t.userId), index('oauth_records_expiry_idx').on(t.expiresAt)],
+)

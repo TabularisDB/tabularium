@@ -31,6 +31,11 @@ export function getSetting(key: string): string | undefined {
   return cache.get(key)?.value
 }
 
+export function isSettingEncrypted(key: string): boolean {
+  assertInit()
+  return cache.get(key)?.encrypted ?? false
+}
+
 export function hasSetting(key: string): boolean {
   assertInit()
   return cache.has(key)

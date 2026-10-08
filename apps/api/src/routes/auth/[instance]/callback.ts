@@ -304,7 +304,8 @@ export default new Elysia().get(
       const webBase = env.WEB_BASE_URL ?? env.BASE_URL
       const safeTarget = safeReturnTo(stateData.returnTo ?? undefined)
       const target = safeTarget ?? (linkUserId ? '/settings' : '/welcome')
-      return redirect(`${webBase}${target}`, 302)
+      const returnBase = safeTarget?.startsWith('/oauth/') ? env.BASE_URL : webBase
+      return redirect(`${returnBase}${target}`, 302)
     } catch (e) {
       if (e instanceof OAuth2RequestError) {
         set.status = 400
