@@ -91,11 +91,20 @@ function requireCsrf(request: Request, posted: string, expected: string) {
   if (!posted || posted !== expected || cookie(request, cookieName()) !== expected)
     throw new OAuthError('access_denied', 'Invalid or expired form', 403)
 }
-export async function oauthResponse(action: () => Promise<Response>) {
+export async function oauthResponse(action: () => Promise<Response>, request?: Request) {
   try {
     return await action()
   } catch (e) {
-    if (e instanceof OAuthError) return json({ error: e.error, error_description: e.message }, e.status)
+    if (e instanceof OAuthError) {
+      if (request?.headers.get('accept')?.includes('text/html')) {
+        const response = page(
+          'Connection could not be completed',
+          `<p class="error" role="alert">${esc(e.message)}</p><p>Return to your assistant and start the connection again. Your existing connections are unchanged.</p><p><a href="/oauth/connections">Manage connected applications</a></p>`,
+        )
+        return new Response(response.body, { status: e.status, headers: response.headers })
+      }
+      return json({ error: e.error, error_description: e.message }, e.status)
+    }
     throw e
   }
 }
@@ -126,7 +135,6 @@ export async function authorizationPage(request: Request) {
   const response = page(
     'Allow this connection?',
     `<p><strong>${esc(client.client_name)}</strong> wants access as <strong>${esc(user.username)}</strong>.</p><section><h2>Requested permissions</h2><ul>${scopes.map((s) => `<li>${esc(scopeLabel(s))}</li>`).join('')}</ul><p class="muted">Access is limited by your current Tabularium permissions. This connection expires after 30 days and can be revoked at any time.</p></section><p class="muted">Registered callback: <code>${esc(params.redirect_uri)}</code></p><form method="post" action="/oauth/authorize"><input type="hidden" name="request" value="${id}"><input type="hidden" name="csrf" value="${csrf}"><div class="actions"><button name="decision" value="allow">Allow access</button><button name="decision" value="deny">Deny</button></div></form><p><a href="/oauth/connections">Manage connections</a></p>`,
-    '',
     new URL(params.redirect_uri).origin,
   )
   response.headers.set('set-cookie', csrfCookie(csrf))
@@ -180,7 +188,7 @@ export async function connectionsPage(request: Request) {
   const list = await listGrants(user.sub)
   const response = page(
     'Connected applications',
-    `<p>Connections for <strong>${esc(user.username)}</strong>. Revoking a connection immediately disables its access and refresh tokens.</p>${list.length ? list.map((g) => `<section><h2>${esc(g.clientName)}</h2><p>${g.scopes.map((s) => `<span>${esc(scopeLabel(s))}</span>`).join(', ')}</p><p class="muted">Expires ${esc(new Date(g.expiresAt).toISOString().slice(0, 10))}</p><form action="/oauth/connections" method="post"><input type="hidden" name="csrf" value="${csrf}"><input type="hidden" name="grant" value="${g.id}"><button>Revoke connection</button></form></section>`).join('') : '<p>No active connections.</p>'}<a href="${esc(env.WEB_BASE_URL ?? env.BASE_URL)}">Back to Tabularium</a>`,
+    `${new URL(request.url).searchParams.get('revoked') === '1' ? '<p class="success" role="status">Connection revoked. This application can no longer access your account.</p>' : ''}<p>Connections for <strong>${esc(user.username)}</strong>. Revoking a connection immediately disables its access and refresh tokens.</p>${list.length ? list.map((g) => `<section><h2>${esc(g.clientName)}</h2><p>${g.scopes.map((s) => `<span>${esc(scopeLabel(s))}</span>`).join(', ')}</p><p class="muted">Expires ${esc(new Date(g.expiresAt).toISOString().slice(0, 10))}</p><form action="/oauth/connections" method="post"><input type="hidden" name="csrf" value="${csrf}"><input type="hidden" name="grant" value="${g.id}"><button>Revoke connection</button></form></section>`).join('') : '<p>No active connections.</p>'}<a href="${esc(env.WEB_BASE_URL ?? env.BASE_URL)}">Back to Tabularium</a>`,
   )
   response.headers.set('set-cookie', csrfCookie(csrf))
   return response
@@ -191,7 +199,10 @@ export async function revokeConnection(request: Request) {
   const p = strings(await readBody(request))
   requireCsrf(request, p.csrf, cookie(request, cookieName()) ?? '')
   await revokeGrant(user.sub, p.grant)
-  return new Response(null, { status: 303, headers: { location: '/oauth/connections', 'cache-control': 'no-store' } })
+  return new Response(null, {
+    status: 303,
+    headers: { location: '/oauth/connections?revoked=1', 'cache-control': 'no-store' },
+  })
 }
 export const authorizationMetadata = () =>
   json(

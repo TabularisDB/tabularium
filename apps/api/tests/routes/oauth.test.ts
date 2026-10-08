@@ -235,3 +235,54 @@ test('expired access/grants are refused and credential plaintext is not stored',
     refreshAccess({ client_id: input.client_id, resource: resourceUrl(), refresh_token: token.refresh_token }),
   ).rejects.toThrow()
 })
+
+test('expired browser authorization shows a recovery page while protocol clients get JSON', async () => {
+  const app = await buildApp()
+  const url = 'http://localhost/oauth/authorize?request=expired-request'
+  const browser = await app.handle(new Request(url, { headers: { accept: 'text/html' } }))
+  expect(browser.status).toBe(400)
+  expect(browser.headers.get('content-type')).toContain('text/html')
+  expect(await browser.text()).toContain('Return to your assistant')
+  const api = await app.handle(new Request(url))
+  expect(api.status).toBe(400)
+  expect((await api.json()).error).toBe('invalid_request')
+})
+
+test('login uses only enabled configured providers, without recovery credentials', async () => {
+  const { updateInstance, createInstance } = await import('../../src/lib/provider-instance')
+  await updateInstance('github', { enabled: false })
+  await createInstance({
+    id: 'company-git',
+    kind: 'gitlab',
+    displayName: 'Company Git',
+    baseUrl: 'https://git.example.test',
+    clientId: 'test',
+    clientSecret: 'test',
+    enabled: true,
+  })
+  await createInstance({
+    id: 'disabled-forge',
+    kind: 'gitea',
+    displayName: 'Disabled Forge',
+    baseUrl: 'https://forge.example.test',
+    clientId: 'test',
+    clientSecret: 'test',
+    enabled: false,
+  })
+  const response = await (await buildApp()).handle(new Request('http://localhost/oauth/connections'))
+  const html = await response.text()
+  expect(html).toContain('Continue with Company Git')
+  expect(html).toContain('/auth/company-git?return_to=%2Foauth%2Fconnections')
+  expect(html).not.toContain('Continue with GitHub')
+  expect(html).not.toContain('Disabled Forge')
+  expect(html).not.toContain('Administrator recovery login')
+  expect(html).not.toContain('/auth/email/login')
+  expect(html).not.toContain('type="password"')
+})
+
+test('no enabled providers produces an actionable empty state', async () => {
+  const { updateInstance } = await import('../../src/lib/provider-instance')
+  await updateInstance('github', { enabled: false })
+  const response = await (await buildApp()).handle(new Request('http://localhost/oauth/connections'))
+  expect(await response.text()).toContain('Ask your administrator to enable a sign-in provider')
+})

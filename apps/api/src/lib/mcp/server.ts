@@ -1,3 +1,4 @@
+import { version } from '../../../package.json'
 import { Elysia } from 'elysia'
 import { Value } from '@sinclair/typebox/value'
 import { Server } from '@modelcontextprotocol/sdk/server/index.js'
@@ -91,7 +92,7 @@ export function mcpRoutes(app: Pick<Elysia, 'routes' | 'handle'>) {
         })
       if (request.method !== 'POST') return new Response(null, { status: 405, headers: { allow: 'POST, OPTIONS' } })
       const server = new Server(
-        { name: 'tabularium', version: '0.13.0' },
+        { name: 'tabularium', version },
         {
           capabilities: { tools: {} },
           instructions:
