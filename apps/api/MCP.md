@@ -25,6 +25,96 @@ Examples: a catalog assistant requests `catalog:read`; a publishing assistant re
 
 Existing `tbm_` admin API tokens now enforce these exact area scopes too. Legacy `scopes: null` retains full-admin access; unknown legacy scope strings grant no matching action. Scoped credentials cannot create tokens or alter recovery authentication. Browser session JWTs and publisher/admin API tokens are not accepted as MCP access tokens.
 
+## Who decides which permissions are requested?
+
+The **MCP client chooses the requested scopes**. Tabularium checks and grants them after you approve the request:
+
+1. Tabularium advertises the available scope names as `scopes_supported` in its OAuth metadata. This is a capability list, not a grant of access.
+2. Your MCP client chooses a set of scopes and sends them in the OAuth authorization request's `scope` parameter. Depending on the client, the choice comes from its settings, a login command or its discovery defaults.
+3. Tabularium shows those requested permissions in the consent page. **Currently you can allow the entire requested set or deny it; you cannot deselect individual permissions in that page.** To request less access, deny the request, change the client's scopes and start authorization again.
+4. Every tool call must satisfy the granted scopes, your current Tabularium role and the existing ownership checks. A login provider such as GitHub or Codeberg identifies you; it does not decide your Tabularium administrator privileges.
+
+Being an admin does not automatically give a client admin access. For example, an admin who approves only `catalog:read` has a read-only catalog connection. Conversely, a normal user cannot approve `admin:plugins:write`; Tabularium rejects that grant instead of promoting the user.
+
+The server's `catalog:read` default applies **only if the client omits `scope`**. Some clients automatically request all advertised scopes. Always check what the consent page actually requests, especially when connecting as a normal user.
+
+## Connect Codex as a user or administrator
+
+The following examples use `https://registry.tabularis.dev/mcp`. Replace that URL with your own instance's MCP URL if needed. The sign-in providers are already configured by the instance administrator under `/admin/providers`; connecting an MCP client does not require creating another GitHub/Codeberg OAuth app.
+
+### 1. Configure the server
+
+Add or update this section in `~/.codex/config.toml`. If `[mcp_servers.tabularium]` already exists, edit it rather than adding a second section:
+
+```toml
+[mcp_servers.tabularium]
+url = "https://registry.tabularis.dev/mcp"
+scopes = ["catalog:read", "account:read"]
+startup_timeout_sec = 30
+tool_timeout_sec = 180
+enabled = true
+```
+
+`scopes` records the intended permissions for this connection. Codex versions can differ in how they select discovery defaults, so the login examples below also pass the requested set explicitly with `--scopes`. Tabularium publishes its resource URL through discovery; a separate `oauth_resource` override is not needed for this setup.
+
+### 2. Choose the access you need and sign in
+
+**Normal user: browse the catalog and read your own account**
+
+```sh
+codex mcp login tabularium --scopes catalog:read,account:read
+```
+
+**Plugin author: browse, read your account and manage your own plugins**
+
+Set `scopes` in the configuration to `["catalog:read", "account:read", "plugins:write"]`, then run:
+
+```sh
+codex mcp login tabularium --scopes catalog:read,account:read,plugins:write
+```
+
+**Administrator: review and moderate plugins**
+
+Set `scopes` to `["catalog:read", "account:read", "admin:plugins:read", "admin:plugins:write"]`, then run:
+
+```sh
+codex mcp login tabularium --scopes catalog:read,account:read,admin:plugins:read,admin:plugins:write
+```
+
+Sign in using a Tabularium account whose role is `admin` for the administrator example. Add other exact `admin:<area>:read` / `admin:<area>:write` scopes from the [permission table](#permissions) only for the areas you want the client to access. Read and write are separate; neither implies the other.
+
+The login command opens an authorization URL. You may also copy that URL into your own browser on the same machine. Choose one of the instance's enabled sign-in providers, review the client name and requested permissions, and select **Allow access**. Codex completes the callback and stores its OAuth credentials. Do not copy a browser session cookie or an admin API token into the MCP configuration.
+
+For **full administrator access**, request all scopes currently advertised by the instance. This requires an administrator account and includes write permissions for settings, users, infrastructure and other administrative areas. With `curl` and `jq` installed:
+
+```sh
+TABULARIUM_SCOPES="$(curl -fsS https://registry.tabularis.dev/.well-known/oauth-authorization-server | jq -r '.scopes_supported | join(",")')"
+codex mcp login tabularium --scopes "$TABULARIUM_SCOPES"
+```
+
+Keep the `scopes` array in your configuration aligned with the access you intend to request on future logins. The explicit login flag selects the requested set for that authorization attempt; the issued grant is what authorizes subsequent tool calls.
+
+### 3. Verify the connection
+
+```sh
+codex mcp list
+codex mcp get tabularium
+```
+
+If your running client has not loaded the new server, reload its MCP connections or start a new session. Ask it to list a few plugins. With `account:read`, it can also call `get_me`. Administrative tools are available only when both the current account role and granted scopes permit them.
+
+The [official Codex MCP documentation](https://developers.openai.com/codex/mcp) covers client setup and OAuth login options.
+
+### Change or revoke access
+
+Editing `config.toml` alone does **not** change an existing OAuth grant. To replace a connection's permissions:
+
+1. Revoke the old connection under **Settings → MCP → Manage connected applications** (`/oauth/connections`). This immediately disables its access and refresh tokens.
+2. Update the client's requested scopes.
+3. Run `codex mcp login tabularium --scopes ...` with the new explicit set, sign in and approve it.
+
+Revoking the old grant also prevents an earlier, broader connection from remaining active after you authorize a narrower one. Browser logout does not revoke MCP connections.
+
 ## Tools
 
 Tools are explicitly allowlisted in `apps/api/src/lib/mcp/catalog.ts`; names derive from API operation IDs. Schemas derive from the existing route definitions, with arguments grouped into `params`, `query` and `body`. For example:
