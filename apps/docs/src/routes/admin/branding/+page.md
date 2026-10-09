@@ -26,8 +26,8 @@ The **Companion app** card describes the desktop app the plugins are for (for ex
 | Field | Effect |
 |-------|--------|
 | App name | Turns the app references on and names the app in their copy |
-| Website | Footer link (About column), link on every plugin page, "{app} website" button on the home page |
-| Download page | "Download {app}" button in the header (desktop widths) and on the home page, plus a "Don't have it yet?" link in each plugin's Download section |
+| Website | Footer link (About column), link on every plugin page, `<app> website` button on the home page |
+| Download page | `Download <app>` button in the header (desktop widths) and on the home page, plus a "Don't have it yet?" link in each plugin's Download section |
 | Demo video | Direct `mp4`/`webm` URL played muted and looped beside the home-page pitch; loaded only when scrolled near |
 | Video poster | Image shown before the video loads |
 
