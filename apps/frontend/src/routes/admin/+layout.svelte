@@ -97,7 +97,7 @@
 	</div>
 {:else}
 	<!-- Mobile top-bar -->
-	<div class="lg:hidden sticky top-[4.5rem] z-30 border-b border-border bg-background/95 backdrop-blur-md">
+	<div class="lg:hidden sticky top-(--header-height) z-30 border-b border-border bg-background/95 backdrop-blur-md">
 		<div class="mx-auto max-w-7xl px-6 h-12 flex items-center justify-between gap-3">
 			<div class="flex items-center gap-2 text-sm font-semibold">
 				<ShieldAlert class="h-4 w-4 text-primary" />

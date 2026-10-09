@@ -144,6 +144,7 @@ export type PluginRequest = {
   slug: string
   name: string
   description: string
+  kind: string | null
   requesterId: string
   upvotes: number
   createdAt: number

@@ -166,6 +166,7 @@ export const pluginRequests = mysqlTable('plugin_requests', {
   slug: varchar('slug', { length: 80 }).notNull().unique(),
   name: varchar('name', { length: 120 }).notNull(),
   description: varchar('description', { length: 500 }).notNull(),
+  kind: varchar('kind', { length: 40 }),
   requesterId: id('requester_id')
     .notNull()
     .references(() => users.id),

@@ -6,7 +6,10 @@
 </script>
 
 <Tabs.List
-	class={cn('inline-flex h-9 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground', className)}
+	class={cn(
+		'inline-flex h-9 items-center justify-center rounded-md bg-muted p-1 text-muted-foreground tabularis:h-auto tabularis:flex-wrap tabularis:justify-start tabularis:gap-1.5 tabularis:bg-transparent tabularis:p-0',
+		className,
+	)}
 >
 	{@render children()}
 </Tabs.List>

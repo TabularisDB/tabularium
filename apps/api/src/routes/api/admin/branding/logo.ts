@@ -15,7 +15,8 @@ const MAX_BYTES = 512 * 1024
 
 export default new Elysia().use(adminMiddleware).post(
   '/',
-  async ({ body, set, admin, request }) => {
+  async ({ body, query, set, admin, request }) => {
+    const light = query.variant === 'light'
     const file = body.file
     if (!file) {
       set.status = 400
@@ -31,16 +32,16 @@ export default new Elysia().use(adminMiddleware).post(
       return { error: `File exceeds ${MAX_BYTES / 1024} KB cap` }
     }
     const bytes = await file.arrayBuffer()
-    const key = `branding/logo.${ext}`
+    const key = `branding/logo${light ? '-light' : ''}.${ext}`
     try {
       const { url } = await storage().put(key, bytes, file.type)
       const versioned = `${url}?v=${Date.now()}`
-      await setSetting('branding.logo_url', versioned)
+      await setSetting(light ? 'branding.logo_light_url' : 'branding.logo_url', versioned)
       await recordAudit({
         ...actorFromAdmin(admin, request),
         action: 'branding.logo_upload',
         target: 'branding',
-        meta: { size: file.size, mime: file.type },
+        meta: { size: file.size, mime: file.type, variant: light ? 'light' : 'default' },
       })
       return { ok: true, logoUrl: versioned }
     } catch (err) {
@@ -55,10 +56,12 @@ export default new Elysia().use(adminMiddleware).post(
       description:
         'Multipart upload. Field name must be `file`. Accepts png/jpg/webp/svg up to 512 KB. ' +
         'Storage backend is set in `/admin/infra/storage`. The branding `logo_url` setting is updated to reference the new URL ' +
-        '(includes a cache-buster query param).',
+        '(includes a cache-buster query param). Pass `?variant=light` to upload the light-mode variant instead ' +
+        '(updates `logo_light_url`).',
       operationId: 'uploadBrandingLogo',
       security: [{ bearerAuth: [] }, { cookieAuth: [] }],
     },
+    query: t.Object({ variant: t.Optional(t.Literal('light')) }),
     body: t.Object({ file: t.File() }),
     response: {
       200: t.Object({ ok: t.Boolean(), logoUrl: t.String() }),

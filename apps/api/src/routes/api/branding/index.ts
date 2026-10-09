@@ -11,17 +11,30 @@ const localeSchema = t.Union([
   t.Literal('zh-CN'),
 ])
 
+const socialLinksSchema = t.Object({
+  github: t.Nullable(t.String()),
+  discord: t.Nullable(t.String()),
+  bluesky: t.Nullable(t.String()),
+  x: t.Nullable(t.String()),
+  mastodon: t.Nullable(t.String()),
+  linkedin: t.Nullable(t.String()),
+})
+
 const brandingSchema = t.Object({
   name: t.String(),
+  theme: t.Union([t.Literal('default'), t.Literal('tabularis')]),
   tagline: t.String(),
   primaryHex: t.String(),
   accentHex: t.String(),
   successHex: t.String(),
   logoUrl: t.Nullable(t.String()),
+  logoLightUrl: t.Nullable(t.String()),
+  logoStyle: t.Union([t.Literal('mark'), t.Literal('wordmark')]),
   faviconUrl: t.Nullable(t.String()),
   footerText: t.Nullable(t.String()),
   analyticsScript: t.Nullable(t.String()),
   allowIndexing: t.Boolean(),
+  socialLinks: socialLinksSchema,
 })
 
 export default new Elysia().get(

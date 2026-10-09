@@ -18,6 +18,7 @@ For AI assistants, follow the [MCP tutorials](/mcp/) for generic clients, Codex 
 | `/api/plugins/*` | none | Browse plugins, releases, manifest |
 | `/api/kinds` | none | Active plugin-kinds taxonomy (admin-defined) |
 | `/api/requests/*` | optional | List plugin wishlist, upvote, create |
+| `/api/stats` | — | Headline numbers: listed plugins, downloads, authors, requests, kinds (cached 60s) |
 | `/api/pages/*` | none | Render CMS pages |
 | `/api/branding` | none | Public branding payload |
 | `/api/i18n` | none | Default locale + enabled languages |

@@ -4,6 +4,7 @@ import { clearDb, makeUser, buildApp } from '../helpers'
 import { signJwt } from '../../src/lib/jwt'
 import { db } from '../../src/db'
 import { pluginRequests, pluginRequestClaims } from '../../src/db/schema'
+import { createKind } from '../../src/lib/kinds'
 
 describe('GET /api/requests', () => {
   beforeEach(clearDb)
@@ -72,6 +73,66 @@ describe('POST /api/requests', () => {
       }),
     )
     expect(res2.status).toBe(409)
+  })
+})
+
+describe('POST /api/requests — derived slug and kind', () => {
+  beforeEach(clearDb)
+
+  async function authed() {
+    const user = await makeUser()
+    const token = await signJwt({
+      sub: user.id,
+      identityId: user.identityId,
+      username: user.username,
+      providerInstanceId: 'github',
+    })
+    const app = await buildApp()
+    const post = (body: Record<string, unknown>) =>
+      app.handle(
+        new Request('http://localhost/api/requests', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify(body),
+        }),
+      )
+    return { app, post }
+  }
+
+  it('derives the slug from the name like submissions do', async () => {
+    const { post } = await authed()
+    const res = await post({ name: 'Clickhouse Plugin', description: 'OLAP driver' })
+    expect(res.status).toBe(200)
+    const data = (await res.json()) as { slug: string; kind: string | null }
+    expect(data.slug).toBe('clickhouse')
+    expect(data.kind).toBeNull()
+
+    const dup = await post({ name: 'clickhouse', description: 'again' })
+    expect(dup.status).toBe(409)
+  })
+
+  it('rejects a name without letters or digits', async () => {
+    const { post } = await authed()
+    const res = await post({ name: '!!!', description: 'nothing' })
+    expect(res.status).toBe(400)
+  })
+
+  it('stores a known kind, rejects an unknown one and filters the list by kind', async () => {
+    await createKind({ key: 'driver', label: 'Driver', description: null })
+    const { app, post } = await authed()
+
+    const bad = await post({ name: 'Mongo', description: 'NoSQL', kind: 'nope' })
+    expect(bad.status).toBe(400)
+
+    const ok = await post({ name: 'Mongo', description: 'NoSQL', kind: 'driver' })
+    expect(ok.status).toBe(200)
+    expect(((await ok.json()) as { kind: string }).kind).toBe('driver')
+    await post({ name: 'Dracula', description: 'Theme' })
+
+    const res = await app.handle(new Request('http://localhost/api/requests?kind=driver'))
+    const data = (await res.json()) as { total: number; requests: Array<{ slug: string; kind: string | null }> }
+    expect(data.total).toBe(1)
+    expect(data.requests[0]).toMatchObject({ slug: 'mongo', kind: 'driver' })
   })
 })
 
