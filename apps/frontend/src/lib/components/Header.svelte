@@ -2,7 +2,6 @@
 	import { page } from '$app/state'
 	import { goto } from '$app/navigation'
 	import { toast } from 'svelte-sonner'
-	import Boxes from '@lucide/svelte/icons/boxes'
 	import LogIn from '@lucide/svelte/icons/log-in'
 	import LogOut from '@lucide/svelte/icons/log-out'
 	import ShieldCheck from '@lucide/svelte/icons/shield-check'
@@ -10,9 +9,9 @@
 	import X from '@lucide/svelte/icons/x'
 	import Button from '$components/ui/Button.svelte'
 	import ThemeToggle from '$components/ThemeToggle.svelte'
+	import BrandLogo from '$components/brand/BrandLogo.svelte'
 	import LanguageSwitcher from '$components/LanguageSwitcher.svelte'
 	import { auth } from '$lib/stores/auth.svelte'
-	import { branding } from '$lib/stores/branding.svelte'
 	import { features } from '$lib/stores/features.svelte'
 	import { instanceInfo } from '$lib/stores/instance-info.svelte'
 	import { cn } from '$lib/utils'
@@ -23,7 +22,7 @@
 	const navLinks = $derived(
 		[
 			{ href: '/plugins', label: m.nav_plugins(), show: true },
-			{ href: instanceInfo.docsExternalUrl ?? '/docs/plugin-development', label: m.nav_docs(), show: true },
+			{ href: instanceInfo.docsExternalUrl ?? '/docs', label: m.nav_docs(), show: true },
 			{ href: '/requests', label: m.nav_requests(), show: features.requestsEnabled },
 			{ href: '/submit', label: m.nav_submit(), show: features.submissionsEnabled },
 		].filter((l) => l.show),
@@ -57,21 +56,19 @@
 </script>
 
 <header class="border-b border-border sticky top-0 z-40 bg-background/80 backdrop-blur-md">
-	<div class="mx-auto max-w-6xl px-4 sm:px-6 h-[4.5rem] flex items-center gap-4 md:gap-8">
+	<div class="mx-auto max-w-6xl px-4 sm:px-6 h-(--header-height) flex items-center gap-4 md:gap-8">
 		<a href="/" class="flex items-center gap-2.5 font-semibold tracking-tight min-w-0">
-			{#if branding.logoUrl}
-				<img src={branding.logoUrl} alt={branding.name} class="h-8 w-8 rounded-md object-contain" />
-			{:else}
-				<span class="inline-flex h-8 w-8 items-center justify-center rounded-md bg-primary/10 text-primary">
-					<Boxes class="h-4 w-4" />
-				</span>
-			{/if}
-			<span class="truncate">{branding.name}</span>
+			<BrandLogo />
 		</a>
 
 		<nav class="hidden md:flex items-center gap-1 text-sm">
 			{#each navLinks as link}
-				<Button variant="ghost" size="sm" href={link.href}>
+				<Button
+					variant="ghost"
+					size="sm"
+					href={link.href}
+					class="tabularis:text-sm tabularis:font-medium tabularis:hover:bg-transparent tabularis:[&:hover>span]:text-foreground"
+				>
 					<span class={isActive(link.href) ? 'text-foreground' : 'text-muted-foreground'}>{link.label}</span>
 				</Button>
 			{/each}

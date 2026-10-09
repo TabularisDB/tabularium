@@ -2,10 +2,54 @@
 @plugin '@tailwindcss/typography';
 
 @custom-variant dark (&:where(.dark, .dark *));
+/* `tabularis:` scopes a utility to the tabularis theme preset (data-theme on <html>). */
+@custom-variant tabularis (&:where([data-theme='tabularis'] *));
 
 /*
- * Tabularium — default brand palette. Override via the admin UI / branding settings
- * to whitelabel without touching the build.
+ * Self-hosted variable fonts (CSP allows `font-src 'self'` only). Browsers only
+ * download a face once a theme actually references its family.
+ */
+@font-face {
+	font-family: 'Urbanist Variable';
+	font-style: normal;
+	font-display: swap;
+	font-weight: 100 900;
+	src: url('../lib/assets/fonts/urbanist-latin-ext-wght-normal.woff2') format('woff2-variations');
+	unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF,
+		U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+	font-family: 'Urbanist Variable';
+	font-style: normal;
+	font-display: swap;
+	font-weight: 100 900;
+	src: url('../lib/assets/fonts/urbanist-latin-wght-normal.woff2') format('woff2-variations');
+	unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F,
+		U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+@font-face {
+	font-family: 'JetBrains Mono Variable';
+	font-style: normal;
+	font-display: swap;
+	font-weight: 100 800;
+	src: url('../lib/assets/fonts/jetbrains-mono-latin-ext-wght-normal.woff2') format('woff2-variations');
+	unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308, U+0329, U+1D00-1DBF,
+		U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113, U+2C60-2C7F, U+A720-A7FF;
+}
+@font-face {
+	font-family: 'JetBrains Mono Variable';
+	font-style: normal;
+	font-display: swap;
+	font-weight: 100 800;
+	src: url('../lib/assets/fonts/jetbrains-mono-latin-wght-normal.woff2') format('woff2-variations');
+	unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304, U+0308, U+0329, U+2000-206F,
+		U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/*
+ * Tabularium — default brand palette. `--brand-*` is set at runtime from the
+ * admin branding settings, so primary / success follow the whitelabel colours
+ * without touching the build. `data-theme` on <html> picks a theme preset.
  */
 @theme {
 	--color-background: #08090a;
@@ -14,7 +58,7 @@
 	--color-card-foreground: #e5e7eb;
 	--color-popover: #16181a;
 	--color-popover-foreground: #e5e7eb;
-	--color-primary: #3b82f6;
+	--color-primary: var(--brand-primary, #3b82f6);
 	--color-primary-foreground: #ffffff;
 	--color-secondary: #1f2937;
 	--color-secondary-foreground: #d1d5db;
@@ -24,11 +68,13 @@
 	--color-accent-foreground: #d1d5db;
 	--color-destructive: #ef4444;
 	--color-destructive-foreground: #ffffff;
-	--color-success: #10b981;
+	--color-success: var(--brand-success, #10b981);
 	--color-warning: #f59e0b;
 	--color-border: #1f2937;
+	--color-border-strong: #374151;
 	--color-input: #1f2937;
-	--color-ring: #3b82f6;
+	--color-ring: var(--brand-primary, #3b82f6);
+	--color-brand-accent: var(--brand-accent, #8b5cf6);
 
 	--font-sans: 'Inter', ui-sans-serif, system-ui, sans-serif;
 	--font-mono: 'JetBrains Mono', ui-monospace, monospace;
@@ -38,6 +84,10 @@
 	--radius-sm: 0.25rem;
 }
 
+:root {
+	--header-height: 4.5rem;
+}
+
 :root:not(.dark) {
 	--color-background: #ffffff;
 	--color-foreground: #111827;
@@ -45,7 +95,6 @@
 	--color-card-foreground: #111827;
 	--color-popover: #ffffff;
 	--color-popover-foreground: #111827;
-	--color-primary: #3b82f6;
 	--color-primary-foreground: #ffffff;
 	--color-secondary: #f3f4f6;
 	--color-secondary-foreground: #111827;
@@ -56,8 +105,91 @@
 	--color-destructive: #ef4444;
 	--color-destructive-foreground: #ffffff;
 	--color-border: #e5e7eb;
+	--color-border-strong: #d1d5db;
 	--color-input: #e5e7eb;
-	--color-ring: #3b82f6;
+}
+
+/*
+ * Theme preset "tabularis" — mirrors tabularis.dev: near-black navy surfaces,
+ * hairline translucent borders, blue actions, teal accents, Urbanist type,
+ * rounder corners and a 1200px content column.
+ */
+:root[data-theme='tabularis'] {
+	--header-height: 5rem;
+	--container-6xl: 75rem;
+
+	--font-sans: 'Urbanist Variable', 'Urbanist', ui-sans-serif, system-ui, sans-serif;
+	--font-mono: 'JetBrains Mono Variable', 'JetBrains Mono', ui-monospace, monospace;
+
+	--radius-sm: 0.5rem;
+	--radius-md: 0.75rem;
+	--radius-lg: 1rem;
+
+	/* Type scale tuned for Urbanist (smaller x-height than Inter), after tabularis.dev:
+	   0.9rem controls/body copy, 2rem section titles, up to 3.5rem hero. */
+	--text-xs: 0.8rem;
+	--text-xs--line-height: 1.4;
+	--text-sm: 0.9rem;
+	--text-sm--line-height: 1.5;
+	--text-base: 1rem;
+	--text-base--line-height: 1.5;
+	--text-lg: 1.125rem;
+	--text-lg--line-height: 1.4;
+	--text-xl: 1.25rem;
+	--text-xl--line-height: 1.35;
+	--text-2xl: 2rem;
+	--text-2xl--line-height: 1.15;
+	--text-3xl: clamp(1.75rem, 5vw, 2.5rem);
+	--text-3xl--line-height: 1.1;
+	--text-4xl: clamp(2rem, 6vw, 3rem);
+	--text-4xl--line-height: 1.05;
+	--text-5xl: clamp(2.25rem, 7vw, 3.25rem);
+	--text-5xl--line-height: 1;
+	--text-6xl: clamp(2.5rem, 9.23vw, 3.5rem);
+	--text-6xl--line-height: 1;
+
+	--color-ring: var(--brand-accent, #35d0c0);
+	--color-brand-accent: var(--brand-accent, #35d0c0);
+	--tabularis-aurora-one: rgba(139, 92, 246, 0.6);
+	--tabularis-aurora-two: rgba(16, 185, 129, 0.55);
+	--tabularis-aurora-opacity: 0.25;
+}
+
+:root[data-theme='tabularis'].dark {
+	--color-background: #030712;
+	--color-foreground: #eef0f3;
+	--color-card: #11121c;
+	--color-card-foreground: #eef0f3;
+	--color-popover: #12161f;
+	--color-popover-foreground: #eef0f3;
+	--color-secondary: #12161f;
+	--color-secondary-foreground: #eef0f3;
+	--color-muted: #12161f;
+	--color-muted-foreground: #9ca3af;
+	--color-accent: rgba(148, 163, 184, 0.1);
+	--color-accent-foreground: #eef0f3;
+	--color-border: rgba(148, 163, 184, 0.16);
+	--color-border-strong: rgba(255, 255, 255, 0.14);
+	--color-input: rgba(148, 163, 184, 0.16);
+}
+
+:root[data-theme='tabularis']:not(.dark) {
+	--color-background: #f7f8fb;
+	--color-foreground: #0b1020;
+	--color-card: #ffffff;
+	--color-card-foreground: #0b1020;
+	--color-popover: #ffffff;
+	--color-popover-foreground: #0b1020;
+	--color-secondary: #eef1f6;
+	--color-secondary-foreground: #0b1020;
+	--color-muted: #eef1f6;
+	--color-muted-foreground: #4b5563;
+	--color-accent: rgba(15, 23, 42, 0.05);
+	--color-accent-foreground: #0b1020;
+	--color-border: rgba(15, 23, 42, 0.1);
+	--color-border-strong: rgba(15, 23, 42, 0.22);
+	--color-input: rgba(15, 23, 42, 0.14);
+	--tabularis-aurora-opacity: 0.14;
 }
 
 html { font-family: var(--font-sans); background: var(--color-background); color: var(--color-foreground); }
@@ -70,4 +202,173 @@ body { min-height: 100vh; }
 		linear-gradient(to bottom, color-mix(in srgb, var(--color-border) 50%, transparent) 1px, transparent 1px);
 	background-size: 32px 32px;
 	background-position: center;
+}
+
+/* Tabularis typography: airy tracking, lighter display weights, teal selection. */
+[data-theme='tabularis'] body { letter-spacing: 0.015em; }
+[data-theme='tabularis'] h1 { font-weight: 500; letter-spacing: -0.005em; }
+[data-theme='tabularis'] h2 { font-weight: 400; letter-spacing: -0.005em; }
+[data-theme='tabularis'] h3 { font-weight: 500; }
+[data-theme='tabularis'] ::selection { background: color-mix(in srgb, var(--brand-accent, #35d0c0) 30%, transparent); }
+[data-theme='tabularis'] .prose :where(a):not(:where([class~='not-prose'] *)) { color: var(--brand-accent, #35d0c0); }
+[data-theme='tabularis']:not(.dark) .prose :where(a):not(:where([class~='not-prose'] *)) {
+	color: color-mix(in srgb, var(--brand-accent, #35d0c0) 70%, #000);
+}
+
+/*
+ * Tabularis hero: drifting aurora blobs instead of the grid. The blobs live in
+ * their own clipped layer (.hero-aurora) so the hero itself can let popovers
+ * such as the search suggestions overflow.
+ */
+.hero-aurora { display: none; }
+[data-theme='tabularis'] .hero-grid {
+	position: relative;
+	isolation: isolate;
+	background-image: none;
+}
+[data-theme='tabularis'] .hero-aurora {
+	display: block;
+	position: absolute;
+	inset: 0;
+	z-index: -1;
+	overflow: hidden;
+	pointer-events: none;
+}
+[data-theme='tabularis'] .hero-aurora::before,
+[data-theme='tabularis'] .hero-aurora::after {
+	content: '';
+	position: absolute;
+	top: 30%;
+	border-radius: 50%;
+	filter: blur(130px);
+	opacity: var(--tabularis-aurora-opacity);
+	transform: translateY(-50%);
+	pointer-events: none;
+}
+[data-theme='tabularis'] .hero-aurora::before {
+	left: 10%;
+	width: 48vw;
+	height: 48vw;
+	background: radial-gradient(circle, var(--tabularis-aurora-one), transparent 70%);
+	animation: tabularis-drift-one 22s ease-in-out infinite;
+}
+[data-theme='tabularis'] .hero-aurora::after {
+	right: 10%;
+	width: 68vw;
+	height: 68vw;
+	background: radial-gradient(circle, var(--tabularis-aurora-two), transparent 70%);
+	animation: tabularis-drift-two 26s ease-in-out infinite;
+}
+@keyframes tabularis-drift-one {
+	0%, 100% { transform: translateY(-50%) translate(0, 0); }
+	50% { transform: translateY(-50%) translate(4%, 6%); }
+}
+@keyframes tabularis-drift-two {
+	0%, 100% { transform: translateY(-50%) translate(0, 0); }
+	50% { transform: translateY(-50%) translate(-4%, -5%); }
+}
+@media (prefers-reduced-motion: reduce) {
+	[data-theme='tabularis'] .hero-aurora::before,
+	[data-theme='tabularis'] .hero-aurora::after { animation: none; }
+}
+
+/*
+ * Tabularis native controls. Many pages render raw <input type="checkbox"> and
+ * <select>, so these live in the base layer: utilities on the element (size,
+ * margin) still win, while look-and-feel follows tabularis.dev.
+ */
+@layer base {
+	[data-theme='tabularis'] :is(input[type='checkbox'], input[type='radio']) {
+		appearance: none;
+		display: inline-grid;
+		place-content: center;
+		flex-shrink: 0;
+		width: 1rem;
+		height: 1rem;
+		margin: 0;
+		border: 0.1rem solid var(--color-border-strong);
+		border-radius: 4px;
+		background: transparent;
+		cursor: pointer;
+		transition: background-color 0.15s ease, border-color 0.15s ease;
+	}
+	[data-theme='tabularis'] input[type='radio'] { border-radius: 999px; }
+	[data-theme='tabularis'] input[type='checkbox']::after {
+		content: '';
+		width: 0.55rem;
+		height: 0.3rem;
+		border-bottom: 0.125rem solid var(--color-background);
+		border-left: 0.125rem solid var(--color-background);
+		transform: translateY(-0.05rem) rotate(-45deg);
+		opacity: 0;
+	}
+	[data-theme='tabularis'] input[type='radio']::after {
+		content: '';
+		width: 0.4rem;
+		height: 0.4rem;
+		border-radius: 999px;
+		background: var(--color-background);
+		opacity: 0;
+	}
+	[data-theme='tabularis'] :is(input[type='checkbox'], input[type='radio']):checked {
+		border-color: var(--color-brand-accent);
+		background-color: var(--color-brand-accent);
+	}
+	[data-theme='tabularis'] :is(input[type='checkbox'], input[type='radio']):checked::after { opacity: 1; }
+	[data-theme='tabularis'] :is(input[type='checkbox'], input[type='radio']):hover:not(:checked) {
+		border-color: color-mix(in srgb, var(--color-foreground) 35%, transparent);
+	}
+	[data-theme='tabularis'] :is(input[type='checkbox'], input[type='radio']):focus-visible {
+		outline: 2px solid var(--color-brand-accent);
+		outline-offset: 2px;
+	}
+	[data-theme='tabularis'] :is(input[type='checkbox'], input[type='radio']):disabled {
+		opacity: 0.5;
+		cursor: not-allowed;
+	}
+
+	[data-theme='tabularis'] select {
+		appearance: none;
+		padding-right: 2.25rem;
+		background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23949eae' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+		background-repeat: no-repeat;
+		background-position: right 0.75rem center;
+		background-size: 1rem;
+		cursor: pointer;
+	}
+	[data-theme='tabularis'] select option { background: var(--color-popover); color: var(--color-popover-foreground); }
+
+	[data-theme='tabularis'] :is(input:not([type='checkbox'], [type='radio'], [type='color'], [type='file']), select, textarea) {
+		border-width: 0.1rem;
+	}
+
+	[data-theme='tabularis'] input[type='file']::file-selector-button { font-weight: 600; border-radius: var(--radius-md); }
+}
+
+/*
+ * Tabularis accent mapping. tabularis.dev keeps blue for solid buttons only and
+ * uses its teal accent (`--brand-accent`) for links, eyebrows, icons, hover
+ * titles, tints and selected outlines. Remap the `*-primary` accent utilities
+ * accordingly; solid `bg-primary` fills (buttons, active chips) stay blue.
+ */
+[data-theme='tabularis'] :is(.text-primary, .hover\:text-primary:hover, .group:hover .group-hover\:text-primary) {
+	color: var(--color-brand-accent);
+}
+[data-theme='tabularis'] .text-primary\/80 { color: color-mix(in oklab, var(--color-brand-accent) 80%, transparent); }
+[data-theme='tabularis'] :is(.bg-primary\/5, .hover\:bg-primary\/5:hover) {
+	background-color: color-mix(in oklab, var(--color-brand-accent) 6%, transparent);
+}
+[data-theme='tabularis'] .bg-primary\/10 { background-color: color-mix(in oklab, var(--color-brand-accent) 10%, transparent); }
+[data-theme='tabularis'] .bg-primary\/15 { background-color: color-mix(in oklab, var(--color-brand-accent) 15%, transparent); }
+[data-theme='tabularis'] .bg-primary\/20 { background-color: color-mix(in oklab, var(--color-brand-accent) 20%, transparent); }
+[data-theme='tabularis'] .border-primary { border-color: var(--color-brand-accent); }
+[data-theme='tabularis'] .border-primary\/20 { border-color: color-mix(in oklab, var(--color-brand-accent) 20%, transparent); }
+[data-theme='tabularis'] .border-primary\/30 { border-color: color-mix(in oklab, var(--color-brand-accent) 30%, transparent); }
+[data-theme='tabularis'] :is(.border-primary\/40, .hover\:border-primary\/40:hover) {
+	border-color: color-mix(in oklab, var(--color-brand-accent) 40%, transparent);
+}
+[data-theme='tabularis'] .hover\:border-primary\/60:hover { border-color: color-mix(in oklab, var(--color-brand-accent) 60%, transparent); }
+/* Teal on a light background needs extra contrast. */
+[data-theme='tabularis']:not(.dark) {
+	--color-brand-accent: color-mix(in oklab, var(--brand-accent, #35d0c0) 72%, #000);
 }

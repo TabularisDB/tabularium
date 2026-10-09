@@ -33,6 +33,11 @@ button, a { -webkit-tap-highlight-color: transparent; }
 .brand-mark { display: inline-flex; align-items: center; justify-content: center; width: 34px; height: 34px; flex: 0 0 auto; border-radius: 7px; background: color-mix(in srgb, var(--brand-primary) 12%, transparent); color: var(--brand-primary); }
 .brand-mark img { width: 100%; height: 100%; object-fit: contain; }
 .brand-mark.custom { background: transparent; }
+.brand-wordmark { display: block; height: 28px; width: auto; max-width: 180px; object-fit: contain; }
+.brand-wordmark.on-light { display: none; }
+@media (prefers-color-scheme: light) { :root:not([data-theme=dark]) .brand-wordmark.on-dark { display: none; } :root:not([data-theme=dark]) .brand-wordmark.on-light { display: block; } }
+:root[data-theme=light] .brand-wordmark.on-dark { display: none; }
+:root[data-theme=light] .brand-wordmark.on-light { display: block; }
 .header-actions { margin-left: auto; display: flex; align-items: center; gap: 18px; flex: 0 0 auto; }
 .back-link { display: inline-flex; align-items: center; gap: 7px; color: var(--muted); font-size: 13px; }
 .back-link:hover, .text-link:hover { color: var(--foreground); text-decoration: underline; text-underline-offset: 4px; }

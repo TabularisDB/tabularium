@@ -7,6 +7,8 @@
 	import Upload from '@lucide/svelte/icons/upload'
 	import Link from '@lucide/svelte/icons/link'
 	import Loader2 from '@lucide/svelte/icons/loader-2'
+	import PaletteIcon from '@lucide/svelte/icons/palette'
+	import Check from '@lucide/svelte/icons/check'
 	import Card from '$components/ui/Card.svelte'
 	import CardContent from '$components/ui/CardContent.svelte'
 	import CardDescription from '$components/ui/CardDescription.svelte'
@@ -17,9 +19,10 @@
 	import Label from '$components/ui/Label.svelte'
 	import Textarea from '$components/ui/Textarea.svelte'
 	import { eden } from '$lib/eden'
-	import { branding, type Branding } from '$lib/stores/branding.svelte'
+	import { branding, LOGO_STYLES, THEMES, type Branding, type LogoStyle, type Theme } from '$lib/stores/branding.svelte'
 	import { i18n, LOCALE_LABELS, type Locale } from '$lib/stores/i18n.svelte'
 	import { m } from '$lib/paraglide/messages'
+	import { SOCIAL_ICON_PATHS, SOCIAL_LABELS, SOCIAL_PLATFORMS, type SocialPlatform } from '$lib/social'
 	import AdminPageHeader from '$components/admin/AdminPageHeader.svelte'
 
 	type LocalizedBranding = Branding & {
@@ -27,17 +30,26 @@
 		footerTextTranslations: Partial<Record<Locale, string>>
 	}
 
+	type Palette = Pick<Branding, 'primaryHex' | 'accentHex' | 'successHex'>
 	type FormState = {
 		name: string
+		theme: Theme
 		primaryHex: string
 		accentHex: string
 		successHex: string
 		logoUrl: string
+		logoLightUrl: string
+		logoStyle: LogoStyle
 		faviconUrl: string
 		analyticsScript: string
 		allowIndexing: boolean
 		taglines: Record<Locale, string>
 		footers: Record<Locale, string>
+		socials: Record<SocialPlatform, string>
+	}
+
+	function emptySocials(): Record<SocialPlatform, string> {
+		return Object.fromEntries(SOCIAL_PLATFORMS.map((p) => [p, ''])) as Record<SocialPlatform, string>
 	}
 
 	function emptyByLocale(): Record<Locale, string> {
@@ -52,31 +64,44 @@
 
 	let form = $state<FormState>({
 		name: '',
+		theme: 'default',
 		primaryHex: '#3b82f6',
 		accentHex: '#8b5cf6',
 		successHex: '#10b981',
 		logoUrl: '',
+		logoLightUrl: '',
+		logoStyle: 'mark',
 		faviconUrl: '',
 		analyticsScript: '',
 		allowIndexing: true,
 		taglines: {} as Record<Locale, string>,
 		footers: {} as Record<Locale, string>,
+		socials: emptySocials(),
 	})
 	let defaults = $state<Branding | null>(null)
+	let themePalettes = $state<Record<Theme, Palette> | null>(null)
 	let loading = $state(true)
 	let saving = $state(false)
 	let activeLocale = $state<Locale>(i18n.defaultLocale)
-	let logoMode = $state<'upload' | 'url'>('upload')
-	let faviconMode = $state<'upload' | 'url'>('upload')
+	type ImageKind = 'logo' | 'logoLight' | 'favicon'
+	const IMAGE_KINDS: ImageKind[] = ['logo', 'logoLight', 'favicon']
+	const IMAGE_FIELDS = { logo: 'logoUrl', logoLight: 'logoLightUrl', favicon: 'faviconUrl' } as const
+	let imageMode = $state<Record<ImageKind, 'upload' | 'url'>>({
+		logo: 'upload',
+		logoLight: 'upload',
+		favicon: 'upload',
+	})
 	// Snapshot of the last-saved state — used to detect dirty fields so we only
 	// PUT what changed (and so the Save button can disable when nothing's dirty).
 	let original = $state<FormState | null>(null)
 	// Files held client-side until Save is clicked. The preview reads the blob
 	// URL, the live branding store stays untouched until the user commits.
-	let pendingLogo = $state<{ file: File; objectUrl: string } | null>(null)
-	let pendingFavicon = $state<{ file: File; objectUrl: string } | null>(null)
-	let uploadingLogo = $state(false)
-	let uploadingFavicon = $state(false)
+	let pending = $state<Record<ImageKind, { file: File; objectUrl: string } | null>>({
+		logo: null,
+		logoLight: null,
+		favicon: null,
+	})
+	let uploading = $state<ImageKind | null>(null)
 
 	function toForm(b: LocalizedBranding): FormState {
 		const taglines = emptyByLocale()
@@ -90,15 +115,22 @@
 		if (!footers[fallbackLocale] && b.footerText) footers[fallbackLocale] = b.footerText
 		return {
 			name: b.name,
+			theme: b.theme,
 			primaryHex: b.primaryHex,
 			accentHex: b.accentHex,
 			successHex: b.successHex,
 			logoUrl: b.logoUrl ?? '',
+			logoLightUrl: b.logoLightUrl ?? '',
+			logoStyle: b.logoStyle,
 			faviconUrl: b.faviconUrl ?? '',
 			analyticsScript: b.analyticsScript ?? '',
 			allowIndexing: b.allowIndexing,
 			taglines,
 			footers,
+			socials: Object.fromEntries(SOCIAL_PLATFORMS.map((p) => [p, b.socialLinks?.[p] ?? ''])) as Record<
+				SocialPlatform,
+				string
+			>,
 		}
 	}
 
@@ -111,10 +143,11 @@
 						? error.value
 						: ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`),
 				)
-			const res = data as { current: LocalizedBranding; defaults: Branding }
+			const res = data as { current: LocalizedBranding; defaults: Branding; themePalettes: Record<Theme, Palette> }
 			form = toForm(res.current)
 			original = toForm(res.current)
 			defaults = res.defaults
+			themePalettes = res.themePalettes
 			activeLocale = i18n.defaultLocale
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : m.admin_branding_load_failed())
@@ -127,18 +160,20 @@
 
 	// Revoke any in-flight blob URLs when leaving the page.
 	onDestroy(() => {
-		if (pendingLogo) URL.revokeObjectURL(pendingLogo.objectUrl)
-		if (pendingFavicon) URL.revokeObjectURL(pendingFavicon.objectUrl)
+		for (const kind of IMAGE_KINDS) if (pending[kind]) URL.revokeObjectURL(pending[kind].objectUrl)
 	})
 
 	const hasChanges = $derived.by(() => {
-		if (pendingLogo || pendingFavicon) return true
+		if (IMAGE_KINDS.some((kind) => pending[kind])) return true
 		if (!original) return false
 		if (form.name !== original.name) return true
+		if (form.theme !== original.theme) return true
 		if (form.primaryHex !== original.primaryHex) return true
 		if (form.accentHex !== original.accentHex) return true
 		if (form.successHex !== original.successHex) return true
 		if (form.logoUrl !== original.logoUrl) return true
+		if (form.logoLightUrl !== original.logoLightUrl) return true
+		if (form.logoStyle !== original.logoStyle) return true
 		if (form.faviconUrl !== original.faviconUrl) return true
 		if (form.analyticsScript !== original.analyticsScript) return true
 		if (form.allowIndexing !== original.allowIndexing) return true
@@ -146,6 +181,7 @@
 			if (form.taglines[l] !== original.taglines[l]) return true
 			if (form.footers[l] !== original.footers[l]) return true
 		}
+		if (SOCIAL_PLATFORMS.some((p) => form.socials[p] !== original?.socials[p])) return true
 		return false
 	})
 
@@ -155,31 +191,36 @@
 			: ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`)
 	}
 
-	function stageFile(kind: 'logo' | 'favicon', input: HTMLInputElement) {
+	function stageFile(kind: ImageKind, input: HTMLInputElement) {
 		const file = input.files?.[0]
 		if (!file) {
 			input.value = ''
 			return
 		}
-		const objectUrl = URL.createObjectURL(file)
-		if (kind === 'logo') {
-			if (pendingLogo) URL.revokeObjectURL(pendingLogo.objectUrl)
-			pendingLogo = { file, objectUrl }
-		} else {
-			if (pendingFavicon) URL.revokeObjectURL(pendingFavicon.objectUrl)
-			pendingFavicon = { file, objectUrl }
-		}
+		clearPending(kind)
+		pending[kind] = { file, objectUrl: URL.createObjectURL(file) }
 		input.value = ''
 	}
 
-	function clearPending(kind: 'logo' | 'favicon') {
-		if (kind === 'logo' && pendingLogo) {
-			URL.revokeObjectURL(pendingLogo.objectUrl)
-			pendingLogo = null
-		} else if (kind === 'favicon' && pendingFavicon) {
-			URL.revokeObjectURL(pendingFavicon.objectUrl)
-			pendingFavicon = null
+	function clearPending(kind: ImageKind) {
+		const staged = pending[kind]
+		if (!staged) return
+		URL.revokeObjectURL(staged.objectUrl)
+		pending[kind] = null
+	}
+
+	async function uploadImage(kind: ImageKind, file: File): Promise<string> {
+		if (kind === 'favicon') {
+			const { data, error } = await eden.api.admin.branding.favicon.post({ file })
+			if (error) throw new Error(edenErrorMsg(error))
+			return (data as { faviconUrl: string }).faviconUrl
 		}
+		const { data, error } = await eden.api.admin.branding.logo.post(
+			{ file },
+			kind === 'logoLight' ? { query: { variant: 'light' } } : undefined,
+		)
+		if (error) throw new Error(edenErrorMsg(error))
+		return (data as { logoUrl: string }).logoUrl
 	}
 
 	async function save() {
@@ -190,32 +231,17 @@
 			//    matching `branding.*_url` setting server-side, so we sync the
 			//    form + original snapshot with the returned URL to keep the
 			//    diff below correct.
-			if (pendingLogo) {
-				uploadingLogo = true
+			for (const kind of IMAGE_KINDS) {
+				const staged = pending[kind]
+				if (!staged) continue
+				uploading = kind
 				try {
-					const { data, error } = await eden.api.admin.branding.logo.post({ file: pendingLogo.file })
-					if (error) throw new Error(edenErrorMsg(error))
-					const res = data as { ok: boolean; logoUrl: string }
-					form.logoUrl = res.logoUrl
-					original.logoUrl = res.logoUrl
-					URL.revokeObjectURL(pendingLogo.objectUrl)
-					pendingLogo = null
+					const url = await uploadImage(kind, staged.file)
+					form[IMAGE_FIELDS[kind]] = url
+					original[IMAGE_FIELDS[kind]] = url
+					clearPending(kind)
 				} finally {
-					uploadingLogo = false
-				}
-			}
-			if (pendingFavicon) {
-				uploadingFavicon = true
-				try {
-					const { data, error } = await eden.api.admin.branding.favicon.post({ file: pendingFavicon.file })
-					if (error) throw new Error(edenErrorMsg(error))
-					const res = data as { ok: boolean; faviconUrl: string }
-					form.faviconUrl = res.faviconUrl
-					original.faviconUrl = res.faviconUrl
-					URL.revokeObjectURL(pendingFavicon.objectUrl)
-					pendingFavicon = null
-				} finally {
-					uploadingFavicon = false
+					uploading = null
 				}
 			}
 
@@ -225,10 +251,13 @@
 			const fallback = i18n.defaultLocale
 			const body: Record<string, unknown> = {}
 			if (form.name !== original.name) body.name = form.name
+			if (form.theme !== original.theme) body.theme = form.theme
 			if (form.primaryHex !== original.primaryHex) body.primaryHex = form.primaryHex
 			if (form.accentHex !== original.accentHex) body.accentHex = form.accentHex
 			if (form.successHex !== original.successHex) body.successHex = form.successHex
 			if (form.logoUrl !== original.logoUrl) body.logoUrl = form.logoUrl || null
+			if (form.logoLightUrl !== original.logoLightUrl) body.logoLightUrl = form.logoLightUrl || null
+			if (form.logoStyle !== original.logoStyle) body.logoStyle = form.logoStyle
 			if (form.faviconUrl !== original.faviconUrl) body.faviconUrl = form.faviconUrl || null
 			if (form.analyticsScript !== original.analyticsScript) body.analyticsScript = form.analyticsScript || null
 			if (form.allowIndexing !== original.allowIndexing) body.allowIndexing = form.allowIndexing
@@ -249,6 +278,11 @@
 					footerChanged = true
 				}
 			}
+			const socialDiff: Partial<Record<SocialPlatform, string | null>> = {}
+			for (const p of SOCIAL_PLATFORMS) {
+				if (form.socials[p] !== original.socials[p]) socialDiff[p] = form.socials[p].trim() || null
+			}
+			if (Object.keys(socialDiff).length > 0) body.socialLinks = socialDiff
 			if (taglineChanged) body.taglineTranslations = taglineDiff
 			if (footerChanged) body.footerTextTranslations = footerDiff
 
@@ -282,20 +316,51 @@
 			| 'accentHex'
 			| 'successHex'
 			| 'logoUrl'
+			| 'logoLightUrl'
 			| 'faviconUrl'
 			| 'analyticsScript'
 			| 'allowIndexing',
 	) {
 		if (!defaults) return
 		const d = defaults
+		const palette = themePalettes?.[form.theme] ?? d
 		if (key === 'name') form.name = d.name
-		else if (key === 'primaryHex') form.primaryHex = d.primaryHex
-		else if (key === 'accentHex') form.accentHex = d.accentHex
-		else if (key === 'successHex') form.successHex = d.successHex
+		else if (key === 'primaryHex') form.primaryHex = palette.primaryHex
+		else if (key === 'accentHex') form.accentHex = palette.accentHex
+		else if (key === 'successHex') form.successHex = palette.successHex
 		else if (key === 'logoUrl') form.logoUrl = d.logoUrl ?? ''
+		else if (key === 'logoLightUrl') form.logoLightUrl = d.logoLightUrl ?? ''
 		else if (key === 'faviconUrl') form.faviconUrl = d.faviconUrl ?? ''
 		else if (key === 'analyticsScript') form.analyticsScript = d.analyticsScript ?? ''
 		else if (key === 'allowIndexing') form.allowIndexing = d.allowIndexing
+	}
+
+	// Switching theme carries over any colour the admin customised, but swaps
+	// the ones still on the previous theme's palette for the new theme's.
+	function selectTheme(next: Theme) {
+		const previous = themePalettes?.[form.theme]
+		const target = themePalettes?.[next]
+		form.theme = next
+		if (!previous || !target) return
+		for (const key of ['primaryHex', 'accentHex', 'successHex'] as const) {
+			if (form[key].toLowerCase() === previous[key].toLowerCase()) form[key] = target[key]
+		}
+	}
+
+	const THEME_LABELS: Record<Theme, { title: () => string; description: () => string }> = {
+		default: { title: m.admin_branding_theme_default, description: m.admin_branding_theme_default_desc },
+		tabularis: { title: m.admin_branding_theme_tabularis, description: m.admin_branding_theme_tabularis_desc },
+	}
+
+	// Static swatches (background / surface / primary / accent) for the picker.
+	const THEME_SWATCHES: Record<Theme, string[]> = {
+		default: ['#08090a', '#111214', '#3b82f6', '#8b5cf6'],
+		tabularis: ['#030712', '#11121c', '#2563eb', '#35d0c0'],
+	}
+
+	const LOGO_STYLE_LABELS: Record<LogoStyle, { title: () => string; description: () => string }> = {
+		mark: { title: m.admin_branding_logo_style_mark, description: m.admin_branding_logo_style_mark_desc },
+		wordmark: { title: m.admin_branding_logo_style_wordmark, description: m.admin_branding_logo_style_wordmark_desc },
 	}
 
 	function resetTagline(locale: Locale) {
@@ -333,6 +398,45 @@
 					>
 				</div>
 				<p class="text-xs text-muted-foreground">{m.admin_branding_name_note()}</p>
+			</div>
+		</CardContent>
+	</Card>
+
+	<Card>
+		<CardHeader>
+			<CardTitle class="text-base flex items-center gap-2">
+				<PaletteIcon class="h-4 w-4" />
+				{m.admin_branding_theme()}
+			</CardTitle>
+			<CardDescription>{m.admin_branding_theme_subtitle()}</CardDescription>
+		</CardHeader>
+		<CardContent>
+			<div class="grid gap-3 sm:grid-cols-2" role="radiogroup" aria-label={m.admin_branding_theme()}>
+				{#each THEMES as t (t)}
+					<button
+						type="button"
+						role="radio"
+						aria-checked={form.theme === t}
+						class={[
+							'flex flex-col gap-3 rounded-lg border p-4 text-left transition-colors',
+							form.theme === t ? 'border-primary bg-primary/5' : 'border-border hover:bg-accent/50',
+						].join(' ')}
+						onclick={() => selectTheme(t)}
+					>
+						<span class="flex gap-1.5">
+							{#each THEME_SWATCHES[t] as color (color)}
+								<span class="h-5 w-5 rounded-full border border-border" style:background-color={color}></span>
+							{/each}
+						</span>
+						<span class="space-y-1">
+							<span class="flex items-center gap-2 text-sm font-medium">
+								{THEME_LABELS[t].title()}
+								{#if form.theme === t}<Check class="h-3.5 w-3.5 text-primary" />{/if}
+							</span>
+							<span class="block text-xs text-muted-foreground">{THEME_LABELS[t].description()}</span>
+						</span>
+					</button>
+				{/each}
 			</div>
 		</CardContent>
 	</Card>
@@ -446,135 +550,73 @@
 			<CardTitle class="text-base">{m.admin_branding_images()}</CardTitle>
 		</CardHeader>
 		<CardContent class="space-y-6">
-			<!-- Logo -->
-			<div class="grid gap-2 max-w-md">
-				<div class="flex items-center justify-between">
-					<Label for="logo">{m.admin_branding_logo_url()}</Label>
-					<button
-						type="button"
-						class="text-xs text-primary hover:underline flex items-center gap-1"
-						onclick={() => (logoMode = logoMode === 'upload' ? 'url' : 'upload')}
-					>
-						{#if logoMode === 'upload'}
-							<Link class="h-3 w-3" />
-							{m.admin_branding_image_use_url()}
-						{:else}
-							<Upload class="h-3 w-3" />
-							{m.admin_branding_image_use_upload()}
-						{/if}
-					</button>
-				</div>
-				{#if pendingLogo}
-					<div class="space-y-1">
-						<img
-							src={pendingLogo.objectUrl}
-							alt="Logo preview (pending)"
-							class="h-16 w-auto rounded border-2 border-amber-500/60 bg-card object-contain p-2"
-						/>
-						<p class="text-xs text-amber-600 dark:text-amber-400">{m.admin_branding_image_pending()}</p>
-					</div>
-				{:else if form.logoUrl}
-					<img
-						src={form.logoUrl}
-						alt="Logo preview"
-						class="h-16 w-auto rounded border border-border bg-card object-contain p-2"
-					/>
-				{/if}
-				{#if logoMode === 'upload'}
-					<div class="flex gap-2 items-center">
-						<input
-							id="logo-file"
-							type="file"
-							accept="image/png,image/jpeg,image/webp,image/svg+xml"
-							disabled={saving}
-							onchange={(e) => stageFile('logo', e.currentTarget)}
-							class="text-sm file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:bg-primary file:text-primary-foreground file:cursor-pointer hover:file:bg-primary/90 cursor-pointer"
-						/>
-						{#if pendingLogo}
-							<Button variant="ghost" size="sm" onclick={() => clearPending('logo')}>
-								{m.admin_branding_image_clear()}
-							</Button>
-						{/if}
-						{#if uploadingLogo}
-							<Loader2 class="h-4 w-4 animate-spin text-muted-foreground" />
-							<span class="text-xs text-muted-foreground">{m.admin_branding_image_uploading()}</span>
-						{/if}
-					</div>
-				{:else}
-					<div class="flex gap-2">
-						<Input id="logo" bind:value={form.logoUrl} placeholder="https://example.com/logo.svg" />
-						<Button variant="ghost" size="sm" onclick={() => resetField('logoUrl')} aria-label={m.common_reset()}
-							><RotateCcw class="h-3.5 w-3.5" /></Button
+			<div class="grid gap-2">
+				<Label>{m.admin_branding_logo_style()}</Label>
+				<div class="grid gap-3 sm:grid-cols-2 max-w-2xl" role="radiogroup" aria-label={m.admin_branding_logo_style()}>
+					{#each LOGO_STYLES as style (style)}
+						<button
+							type="button"
+							role="radio"
+							aria-checked={form.logoStyle === style}
+							class={[
+								'flex flex-col gap-1 rounded-lg border p-3 text-left transition-colors',
+								form.logoStyle === style ? 'border-primary bg-primary/5' : 'border-border hover:bg-accent/50',
+							].join(' ')}
+							onclick={() => (form.logoStyle = style)}
 						>
-					</div>
-				{/if}
-				<p class="text-xs text-muted-foreground">{m.admin_branding_logo_note()}</p>
+							<span class="flex items-center gap-2 text-sm font-medium">
+								{LOGO_STYLE_LABELS[style].title()}
+								{#if form.logoStyle === style}<Check class="h-3.5 w-3.5 text-primary" />{/if}
+							</span>
+							<span class="text-xs text-muted-foreground">{LOGO_STYLE_LABELS[style].description()}</span>
+						</button>
+					{/each}
+				</div>
 			</div>
 
-			<!-- Favicon -->
-			<div class="grid gap-2 max-w-md">
-				<div class="flex items-center justify-between">
-					<Label for="favicon">{m.admin_branding_favicon_url()}</Label>
-					<button
-						type="button"
-						class="text-xs text-primary hover:underline flex items-center gap-1"
-						onclick={() => (faviconMode = faviconMode === 'upload' ? 'url' : 'upload')}
-					>
-						{#if faviconMode === 'upload'}
-							<Link class="h-3 w-3" />
-							{m.admin_branding_image_use_url()}
-						{:else}
-							<Upload class="h-3 w-3" />
-							{m.admin_branding_image_use_upload()}
-						{/if}
-					</button>
-				</div>
-				{#if pendingFavicon}
-					<div class="space-y-1">
-						<img
-							src={pendingFavicon.objectUrl}
-							alt="Favicon preview (pending)"
-							class="h-10 w-10 rounded border-2 border-amber-500/60 bg-card object-contain p-1"
-						/>
-						<p class="text-xs text-amber-600 dark:text-amber-400">{m.admin_branding_image_pending()}</p>
-					</div>
-				{:else if form.faviconUrl}
-					<img
-						src={form.faviconUrl}
-						alt="Favicon preview"
-						class="h-10 w-10 rounded border border-border bg-card object-contain p-1"
-					/>
-				{/if}
-				{#if faviconMode === 'upload'}
-					<div class="flex gap-2 items-center">
-						<input
-							id="favicon-file"
-							type="file"
-							accept="image/png,image/jpeg,image/webp,image/svg+xml,image/x-icon,image/vnd.microsoft.icon,.ico"
-							disabled={saving}
-							onchange={(e) => stageFile('favicon', e.currentTarget)}
-							class="text-sm file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:bg-primary file:text-primary-foreground file:cursor-pointer hover:file:bg-primary/90 cursor-pointer"
-						/>
-						{#if pendingFavicon}
-							<Button variant="ghost" size="sm" onclick={() => clearPending('favicon')}>
-								{m.admin_branding_image_clear()}
-							</Button>
-						{/if}
-						{#if uploadingFavicon}
-							<Loader2 class="h-4 w-4 animate-spin text-muted-foreground" />
-							<span class="text-xs text-muted-foreground">{m.admin_branding_image_uploading()}</span>
-						{/if}
-					</div>
-				{:else}
-					<div class="flex gap-2">
-						<Input id="favicon" bind:value={form.faviconUrl} placeholder="https://example.com/favicon.ico" />
-						<Button variant="ghost" size="sm" onclick={() => resetField('faviconUrl')} aria-label={m.common_reset()}
-							><RotateCcw class="h-3.5 w-3.5" /></Button
+			{@render imageField('logo', {
+				label: m.admin_branding_logo_url(),
+				note: m.admin_branding_logo_note(),
+				accept: 'image/png,image/jpeg,image/webp,image/svg+xml',
+				placeholder: 'https://example.com/logo.svg',
+				preview: 'h-16 w-auto p-2',
+			})}
+
+			{@render imageField('logoLight', {
+				label: m.admin_branding_logo_light_url(),
+				note: m.admin_branding_logo_light_note(),
+				accept: 'image/png,image/jpeg,image/webp,image/svg+xml',
+				placeholder: 'https://example.com/logo-dark-text.svg',
+				preview: 'h-16 w-auto p-2 bg-white',
+			})}
+
+			{@render imageField('favicon', {
+				label: m.admin_branding_favicon_url(),
+				note: m.admin_branding_favicon_note(),
+				accept: 'image/png,image/jpeg,image/webp,image/svg+xml,image/x-icon,image/vnd.microsoft.icon,.ico',
+				placeholder: 'https://example.com/favicon.ico',
+				preview: 'h-10 w-10 p-1',
+			})}
+		</CardContent>
+	</Card>
+
+	<Card>
+		<CardHeader>
+			<CardTitle class="text-base">{m.admin_branding_social()}</CardTitle>
+			<CardDescription>{m.admin_branding_social_subtitle()}</CardDescription>
+		</CardHeader>
+		<CardContent class="grid gap-4 sm:grid-cols-2">
+			{#each SOCIAL_PLATFORMS as platform (platform)}
+				<div class="grid gap-2">
+					<Label for={`social-${platform}`} class="flex items-center gap-2">
+						<svg viewBox="0 0 24 24" class="h-3.5 w-3.5" fill="currentColor" aria-hidden="true"
+							><path d={SOCIAL_ICON_PATHS[platform]} /></svg
 						>
-					</div>
-				{/if}
-				<p class="text-xs text-muted-foreground">{m.admin_branding_favicon_note()}</p>
-			</div>
+						{SOCIAL_LABELS[platform]}
+					</Label>
+					<Input id={`social-${platform}`} type="url" bind:value={form.socials[platform]} placeholder={`https://…`} />
+				</div>
+			{/each}
 		</CardContent>
 	</Card>
 
@@ -648,3 +690,74 @@
 		</Button>
 	</div>
 {/if}
+
+{#snippet imageField(
+	kind: ImageKind,
+	opts: { label: string; note: string; accept: string; placeholder: string; preview: string },
+)}
+	{@const field = IMAGE_FIELDS[kind]}
+	{@const staged = pending[kind]}
+	<div class="grid gap-2 max-w-md">
+		<div class="flex items-center justify-between">
+			<Label for={`${kind}-input`}>{opts.label}</Label>
+			<button
+				type="button"
+				class="text-xs text-primary hover:underline flex items-center gap-1"
+				onclick={() => (imageMode[kind] = imageMode[kind] === 'upload' ? 'url' : 'upload')}
+			>
+				{#if imageMode[kind] === 'upload'}
+					<Link class="h-3 w-3" />
+					{m.admin_branding_image_use_url()}
+				{:else}
+					<Upload class="h-3 w-3" />
+					{m.admin_branding_image_use_upload()}
+				{/if}
+			</button>
+		</div>
+		{#if staged}
+			<div class="space-y-1">
+				<img
+					src={staged.objectUrl}
+					alt={`${opts.label} (pending)`}
+					class={`rounded border-2 border-amber-500/60 bg-card object-contain ${opts.preview}`}
+				/>
+				<p class="text-xs text-amber-600 dark:text-amber-400">{m.admin_branding_image_pending()}</p>
+			</div>
+		{:else if form[field]}
+			<img
+				src={form[field]}
+				alt={opts.label}
+				class={`rounded border border-border bg-card object-contain ${opts.preview}`}
+			/>
+		{/if}
+		{#if imageMode[kind] === 'upload'}
+			<div class="flex gap-2 items-center">
+				<input
+					id={`${kind}-input`}
+					type="file"
+					accept={opts.accept}
+					disabled={saving}
+					onchange={(e) => stageFile(kind, e.currentTarget)}
+					class="text-sm file:mr-3 file:py-1.5 file:px-3 file:rounded-md file:border-0 file:bg-primary file:text-primary-foreground file:cursor-pointer hover:file:bg-primary/90 cursor-pointer"
+				/>
+				{#if staged}
+					<Button variant="ghost" size="sm" onclick={() => clearPending(kind)}>
+						{m.admin_branding_image_clear()}
+					</Button>
+				{/if}
+				{#if uploading === kind}
+					<Loader2 class="h-4 w-4 animate-spin text-muted-foreground" />
+					<span class="text-xs text-muted-foreground">{m.admin_branding_image_uploading()}</span>
+				{/if}
+			</div>
+		{:else}
+			<div class="flex gap-2">
+				<Input id={`${kind}-input`} bind:value={form[field]} placeholder={opts.placeholder} />
+				<Button variant="ghost" size="sm" onclick={() => resetField(field)} aria-label={m.common_reset()}
+					><RotateCcw class="h-3.5 w-3.5" /></Button
+				>
+			</div>
+		{/if}
+		<p class="text-xs text-muted-foreground">{opts.note}</p>
+	</div>
+{/snippet}

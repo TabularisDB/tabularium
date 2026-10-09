@@ -175,6 +175,8 @@ export const pluginRequests = sqliteTable('plugin_requests', {
   slug: text('slug').notNull().unique(),
   name: text('name').notNull(),
   description: text('description').notNull(),
+  // Optional plugin kind (admin-defined key, see lib/kinds). NULL = unspecified.
+  kind: text('kind'),
   requesterId: text('requester_id')
     .notNull()
     .references(() => users.id),

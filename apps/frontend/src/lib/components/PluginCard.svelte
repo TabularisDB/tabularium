@@ -16,6 +16,7 @@
 	href={`/plugins/${plugin.id}`}
 	class={cn(
 		'group block rounded-lg border border-border bg-card p-5 transition-colors hover:border-primary/40',
+		'tabularis:rounded-md tabularis:border-[0.1rem] tabularis:hover:border-brand-accent/50',
 		className,
 	)}
 >
@@ -32,7 +33,9 @@
 		<div class="min-w-0 flex-1 space-y-1.5">
 			<div class="flex items-start justify-between gap-2">
 				<div class="flex items-center gap-1.5 min-w-0">
-					<h3 class="font-semibold tracking-tight group-hover:text-primary transition-colors truncate">
+					<h3
+						class="font-semibold tracking-tight group-hover:text-primary transition-colors truncate tabularis:text-[1.1rem] tabularis:font-medium tabularis:tracking-normal tabularis:group-hover:text-brand-accent"
+					>
 						{plugin.name}
 					</h3>
 					{#if plugin.verified}

@@ -20,6 +20,7 @@ const groups: Record<string, string[]> = {
     'getInstanceInfo',
     'getFeatures',
     'getBranding',
+    'getStats',
     'getHomeCopy',
     'getI18nConfig',
     'listProviders',

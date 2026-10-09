@@ -5,6 +5,13 @@
 		<meta name="viewport" content="width=device-width, initial-scale=1" />
 		<meta name="text-scale" content="scale" />
 		<link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+		<script>
+			// Restore the branding theme mode-watcher persisted last visit, before first paint.
+			try {
+				var theme = localStorage.getItem('mode-watcher-theme')
+				if (theme) document.documentElement.setAttribute('data-theme', theme)
+			} catch (e) {}
+		</script>
 		%sveltekit.head%
 	</head>
 	<body data-sveltekit-preload-data="hover">

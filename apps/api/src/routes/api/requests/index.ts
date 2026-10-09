@@ -7,12 +7,26 @@ import { pluginRequests, pluginRequestClaims } from '$db/schema'
 import { desc, count, eq, and, inArray } from 'drizzle-orm'
 import { getFeatures } from '$lib/features'
 import { verifySessionToken, delegatedAccess } from '$lib/access'
+import { isKindKey } from '$lib/kinds'
+import { deriveSlug } from '$lib/slug'
+
+// Same normalisation submissions apply to repo names, so a request for
+// "Awesome Plugin" is closed automatically when `awesome` gets published.
+function slugFromName(name: string): string {
+  return deriveSlug(
+    name
+      .normalize('NFKD')
+      .replace(/[\u0300-\u036f]/g, '')
+      .replace(/[^A-Za-z0-9]+/g, '-'),
+  ).slice(0, 80)
+}
 
 const requestSchema = t.Object({
   id: t.String(),
   slug: t.String(),
   name: t.String(),
   description: t.String(),
+  kind: t.Nullable(t.String()),
   requesterId: t.String(),
   upvotes: t.Number(),
   createdAt: t.Number(),
@@ -32,6 +46,7 @@ const createRequestResponseSchema = t.Object({
   slug: t.String(),
   name: t.String(),
   description: t.String(),
+  kind: t.Nullable(t.String()),
   requesterId: t.String(),
 })
 
@@ -65,10 +80,11 @@ export default new Elysia()
       const limit = clampInt(query.limit, 20, 1, 100)
       const offset = (page - 1) * limit
       const sort = query.sort === 'recent' ? pluginRequests.createdAt : pluginRequests.upvotes
+      const where = query.kind ? eq(pluginRequests.kind, query.kind) : undefined
 
-      const [{ total }] = await db.select({ total: count() }).from(pluginRequests)
+      const [{ total }] = await db.select({ total: count() }).from(pluginRequests).where(where)
 
-      const rows = await db.select().from(pluginRequests).orderBy(desc(sort)).limit(limit).offset(offset)
+      const rows = await db.select().from(pluginRequests).where(where).orderBy(desc(sort)).limit(limit).offset(offset)
 
       const viewer = delegatedAccess(request)?.user ?? (await resolveOptionalViewer(headers, cookie))
       const ids = rows.map((r) => r.id)
@@ -118,6 +134,7 @@ export default new Elysia()
             description: 'Sort order: `upvotes` (default) or `recent` (newest first).',
           }),
         ),
+        kind: t.Optional(t.String({ description: 'Only requests for this plugin kind key (see `GET /api/kinds`).' })),
       }),
       response: { 200: requestListResponseSchema },
     },
@@ -131,19 +148,30 @@ export default new Elysia()
         set.status = 403
         return { error: 'Plugin requests are disabled on this instance.' }
       }
+      const slug = body.slug ?? slugFromName(body.name)
+      if (!slug) {
+        set.status = 400
+        return { error: 'Name must contain at least one letter or digit.' }
+      }
+      const kind = body.kind || null
+      if (kind && !isKindKey(kind)) {
+        set.status = 400
+        return { error: `Unknown plugin kind '${kind}'.` }
+      }
       const existing = await db.query.pluginRequests.findFirst({
-        where: { slug: body.slug },
+        where: { slug },
       })
       if (existing) {
         set.status = 409
-        return { error: `A request for '${body.slug}' already exists` }
+        return { error: `A request for '${existing.name}' already exists` }
       }
 
       const request = {
         id: ulid(),
-        slug: body.slug,
+        slug,
         name: body.name,
         description: body.description,
+        kind,
         requesterId: user.sub,
       }
       await db.insert(pluginRequests).values(request)
@@ -153,22 +181,27 @@ export default new Elysia()
       detail: {
         tags: ['Requests'],
         summary: 'Create plugin request',
-        description: 'Add a new entry to the community wishlist. Requires auth. Slug must be unique across requests.',
+        description:
+          'Add a new entry to the community wishlist. Requires auth. `slug` is optional and derived from `name` when omitted; it must be unique across requests. `kind` must match a configured plugin kind key.',
         operationId: 'createRequest',
         security: [{ bearerAuth: [] }, { cookieAuth: [] }],
       },
       body: t.Object({
-        slug: t.String({
-          pattern: '^[a-z0-9-]+$',
-          minLength: 1,
-          maxLength: 80,
-          description: 'URL-safe slug. Lowercase letters, digits, hyphens.',
-        }),
+        slug: t.Optional(
+          t.String({
+            pattern: '^[a-z0-9-]+$',
+            minLength: 1,
+            maxLength: 80,
+            description: 'URL-safe slug. Lowercase letters, digits, hyphens. Derived from `name` when omitted.',
+          }),
+        ),
         name: t.String({ minLength: 1, maxLength: 120, description: 'Human-readable plugin name.' }),
         description: t.String({ minLength: 1, maxLength: 2000, description: 'What the plugin should do.' }),
+        kind: t.Optional(t.String({ maxLength: 40, description: 'Plugin kind key from `GET /api/kinds`.' })),
       }),
       response: {
         200: createRequestResponseSchema,
+        400: errorSchema,
         403: errorSchema,
         409: errorSchema,
       },

@@ -1,30 +1,48 @@
+import { setTheme } from 'mode-watcher'
 import { eden } from '$lib/eden'
+import { SOCIAL_PLATFORMS, type SocialPlatform } from '$lib/social'
 import { i18n } from '$lib/stores/i18n.svelte'
+
+export type Theme = 'default' | 'tabularis'
+
+export const THEMES: readonly Theme[] = ['default', 'tabularis']
+
+export type LogoStyle = 'mark' | 'wordmark'
+
+export const LOGO_STYLES: readonly LogoStyle[] = ['mark', 'wordmark']
 
 export type Branding = {
   name: string
+  theme: Theme
   tagline: string
   primaryHex: string
   accentHex: string
   successHex: string
   logoUrl: string | null
+  logoLightUrl: string | null
+  logoStyle: LogoStyle
   faviconUrl: string | null
   footerText: string | null
   analyticsScript: string | null
   allowIndexing: boolean
+  socialLinks: Record<SocialPlatform, string | null>
 }
 
 const DEFAULTS: Branding = {
   name: 'Tabularium',
+  theme: 'default',
   tagline: 'Discover, submit, ship plugins.',
   primaryHex: '#3b82f6',
   accentHex: '#8b5cf6',
   successHex: '#10b981',
   logoUrl: null,
+  logoLightUrl: null,
+  logoStyle: 'mark',
   faviconUrl: null,
   footerText: null,
   analyticsScript: null,
   allowIndexing: true,
+  socialLinks: Object.fromEntries(SOCIAL_PLATFORMS.map((p) => [p, null])) as Record<SocialPlatform, string | null>,
 }
 
 function createBrandingStore() {
@@ -40,6 +58,9 @@ function createBrandingStore() {
     if (typeof document === 'undefined') return
     document.title = b.name
     const root = document.documentElement
+    // mode-watcher owns `data-theme` on <html> and persists it, so the
+    // pre-paint script in app.html can restore it before branding loads.
+    setTheme(b.theme)
     root.style.setProperty('--brand-primary', b.primaryHex)
     root.style.setProperty('--brand-accent', b.accentHex)
     root.style.setProperty('--brand-success', b.successHex)
@@ -108,6 +129,9 @@ function createBrandingStore() {
     get name() {
       return state.name
     },
+    get theme() {
+      return state.theme
+    },
     get tagline() {
       return state.tagline
     },
@@ -123,6 +147,12 @@ function createBrandingStore() {
     get logoUrl() {
       return state.logoUrl
     },
+    get logoLightUrl() {
+      return state.logoLightUrl
+    },
+    get logoStyle() {
+      return state.logoStyle
+    },
     get faviconUrl() {
       return state.faviconUrl
     },
@@ -134,6 +164,9 @@ function createBrandingStore() {
     },
     get allowIndexing() {
       return state.allowIndexing
+    },
+    get socialLinks() {
+      return state.socialLinks
     },
     get loaded() {
       return loaded

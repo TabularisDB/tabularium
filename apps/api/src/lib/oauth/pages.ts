@@ -28,8 +28,18 @@ function onPrimary(hex: string) {
   return (luminance + 0.05) / 0.0527 > 1.05 / (luminance + 0.05) ? '#08090a' : '#ffffff'
 }
 function brandMark(brand: Branding) {
-  const logo = imageUrl(brand.logoUrl)
+  // A wordmark doesn't fit the square badge — fall back to the favicon there.
+  const logo = imageUrl(brand.logoStyle === 'wordmark' ? brand.faviconUrl : brand.logoUrl)
   return `<span class="brand-mark${logo ? ' custom' : ''}">${logo ? `<img src="${escapeHtml(logo)}" alt="" referrerpolicy="no-referrer">` : icon('boxes')}</span>`
+}
+function brandLockup(brand: Branding) {
+  const logo = imageUrl(brand.logoUrl)
+  if (brand.logoStyle !== 'wordmark' || !logo)
+    return `${brandMark(brand)}<span class="brand-name">${escapeHtml(brand.name)}</span>`
+  const light = imageUrl(brand.logoLightUrl)
+  const img = (src: string, extra = '') =>
+    `<img class="brand-wordmark${extra}" src="${escapeHtml(src)}" alt="${escapeHtml(brand.name)}" referrerpolicy="no-referrer">`
+  return light ? `${img(logo, ' on-dark')}${img(light, ' on-light')}` : img(logo)
 }
 function providerImage(provider: ProviderInstance) {
   const custom = imageUrl(provider.logoUrl)
@@ -53,7 +63,12 @@ export function page(title: string, body: string, options: PageOptions = {}) {
   const accent = color(brand.accentHex, defaults.accentHex)
   const success = color(brand.successHex, defaults.successHex)
   const favicon = imageUrl(brand.faviconUrl) ?? '/favicon.svg'
-  const sources = [imageUrl(brand.logoUrl), favicon, ...listEnabledInstances().map((p) => providerImage(p).src)]
+  const sources = [
+    imageUrl(brand.logoUrl),
+    imageUrl(brand.logoLightUrl),
+    favicon,
+    ...listEnabledInstances().map((p) => providerImage(p).src),
+  ]
   const imageOrigins = [
     ...new Set(sources.filter((s): s is string => !!s).map((s) => new URL(s, env.BASE_URL).origin)),
   ].join(' ')
@@ -70,7 +85,7 @@ export function page(title: string, body: string, options: PageOptions = {}) {
   const themeScript = `(()=>{const root=document.documentElement;let mode;try{mode=localStorage.getItem('mode-watcher-mode')}catch{}root.dataset.theme=mode==='light'||mode==='dark'?mode:matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.addEventListener('DOMContentLoaded',()=>{const button=document.getElementById('theme-toggle');button.hidden=false;button.addEventListener('click',()=>{const next=root.dataset.theme==='dark'?'light':'dark';root.dataset.theme=next;try{localStorage.setItem('mode-watcher-mode',next)}catch{}})})})()`
   return new Response(
     `<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><title>${escapeHtml(title)} · ${escapeHtml(brand.name)}</title><link rel="icon" href="${escapeHtml(favicon)}"><script nonce="${nonce}">${themeScript}</script><style nonce="${nonce}">${pageStyles}:root{--brand-primary:${primary};--brand-accent:${accent};--brand-success:${success};--brand-on-primary:${onPrimary(primary)}}
-    </style></head><body><header class="site-header"><div class="header-inner"><a class="brand" href="${home}" aria-label="${escapeHtml(brand.name)} home">${brandMark(brand)}<span class="brand-name">${escapeHtml(brand.name)}</span></a><div class="header-actions"><a class="back-link" aria-label="Back to registry" href="${home}">${icon('arrow-left')}<span class="back-label">Back to registry</span></a><button class="icon-button" id="theme-toggle" type="button" aria-label="Switch color theme" title="Switch color theme" hidden>${icon('sun', 'sun-icon')}${icon('moon', 'moon-icon')}</button></div></div></header><main class="${kind}"><div class="page-heading"><div class="connection-symbol" aria-hidden="true">${symbol}</div><h1>${escapeHtml(title)}</h1></div>${body}</main><footer class="site-footer"><p>${escapeHtml(brand.footerText ?? brand.name)}</p></footer></body></html>`,
+    </style></head><body><header class="site-header"><div class="header-inner"><a class="brand" href="${home}" aria-label="${escapeHtml(brand.name)} home">${brandLockup(brand)}</a><div class="header-actions"><a class="back-link" aria-label="Back to registry" href="${home}">${icon('arrow-left')}<span class="back-label">Back to registry</span></a><button class="icon-button" id="theme-toggle" type="button" aria-label="Switch color theme" title="Switch color theme" hidden>${icon('sun', 'sun-icon')}${icon('moon', 'moon-icon')}</button></div></div></header><main class="${kind}"><div class="page-heading"><div class="connection-symbol" aria-hidden="true">${symbol}</div><h1>${escapeHtml(title)}</h1></div>${body}</main><footer class="site-footer"><p>${escapeHtml(brand.footerText ?? brand.name)}</p></footer></body></html>`,
     {
       headers: {
         'content-type': 'text/html; charset=utf-8',

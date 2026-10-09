@@ -18,21 +18,28 @@
 
 	const base =
 		'inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-md text-sm font-medium transition-colors focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:pointer-events-none disabled:opacity-50 cursor-pointer'
+	// `tabularis:` classes mirror tabularis.dev buttons: semibold labels, hairline
+	// borders that brighten on hover, brightness (not opacity) hover on fills.
+	const tabularisBase =
+		'tabularis:font-semibold tabularis:transition-[filter,border-color,color,background-color] tabularis:focus-visible:ring-0 tabularis:focus-visible:outline-2 tabularis:focus-visible:outline-offset-2 tabularis:focus-visible:outline-brand-accent'
 	const variants: Record<Variant, string> = {
-		default: 'bg-primary text-primary-foreground hover:bg-primary/90',
-		outline: 'border border-border bg-background hover:bg-accent hover:text-accent-foreground',
+		default:
+			'bg-primary text-primary-foreground hover:bg-primary/90 tabularis:border-[0.1rem] tabularis:border-transparent tabularis:hover:bg-primary tabularis:hover:brightness-110',
+		outline:
+			'border border-border bg-background hover:bg-accent hover:text-accent-foreground tabularis:border-[0.1rem] tabularis:bg-transparent tabularis:hover:bg-transparent tabularis:hover:border-border-strong',
 		ghost: 'hover:bg-accent hover:text-accent-foreground',
-		destructive: 'bg-destructive text-destructive-foreground hover:bg-destructive/90',
-		link: 'text-primary underline-offset-4 hover:underline',
+		destructive:
+			'bg-destructive text-destructive-foreground hover:bg-destructive/90 tabularis:hover:bg-destructive tabularis:hover:brightness-110',
+		link: 'text-primary underline-offset-4 hover:underline tabularis:text-brand-accent tabularis:no-underline tabularis:hover:brightness-115',
 	}
 	const sizes: Record<Size, string> = {
-		sm: 'h-8 px-3',
-		md: 'h-9 px-4',
-		lg: 'h-10 px-6',
-		icon: 'h-9 w-9',
+		sm: 'h-8 px-3 tabularis:h-[2.125rem] tabularis:px-3.5 tabularis:text-[0.85rem]',
+		md: 'h-9 px-4 tabularis:h-10 tabularis:px-[0.9rem] tabularis:text-[0.875rem]',
+		lg: 'h-10 px-6 tabularis:h-12 tabularis:px-6 tabularis:text-[1.05rem]',
+		icon: 'h-9 w-9 tabularis:h-10 tabularis:w-10',
 	}
 
-	const classes = $derived(cn(base, variants[variant], sizes[size], className))
+	const classes = $derived(cn(base, tabularisBase, variants[variant], sizes[size], className))
 </script>
 
 {#if href}
