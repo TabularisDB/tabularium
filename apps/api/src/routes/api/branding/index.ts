@@ -20,6 +20,14 @@ const socialLinksSchema = t.Object({
   linkedin: t.Nullable(t.String()),
 })
 
+const companionAppSchema = t.Object({
+  name: t.Nullable(t.String()),
+  url: t.Nullable(t.String()),
+  downloadUrl: t.Nullable(t.String()),
+  videoUrl: t.Nullable(t.String()),
+  videoPosterUrl: t.Nullable(t.String()),
+})
+
 const brandingSchema = t.Object({
   name: t.String(),
   theme: t.Union([t.Literal('default'), t.Literal('tabularis')]),
@@ -35,6 +43,7 @@ const brandingSchema = t.Object({
   analyticsScript: t.Nullable(t.String()),
   allowIndexing: t.Boolean(),
   socialLinks: socialLinksSchema,
+  companionApp: companionAppSchema,
 })
 
 export default new Elysia().get(

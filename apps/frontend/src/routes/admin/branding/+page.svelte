@@ -9,6 +9,7 @@
 	import Loader2 from '@lucide/svelte/icons/loader-2'
 	import PaletteIcon from '@lucide/svelte/icons/palette'
 	import Check from '@lucide/svelte/icons/check'
+	import AppWindow from '@lucide/svelte/icons/app-window'
 	import Card from '$components/ui/Card.svelte'
 	import CardContent from '$components/ui/CardContent.svelte'
 	import CardDescription from '$components/ui/CardDescription.svelte'
@@ -46,6 +47,14 @@
 		taglines: Record<Locale, string>
 		footers: Record<Locale, string>
 		socials: Record<SocialPlatform, string>
+		app: Record<AppField, string>
+	}
+
+	const APP_FIELDS = ['name', 'url', 'downloadUrl', 'videoUrl', 'videoPosterUrl'] as const
+	type AppField = (typeof APP_FIELDS)[number]
+
+	function emptyApp(): Record<AppField, string> {
+		return Object.fromEntries(APP_FIELDS.map((f) => [f, ''])) as Record<AppField, string>
 	}
 
 	function emptySocials(): Record<SocialPlatform, string> {
@@ -77,6 +86,7 @@
 		taglines: {} as Record<Locale, string>,
 		footers: {} as Record<Locale, string>,
 		socials: emptySocials(),
+		app: emptyApp(),
 	})
 	let defaults = $state<Branding | null>(null)
 	let themePalettes = $state<Record<Theme, Palette> | null>(null)
@@ -131,6 +141,7 @@
 				SocialPlatform,
 				string
 			>,
+			app: Object.fromEntries(APP_FIELDS.map((f) => [f, b.companionApp?.[f] ?? ''])) as Record<AppField, string>,
 		}
 	}
 
@@ -182,6 +193,7 @@
 			if (form.footers[l] !== original.footers[l]) return true
 		}
 		if (SOCIAL_PLATFORMS.some((p) => form.socials[p] !== original?.socials[p])) return true
+		if (APP_FIELDS.some((f) => form.app[f] !== original?.app[f])) return true
 		return false
 	})
 
@@ -283,6 +295,11 @@
 				if (form.socials[p] !== original.socials[p]) socialDiff[p] = form.socials[p].trim() || null
 			}
 			if (Object.keys(socialDiff).length > 0) body.socialLinks = socialDiff
+			const appDiff: Partial<Record<AppField, string | null>> = {}
+			for (const f of APP_FIELDS) {
+				if (form.app[f] !== original.app[f]) appDiff[f] = form.app[f].trim() || null
+			}
+			if (Object.keys(appDiff).length > 0) body.companionApp = appDiff
 			if (taglineChanged) body.taglineTranslations = taglineDiff
 			if (footerChanged) body.footerTextTranslations = footerDiff
 
@@ -617,6 +634,38 @@
 					<Input id={`social-${platform}`} type="url" bind:value={form.socials[platform]} placeholder={`https://…`} />
 				</div>
 			{/each}
+		</CardContent>
+	</Card>
+
+	<Card>
+		<CardHeader>
+			<CardTitle class="text-base flex items-center gap-2">
+				<AppWindow class="h-4 w-4" />
+				{m.admin_branding_app()}
+			</CardTitle>
+			<CardDescription>{m.admin_branding_app_subtitle()}</CardDescription>
+		</CardHeader>
+		<CardContent class="grid gap-4 sm:grid-cols-2">
+			<div class="grid gap-2">
+				<Label for="app-name">{m.admin_branding_app_name()}</Label>
+				<Input id="app-name" bind:value={form.app.name} maxlength={60} placeholder="Tabularis" />
+			</div>
+			<div class="grid gap-2">
+				<Label for="app-url">{m.admin_branding_app_url()}</Label>
+				<Input id="app-url" type="url" bind:value={form.app.url} placeholder="https://…" />
+			</div>
+			<div class="grid gap-2">
+				<Label for="app-download">{m.admin_branding_app_download()}</Label>
+				<Input id="app-download" type="url" bind:value={form.app.downloadUrl} placeholder="https://…/download" />
+			</div>
+			<div class="grid gap-2">
+				<Label for="app-video">{m.admin_branding_app_video()}</Label>
+				<Input id="app-video" type="url" bind:value={form.app.videoUrl} placeholder="https://…/demo.mp4" />
+			</div>
+			<div class="grid gap-2 sm:col-span-2">
+				<Label for="app-poster">{m.admin_branding_app_poster()}</Label>
+				<Input id="app-poster" type="url" bind:value={form.app.videoPosterUrl} placeholder="https://…/demo.jpg" />
+			</div>
 		</CardContent>
 	</Card>
 

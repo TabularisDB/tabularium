@@ -20,12 +20,23 @@
 	import Cpu from '@lucide/svelte/icons/cpu'
 	import HardDrive from '@lucide/svelte/icons/hard-drive'
 	import Languages from '@lucide/svelte/icons/languages'
-	import Code2 from '@lucide/svelte/icons/code-2'
+	import FolderGit2 from '@lucide/svelte/icons/folder-git-2'
 	import Sparkles from '@lucide/svelte/icons/sparkles'
 	import Check from '@lucide/svelte/icons/check'
+	import Terminal from '@lucide/svelte/icons/terminal'
+	import Mail from '@lucide/svelte/icons/mail'
+	import Scale from '@lucide/svelte/icons/scale'
+	import Tag from '@lucide/svelte/icons/tag'
+	import FileText from '@lucide/svelte/icons/file-text'
+	import ImageIcon from '@lucide/svelte/icons/image'
+	import History from '@lucide/svelte/icons/history'
+	import ChartBar from '@lucide/svelte/icons/chart-bar'
+	import Settings2 from '@lucide/svelte/icons/settings-2'
 	import ChevronDown from '@lucide/svelte/icons/chevron-down'
+	import AppWindow from '@lucide/svelte/icons/app-window'
+	import ArrowRight from '@lucide/svelte/icons/arrow-right'
+	import ArrowUpRight from '@lucide/svelte/icons/arrow-up-right'
 	import { BarChart } from 'layerchart'
-	import Badge from '$components/ui/Badge.svelte'
 	import Button from '$components/ui/Button.svelte'
 	import Skeleton from '$components/ui/Skeleton.svelte'
 	import VerifiedBadge from '$components/ui/VerifiedBadge.svelte'
@@ -157,11 +168,14 @@
 		return { ...match, href: downloadHref(plugin.id, match.key) }
 	})
 
-	const otherDownloads = $derived.by(() => {
+	// Every platform asset, the one matching the visitor's system first.
+	const downloadOptions = $derived.by(() => {
 		const slug = plugin?.id
 		if (!slug) return [] as Array<{ key: string; url: string; size?: number; sha256?: string; href: string }>
-		const skip = primaryDownload?.key
-		return platformList.filter((p) => p.key !== skip).map((p) => ({ ...p, href: downloadHref(slug, p.key) }))
+		const first = primaryDownload?.key
+		return [...platformList]
+			.sort((a, b) => Number(b.key === first) - Number(a.key === first))
+			.map((p) => ({ ...p, href: downloadHref(slug, p.key) }))
 	})
 
 	const installDeepLink = $derived.by(() => {
@@ -406,6 +420,12 @@
 	const author = $derived(plugin?.author.split('<')[0].trim() ?? '')
 	const provider = $derived(plugin ? providerKind(plugin.homepage) : 'github')
 	const selectedAsset = $derived(platformList.find((p) => p.key === selectedPlatform))
+
+	const app = $derived(branding.companionApp)
+
+	const cardClass = 'rounded-lg border border-border bg-card tabularis:rounded-md tabularis:border-[0.1rem]'
+	// Section accents, in the order tabularis.dev cycles its section eyebrows.
+	const TONES = { purple: '#c084fc', teal: '#2dd4bf', blue: '#60a5fa', orange: '#fdba74' }
 </script>
 
 <svelte:head>
@@ -429,265 +449,318 @@
 	{/if}
 </svelte:head>
 
-<div class="mx-auto max-w-6xl px-6 pb-24">
-	{#if loading}
-		<div class="space-y-6 pt-16">
-			<Skeleton class="h-20 w-1/2 rounded-md" />
-			<Skeleton class="h-32 w-full rounded-md" />
-			<div class="grid gap-4 md:grid-cols-3">
-				<Skeleton class="h-24 rounded-md" />
-				<Skeleton class="h-24 rounded-md" />
-				<Skeleton class="h-24 rounded-md" />
-			</div>
+{#snippet sectionHead(Icon: typeof Download, title: string, tone: string, subtitle?: string)}
+	<div class="flex items-start gap-3 min-w-0">
+		<span class="section-icon" style:--tone={tone} aria-hidden="true"><Icon class="h-4 w-4" /></span>
+		<div class="min-w-0">
+			<h2 class="text-2xl font-semibold tracking-tight">{title}</h2>
+			{#if subtitle}
+				<p class="mt-1.5 text-sm text-muted-foreground">{subtitle}</p>
+			{/if}
 		</div>
-	{:else if notFound}
+	</div>
+{/snippet}
+
+{#snippet detailRow(Icon: typeof Download, label: string, value: string)}
+	<div class="flex items-center justify-between gap-3 py-2.5 border-t border-border first:border-t-0">
+		<dt class="inline-flex items-center gap-2 text-sm text-muted-foreground">
+			<Icon class="h-3.5 w-3.5" />{label}
+		</dt>
+		<dd class="min-w-0 truncate text-sm font-medium text-foreground tabular-nums">{value}</dd>
+	</div>
+{/snippet}
+
+{#snippet linkRow(Icon: typeof Download, label: string, href: string, hint?: string)}
+	<a
+		class="group flex items-center gap-2.5 px-4 py-3 text-sm border-t border-border first:border-t-0 transition-colors hover:bg-foreground/[0.03]"
+		{href}
+		target="_blank"
+		rel="noreferrer"
+	>
+		<Icon class="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
+		<span class="flex-1">{label}</span>
+		{#if hint}<span class="font-mono text-[11px] text-muted-foreground">{hint}</span>{/if}
+		<ExternalLink class="h-3 w-3 opacity-50" />
+	</a>
+{/snippet}
+
+{#if loading}
+	<div class="mx-auto max-w-6xl px-6 pt-20 pb-24">
+		<div class="flex flex-col items-center gap-5">
+			<Skeleton class="h-24 w-24 rounded-2xl" />
+			<Skeleton class="h-12 w-2/3 max-w-md rounded-md" />
+			<Skeleton class="h-5 w-full max-w-xl rounded-md" />
+			<Skeleton class="h-11 w-64 rounded-md" />
+		</div>
+		<div class="mt-16 grid gap-12 lg:grid-cols-[minmax(0,1fr)_300px]">
+			<Skeleton class="h-64 rounded-lg" />
+			<Skeleton class="h-64 rounded-lg" />
+		</div>
+	</div>
+{:else if notFound}
+	<div class="mx-auto max-w-6xl px-6 pb-24">
 		<div class="rounded-lg border border-dashed border-border p-12 text-center space-y-3 mt-16">
 			<p class="text-muted-foreground">{m.plugin_detail_not_found()}</p>
 			<Button size="sm" variant="outline" href="/plugins">{m.plugin_detail_back_to_catalog()}</Button>
 		</div>
-	{:else if plugin}
-		<!-- HERO -->
-		<header class="relative pt-14 pb-10 overflow-hidden">
-			<div class="pointer-events-none absolute inset-0 -z-10">
-				<div
-					class="absolute inset-x-0 top-0 h-80 bg-gradient-to-b from-primary/[0.08] via-primary/[0.02] to-transparent"
-				></div>
-				<div class="absolute top-4 left-8 h-56 w-56 rounded-full bg-primary/15 blur-3xl opacity-60"></div>
-				<div class="absolute top-12 right-1/4 h-40 w-40 rounded-full bg-primary/10 blur-3xl opacity-40"></div>
-			</div>
-
-			<nav class="text-xs font-mono text-muted-foreground mb-8 flex items-center gap-2 flex-wrap">
+	</div>
+{:else if plugin}
+	<!-- HERO: centred page header after tabularis.dev -->
+	<section class="hero-grid border-b border-border">
+		<div class="hero-aurora" aria-hidden="true"></div>
+		<div class="mx-auto max-w-6xl px-6 pt-8 pb-14 sm:pb-16">
+			<nav class="flex items-center gap-2 flex-wrap text-xs font-mono text-muted-foreground" aria-label="Breadcrumb">
 				<a href="/plugins" class="hover:text-foreground transition-colors">/plugins</a>
 				{#if plugin.category}
-					<span class="opacity-40">·</span>
+					<span class="opacity-40">/</span>
 					<a
 						href={`/plugins?category=${encodeURIComponent(plugin.category)}`}
 						class="hover:text-foreground transition-colors">{plugin.category}</a
 					>
 				{/if}
-				<span class="opacity-40">·</span>
+				<span class="opacity-40">/</span>
 				<span class="text-foreground">{plugin.id}</span>
 			</nav>
 
-			<div class="flex items-start gap-6 flex-wrap">
-				<div class="relative flex-shrink-0">
-					<div class="absolute -inset-2 bg-primary/20 blur-2xl rounded-full opacity-60"></div>
-					<div
-						class="relative h-24 w-24 rounded-2xl border border-border bg-card flex items-center justify-center overflow-hidden shadow-xl shadow-primary/10"
-					>
-						{#if plugin.iconUrl}
-							<img src={plugin.iconUrl} alt={plugin.name} class="h-full w-full object-contain p-2" loading="eager" />
-						{:else}
-							<Boxes class="h-10 w-10 text-muted-foreground" strokeWidth={1.4} />
-						{/if}
-					</div>
+			<div class="mt-10 flex flex-col items-center text-center">
+				<div class="icon-tile">
+					{#if plugin.iconUrl}
+						<img src={plugin.iconUrl} alt={plugin.name} loading="eager" />
+					{:else}
+						<Boxes class="h-10 w-10 text-muted-foreground" strokeWidth={1.4} />
+					{/if}
 				</div>
 
-				<div class="flex-1 min-w-[280px] space-y-3">
-					<div class="flex items-center gap-1.5 flex-wrap">
-						{#if plugin.featured}
+				<span
+					class="mt-8 inline-flex items-center gap-1.5 text-[0.85rem] font-semibold uppercase tracking-[0.04em] text-primary"
+				>
+					<Boxes class="h-[1.125rem] w-[1.125rem]" />
+					{m.nav_plugins()}{#if plugin.category}&nbsp;· {plugin.category}{/if}
+				</span>
+				<h1 class="mt-3 max-w-4xl text-5xl sm:text-6xl font-semibold tracking-tight text-foreground">
+					{plugin.name}
+				</h1>
+				<p class="mt-5 max-w-2xl text-lg text-muted-foreground">{plugin.description}</p>
+
+				<div class="mt-6 flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-sm text-muted-foreground">
+					{#if plugin.latestVersion}
+						<span class="version-pill">v{plugin.latestVersion}</span>
+						{#if isPrerelease(plugin.latestVersion)}
 							<span
-								class="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-[10px] tracking-[0.16em] uppercase font-mono bg-gradient-to-r from-warning/20 to-warning/5 text-warning border border-warning/30"
-							>
-								<Sparkles class="h-3 w-3" />
-								{m.plugin_detail_featured()}
-							</span>
-						{/if}
-						{#if plugin.latestVersion}
-							<span
-								class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-mono bg-primary/10 text-primary border border-primary/20"
-								>v{plugin.latestVersion}</span
-							>
-							{#if isPrerelease(plugin.latestVersion)}
-								<span
-									class="inline-flex items-center px-2 py-0.5 rounded-md text-[10px] font-mono bg-warning/15 text-warning border border-warning/30"
-									>{m.plugin_prerelease_badge()}</span
-								>
-							{/if}
-						{/if}
-						{#if plugin.license}
-							<span
-								class="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-md text-[10px] font-mono text-muted-foreground border border-border bg-card/60"
-							>
-								<Shield class="h-3 w-3" />{plugin.license}
-							</span>
-						{/if}
-						{#if plugin.category}
-							<Badge variant="outline" class="text-[10px] font-mono">{plugin.category}</Badge>
-						{/if}
-					</div>
-					<div class="flex items-center gap-3 flex-wrap">
-						<h1 class="text-5xl md:text-6xl leading-[0.95] tracking-tight font-semibold">{plugin.name}</h1>
-						{#if plugin.verified}
-							<VerifiedBadge size="md" verifiedAt={plugin.verifiedAt ?? null} />
-						{/if}
-					</div>
-					<p class="text-lg text-foreground/85 max-w-2xl leading-relaxed">{plugin.description}</p>
-					<div class="flex items-center gap-4 text-sm text-muted-foreground flex-wrap pt-1">
-						<span>{m.plugin_detail_by()} <span class="text-foreground font-medium">{author}</span></span>
-						{#if stats}
-							<span class="inline-flex items-center gap-1.5"
-								><Star class="h-3.5 w-3.5" />{formatNumber(stats.stars)}</span
+								class="rounded-full border border-warning/30 bg-warning/15 px-2.5 py-0.5 font-mono text-[0.7rem] text-warning"
+								>{m.plugin_prerelease_badge()}</span
 							>
 						{/if}
-						<span class="inline-flex items-center gap-1.5"
-							><Download class="h-3.5 w-3.5" />{formatDownloadCount(plugin.downloads, locale)}</span
+					{/if}
+					{#if plugin.verified}
+						<VerifiedBadge size="md" verifiedAt={plugin.verifiedAt ?? null} />
+					{/if}
+					{#if plugin.featured}
+						<span
+							class="inline-flex items-center gap-1.5 rounded-full border border-warning/30 bg-warning/10 px-2.5 py-0.5 text-xs text-warning"
 						>
-					</div>
+							<Sparkles class="h-3 w-3" />
+							{m.plugin_detail_featured()}
+						</span>
+					{/if}
+					<span class="meta-divider hidden sm:inline-block" aria-hidden="true"></span>
+					<span>{m.plugin_detail_by()} <span class="text-foreground font-medium">{author}</span></span>
+					<span class="inline-flex items-center gap-1.5 tabular-nums">
+						<Download class="h-3.5 w-3.5" />{formatDownloadCount(plugin.downloads, locale)}
+					</span>
+					{#if stats && stats.stars != null}
+						<span class="inline-flex items-center gap-1.5 tabular-nums">
+							<Star class="h-3.5 w-3.5" />{formatNumber(stats.stars)}
+						</span>
+					{/if}
 				</div>
 
-				{#if isOwner}
-					<div class="flex flex-col gap-2 ml-auto">
-						<Button variant="outline" size="sm" onclick={transferOwnership} disabled={deleting}>
-							<UserRoundCog class="h-3.5 w-3.5" />
-							{m.plugin_detail_transfer()}
+				<div class="mt-9 flex flex-wrap items-center justify-center gap-3">
+					{#if installDeepLink}
+						<Button size="lg" href={installDeepLink.href}>
+							<Rocket class="h-4 w-4" />
+							{m.plugin_detail_open_in_app({ app: installDeepLink.scheme.name })}
 						</Button>
-						<Button variant="destructive" size="sm" onclick={openDelete} disabled={deleting}>
-							<Trash2 class="h-3.5 w-3.5" />
-							{deleting ? m.plugin_detail_deleting() : m.plugin_detail_delete()}
+					{/if}
+					{#if primaryDownload}
+						<Button
+							size="lg"
+							variant={installDeepLink ? 'outline' : 'default'}
+							href={primaryDownload.href}
+							data-sveltekit-reload
+						>
+							<Download class="h-4 w-4" />
+							{m.plugin_detail_download_for({ platform: platformLabel(primaryDownload.key) })}
 						</Button>
+					{/if}
+					{#if plugin.homepage && !(installDeepLink && primaryDownload)}
+						<Button size="lg" variant="outline" href={plugin.homepage} target="_blank" rel="noreferrer">
+							<FolderGit2 class="h-4 w-4" />
+							{m.plugin_detail_repository()}
+						</Button>
+					{/if}
+				</div>
+
+				{#if plugin.tags.length > 0}
+					<div class="mt-7 flex flex-wrap items-center justify-center gap-1.5">
+						{#each plugin.tags as tag (tag)}
+							<a href={`/plugins?tag=${encodeURIComponent(tag)}`} class="tag-pill">
+								<span class="opacity-50">#</span>{tag}
+							</a>
+						{/each}
 					</div>
 				{/if}
 			</div>
+		</div>
+	</section>
 
-			{#if plugin.tags.length > 0}
-				<div class="flex flex-wrap items-center gap-x-3 gap-y-1 mt-6">
-					{#each plugin.tags as tag (tag)}
-						<a
-							href={`/plugins?tag=${encodeURIComponent(tag)}`}
-							class="font-mono text-xs text-muted-foreground hover:text-foreground transition-colors"
-						>
-							<span class="opacity-50">#</span>{tag}
-						</a>
-					{/each}
-				</div>
-			{/if}
-		</header>
-
-		<!-- TWO-COLUMN GRID -->
-		<div class="grid gap-10 lg:grid-cols-[1fr_320px] mt-4">
-			<div class="space-y-12 min-w-0">
-				<!-- DOWNLOAD -->
-				<section class="space-y-4">
-					<div class="flex items-baseline justify-between gap-3 flex-wrap">
-						<h2 class="text-2xl font-semibold tracking-tight">{m.plugin_detail_download_title()}</h2>
-						<div class="flex items-center gap-3">
-							{#if isOwner}
-								<Button variant="ghost" size="sm" onclick={refreshFromForge} disabled={refreshing}>
-									<RefreshCw class="h-3.5 w-3.5 {refreshing ? 'animate-spin' : ''}" />
-									{refreshing ? m.plugin_detail_refresh_running() : m.plugin_detail_refresh_button()}
-								</Button>
-							{/if}
-							{#if latestRelease}
-								<span class="text-xs font-mono text-muted-foreground">v{latestRelease.version}</span>
+	<div class="mx-auto max-w-6xl px-6 pt-14 pb-24">
+		<div class="grid gap-12 lg:grid-cols-[minmax(0,1fr)_300px]">
+			<div class="space-y-16 min-w-0">
+				<!-- INSTALL -->
+				<section id="install" class="space-y-6">
+					<div class="flex items-start justify-between gap-4 flex-wrap">
+						{@render sectionHead(Download, m.plugin_detail_download_title(), TONES.teal)}
+						{#if latestRelease}
+							<div class="flex items-center gap-2 pt-2">
+								<span class="font-mono text-xs text-muted-foreground">v{latestRelease.version}</span>
 								{#if isPrerelease(latestRelease.version)}
-									<span class="font-mono text-[10px] px-2 py-0.5 rounded-full bg-warning/15 text-warning tracking-wide"
+									<span class="rounded-full bg-warning/15 px-2 py-0.5 font-mono text-[10px] tracking-wide text-warning"
 										>{m.plugin_prerelease_badge()}</span
 									>
 								{/if}
-							{/if}
-						</div>
+							</div>
+						{/if}
 					</div>
+
 					{#if installDeepLink}
 						<a
 							href={installDeepLink.href}
-							class="group relative flex items-center gap-4 px-5 py-4 rounded-xl border border-primary/40 bg-gradient-to-br from-primary/[0.12] via-primary/[0.05] to-transparent hover:border-primary/60 hover:from-primary/[0.18] transition-all"
+							class="group flex items-center gap-4 rounded-lg border border-primary/40 bg-primary/5 p-4 sm:p-5 transition-colors hover:border-primary/60 tabularis:rounded-md tabularis:border-[0.1rem]"
 						>
-							<div
-								class="h-10 w-10 rounded-lg bg-primary/20 border border-primary/30 flex items-center justify-center flex-shrink-0"
+							<span
+								class="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-md border border-primary/30 bg-primary/10 text-primary"
 							>
-								<Rocket class="h-5 w-5 text-primary" />
-							</div>
-							<div class="flex-1 min-w-0">
-								<div class="text-sm font-semibold">
+								<Rocket class="h-5 w-5" />
+							</span>
+							<span class="min-w-0 flex-1">
+								<span class="block font-semibold">
 									{m.plugin_detail_open_in_app({ app: installDeepLink.scheme.name })}
-								</div>
-								<div class="text-[11px] text-muted-foreground font-mono mt-0.5">
-									{installDeepLink.scheme.scheme}://{latestRelease ? ` · v${latestRelease.version}` : ''}
-								</div>
-							</div>
+								</span>
+								<span class="mt-0.5 block text-sm text-muted-foreground">
+									{m.plugin_detail_open_in_app_subtitle()}
+								</span>
+							</span>
+							<ArrowUpRight
+								class="h-4 w-4 flex-shrink-0 text-muted-foreground transition-colors group-hover:text-primary"
+							/>
 						</a>
 					{/if}
-					{#if latestRelease && primaryDownload}
-						<a
-							href={primaryDownload.href}
-							data-sveltekit-reload
-							class={installDeepLink
-								? 'group flex items-center gap-3 px-4 py-3 rounded-lg border border-border bg-card hover:border-primary/40 hover:bg-foreground/[0.02] transition-colors'
-								: 'group relative flex items-center gap-4 px-5 py-4 rounded-xl border border-primary/40 bg-gradient-to-br from-primary/[0.12] via-primary/[0.05] to-transparent hover:border-primary/60 hover:from-primary/[0.18] transition-all'}
+
+					{#if app.name}
+						<div
+							class="flex flex-wrap items-center gap-x-3 gap-y-2 rounded-lg border border-border bg-foreground/[0.02] px-4 py-3 text-sm tabularis:rounded-md tabularis:border-[0.1rem]"
 						>
-							{#if installDeepLink}
-								<Download class="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
-								<div class="flex-1 min-w-0">
-									<div class="text-sm font-medium">
-										{m.plugin_detail_download_for({ platform: platformLabel(primaryDownload.key) })}
-									</div>
-									{#if primaryDownload.size}
-										<div class="text-[11px] text-muted-foreground font-mono">{formatBytes(primaryDownload.size)}</div>
-									{/if}
-								</div>
-							{:else}
-								<div
-									class="h-10 w-10 rounded-lg bg-primary/20 border border-primary/30 flex items-center justify-center flex-shrink-0"
+							<AppWindow class="h-4 w-4 flex-shrink-0 text-primary" />
+							<span class="flex-1 min-w-[12rem]">
+								{m.app_plugin_note({ app: app.name })}
+								{#if latestRelease?.minRuntimeVersion}
+									<span class="font-mono text-xs text-muted-foreground">≥ {latestRelease.minRuntimeVersion}</span>
+								{/if}
+								{#if app.downloadUrl}
+									<span class="text-muted-foreground">{m.app_plugin_note_missing()}</span>
+								{/if}
+							</span>
+							{#if app.downloadUrl}
+								<a
+									href={app.downloadUrl}
+									target="_blank"
+									rel="noopener"
+									class="inline-flex items-center gap-1.5 font-medium text-primary hover:underline"
 								>
-									<Download class="h-5 w-5 text-primary" />
-								</div>
-								<div class="flex-1 min-w-0">
-									<div class="text-sm font-semibold">
-										{m.plugin_detail_download_for({ platform: platformLabel(primaryDownload.key) })}
-									</div>
-									<div class="text-[11px] text-muted-foreground font-mono mt-0.5">
-										v{latestRelease.version}{primaryDownload.size ? ` · ${formatBytes(primaryDownload.size)}` : ''}
-									</div>
-								</div>
+									{m.app_download({ app: app.name })}
+									<ArrowRight class="h-3.5 w-3.5" />
+								</a>
 							{/if}
-						</a>
-						{#if otherDownloads.length > 0}
-							<details class="group rounded-lg border border-border bg-card/30 overflow-hidden">
-								<summary
-									class="px-4 py-2.5 cursor-pointer text-xs font-mono text-muted-foreground hover:text-foreground transition-colors flex items-center justify-between list-none [&::-webkit-details-marker]:hidden"
-								>
-									<span>{m.plugin_detail_download_other_platforms({ count: otherDownloads.length })}</span>
-									<ChevronDown class="h-3.5 w-3.5 transition-transform group-open:rotate-180" />
-								</summary>
-								<div class="grid grid-cols-1 sm:grid-cols-2 gap-2 px-3 pb-3 pt-1 border-t border-border/60">
-									{#each otherDownloads as p (p.key)}
-										<a
-											href={p.href}
-											data-sveltekit-reload
-											class="group/item flex items-center gap-3 px-3 py-2.5 rounded-md border border-border bg-card hover:border-primary/40 hover:bg-foreground/[0.02] transition-colors"
-										>
-											<Download
-												class="h-3.5 w-3.5 text-muted-foreground group-hover/item:text-primary transition-colors"
-											/>
-											<div class="flex-1 min-w-0">
-												<div class="font-mono text-xs">{platformLabel(p.key)}</div>
-												{#if p.size}
-													<div class="text-[10px] text-muted-foreground">{formatBytes(p.size)}</div>
+						</div>
+					{/if}
+
+					{#if latestRelease && downloadOptions.length > 0}
+						<div class="space-y-3">
+							<span class="option-label">{m.plugin_detail_download_pick_platform()}</span>
+							<ul class="{cardClass} divide-y divide-border overflow-hidden">
+								{#each downloadOptions as p (p.key)}
+									{@const mine = p.key === primaryDownload?.key}
+									<li class="flex items-center gap-4 px-4 py-3">
+										<div class="min-w-0 flex-1">
+											<div class="flex flex-wrap items-center gap-2">
+												<span class="font-medium">{platformLabel(p.key)}</span>
+												{#if mine}
+													<span
+														class="rounded-full border border-primary/30 bg-primary/10 px-2 py-0.5 text-[10px] font-medium text-primary"
+														>{m.plugin_detail_your_platform()}</span
+													>
 												{/if}
 											</div>
-										</a>
-									{/each}
-								</div>
-							</details>
-						{/if}
-					{:else if latestRelease && platformList.length > 0}
-						<div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
-							{#each platformList as p (p.key)}
-								<a
-									href={downloadHref(plugin.id, p.key)}
-									data-sveltekit-reload
-									class="group flex items-center gap-3 px-4 py-3 rounded-lg border border-border bg-card hover:border-primary/40 hover:bg-foreground/[0.02] transition-colors"
+											<div class="mt-0.5 font-mono text-[11px] text-muted-foreground">
+												{[p.size ? formatBytes(p.size) : null, p.sha256 ? `sha256 ${p.sha256.slice(0, 12)}…` : null]
+													.filter(Boolean)
+													.join(' · ')}
+											</div>
+										</div>
+										<Button
+											size="sm"
+											variant={mine && !installDeepLink ? 'default' : 'outline'}
+											href={p.href}
+											data-sveltekit-reload
+											class="capitalize"
+										>
+											<Download class="h-3.5 w-3.5" />
+											{m.plugin_detail_download()}
+										</Button>
+									</li>
+								{/each}
+							</ul>
+						</div>
+
+						<div class="space-y-3">
+							<div class="flex flex-wrap items-center justify-between gap-3">
+								<span class="option-label inline-flex items-center gap-2">
+									<Terminal class="h-4 w-4 text-muted-foreground" />
+									{m.plugin_detail_install_subtitle()}
+								</span>
+								{#if platformList.length > 1}
+									<select
+										bind:value={selectedPlatform}
+										aria-label={m.plugin_detail_download_pick_platform()}
+										class="h-8 rounded-md border border-input bg-transparent px-2.5 font-mono text-xs"
+									>
+										{#each platformList as p (p.key)}
+											<option value={p.key}>{platformLabel(p.key)}</option>
+										{/each}
+									</select>
+								{/if}
+							</div>
+							<div
+								class="flex min-w-0 items-center gap-2 rounded-lg border border-border bg-foreground/[0.02] px-4 py-3 tabularis:rounded-sm tabularis:border-[0.1rem]"
+							>
+								<code class="min-w-0 flex-1 truncate font-mono text-[0.85rem] text-muted-foreground"
+									>{installCommand}</code
 								>
-									<Download class="h-4 w-4 text-muted-foreground group-hover:text-primary transition-colors" />
-									<div class="flex-1 min-w-0">
-										<div class="font-mono text-sm">{platformLabel(p.key)}</div>
-										{#if p.size}
-											<div class="text-[11px] text-muted-foreground">{formatBytes(p.size)}</div>
-										{/if}
-									</div>
-								</a>
-							{/each}
+								<button
+									type="button"
+									onclick={copyInstall}
+									aria-label={m.plugin_detail_copy()}
+									title={m.plugin_detail_copy()}
+									class="inline-flex h-7 w-7 flex-shrink-0 items-center justify-center rounded-md text-muted-foreground transition-colors hover:bg-foreground/5 hover:text-foreground"
+								>
+									{#if copying}
+										<Check class="h-3.5 w-3.5 text-primary" />
+									{:else}
+										<Copy class="h-3.5 w-3.5" />
+									{/if}
+								</button>
+							</div>
 						</div>
 					{:else}
 						<div class="rounded-lg border border-dashed border-border p-6 text-sm text-muted-foreground">
@@ -698,13 +771,13 @@
 
 				<!-- SCREENSHOTS -->
 				{#if plugin.screenshots.length > 0}
-					<section class="space-y-4">
-						<h2 class="text-2xl font-semibold tracking-tight">{m.plugin_detail_screenshots()}</h2>
+					<section class="space-y-6">
+						{@render sectionHead(ImageIcon, m.plugin_detail_screenshots(), TONES.purple)}
 						<div class="grid grid-cols-2 lg:grid-cols-3 gap-3">
 							{#each plugin.screenshots as shot, i (shot.url)}
 								<button
 									type="button"
-									class="group relative aspect-[16/10] rounded-lg border border-border overflow-hidden bg-card cursor-zoom-in transition-all hover:border-primary/40"
+									class="group relative aspect-[16/10] overflow-hidden rounded-lg border border-border bg-card cursor-zoom-in transition-colors hover:border-primary/40 tabularis:rounded-md tabularis:border-[0.1rem]"
 									onclick={() => (activeScreenshot = i)}
 								>
 									<img
@@ -715,7 +788,7 @@
 									/>
 									{#if shot.caption}
 										<span
-											class="absolute inset-x-0 bottom-0 px-2.5 py-1.5 text-xs bg-gradient-to-t from-black/70 to-transparent text-white/90 text-left"
+											class="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/70 to-transparent px-2.5 py-1.5 text-left text-xs text-white/90"
 											>{shot.caption}</span
 										>
 									{/if}
@@ -726,18 +799,18 @@
 				{/if}
 
 				<!-- README -->
-				<section class="space-y-4">
-					<div class="flex items-baseline justify-between gap-3 flex-wrap">
-						<h2 class="text-2xl font-semibold tracking-tight">{m.plugin_detail_readme()}</h2>
+				<section class="space-y-6">
+					<div class="flex items-start justify-between gap-3 flex-wrap">
+						{@render sectionHead(FileText, m.plugin_detail_readme(), TONES.blue)}
 						{#if plugin.readmeAvailableLocales && plugin.readmeAvailableLocales.length > 1}
-							<div class="inline-flex items-center gap-2 text-xs text-muted-foreground">
+							<div class="inline-flex items-center gap-2 pt-2 text-xs text-muted-foreground">
 								<Languages class="h-3.5 w-3.5" />
 								<div class="inline-flex gap-1">
 									{#each plugin.readmeAvailableLocales as loc (loc)}
 										<span
-											class="font-mono text-[11px] px-2 py-0.5 rounded border {loc === plugin.readmeLocale
-												? 'text-foreground bg-primary/10 border-primary/30'
-												: 'text-muted-foreground border-border'}">{LOCALE_LABELS[loc as Locale] ?? loc}</span
+											class="rounded-full border px-2 py-0.5 font-mono text-[11px] {loc === plugin.readmeLocale
+												? 'border-primary/30 bg-primary/10 text-foreground'
+												: 'border-border text-muted-foreground'}">{LOCALE_LABELS[loc as Locale] ?? loc}</span
 										>
 									{/each}
 								</div>
@@ -746,12 +819,12 @@
 					</div>
 					{#if plugin.readmeHtml}
 						<article
-							class="prose prose-sm dark:prose-invert max-w-none rounded-xl border border-border bg-card px-9 py-8 prose-headings:font-semibold prose-headings:tracking-tight prose-pre:font-mono prose-pre:text-[12.5px] prose-pre:rounded-md prose-pre:border prose-pre:border-border prose-code:font-mono"
+							class="{cardClass} prose prose-sm dark:prose-invert max-w-none px-6 py-6 sm:px-9 sm:py-8 prose-headings:font-semibold prose-headings:tracking-tight prose-pre:font-mono prose-pre:text-[12.5px] prose-pre:rounded-md prose-pre:border prose-pre:border-border prose-code:font-mono"
 						>
 							{@html plugin.readmeHtml}
 						</article>
 					{:else}
-						<div class="rounded-xl border border-dashed border-border p-8 text-center">
+						<div class="rounded-lg border border-dashed border-border p-8 text-center tabularis:rounded-md">
 							<p class="text-sm text-muted-foreground">{m.plugin_detail_readme_missing()}</p>
 						</div>
 					{/if}
@@ -759,64 +832,54 @@
 
 				<!-- RELEASES -->
 				{#if sortedReleases.length > 0}
-					<section class="space-y-4">
-						<div>
-							<h2 class="text-2xl font-semibold tracking-tight">{m.plugin_detail_releases()}</h2>
-							<p class="text-xs text-muted-foreground mt-1">{m.plugin_detail_releases_subtitle()}</p>
-						</div>
-						<div class="border-t border-border">
-							{#each sortedReleases as release (release.id)}
+					<section class="space-y-6">
+						{@render sectionHead(
+							History,
+							m.plugin_detail_releases(),
+							TONES.orange,
+							m.plugin_detail_releases_subtitle(),
+						)}
+						<div class="{cardClass} divide-y divide-border overflow-hidden">
+							{#each sortedReleases as release, i (release.id)}
 								{@const totalSize = Object.values(release.assets).reduce((acc, a) => acc + (a.size ?? 0), 0)}
 								{@const platformCount = Object.keys(release.assets).length}
 								{@const vr = versionReadmes[release.version]}
 								<details
-									class="group border-b border-border [&_summary::-webkit-details-marker]:hidden"
+									class="group [&_summary::-webkit-details-marker]:hidden"
 									ontoggle={(e) => {
 										if (plugin && (e.currentTarget as HTMLDetailsElement).open)
 											void loadVersionReadme(plugin.id, release.version)
 									}}
 								>
 									<summary
-										class="grid grid-cols-[auto_1fr_auto] gap-4 items-center py-4 cursor-pointer list-none transition-opacity hover:opacity-90"
+										class="grid cursor-pointer list-none grid-cols-[auto_1fr_auto] items-center gap-4 px-4 py-3.5 transition-colors hover:bg-foreground/[0.02]"
 									>
-										<span class="font-mono text-sm">v{release.version}</span>
-										<span class="inline-flex gap-2 flex-wrap">
-											<span
-												class="font-mono text-[10px] px-2 py-0.5 rounded-full bg-foreground/5 text-muted-foreground tracking-wide"
-												>{platformCount} {platformCount === 1 ? 'platform' : 'platforms'}</span
-											>
+										<span class={i === 0 ? 'version-pill' : 'font-mono text-sm px-2.5'}>v{release.version}</span>
+										<span class="inline-flex flex-wrap gap-1.5">
+											<span class="chip">{platformCount} {platformCount === 1 ? 'platform' : 'platforms'}</span>
 											{#if totalSize > 0}
-												<span
-													class="font-mono text-[10px] px-2 py-0.5 rounded-full bg-foreground/5 text-muted-foreground tracking-wide"
-													>{formatBytes(totalSize)}</span
-												>
+												<span class="chip">{formatBytes(totalSize)}</span>
 											{/if}
 											{#if release.minRuntimeVersion}
-												<span
-													class="font-mono text-[10px] px-2 py-0.5 rounded-full bg-foreground/5 text-muted-foreground tracking-wide"
-													>runtime ≥ {release.minRuntimeVersion}</span
-												>
+												<span class="chip">runtime ≥ {release.minRuntimeVersion}</span>
 											{/if}
 											{#if isPrerelease(release.version)}
-												<span
-													class="font-mono text-[10px] px-2 py-0.5 rounded-full bg-warning/15 text-warning tracking-wide"
-													>{m.plugin_prerelease_badge()}</span
-												>
+												<span class="chip !bg-warning/15 !text-warning">{m.plugin_prerelease_badge()}</span>
 											{/if}
 											{#if release.yankedAt}
-												<span
-													class="font-mono text-[10px] px-2 py-0.5 rounded-full bg-destructive/15 text-destructive tracking-wide"
-													>{m.plugin_detail_yanked_badge()}</span
-												>
+												<span class="chip !bg-destructive/15 !text-destructive">{m.plugin_detail_yanked_badge()}</span>
 											{/if}
 										</span>
-										<span class="font-mono text-[11px] text-muted-foreground whitespace-nowrap"
-											>{formatRelative(release.createdAt)}</span
+										<span
+											class="inline-flex items-center gap-2 whitespace-nowrap font-mono text-[11px] text-muted-foreground"
 										>
+											{formatRelative(release.createdAt)}
+											<ChevronDown class="h-3.5 w-3.5 transition-transform group-open:rotate-180" />
+										</span>
 									</summary>
-									<div class="pb-4">
+									<div class="space-y-4 border-t border-dashed border-border px-4 pt-3 pb-5">
 										{#if release.yankedAt || isOwner}
-											<div class="px-2.5 pb-3 flex items-center justify-between gap-3 flex-wrap">
+											<div class="flex flex-wrap items-center justify-between gap-3">
 												{#if release.yankedAt}
 													<div class="text-xs text-muted-foreground">
 														<span class="font-mono text-destructive">{m.plugin_detail_yanked_badge()}</span>
@@ -836,12 +899,12 @@
 															onclick={() => unyankRelease(release)}
 															disabled={unyankingId === release.id}
 														>
-															<Undo2 class="h-3.5 w-3.5 mr-1.5" />
+															<Undo2 class="h-3.5 w-3.5" />
 															{m.plugin_detail_unyank_button()}
 														</Button>
 													{:else}
 														<Button variant="ghost" size="sm" onclick={() => openYank(release)}>
-															<Ban class="h-3.5 w-3.5 mr-1.5" />
+															<Ban class="h-3.5 w-3.5" />
 															{m.plugin_detail_yank_button()}
 														</Button>
 													{/if}
@@ -853,15 +916,15 @@
 												{#each Object.entries(release.assets) as [key, asset] (key)}
 													{@const [os, arch] = key.split('-')}
 													<tr class="border-t border-dashed border-border/70 first:border-t-0">
-														<td class="px-2.5 py-2 font-mono text-xs">{platformLabel(key)}</td>
-														<td class="px-2.5 py-2 font-mono text-xs text-muted-foreground"
+														<td class="py-2 pr-3 font-mono text-xs">{platformLabel(key)}</td>
+														<td class="px-3 py-2 font-mono text-xs text-muted-foreground"
 															>{asset.size ? formatBytes(asset.size) : ''}</td
 														>
 														<td
-															class="px-2.5 py-2 font-mono text-[11px] text-muted-foreground truncate max-w-[280px]"
+															class="max-w-[280px] truncate px-3 py-2 font-mono text-[11px] text-muted-foreground"
 															title={asset.sha256 ?? ''}>{asset.sha256 ? asset.sha256.slice(0, 12) + '…' : ''}</td
 														>
-														<td class="px-2.5 py-2 text-right">
+														<td class="py-2 pl-3 text-right">
 															<a
 																href={`/api/plugins/${plugin.id}/latest?os=${encodeURIComponent(os ?? '')}&arch=${encodeURIComponent(arch ?? '')}&redirect=1`}
 																data-sveltekit-reload
@@ -873,20 +936,20 @@
 												{/each}
 											</tbody>
 										</table>
-										<div class="px-2.5 pt-4">
-											<h3 class="text-xs font-mono uppercase tracking-[0.14em] text-muted-foreground mb-2">
+										<div>
+											<h3 class="mb-2 font-mono text-xs uppercase tracking-[0.14em] text-muted-foreground">
 												{m.plugin_detail_release_readme_title()}
 											</h3>
 											{#if !vr || vr.loading}
 												<Skeleton class="h-24 w-full rounded-lg" />
 											{:else if vr.html}
 												<article
-													class="prose prose-sm dark:prose-invert max-w-none rounded-lg border border-border bg-card px-5 py-4 prose-headings:font-semibold prose-headings:tracking-tight prose-pre:font-mono prose-pre:text-[12.5px] prose-pre:rounded-md prose-pre:border prose-pre:border-border prose-code:font-mono"
+													class="prose prose-sm dark:prose-invert max-w-none rounded-lg border border-border bg-background/40 px-5 py-4 prose-headings:font-semibold prose-headings:tracking-tight prose-pre:font-mono prose-pre:text-[12.5px] prose-pre:rounded-md prose-pre:border prose-pre:border-border prose-code:font-mono tabularis:rounded-md"
 												>
 													{@html vr.html}
 												</article>
 											{:else}
-												<p class="text-xs text-muted-foreground italic">{m.plugin_detail_release_readme_missing()}</p>
+												<p class="text-xs italic text-muted-foreground">{m.plugin_detail_release_readme_missing()}</p>
 											{/if}
 										</div>
 									</div>
@@ -897,10 +960,10 @@
 				{/if}
 
 				<!-- DOWNLOAD STATS PER VERSION -->
-				<section class="space-y-4">
-					<h2 class="text-2xl font-semibold tracking-tight">{m.plugin_detail_downloads_per_version()}</h2>
+				<section class="space-y-6">
+					{@render sectionHead(ChartBar, m.plugin_detail_downloads_per_version(), TONES.purple)}
 					{#if downloadStats.status === 'ready' && downloadStats.data.versions.length > 0}
-						<div class="rounded-xl border border-border bg-card/50 p-4 sm:p-6 space-y-6">
+						<div class="{cardClass} space-y-6 p-4 sm:p-6">
 							<div style:height="{Math.max(180, downloadStats.data.versions.length * 28 + 60)}px">
 								<BarChart
 									data={downloadStats.data.versions.map((v) => ({ ...v, label: `v${v.version}` }))}
@@ -913,15 +976,13 @@
 							<ul class="space-y-1.5 text-xs">
 								{#each downloadStats.data.versions as v (v.version)}
 									<li class="flex flex-wrap items-center gap-x-3 gap-y-1">
-										<span class="font-mono text-foreground/80 min-w-[60px]">v{v.version}</span>
+										<span class="min-w-[60px] font-mono text-foreground/80">v{v.version}</span>
 										<span class="font-mono tabular-nums text-muted-foreground"
 											>{formatDownloadCount(v.total, locale)}</span
 										>
 										<span class="flex flex-wrap gap-1.5">
 											{#each Object.entries(v.platforms) as [pl, n] (pl)}
-												<span class="font-mono text-[10px] px-1.5 py-0.5 rounded bg-foreground/5 text-muted-foreground">
-													{platformLabel(pl)} · {formatDownloadCount(n, locale)}
-												</span>
+												<span class="chip">{platformLabel(pl)} · {formatDownloadCount(n, locale)}</span>
 											{/each}
 										</span>
 									</li>
@@ -929,15 +990,15 @@
 							</ul>
 						</div>
 					{:else if downloadStats.status === 'loading'}
-						<div role="status" class="rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">
+						<div role="status" class="rounded-lg border border-dashed border-border p-6 text-sm text-muted-foreground">
 							{m.common_loading()}
 						</div>
 					{:else if downloadStats.status === 'unavailable'}
-						<div role="status" class="rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">
+						<div role="status" class="rounded-lg border border-dashed border-border p-6 text-sm text-muted-foreground">
 							{m.plugin_detail_downloads_unavailable()}
 						</div>
 					{:else}
-						<div class="rounded-xl border border-dashed border-border p-6 text-sm text-muted-foreground">
+						<div class="rounded-lg border border-dashed border-border p-6 text-sm text-muted-foreground">
 							{m.plugin_detail_downloads_empty()}
 						</div>
 					{/if}
@@ -945,103 +1006,82 @@
 			</div>
 
 			<!-- SIDEBAR -->
-			<aside class="space-y-6 lg:sticky lg:top-4 lg:self-start">
-				<!-- STATS -->
-				<div class="border border-border rounded-xl bg-card px-4">
-					<div class="flex items-center justify-between py-3 border-b border-dashed border-border/70">
-						<div
-							class="inline-flex items-center gap-2 text-xs uppercase tracking-[0.06em] text-muted-foreground font-mono"
-						>
-							<Star class="h-3.5 w-3.5" />
-							<span>{m.plugin_detail_stat_stars()}</span>
-						</div>
-						<div class="text-2xl font-semibold leading-none">{formatNumber(stats?.stars)}</div>
-					</div>
-					<div class="flex items-center justify-between py-3 border-b border-dashed border-border/70">
-						<div
-							class="inline-flex items-center gap-2 text-xs uppercase tracking-[0.06em] text-muted-foreground font-mono"
-						>
-							<Download class="h-3.5 w-3.5" />
-							<span>{m.plugin_detail_stat_downloads()}</span>
-						</div>
-						<div class="text-2xl font-semibold leading-none">{formatDownloadCount(plugin.downloads, locale)}</div>
-					</div>
-					<div class="flex items-center justify-between py-3 border-b border-dashed border-border/70">
-						<div
-							class="inline-flex items-center gap-2 text-xs uppercase tracking-[0.06em] text-muted-foreground font-mono"
-						>
-							<Clock class="h-3.5 w-3.5" />
-							<span>{m.plugin_detail_stat_last_release()}</span>
-						</div>
-						<div class="text-base">{formatRelative(latestRelease?.createdAt)}</div>
-					</div>
-					{#if primaryDownload?.size}
-						<div class="flex items-center justify-between py-3 border-b border-dashed border-border/70">
-							<div
-								class="inline-flex items-center gap-2 text-xs uppercase tracking-[0.06em] text-muted-foreground font-mono"
-							>
-								<HardDrive class="h-3.5 w-3.5" />
-								<span>{m.plugin_detail_stat_size()}</span>
-							</div>
-							<div class="text-base">{formatBytes(primaryDownload.size)}</div>
-						</div>
-					{/if}
-					{#if latestRelease?.minRuntimeVersion}
-						<div class="flex items-center justify-between py-3">
-							<div
-								class="inline-flex items-center gap-2 text-xs uppercase tracking-[0.06em] text-muted-foreground font-mono"
-							>
-								<Cpu class="h-3.5 w-3.5" />
-								<span>{m.plugin_detail_stat_runtime()}</span>
-							</div>
-							<div class="text-base">≥ {latestRelease.minRuntimeVersion}</div>
-						</div>
-					{/if}
+			<aside class="space-y-6 lg:sticky lg:top-[calc(var(--header-height)+1.5rem)] lg:self-start">
+				<div class={cardClass}>
+					<h2 class="sidebar-title">{m.plugin_detail_details()}</h2>
+					<dl class="px-4 pb-1.5">
+						{@render detailRow(
+							Download,
+							m.plugin_detail_stat_downloads(),
+							formatDownloadCount(plugin.downloads, locale),
+						)}
+						{#if stats && stats.stars != null}
+							{@render detailRow(Star, m.plugin_detail_stat_stars(), formatNumber(stats.stars))}
+						{/if}
+						{@render detailRow(Clock, m.plugin_detail_stat_last_release(), formatRelative(latestRelease?.createdAt))}
+						{#if primaryDownload?.size}
+							{@render detailRow(HardDrive, m.plugin_detail_stat_size(), formatBytes(primaryDownload.size))}
+						{/if}
+						{#if latestRelease?.minRuntimeVersion}
+							{@render detailRow(Cpu, m.plugin_detail_stat_runtime(), `≥ ${latestRelease.minRuntimeVersion}`)}
+						{/if}
+						{#if plugin.license}
+							{@render detailRow(Scale, m.plugin_detail_license(), plugin.license)}
+						{/if}
+						{#if plugin.category}
+							{@render detailRow(Tag, m.plugin_detail_category(), plugin.category)}
+						{/if}
+					</dl>
 				</div>
 
-				<!-- LINKS -->
-				<div class="flex flex-col border border-border rounded-xl overflow-hidden">
-					{#if plugin.homepage}
-						<a
-							class="inline-flex items-center gap-2.5 px-3.5 py-2.5 text-sm bg-card hover:bg-foreground/[0.04] transition-colors border-b border-border last:border-b-0"
-							href={plugin.homepage}
-							target="_blank"
-							rel="noreferrer"
-						>
-							<Code2 class="h-4 w-4" />
-							<span class="capitalize">{provider}</span>
-							<ExternalLink class="h-3 w-3 ml-auto opacity-50" />
-						</a>
-					{/if}
-					{#if plugin.documentationUrl}
-						<a
-							class="inline-flex items-center gap-2.5 px-3.5 py-2.5 text-sm bg-card hover:bg-foreground/[0.04] transition-colors border-b border-border last:border-b-0"
-							href={plugin.documentationUrl}
-							target="_blank"
-							rel="noreferrer"
-						>
-							<BookOpen class="h-4 w-4" />
-							<span>{m.plugin_detail_docs()}</span>
-							<ExternalLink class="h-3 w-3 ml-auto opacity-50" />
-						</a>
-					{/if}
-					{#if plugin.issuesUrl}
-						<a
-							class="inline-flex items-center gap-2.5 px-3.5 py-2.5 text-sm bg-card hover:bg-foreground/[0.04] transition-colors border-b border-border last:border-b-0"
-							href={plugin.issuesUrl}
-							target="_blank"
-							rel="noreferrer"
-						>
-							<Bug class="h-4 w-4" />
-							<span>{m.plugin_detail_report_issue()}</span>
-							<ExternalLink class="h-3 w-3 ml-auto opacity-50" />
-						</a>
-					{/if}
-				</div>
+				{#if plugin.homepage || plugin.documentationUrl || plugin.issuesUrl || plugin.supportEmail || (app.name && app.url)}
+					<div class="{cardClass} overflow-hidden">
+						<h2 class="sidebar-title">{m.plugin_detail_links()}</h2>
+						<div class="border-t border-border">
+							{#if plugin.homepage}
+								{@render linkRow(FolderGit2, m.plugin_detail_repository(), plugin.homepage, provider)}
+							{/if}
+							{#if plugin.documentationUrl}
+								{@render linkRow(BookOpen, m.plugin_detail_docs(), plugin.documentationUrl)}
+							{/if}
+							{#if plugin.issuesUrl}
+								{@render linkRow(Bug, m.plugin_detail_report_issue(), plugin.issuesUrl)}
+							{/if}
+							{#if plugin.supportEmail}
+								{@render linkRow(Mail, m.plugin_detail_email_support(), `mailto:${plugin.supportEmail}`)}
+							{/if}
+							{#if app.name && app.url}
+								{@render linkRow(AppWindow, m.app_website({ app: app.name }), app.url)}
+							{/if}
+						</div>
+					</div>
+				{/if}
+
+				{#if isOwner}
+					<div class={cardClass}>
+						<h2 class="sidebar-title inline-flex items-center gap-2">
+							<Settings2 class="h-3.5 w-3.5" />{m.plugin_detail_manage()}
+						</h2>
+						<div class="flex flex-col gap-2 px-4 pb-4">
+							<Button variant="outline" size="sm" onclick={refreshFromForge} disabled={refreshing}>
+								<RefreshCw class="h-3.5 w-3.5 {refreshing ? 'animate-spin' : ''}" />
+								{refreshing ? m.plugin_detail_refresh_running() : m.plugin_detail_refresh_button()}
+							</Button>
+							<Button variant="outline" size="sm" onclick={transferOwnership} disabled={deleting}>
+								<UserRoundCog class="h-3.5 w-3.5" />
+								{m.plugin_detail_transfer()}
+							</Button>
+							<Button variant="destructive" size="sm" onclick={openDelete} disabled={deleting}>
+								<Trash2 class="h-3.5 w-3.5" />
+								{deleting ? m.plugin_detail_deleting() : m.plugin_detail_delete()}
+							</Button>
+						</div>
+					</div>
+				{/if}
 			</aside>
 		</div>
-	{/if}
-</div>
+	</div>
+{/if}
 
 {#if activeScreenshot !== null && plugin && plugin.screenshots[activeScreenshot]}
 	<button
@@ -1073,3 +1113,122 @@
 {#if plugin && yankTarget}
 	<YankDialog bind:open={yankOpen} version={yankTarget.version} busy={yanking} onConfirm={confirmYank} />
 {/if}
+
+<style>
+	/* App-icon tile with a faint dot texture, as on the tabularis.dev download page. */
+	.icon-tile {
+		position: relative;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 6rem;
+		height: 6rem;
+		overflow: hidden;
+		border: 0.1rem solid var(--color-border);
+		border-radius: 22%;
+		background-color: var(--color-card);
+		background-image:
+			radial-gradient(color-mix(in srgb, var(--color-foreground) 6%, transparent) 1px, transparent 1.5px),
+			radial-gradient(color-mix(in srgb, var(--color-foreground) 4%, transparent) 1px, transparent 1px);
+		background-size:
+			7px 7px,
+			11px 11px;
+		background-position:
+			0 0,
+			3px 5px;
+		box-shadow:
+			0 0.6rem 1.5rem rgb(0 0 0 / 0.4),
+			inset 0 0.1rem 0 rgb(255 255 255 / 0.06),
+			inset 0 -0.1rem 0 rgb(0 0 0 / 0.35);
+	}
+	:global(:root:not(.dark)) .icon-tile {
+		box-shadow:
+			0 0.6rem 1.5rem rgb(15 23 42 / 0.12),
+			inset 0 0.1rem 0 rgb(255 255 255 / 0.8);
+	}
+	.icon-tile img {
+		width: 62%;
+		height: 62%;
+		object-fit: contain;
+	}
+
+	/* Inverted version pill (tabularis.dev plugin cards). */
+	.version-pill {
+		display: inline-flex;
+		align-items: center;
+		padding: 0.2rem 0.6rem;
+		border-radius: 999px;
+		background-color: var(--color-foreground);
+		color: var(--color-background);
+		font-family: var(--font-mono);
+		font-size: 0.7rem;
+		font-weight: 500;
+		line-height: 1.4;
+	}
+
+	.meta-divider {
+		width: 0.1rem;
+		height: 1rem;
+		background-color: var(--color-border-strong);
+	}
+
+	.tag-pill {
+		display: inline-flex;
+		align-items: center;
+		padding: 0.35rem 0.75rem;
+		border: 0.1rem solid var(--color-border);
+		border-radius: 999px;
+		font-family: var(--font-mono);
+		font-size: 0.75rem;
+		color: var(--color-muted-foreground);
+		transition:
+			border-color 0.15s ease,
+			color 0.15s ease;
+	}
+	.tag-pill:hover {
+		border-color: var(--color-border-strong);
+		color: var(--color-foreground);
+	}
+
+	.section-icon {
+		display: inline-flex;
+		flex-shrink: 0;
+		align-items: center;
+		justify-content: center;
+		width: 2.25rem;
+		height: 2.25rem;
+		margin-top: 0.1rem;
+		border: 0.1rem solid color-mix(in srgb, var(--tone) 25%, transparent);
+		border-radius: var(--radius-md);
+		background-color: color-mix(in srgb, var(--tone) 12%, transparent);
+		color: var(--tone);
+	}
+	:global(:root:not(.dark)) .section-icon {
+		color: color-mix(in srgb, var(--tone) 60%, #000);
+	}
+
+	.option-label {
+		font-size: 0.95rem;
+		font-weight: 600;
+		color: var(--color-foreground);
+	}
+
+	.sidebar-title {
+		padding: 1rem 1rem 0.5rem;
+		font-size: 0.75rem;
+		font-weight: 600;
+		letter-spacing: 0.04em;
+		text-transform: uppercase;
+		color: var(--color-muted-foreground);
+	}
+
+	.chip {
+		padding: 0.125rem 0.5rem;
+		border-radius: 999px;
+		background-color: color-mix(in srgb, var(--color-foreground) 5%, transparent);
+		font-family: var(--font-mono);
+		font-size: 10px;
+		letter-spacing: 0.025em;
+		color: var(--color-muted-foreground);
+	}
+</style>

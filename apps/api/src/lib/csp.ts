@@ -13,6 +13,8 @@ export function cspHeader(nonce: string): string {
     `script-src 'self' 'nonce-${nonce}' 'strict-dynamic'`,
     `style-src 'self' 'unsafe-inline'`,
     `img-src 'self' data: https:`,
+    // Companion-app demo video (admin-configured URL).
+    `media-src 'self' https:`,
     `font-src 'self' data:`,
     `connect-src 'self' https:`,
     `object-src 'none'`,

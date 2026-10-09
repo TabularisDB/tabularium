@@ -11,6 +11,7 @@
 	import Skeleton from '$components/ui/Skeleton.svelte'
 	import PluginCard from '$components/PluginCard.svelte'
 	import CmsPage from '$components/CmsPage.svelte'
+	import CompanionAppSection from '$components/CompanionAppSection.svelte'
 	import { eden } from '$lib/eden'
 	import { branding } from '$lib/stores/branding.svelte'
 	import { homeCopy } from '$lib/stores/home-copy.svelte'
@@ -316,6 +317,8 @@
 			{/if}
 		</div>
 	</section>
+
+	<CompanionAppSection />
 {/if}
 
 <style>

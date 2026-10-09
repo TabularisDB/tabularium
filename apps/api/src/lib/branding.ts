@@ -24,6 +24,30 @@ function readSocialLinks(): SocialLinks {
   return Object.fromEntries(SOCIAL_PLATFORMS.map((p) => [p, getSetting(`branding.social.${p}`) ?? null])) as SocialLinks
 }
 
+// Desktop app the registry serves plugins for (e.g. Tabularis). Every field is
+// optional; with no name the UI shows no app references at all.
+export type CompanionApp = {
+  name: string | null
+  // Product website.
+  url: string | null
+  downloadUrl: string | null
+  // Direct video file (mp4/webm) shown on the home page, with an optional poster image.
+  videoUrl: string | null
+  videoPosterUrl: string | null
+}
+
+export const COMPANION_APP_FIELDS = [
+  { input: 'name', setting: 'branding.app.name' },
+  { input: 'url', setting: 'branding.app.url' },
+  { input: 'downloadUrl', setting: 'branding.app.download_url' },
+  { input: 'videoUrl', setting: 'branding.app.video_url' },
+  { input: 'videoPosterUrl', setting: 'branding.app.video_poster_url' },
+] as const satisfies ReadonlyArray<{ input: keyof CompanionApp; setting: string }>
+
+function readCompanionApp(): CompanionApp {
+  return Object.fromEntries(COMPANION_APP_FIELDS.map((f) => [f.input, getSetting(f.setting) ?? null])) as CompanionApp
+}
+
 export const LOGO_STYLES = ['mark', 'wordmark'] as const
 export type LogoStyle = (typeof LOGO_STYLES)[number]
 
@@ -54,6 +78,7 @@ export type Branding = {
   allowIndexing: boolean
   // Profile URLs shown as icons in the footer; null = hidden.
   socialLinks: SocialLinks
+  companionApp: CompanionApp
 }
 
 export type LocalizedBranding = Branding & {
@@ -74,6 +99,7 @@ const DEFAULTS: Branding = {
   analyticsScript: null,
   allowIndexing: true,
   socialLinks: Object.fromEntries(SOCIAL_PLATFORMS.map((p) => [p, null])) as SocialLinks,
+  companionApp: { name: null, url: null, downloadUrl: null, videoUrl: null, videoPosterUrl: null },
 }
 
 function readBool(key: string, fallback: boolean): boolean {
@@ -124,6 +150,7 @@ export function getBranding(locale?: Locale): Branding {
     analyticsScript: getSetting('branding.analytics_script') ?? DEFAULTS.analyticsScript,
     allowIndexing: readBool('branding.allow_indexing', DEFAULTS.allowIndexing),
     socialLinks: readSocialLinks(),
+    companionApp: readCompanionApp(),
   }
 }
 
@@ -137,5 +164,11 @@ export function getLocalizedBranding(): LocalizedBranding {
 }
 
 export function defaultBranding(theme: Theme = DEFAULTS.theme): Branding {
-  return { ...DEFAULTS, theme, ...THEME_PALETTES[theme], socialLinks: { ...DEFAULTS.socialLinks } }
+  return {
+    ...DEFAULTS,
+    theme,
+    ...THEME_PALETTES[theme],
+    socialLinks: { ...DEFAULTS.socialLinks },
+    companionApp: { ...DEFAULTS.companionApp },
+  }
 }

@@ -11,6 +11,15 @@ export type LogoStyle = 'mark' | 'wordmark'
 
 export const LOGO_STYLES: readonly LogoStyle[] = ['mark', 'wordmark']
 
+// Desktop app the registry serves plugins for (e.g. Tabularis). No name = no app references.
+export type CompanionApp = {
+  name: string | null
+  url: string | null
+  downloadUrl: string | null
+  videoUrl: string | null
+  videoPosterUrl: string | null
+}
+
 export type Branding = {
   name: string
   theme: Theme
@@ -26,6 +35,7 @@ export type Branding = {
   analyticsScript: string | null
   allowIndexing: boolean
   socialLinks: Record<SocialPlatform, string | null>
+  companionApp: CompanionApp
 }
 
 const DEFAULTS: Branding = {
@@ -43,6 +53,7 @@ const DEFAULTS: Branding = {
   analyticsScript: null,
   allowIndexing: true,
   socialLinks: Object.fromEntries(SOCIAL_PLATFORMS.map((p) => [p, null])) as Record<SocialPlatform, string | null>,
+  companionApp: { name: null, url: null, downloadUrl: null, videoUrl: null, videoPosterUrl: null },
 }
 
 function createBrandingStore() {
@@ -167,6 +178,9 @@ function createBrandingStore() {
     },
     get socialLinks() {
       return state.socialLinks
+    },
+    get companionApp() {
+      return state.companionApp
     },
     get loaded() {
       return loaded
