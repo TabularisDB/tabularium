@@ -1,6 +1,13 @@
 import { Elysia, t } from 'elysia'
 import { adminMiddleware } from '$middleware/admin'
-import { getLocalizedBranding, defaultBranding, THEME_PALETTES, SOCIAL_PLATFORMS } from '$lib/branding'
+import {
+  getLocalizedBranding,
+  defaultBranding,
+  THEME_PALETTES,
+  SOCIAL_PLATFORMS,
+  COMPANION_APP_FIELDS,
+  type CompanionApp,
+} from '$lib/branding'
 import { setSetting, deleteSetting, hasSetting } from '$lib/settings'
 import { SUPPORTED_LOCALES, type Locale } from '$lib/i18n'
 import { recordAudit, actorFromAdmin } from '$lib/audit'
@@ -40,6 +47,14 @@ const socialLinksSchema = t.Object({
   linkedin: t.Nullable(t.String()),
 })
 
+const companionAppSchema = t.Object({
+  name: t.Nullable(t.String()),
+  url: t.Nullable(t.String()),
+  downloadUrl: t.Nullable(t.String()),
+  videoUrl: t.Nullable(t.String()),
+  videoPosterUrl: t.Nullable(t.String()),
+})
+
 const brandingSchema = t.Object({
   name: t.String(),
   theme: themeSchema,
@@ -55,6 +70,7 @@ const brandingSchema = t.Object({
   analyticsScript: t.Nullable(t.String()),
   allowIndexing: t.Boolean(),
   socialLinks: socialLinksSchema,
+  companionApp: companionAppSchema,
 })
 
 const localizedBrandingSchema = t.Intersect([
@@ -99,6 +115,7 @@ type BrandingPatch = {
   taglineTranslations?: Partial<Record<Locale, string | null>>
   footerTextTranslations?: Partial<Record<Locale, string | null>>
   socialLinks?: Partial<Record<(typeof SOCIAL_PLATFORMS)[number], string | null>>
+  companionApp?: Partial<CompanionApp>
 }
 
 const HTTP_URL_RE = /^https?:\/\/[^\s]+$/
@@ -160,6 +177,13 @@ export default new Elysia()
           return { error: `socialLinks.${platform} must be an http(s) URL` }
         }
       }
+      for (const { input } of COMPANION_APP_FIELDS) {
+        const value = patch.companionApp?.[input]
+        if (input !== 'name' && value && !HTTP_URL_RE.test(value)) {
+          set.status = 400
+          return { error: `companionApp.${input} must be an http(s) URL` }
+        }
+      }
       for (const { input, setting } of STRING_FIELDS) {
         const value = patch[input as keyof BrandingPatch]
         if (value === undefined || typeof value === 'object') continue
@@ -183,6 +207,14 @@ export default new Elysia()
           else if (hasSetting(key)) await deleteSetting(key)
         }
       }
+      if (patch.companionApp) {
+        for (const { input, setting } of COMPANION_APP_FIELDS) {
+          if (!(input in patch.companionApp)) continue
+          const value = patch.companionApp[input]?.trim()
+          if (value) await setSetting(setting, value)
+          else if (hasSetting(setting)) await deleteSetting(setting)
+        }
+      }
       await recordAudit({
         ...actorFromAdmin(admin, request),
         action: 'branding.update',
@@ -196,7 +228,7 @@ export default new Elysia()
         tags: ['Admin'],
         summary: 'Update branding (whitelabel): theme, colours, logo, tagline, footer',
         description:
-          'Partial update. `theme` picks the visual preset (`default` | `tabularis`). `logoStyle` is `mark` (square icon beside the name) or `wordmark` (horizontal logo shown alone); `logoLightUrl` is an optional logo variant for light mode. `socialLinks` sets footer profile URLs per platform (github, discord, bluesky, x, mastodon, linkedin; null clears). `tagline` and `footerText` set the default-locale value; `taglineTranslations` / `footerTextTranslations` set per-locale overrides (pass null/empty to clear).',
+          'Partial update. `theme` picks the visual preset (`default` | `tabularis`). `logoStyle` is `mark` (square icon beside the name) or `wordmark` (horizontal logo shown alone); `logoLightUrl` is an optional logo variant for light mode. `socialLinks` sets footer profile URLs per platform (github, discord, bluesky, x, mastodon, linkedin; null clears). `companionApp` describes the desktop app the plugins are for (name, website `url`, `downloadUrl`, demo `videoUrl` + `videoPosterUrl`; null clears); without a name the UI shows no app references. `tagline` and `footerText` set the default-locale value; `taglineTranslations` / `footerTextTranslations` set per-locale overrides (pass null/empty to clear).',
         operationId: 'updateBranding',
         security: [{ bearerAuth: [] }, { cookieAuth: [] }],
       },
@@ -217,6 +249,17 @@ export default new Elysia()
         taglineTranslations: t.Optional(translationMapSchema),
         footerTextTranslations: t.Optional(translationMapSchema),
         socialLinks: t.Optional(t.Partial(socialLinksSchema)),
+        companionApp: t.Optional(
+          t.Partial(
+            t.Object({
+              name: t.Nullable(t.String({ maxLength: 60 })),
+              url: t.Nullable(t.String({ maxLength: 500 })),
+              downloadUrl: t.Nullable(t.String({ maxLength: 500 })),
+              videoUrl: t.Nullable(t.String({ maxLength: 500 })),
+              videoPosterUrl: t.Nullable(t.String({ maxLength: 500 })),
+            }),
+          ),
+        ),
       }),
       response: {
         200: t.Object({ ok: t.Boolean(), branding: localizedBrandingSchema }),

@@ -10,7 +10,11 @@
 	import Button from '$components/ui/Button.svelte'
 	import ThemeToggle from '$components/ThemeToggle.svelte'
 	import BrandLogo from '$components/brand/BrandLogo.svelte'
-	import LanguageSwitcher from '$components/LanguageSwitcher.svelte'
+	import Search from '@lucide/svelte/icons/search'
+	import SearchModal from '$components/SearchModal.svelte'
+	import { search } from '$lib/stores/search.svelte'
+	import { branding } from '$lib/stores/branding.svelte'
+	import Download from '@lucide/svelte/icons/download'
 	import { auth } from '$lib/stores/auth.svelte'
 	import { features } from '$lib/stores/features.svelte'
 	import { instanceInfo } from '$lib/stores/instance-info.svelte'
@@ -18,6 +22,11 @@
 	import { m } from '$lib/paraglide/messages'
 
 	let mobileOpen = $state(false)
+	let isMac = $state(false)
+
+	$effect(() => {
+		isMac = /mac|iphone|ipad/i.test(navigator.platform || navigator.userAgent)
+	})
 
 	const navLinks = $derived(
 		[
@@ -75,7 +84,30 @@
 		</nav>
 
 		<div class="ml-auto flex items-center gap-2">
-			<LanguageSwitcher />
+			<Button
+				variant="outline"
+				size="sm"
+				onclick={() => search.show()}
+				aria-label={m.search_label()}
+				aria-keyshortcuts={isMac ? 'Meta+K' : 'Control+K'}
+				class="gap-2 text-muted-foreground hover:text-foreground tabularis:px-3"
+			>
+				<Search class="h-4 w-4" />
+				<span class="hidden h-[1.375rem] w-[0.1rem] bg-border min-[480px]:block" aria-hidden="true"></span>
+				<kbd class="hidden font-sans text-[0.85rem] font-medium min-[480px]:block">{isMac ? '⌘K' : 'Ctrl+K'}</kbd>
+			</Button>
+			{#if branding.companionApp.name && branding.companionApp.downloadUrl}
+				<Button
+					size="sm"
+					href={branding.companionApp.downloadUrl}
+					target="_blank"
+					rel="noopener"
+					class="hidden lg:inline-flex"
+				>
+					<Download class="h-4 w-4" />
+					{m.app_download({ app: branding.companionApp.name })}
+				</Button>
+			{/if}
 			<ThemeToggle />
 			<div class="hidden md:flex items-center gap-2">
 				{#if auth.isAdmin}
@@ -139,3 +171,5 @@
 		</nav>
 	{/if}
 </header>
+
+<SearchModal />

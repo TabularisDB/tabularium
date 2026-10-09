@@ -36,7 +36,9 @@
 	})
 </script>
 
-<section class="grid gap-10 lg:grid-cols-2 lg:items-center">
+<section
+	class="dev-box relative isolate grid grid-cols-[minmax(0,1fr)] gap-10 overflow-hidden rounded-xl border border-border p-6 sm:p-10 lg:grid-cols-2 lg:items-center tabularis:rounded-lg tabularis:border-[0.1rem]"
+>
 	<div class="space-y-4">
 		<div class="inline-flex items-center gap-2 text-xs font-semibold uppercase tracking-wider text-primary">
 			<Terminal class="h-3.5 w-3.5" />
@@ -58,3 +60,31 @@
 		<CodeBlock value={responseSnippet} class="max-h-72 overflow-auto" />
 	</div>
 </section>
+
+<style>
+	/* Highlighted box: a soft accent glow over a faded dot grid (tabularis.dev bounty teaser). */
+	.dev-box {
+		background:
+			radial-gradient(
+				ellipse 60% 80% at 0% 0%,
+				color-mix(in srgb, var(--color-brand-accent) 10%, transparent),
+				transparent 70%
+			),
+			radial-gradient(
+				ellipse 50% 70% at 100% 100%,
+				color-mix(in srgb, var(--color-primary) 8%, transparent),
+				transparent 70%
+			),
+			color-mix(in srgb, var(--color-card) 55%, var(--color-background));
+	}
+	.dev-box::before {
+		content: '';
+		position: absolute;
+		inset: 0;
+		z-index: -1;
+		background-image: radial-gradient(var(--color-border) 1px, transparent 1px);
+		background-size: 16px 16px;
+		mask-image: radial-gradient(ellipse at center, black 30%, transparent 80%);
+		pointer-events: none;
+	}
+</style>

@@ -4,6 +4,7 @@
 	import { eden } from '$lib/eden'
 	import { branding } from '$lib/stores/branding.svelte'
 	import BrandLogo from '$components/brand/BrandLogo.svelte'
+	import LanguageSwitcher from '$components/LanguageSwitcher.svelte'
 	import { features } from '$lib/stores/features.svelte'
 	import { i18n } from '$lib/stores/i18n.svelte'
 	import { instanceInfo } from '$lib/stores/instance-info.svelte'
@@ -98,7 +99,12 @@
 				{
 					key: 'about',
 					title: m.footer_about(),
-					links: footerPages.map((p) => ({ href: p.path, label: p.title })),
+					links: [
+						...(branding.companionApp.name && branding.companionApp.url
+							? [{ href: branding.companionApp.url, label: branding.companionApp.name, external: true }]
+							: []),
+						...footerPages.map((p) => ({ href: p.path, label: p.title })),
+					],
 				},
 			] as FooterColumn[]
 		).filter((c) => c.links.length > 0),
@@ -200,7 +206,10 @@
 		<div
 			class="mx-auto max-w-6xl px-6 py-5 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground/70 tabularis:mt-16 sm:tabularis:mt-28 tabularis:items-start sm:tabularis:items-center tabularis:pt-0 tabularis:pb-12 tabularis:text-[0.85rem] tabularis:text-muted-foreground"
 		>
-			<span>© {year} {branding.name}</span>
+			<span class="inline-flex items-center gap-4">
+				<span>© {year} {branding.name}</span>
+				<LanguageSwitcher />
+			</span>
 			<a
 				href="https://tabularium.wiki"
 				target="_blank"

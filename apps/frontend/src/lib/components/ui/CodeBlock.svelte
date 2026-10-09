@@ -15,7 +15,7 @@
 </script>
 
 <div class={cn('relative rounded-md border border-border bg-card', className)}>
-	<pre class="overflow-x-auto p-4 text-xs font-mono text-foreground">{value}</pre>
+	<pre class="overflow-x-auto p-4 pr-12 text-xs font-mono text-foreground">{value}</pre>
 	<button
 		type="button"
 		onclick={copy}
