@@ -17,6 +17,15 @@
 	}
 
 	const src = $derived(logoUrl ?? `https://cdn.simpleicons.org/${defaultSlug()}`)
+	// Simple Icons' GitHub mark is near-black: flip it on dark backgrounds, as
+	// the API's OAuth pages do. Custom logos are left alone.
+	const invertInDark = $derived(!logoUrl && kind === 'github')
 </script>
 
-<img {src} alt={alt || kind} class={className} loading="lazy" decoding="async" />
+<img
+	{src}
+	alt={alt || kind}
+	class={[className, invertInDark && 'dark:invert']}
+	loading="lazy"
+	decoding="async"
+/>
