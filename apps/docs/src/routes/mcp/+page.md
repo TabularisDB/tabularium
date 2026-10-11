@@ -77,6 +77,9 @@ A **provider** is a sign-in option such as GitHub or Codeberg. The instance admi
 | User: catalog and own account | `catalog:read account:read` |
 | Author: manage own plugins | `catalog:read account:read plugins:write` |
 | Admin: moderate plugins | `catalog:read account:read admin:plugins:read admin:plugins:write` |
+| Admin: notification webhooks | `catalog:read admin:webhooks:read admin:webhooks:write` |
+
+Webhook templates can send stored secrets to any URL, so webhook tools are never covered by other admin scopes. Grant `admin:webhooks:write` only to clients you trust with those secrets.
 
 An admin login alone does not request admin tools. If the client has no scope control and asks for an unsuitable set, deny the request and use a client that lets you configure scopes. Tabularium cannot reduce the requested set in its consent screen.
 

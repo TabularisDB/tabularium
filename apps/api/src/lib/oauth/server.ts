@@ -26,6 +26,7 @@ export const ADMIN_AREAS = [
   'audit',
   'diagnostics',
   'requests',
+  'webhooks',
 ]
 export const SCOPES = [
   'catalog:read',
