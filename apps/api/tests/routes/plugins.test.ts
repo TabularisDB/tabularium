@@ -38,6 +38,48 @@ describe('GET /api/plugins', () => {
     expect(data.plugins[0]).not.toHaveProperty('webhookSecret')
     expect(JSON.stringify(data)).not.toContain('should-not-leak')
   })
+
+  it('ranks the full public catalog by downloads before limiting, regardless of verification', async () => {
+    const user = await makeUser()
+    await makePlugin(user.id, { id: 'verified', downloads: 10, verifiedAt: 1, createdAt: 300 })
+    await makePlugin(user.id, { id: 'popular', downloads: 5000, createdAt: 100 })
+    await makePlugin(user.id, { id: 'runner-up', downloads: 2000, createdAt: 200 })
+    await makePlugin(user.id, { id: 'pending', downloads: 9999, status: 'pending' })
+    await makePlugin(user.id, { id: 'rejected', downloads: 9999, status: 'rejected' })
+    await makePlugin(user.id, { id: 'no-manifest', downloads: 9999, manifestVersion: null })
+
+    const app = await buildApp()
+    const res = await app.handle(new Request('http://localhost/api/plugins?sort=downloads&limit=2'))
+    expect(res.status).toBe(200)
+    const data = (await res.json()) as { total: number; plugins: Array<{ id: string; downloads: number }> }
+    expect(data.total).toBe(3)
+    expect(data.plugins.map((p) => [p.id, p.downloads])).toEqual([
+      ['popular', 5000],
+      ['runner-up', 2000],
+    ])
+  })
+
+  it('keeps download ties stable across pages and extension filters', async () => {
+    const user = await makeUser()
+    const extensions = JSON.stringify({ engine: 'postgres' })
+    await makePlugin(user.id, { id: 'a-unverified', downloads: 100, extensions })
+    await makePlugin(user.id, { id: 'c-verified', downloads: 100, verifiedAt: 1, extensions })
+    await makePlugin(user.id, { id: 'b-verified', downloads: 100, verifiedAt: 1, extensions })
+
+    const app = await buildApp()
+    for (const filter of ['', '&ext.engine=postgres']) {
+      const ids: string[] = []
+      for (let page = 1; page <= 3; page++) {
+        const res = await app.handle(
+          new Request(`http://localhost/api/plugins?sort=downloads&limit=1&page=${page}${filter}`),
+        )
+        expect(res.status).toBe(200)
+        const data = (await res.json()) as { plugins: Array<{ id: string }> }
+        ids.push(data.plugins[0].id)
+      }
+      expect(ids).toEqual(['b-verified', 'c-verified', 'a-unverified'])
+    }
+  })
 })
 
 describe('GET /api/plugins/:slug', () => {

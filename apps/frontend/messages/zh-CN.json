@@ -1114,6 +1114,8 @@
 	"home_stat_downloads": "次下载",
 	"home_stat_authors": "位作者",
 	"home_stat_requests": "个待实现请求",
+	"home_stats_label": "注册中心概览",
+	"home_most_downloaded": "下载最多",
 	"home_marquee_label": "本注册中心的插件",
 	"home_dev_eyebrow": "面向开发者",
 	"home_dev_title": "一次 HTTP 调用即可列出全部插件",

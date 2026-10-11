@@ -1114,6 +1114,8 @@
 	"home_stat_downloads": "Downloads",
 	"home_stat_authors": "Autoren",
 	"home_stat_requests": "offene Anfragen",
+	"home_stats_label": "Die Registry auf einen Blick",
+	"home_most_downloaded": "Am häufigsten heruntergeladen",
 	"home_marquee_label": "Plugins in dieser Registry",
 	"home_dev_eyebrow": "Für Entwickler",
 	"home_dev_title": "Ein HTTP-Aufruf listet alle Plugins",
