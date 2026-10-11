@@ -128,7 +128,7 @@
 			aria-activedescendant={showPanel && active >= 0 ? `${listId}-${active}` : undefined}
 			autocomplete="off"
 			spellcheck="false"
-			class="min-w-0 flex-1 border-0 bg-transparent py-2 text-sm text-foreground placeholder:text-muted-foreground focus:outline-none [&::-webkit-search-cancel-button]:appearance-none"
+			class="min-w-0 flex-1 border-0 bg-transparent py-2 text-[16px] md:text-sm text-foreground placeholder:text-muted-foreground focus:outline-none [&::-webkit-search-cancel-button]:appearance-none"
 		/>
 		<Button type="submit">
 			{m.home_search_button()}

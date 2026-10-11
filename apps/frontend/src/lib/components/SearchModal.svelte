@@ -179,7 +179,7 @@
 					aria-activedescendant={active >= 0 ? `${listId}-${active}` : undefined}
 					autocomplete="off"
 					spellcheck="false"
-					class="min-w-0 flex-1 border-0 bg-transparent text-[0.95rem] text-foreground placeholder:text-muted-foreground focus:outline-none"
+					class="min-w-0 flex-1 border-0 bg-transparent text-[16px] md:text-[0.95rem] text-foreground placeholder:text-muted-foreground focus:outline-none"
 				/>
 				{#if query}
 					<button

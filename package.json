@@ -16,7 +16,8 @@
     "format": "biome format --write && prettier --write \"apps/frontend/**/*.svelte\"",
     "migrate": "bun --cwd apps/api run migrate",
     "generate": "bun --cwd apps/api run generate",
-    "seed": "bun --cwd apps/api run seed"
+    "seed": "bun --cwd apps/api run seed",
+    "seed:layout": "bun run --cwd apps/api seed:layout"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.15",

@@ -21,6 +21,7 @@
     "check": "tsc --noEmit",
     "test": "bun test",
     "seed": "bun src/db/seed.ts",
+    "seed:layout": "bun src/db/seed-layout.ts",
     "migrate": "bun src/db/migrate.ts",
     "generate": "bunx drizzle-kit generate",
     "generate:pg": "bunx drizzle-kit generate --config=drizzle.pg.config.ts",

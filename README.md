@@ -75,6 +75,11 @@ just dev   # starts minikube + tilt up (postgres + dragonfly + api + frontend)
 
 Tilt UI is at http://localhost:10350; the registry is port-forwarded to http://localhost:3000 and the frontend to http://localhost:5180. Source edits hot-reload into the cluster automatically.
 
+For card layout checks against an initialized local SQLite registry, run `bun run seed:layout` and open
+`http://localhost:5180/plugins?tag=layout-test`. The nine fixtures cover stable and pre-release versions,
+long text, missing releases, empty descriptions and optional metadata. The first three also appear in
+the featured section. Re-running the command preserves existing entries; these plugins have no downloadable drivers.
+
 The bootstrap password is printed on first boot:
 
 ```
