@@ -19,6 +19,7 @@
 	import FileJson from '@lucide/svelte/icons/file-json'
 	import BookText from '@lucide/svelte/icons/book-text'
 	import KeyRound from '@lucide/svelte/icons/key-round'
+	import Webhook from '@lucide/svelte/icons/webhook'
 	import Languages from '@lucide/svelte/icons/languages'
 	import Menu from '@lucide/svelte/icons/menu'
 	import X from '@lucide/svelte/icons/x'
@@ -74,6 +75,7 @@
 		{ href: '/admin/docs', label: m.admin_nav_docs(), icon: BookText, badge: 0 },
 		{ href: '/admin/i18n', label: m.admin_nav_languages(), icon: Languages, badge: 0 },
 		{ href: '/admin/tokens', label: m.admin_nav_tokens(), icon: KeyRound, badge: 0 },
+		{ href: '/admin/webhooks', label: m.admin_nav_webhooks(), icon: Webhook, badge: 0 },
 		{ href: '/admin/audit', label: m.admin_nav_audit(), icon: ListChecks, badge: 0 },
 	])
 
