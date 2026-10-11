@@ -85,3 +85,10 @@ export function prettyBody(body: string | null): string {
     return body
   }
 }
+
+// Plain-text rendering of a request for <pre> blocks; built in script so
+// formatters can't inject whitespace into the template.
+export function requestText(r: { method: string; url: string; headers: Record<string, string>; body: string | null }) {
+  const headers = Object.entries(r.headers).map(([k, v]) => `${k}: ${v}\n`)
+  return `${r.method} ${r.url}\n${headers.join('')}${prettyBody(r.body)}`
+}

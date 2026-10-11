@@ -7,7 +7,7 @@
 	import Button from '$components/ui/Button.svelte'
 	import { cn } from '$lib/utils'
 	import { m } from '$lib/paraglide/messages'
-	import { api, prettyBody, type DeliveryView } from './types'
+	import { api, prettyBody, requestText, type DeliveryView } from './types'
 
 	let { webhookId }: { webhookId: string } = $props()
 
@@ -92,9 +92,7 @@
 						onclick={() => (expanded = expanded === d.id ? null : d.id)}
 						aria-expanded={expanded === d.id}
 					>
-						<ChevronRight
-							class={cn('h-3.5 w-3.5 shrink-0 transition-transform', expanded === d.id && 'rotate-90')}
-						/>
+						<ChevronRight class={cn('h-3.5 w-3.5 shrink-0 transition-transform', expanded === d.id && 'rotate-90')} />
 						<span class={cn('shrink-0 rounded px-1.5 py-0.5 text-[11px] font-medium', statusClass(d.status))}>
 							{statusLabel(d.status)}
 						</span>
@@ -123,10 +121,9 @@
 								<div class="space-y-1">
 									<p class="font-medium">{m.admin_webhooks_delivery_request()}</p>
 									<pre
-										class="max-h-72 overflow-auto rounded border border-border bg-card p-2 font-mono text-[11px] leading-relaxed">{d.request.method} {d.request.url}
-{#each Object.entries(d.request.headers) as [k, v]}{k}: {v}
-{/each}
-{prettyBody(d.request.body)}</pre>
+										class="max-h-72 overflow-auto rounded border border-border bg-card p-2 font-mono text-[11px] leading-relaxed">{requestText(
+											d.request,
+										)}</pre>
 								</div>
 							{/if}
 							{#if d.responseBody}

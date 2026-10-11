@@ -19,7 +19,7 @@
 	import { m } from '$lib/paraglide/messages'
 	import {
 		api,
-		prettyBody,
+		requestText,
 		type HeaderRow,
 		type RenderedRequest,
 		type WebhookMeta,
@@ -343,7 +343,9 @@
 
 				<div class="space-y-2">
 					<div class="flex items-center justify-between">
-						<Label class="flex items-center gap-1.5"><Lock class="h-3.5 w-3.5" />{m.admin_webhooks_field_secrets()}</Label>
+						<Label class="flex items-center gap-1.5"
+							><Lock class="h-3.5 w-3.5" />{m.admin_webhooks_field_secrets()}</Label
+						>
 						<Button
 							size="sm"
 							variant="ghost"
@@ -417,7 +419,9 @@
 			<div class="space-y-4 min-w-0">
 				<div class="space-y-2">
 					<div class="flex items-center justify-between gap-2">
-						<p class="flex items-center gap-1.5 text-sm font-medium"><Eye class="h-3.5 w-3.5" />{m.admin_webhooks_preview()}</p>
+						<p class="flex items-center gap-1.5 text-sm font-medium">
+							<Eye class="h-3.5 w-3.5" />{m.admin_webhooks_preview()}
+						</p>
 						<Select bind:value={previewEvent} class="h-8 w-auto text-xs" aria-label={m.admin_webhooks_preview_event()}>
 							{#each meta.events as e (e)}<option value={e}>{e}</option>{/each}
 						</Select>
@@ -430,10 +434,9 @@
 					{/if}
 					{#if preview}
 						<pre
-							class="max-h-[32rem] overflow-auto rounded-md border border-border bg-muted/30 p-3 font-mono text-[11px] leading-relaxed">{preview.method} {preview.url}
-{#each Object.entries(preview.headers) as [k, v]}{k}: {v}
-{/each}
-{prettyBody(preview.body)}</pre>
+							class="max-h-[32rem] overflow-auto rounded-md border border-border bg-muted/30 p-3 font-mono text-[11px] leading-relaxed">{requestText(
+								preview,
+							)}</pre>
 						{#if preview.missing.length}
 							<p class="text-xs text-amber-600 dark:text-amber-400">
 								{m.admin_webhooks_preview_missing({ list: preview.missing.join(', ') })}
