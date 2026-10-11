@@ -423,6 +423,13 @@
 
 	const app = $derived(branding.companionApp)
 
+	// Room for the version labels on the chart's band axis: layerchart reserves
+	// a fixed 20px by default, so long prerelease tags spill out of the card.
+	function versionAxisWidth(versions: Array<{ version: string }>): number {
+		const longest = Math.max(0, ...versions.map((v) => v.version.length + 1))
+		return Math.min(160, longest * 7 + 12)
+	}
+
 	const cardClass = 'rounded-lg border border-border bg-card tabularis:rounded-md tabularis:border-[0.1rem]'
 	// Section accents, in the order tabularis.dev cycles its section eyebrows.
 	const TONES = { purple: '#c084fc', teal: '#2dd4bf', blue: '#60a5fa', orange: '#fdba74' }
@@ -819,7 +826,7 @@
 					</div>
 					{#if plugin.readmeHtml}
 						<article
-							class="{cardClass} prose prose-sm dark:prose-invert max-w-none px-6 py-6 sm:px-9 sm:py-8 prose-headings:font-semibold prose-headings:tracking-tight prose-pre:font-mono prose-pre:text-[12.5px] prose-pre:rounded-md prose-pre:border prose-pre:border-border prose-code:font-mono"
+							class="{cardClass} readme prose prose-sm dark:prose-invert max-w-none min-w-0 px-6 py-6 sm:px-9 sm:py-8 prose-headings:font-semibold prose-headings:tracking-tight prose-pre:font-mono prose-pre:text-[12.5px] prose-pre:rounded-md prose-pre:border prose-pre:border-border prose-code:font-mono"
 						>
 							{@html plugin.readmeHtml}
 						</article>
@@ -944,7 +951,7 @@
 												<Skeleton class="h-24 w-full rounded-lg" />
 											{:else if vr.html}
 												<article
-													class="prose prose-sm dark:prose-invert max-w-none rounded-lg border border-border bg-background/40 px-5 py-4 prose-headings:font-semibold prose-headings:tracking-tight prose-pre:font-mono prose-pre:text-[12.5px] prose-pre:rounded-md prose-pre:border prose-pre:border-border prose-code:font-mono tabularis:rounded-md"
+													class="readme prose prose-sm dark:prose-invert max-w-none min-w-0 rounded-lg border border-border bg-background/40 px-5 py-4 prose-headings:font-semibold prose-headings:tracking-tight prose-pre:font-mono prose-pre:text-[12.5px] prose-pre:rounded-md prose-pre:border prose-pre:border-border prose-code:font-mono tabularis:rounded-md"
 												>
 													{@html vr.html}
 												</article>
@@ -971,6 +978,7 @@
 									y="label"
 									orientation="horizontal"
 									bandPadding={0.3}
+									padding={{ top: 4, right: 20, bottom: 20, left: versionAxisWidth(downloadStats.data.versions) }}
 								/>
 							</div>
 							<ul class="space-y-1.5 text-xs">
@@ -1220,6 +1228,25 @@
 		letter-spacing: 0.04em;
 		text-transform: uppercase;
 		color: var(--color-muted-foreground);
+	}
+
+	/* README HTML comes from third-party repos: keep wide tables, fixed-width
+	   images and long unbroken strings inside the card. */
+	.readme {
+		overflow-wrap: break-word;
+	}
+	.readme :global(img) {
+		max-width: 100%;
+		height: auto;
+	}
+	.readme :global(table) {
+		display: block;
+		max-width: 100%;
+		overflow-x: auto;
+	}
+	.readme :global(pre) {
+		max-width: 100%;
+		overflow-x: auto;
 	}
 
 	.chip {
