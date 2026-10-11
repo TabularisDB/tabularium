@@ -15,10 +15,13 @@ The admin plugin table covers every plugin in the registry, regardless of status
 | Approve | Status → approved, plugin appears on `/plugins` |
 | Reject (with reason) | Status → rejected, reason rendered on the owner's dashboard |
 | Refresh manifest | Re-fetches `.tabularium` at HEAD; updates description, tags, README, screenshots |
+| Webhook | Checks the repository release webhook and shows the URL, secret and settings for manual setup |
 | Pin / feature | Marks the plugin for the home page featured slot, with an order index |
 | Verify / unverify | Marks the plugin as audit-verified (see [Verification](#verification)) |
 | Transfer | Initiates a transfer to another user (recipient gets a pending request on `/settings`) |
 | Delete | Removes plugin + releases + transfer history (irreversible) |
+
+On mobile, each plugin keeps a direct **Webhook** button and groups the remaining operations in the **Actions** menu. Desktop shows the full action bar, with consistent button sizes and labels.
 
 ## Verification
 
@@ -38,6 +41,12 @@ The state lives in two nullable columns (`verified_at`, `verified_by`) on `plugi
 
 ## Webhooks
 
-If a webhook fails to install during submission, the admin Refresh button installs it again using the owner's current access token.
+Each plugin row has a **Webhook** button. It checks the hooks installed in that plugin's repository using the owner's current OAuth token, and reports whether a hook points to this registry, is active, subscribes to release events, and sends JSON. A missing or expired token, insufficient permissions, or an upstream error is reported as an unavailable check, rather than a missing webhook.
+
+The dialog always provides the expected payload URL, the existing plugin-specific secret (click **Show secret** to reveal and copy it), content type `application/json`, and the `release` event. **Open webhook settings** takes you to that repository's settings. On GitHub, add or edit the hook under **Settings → Webhooks**, select **Let me select individual events → Releases**, and keep **Active** checked. After saving, use **Check again** in the dialog.
+
+The registry can show its own stored secret, so manual configuration does not require generating a replacement. GitHub does not return the secret saved on its side; the check cannot compare the two secrets or prove delivery succeeded. If necessary, paste the displayed registry secret into the GitHub webhook again. This dialog is admin-only and its response is not cached.
+
+**Refresh manifest** re-fetches plugin metadata; **Replay latest release** imports the latest upstream release. Neither action installs a repository webhook.
 
 Kinds (Themes, Snippets, SQL Templates, …) are managed separately under [Kinds](kinds.md). They surface as a tag on the plugin row and as a facet on the public catalog.
