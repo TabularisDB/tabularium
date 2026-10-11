@@ -5,6 +5,7 @@ import { db } from '$db'
 import { pluginTransfers } from '$db/schema'
 import { recordAudit } from '$lib/audit'
 import { TRANSFER_TTL_MS, expireStalePending } from '$lib/transfers'
+import { emitEvent } from '$lib/webhooks/events'
 
 export default new Elysia().use(authMiddleware).post(
   '/',
@@ -56,6 +57,17 @@ export default new Elysia().use(authMiddleware).post(
       action: 'plugin.transfer.initiate',
       target: `plugin:${plugin.id}`,
       meta: { transferId: id, toUserId: body.newOwnerId },
+    })
+    await emitEvent('transfer.initiated', {
+      pluginId: plugin.id,
+      actor: { id: user.sub, name: user.username ?? null },
+      transfer: {
+        id,
+        fromUserId: user.sub,
+        toUserId: body.newOwnerId,
+        message: body.message ?? null,
+        status: 'pending',
+      },
     })
 
     return {

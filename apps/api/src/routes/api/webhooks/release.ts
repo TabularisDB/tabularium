@@ -13,6 +13,7 @@ import { persistRelease, hashReleaseAssetsAsync, refreshManifestAtRelease } from
 import { InvalidVersionError } from '$lib/semver'
 import { recordAudit } from '$lib/audit'
 import { rateLimit } from '$middleware/rate-limit'
+import { emitEvent } from '$lib/webhooks/events'
 
 // Real GitHub/GitLab release payloads are tens of KB; cap well above that to
 // reject DoS amplification before we even parse the body.
@@ -85,14 +86,20 @@ export default new Elysia().use(rateLimit({ bucket: 'webhook-release', limit: 60
 
     let version: string
     let assetMap: Awaited<ReturnType<typeof persistRelease>>['assetMap']
+    let created: boolean
     try {
-      ;({ version, assetMap } = await persistRelease(plugin, normalized))
+      ;({ version, assetMap, created } = await persistRelease(plugin, normalized))
     } catch (err) {
       if (err instanceof InvalidVersionError) {
         await recordAudit({
           action: 'plugin.release_rejected',
           target: `plugin:${plugin.id}`,
           meta: { tag: normalized.tag, reason: 'non_semver_tag' },
+        })
+        await emitEvent('release.rejected', {
+          pluginId: plugin.id,
+          release: { version: normalized.tag, tag: normalized.tag },
+          reason: `Tag "${normalized.tag}" is not a strict semver version`,
         })
         log.warn({ slug: plugin.id, tag: normalized.tag }, 'release rejected: tag is not strict semver')
         set.status = 422
@@ -115,6 +122,10 @@ export default new Elysia().use(rateLimit({ bucket: 'webhook-release', limit: 60
         })
       }
     })
+
+    if (created) {
+      await emitEvent('release.published', { pluginId: plugin.id, release: { version, tag: normalized.tag } })
+    }
 
     queueMicrotask(() => {
       hashReleaseAssetsAsync(plugin, normalized, assetMap, version).catch((err) =>

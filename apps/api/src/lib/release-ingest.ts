@@ -46,7 +46,7 @@ export async function persistRelease(
     readme?: string | null
     minRuntimeVersion?: string | null
   } = {},
-): Promise<{ version: string; assetMap: AssetMap }> {
+): Promise<{ version: string; assetMap: AssetMap; created: boolean }> {
   // Strict semver gate: rejecting here keeps lax tags ("v1.2", "release-foo")
   // out of the releases table entirely. Manifest-side validation already
   // requires the same shape, so a lax tag would just produce an orphan row
@@ -76,6 +76,12 @@ export async function persistRelease(
   if (opts.manifestRaw !== undefined) set.manifestRaw = opts.manifestRaw
   if (opts.readme !== undefined) set.readme = opts.readme
   if (opts.minRuntimeVersion !== undefined) set.minRuntimeVersion = opts.minRuntimeVersion
+  // `created` lets callers tell a new release from a re-ingest (webhook
+  // redelivery, manifest backfill) — only the former is announced.
+  const existing = await db.query.releases.findFirst({
+    where: { pluginId: plugin.id, version },
+    columns: { id: true },
+  })
   await db
     .insert(releases)
     .values({
@@ -96,7 +102,7 @@ export async function persistRelease(
 
   await cache().del(latestCacheKey(plugin.id))
 
-  return { version, assetMap }
+  return { version, assetMap, created: !existing }
 }
 
 // Background job — never await inside a request handler. Hashes assets,

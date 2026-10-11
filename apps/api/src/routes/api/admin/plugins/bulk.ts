@@ -6,6 +6,7 @@ import { plugins, releases } from '$db/schema'
 import { cache } from '$lib/cache'
 import { latestCacheKey } from '$routes/api/plugins/[slug]/latest'
 import { recordAudit, actorFromAdmin } from '$lib/audit'
+import { emitEvent } from '$lib/webhooks/events'
 
 const actionEnum = t.Union([t.Literal('approve'), t.Literal('reject'), t.Literal('delete'), t.Literal('transfer')])
 
@@ -72,6 +73,18 @@ export default new Elysia().use(adminMiddleware).post(
         fromOwners: body.action === 'transfer' ? Object.fromEntries(targets.map((p) => [p.id, p.ownerId])) : null,
       },
     })
+
+    if (body.action === 'approve' || body.action === 'reject') {
+      const status = body.action === 'approve' ? 'approved' : 'rejected'
+      for (const p of targets) {
+        if (p.status === status) continue
+        await emitEvent(body.action === 'approve' ? 'plugin.approved' : 'plugin.rejected', {
+          pluginId: p.id,
+          actor: { id: admin.id, name: admin.displayName },
+          reason: body.action === 'reject' ? (body.rejectionReason ?? null) : null,
+        })
+      }
+    }
 
     return { ok: true, action: body.action, affected, missing }
   },

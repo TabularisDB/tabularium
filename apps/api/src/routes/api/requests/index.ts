@@ -9,6 +9,7 @@ import { getFeatures } from '$lib/features'
 import { verifySessionToken, delegatedAccess } from '$lib/access'
 import { isKindKey } from '$lib/kinds'
 import { deriveSlug } from '$lib/slug'
+import { emitEvent } from '$lib/webhooks/events'
 
 // Same normalisation submissions apply to repo names, so a request for
 // "Awesome Plugin" is closed automatically when `awesome` gets published.
@@ -175,6 +176,10 @@ export default new Elysia()
         requesterId: user.sub,
       }
       await db.insert(pluginRequests).values(request)
+      await emitEvent('request.created', {
+        actor: { id: user.sub, name: user.username ?? null },
+        request,
+      })
       return request
     },
     {

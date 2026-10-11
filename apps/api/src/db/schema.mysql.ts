@@ -395,3 +395,48 @@ export const oauthRecords = mysqlTable(
   },
   (t) => [index('oauth_records_user_idx').on(t.userId), index('oauth_records_expiry_idx').on(t.expiresAt)],
 )
+
+export const webhooks = mysqlTable('webhooks', {
+  id: id('id').primaryKey(),
+  name: varchar('name', { length: 120 }).notNull(),
+  enabled: tinyint('enabled').notNull().default(1),
+  preset: varchar('preset', { length: 40 }),
+  events: text('events').notNull(),
+  method: varchar('method', { length: 10 }).notNull().default('POST'),
+  url: text('url').notNull(),
+  headers: text('headers').notNull(),
+  body: text('body'),
+  contentType: varchar('content_type', { length: 120 }).notNull().default('application/json'),
+  secrets: text('secrets'),
+  signingSecret: text('signing_secret'),
+  createdAt: ts('created_at').notNull().$defaultFn(now),
+  updatedAt: ts('updated_at').notNull().$defaultFn(now),
+})
+
+export const webhookDeliveries = mysqlTable(
+  'webhook_deliveries',
+  {
+    id: id('id').primaryKey(),
+    webhookId: id('webhook_id')
+      .notNull()
+      .references(() => webhooks.id, { onDelete: 'cascade' }),
+    event: varchar('event', { length: 80 }).notNull(),
+    payload: text('payload').notNull(),
+    status: varchar('status', { length: 16, enum: ['pending', 'sending', 'success', 'failed'] })
+      .notNull()
+      .default('pending'),
+    attempts: int('attempts').notNull().default(0),
+    nextAttemptAt: ts('next_attempt_at'),
+    lastStatusCode: int('last_status_code'),
+    lastError: text('last_error'),
+    request: text('request'),
+    responseBody: text('response_body'),
+    durationMs: int('duration_ms'),
+    createdAt: ts('created_at').notNull().$defaultFn(now),
+    completedAt: ts('completed_at'),
+  },
+  (t) => [
+    index('webhook_deliveries_webhook_created_idx').on(t.webhookId, t.createdAt),
+    index('webhook_deliveries_status_next_idx').on(t.status, t.nextAttemptAt),
+  ],
+)
