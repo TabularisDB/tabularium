@@ -1,12 +1,15 @@
 <script lang="ts">
 	import { onMount } from 'svelte'
 	import { toast } from 'svelte-sonner'
+	import { DropdownMenu } from 'bits-ui'
+	import MoreHorizontal from '@lucide/svelte/icons/ellipsis'
 	import Check from '@lucide/svelte/icons/check'
 	import X from '@lucide/svelte/icons/x'
 	import Trash2 from '@lucide/svelte/icons/trash-2'
 	import ArrowRightLeft from '@lucide/svelte/icons/arrow-right-left'
 	import RefreshCw from '@lucide/svelte/icons/refresh-cw'
 	import Webhook from '@lucide/svelte/icons/webhook'
+	import RotateCw from '@lucide/svelte/icons/rotate-cw'
 	import Star from '@lucide/svelte/icons/star'
 	import StarOff from '@lucide/svelte/icons/star-off'
 	import Pin from '@lucide/svelte/icons/pin'
@@ -26,6 +29,7 @@
 	import { m } from '$lib/paraglide/messages'
 	import AdminPageHeader from '$components/admin/AdminPageHeader.svelte'
 	import TabBar from '$components/admin/TabBar.svelte'
+	import PluginWebhookDialog from '$components/admin/PluginWebhookDialog.svelte'
 
 	type AdminPlugin = {
 		id: string
@@ -53,6 +57,10 @@
 	let bulkBusy = $state(false)
 	let deleteTarget = $state<AdminPlugin | null>(null)
 	let bulkDeleteOpen = $state(false)
+	let webhookTarget = $state<AdminPlugin | null>(null)
+
+	const actionButtonClass =
+		'h-11 w-full min-w-0 justify-start gap-2 px-3 text-xs sm:h-9 sm:w-auto sm:min-w-28 sm:justify-center tabularis:h-11 tabularis:text-xs sm:tabularis:h-9 [&_svg]:h-4 [&_svg]:w-4 [&_svg]:shrink-0'
 
 	const counts = $derived.by(() => {
 		const c = { all: allPlugins.length, approved: 0, pending: 0, rejected: 0 }
@@ -259,6 +267,99 @@
 		}
 	}
 
+	type PluginAction = {
+		id: string
+		label: string
+		title: string
+		icon: typeof Check
+		run: () => void | Promise<void>
+		pressed?: boolean
+		color?: string
+		danger?: boolean
+	}
+
+	function pluginActions(p: AdminPlugin): PluginAction[] {
+		return [
+			{
+				id: 'featured',
+				label: m.admin_plugins_action_featured(),
+				title: p.featured ? m.admin_plugins_unpin() : m.admin_plugins_pin(),
+				icon: p.featured ? StarOff : Star,
+				run: () => toggleFeatured(p),
+				pressed: p.featured ?? false,
+				color: p.featured ? 'border-primary/30 bg-primary/10 text-primary hover:bg-primary/15 hover:text-primary' : '',
+			},
+			{
+				id: 'verified',
+				label: m.admin_plugins_action_verified(),
+				title: p.verified ? m.admin_plugins_unverify() : m.admin_plugins_verify(),
+				icon: p.verified ? ShieldOff : ShieldCheck,
+				run: () => toggleVerified(p),
+				pressed: p.verified ?? false,
+				color: p.verified
+					? 'border-emerald-600/30 bg-emerald-600/10 text-emerald-600 hover:bg-emerald-600/15 hover:text-emerald-600'
+					: '',
+			},
+			{
+				id: 'manifest',
+				label: 'Manifest',
+				title: m.admin_plugins_refresh_manifest_title(),
+				icon: RefreshCw,
+				run: () => refreshManifest(p),
+			},
+			{
+				id: 'webhook',
+				label: 'Webhook',
+				title: m.admin_plugins_webhook_manage(),
+				icon: Webhook,
+				run: () => {
+					webhookTarget = p
+				},
+			},
+			{
+				id: 'replay',
+				label: m.admin_plugins_action_replay(),
+				title: m.admin_plugins_replay_webhook_title(),
+				icon: RotateCw,
+				run: () => replayWebhook(p),
+			},
+			...(p.status !== 'approved'
+				? [
+						{
+							id: 'approve',
+							label: m.admin_plugins_approve(),
+							title: m.admin_plugins_approve(),
+							icon: Check,
+							run: () => setStatus(p, 'approved'),
+							color: 'text-emerald-600 hover:bg-emerald-600/10 hover:text-emerald-600',
+						},
+					]
+				: []),
+			...(p.status !== 'rejected'
+				? [
+						{
+							id: 'reject',
+							label: m.admin_plugins_reject(),
+							title: m.admin_plugins_reject(),
+							icon: X,
+							run: () => setStatus(p, 'rejected'),
+							danger: true,
+							color: 'text-destructive hover:bg-destructive/10 hover:text-destructive',
+						},
+					]
+				: []),
+			{
+				id: 'delete',
+				label: m.admin_plugins_delete(),
+				title: m.admin_plugins_delete(),
+				icon: Trash2,
+				run: () => openRemove(p),
+				danger: true,
+				color: 'text-destructive hover:bg-destructive/10 hover:text-destructive',
+			},
+		]
+	}
+
 	function openRemove(p: AdminPlugin) {
 		deleteTarget = p
 	}
@@ -313,24 +414,42 @@
 			<strong class="text-foreground">{selected.size}</strong>
 			{m.admin_plugins_selected()}
 		</span>
-		<div class="flex flex-wrap items-center gap-1.5">
-			<Button size="sm" variant="default" onclick={() => bulk('approve')} disabled={bulkBusy}>
+		<div class="grid w-full grid-cols-2 gap-2 sm:flex sm:w-auto sm:flex-wrap sm:items-center">
+			<Button size="sm" variant="default" class={actionButtonClass} onclick={() => bulk('approve')} disabled={bulkBusy}>
 				<Check class="h-3.5 w-3.5" />
 				{m.admin_plugins_approve()}
 			</Button>
-			<Button size="sm" variant="outline" onclick={() => bulk('reject')} disabled={bulkBusy}>
+			<Button size="sm" variant="outline" class={actionButtonClass} onclick={() => bulk('reject')} disabled={bulkBusy}>
 				<X class="h-3.5 w-3.5" />
 				{m.admin_plugins_reject()}
 			</Button>
-			<Button size="sm" variant="outline" onclick={() => bulk('transfer')} disabled={bulkBusy}>
+			<Button
+				size="sm"
+				variant="outline"
+				class={actionButtonClass}
+				onclick={() => bulk('transfer')}
+				disabled={bulkBusy}
+			>
 				<ArrowRightLeft class="h-3.5 w-3.5" />
 				{m.admin_plugins_transfer()}
 			</Button>
-			<Button size="sm" variant="destructive" onclick={() => bulk('delete')} disabled={bulkBusy}>
+			<Button
+				size="sm"
+				variant="destructive"
+				class={actionButtonClass}
+				onclick={() => bulk('delete')}
+				disabled={bulkBusy}
+			>
 				<Trash2 class="h-3.5 w-3.5" />
 				{m.admin_plugins_delete()}
 			</Button>
-			<Button size="sm" variant="ghost" onclick={() => (selected = new Set())} disabled={bulkBusy}>
+			<Button
+				size="sm"
+				variant="outline"
+				class={actionButtonClass}
+				onclick={() => (selected = new Set())}
+				disabled={bulkBusy}
+			>
 				{m.admin_plugins_clear()}
 			</Button>
 		</div>
@@ -356,7 +475,7 @@
 		{:else if plugins.length === 0}
 			<p class="text-sm text-muted-foreground">{m.admin_plugins_empty()}</p>
 		{:else}
-			<label class="flex items-center gap-2 px-2 py-1 text-xs text-muted-foreground">
+			<label class="flex min-h-11 cursor-pointer items-center gap-2 px-2 text-xs text-muted-foreground sm:min-h-9">
 				<input
 					type="checkbox"
 					checked={selected.size === plugins.length && plugins.length > 0}
@@ -367,17 +486,21 @@
 				<span>{m.admin_plugins_select_all()}</span>
 			</label>
 			{#each plugins as p (p.id)}
+				{@const actions = pluginActions(p)}
+				{@const menuActions = actions.filter((a) => a.id !== 'webhook')}
 				<div
-					class="flex flex-wrap items-center gap-3 rounded-md border border-border bg-card/50 px-4 py-3 sm:flex-nowrap sm:justify-between"
+					class="grid grid-cols-[1.25rem_minmax(0,1fr)] items-start gap-x-3 gap-y-4 rounded-lg border border-border bg-card/50 p-3 sm:p-4"
 				>
-					<input
-						type="checkbox"
-						checked={selected.has(p.id)}
-						onchange={(e) => toggleSelected(p.id, e.currentTarget.checked)}
-						class="h-4 w-4 rounded border-input flex-shrink-0"
-						aria-label={m.admin_plugins_select_aria({ name: p.name })}
-					/>
-					<div class="space-y-0.5 min-w-0 flex-1 basis-40">
+					<label class="-ml-3 -mt-2 flex h-11 w-11 cursor-pointer items-center justify-center">
+						<input
+							type="checkbox"
+							checked={selected.has(p.id)}
+							onchange={(e) => toggleSelected(p.id, e.currentTarget.checked)}
+							class="h-4 w-4 rounded border-input"
+							aria-label={m.admin_plugins_select_aria({ name: p.name })}
+						/>
+					</label>
+					<div class="min-w-0 space-y-1">
 						<div class="flex items-center gap-2 flex-wrap">
 							<a href={`/plugins/${p.id}`} class="text-sm font-medium truncate hover:text-primary">{p.name}</a>
 							<Badge
@@ -410,87 +533,75 @@
 							<div class="text-xs text-destructive">{m.admin_plugins_reason({ reason: p.rejectionReason })}</div>
 						{/if}
 					</div>
-					<div class="flex w-full flex-wrap items-center justify-end gap-1 sm:w-auto sm:flex-nowrap">
-						<Button
-							variant="ghost"
-							size="sm"
-							onclick={() => toggleFeatured(p)}
-							disabled={busy[p.id]}
-							aria-label={p.featured ? m.admin_plugins_unpin() : m.admin_plugins_pin()}
-							title={p.featured ? m.admin_plugins_unpin() : m.admin_plugins_pin()}
-						>
-							{#if p.featured}<StarOff class="h-3.5 w-3.5" />{:else}<Star class="h-3.5 w-3.5" />{/if}
-						</Button>
-						<Button
-							variant="ghost"
-							size="sm"
-							onclick={() => toggleVerified(p)}
-							disabled={busy[p.id]}
-							aria-label={p.verified ? m.admin_plugins_unverify() : m.admin_plugins_verify()}
-							title={p.verified ? m.admin_plugins_unverify() : m.admin_plugins_verify()}
-						>
-							{#if p.verified}<ShieldOff class="h-3.5 w-3.5" />{:else}<ShieldCheck class="h-3.5 w-3.5" />{/if}
-						</Button>
-						<Button
-							variant="ghost"
-							size="sm"
-							onclick={() => refreshManifest(p)}
-							disabled={busy[p.id]}
-							aria-label={m.admin_plugins_refresh_manifest()}
-							title={m.admin_plugins_refresh_manifest_title()}
-						>
-							<RefreshCw class="h-3.5 w-3.5" />
-						</Button>
-						<Button
-							variant="ghost"
-							size="sm"
-							onclick={() => replayWebhook(p)}
-							disabled={busy[p.id]}
-							aria-label={m.admin_plugins_replay_webhook()}
-							title={m.admin_plugins_replay_webhook_title()}
-						>
-							<Webhook class="h-3.5 w-3.5" />
-						</Button>
-						{#if p.status !== 'approved'}
+					<div class="col-span-2 hidden flex-wrap justify-end gap-2 border-t border-border/60 pt-3 sm:flex">
+						{#each actions as action (action.id)}
+							{@const Icon = action.icon}
 							<Button
-								variant="ghost"
+								variant="outline"
 								size="sm"
-								onclick={() => setStatus(p, 'approved')}
+								class={`${actionButtonClass} ${action.color ?? ''}`}
+								onclick={action.run}
 								disabled={busy[p.id]}
-								aria-label={m.admin_plugins_approve()}
-								title={m.admin_plugins_approve()}
+								title={action.title}
+								aria-pressed={action.pressed}
 							>
-								<Check class="h-3.5 w-3.5" />
+								<Icon /><span class="truncate">{action.label}</span>
 							</Button>
-						{/if}
-						{#if p.status !== 'rejected'}
-							<Button
-								variant="ghost"
-								size="sm"
-								onclick={() => setStatus(p, 'rejected')}
-								disabled={busy[p.id]}
-								aria-label={m.admin_plugins_reject()}
-								title={m.admin_plugins_reject()}
-							>
-								<X class="h-3.5 w-3.5" />
-							</Button>
-						{/if}
+						{/each}
+					</div>
+					<div class="col-span-2 grid grid-cols-2 gap-2 border-t border-border/60 pt-3 sm:hidden">
 						<Button
-							variant="ghost"
+							variant="outline"
 							size="sm"
-							onclick={() => openRemove(p)}
+							class={actionButtonClass}
+							onclick={() => (webhookTarget = p)}
 							disabled={busy[p.id]}
-							aria-label={m.admin_plugins_delete()}
-							title={m.admin_plugins_delete()}
+							title={m.admin_plugins_webhook_manage()}
 						>
-							<Trash2 class="h-3.5 w-3.5" />
+							<Webhook /><span>Webhook</span>
 						</Button>
+						<DropdownMenu.Root>
+							<DropdownMenu.Trigger>
+								{#snippet child({ props })}
+									<Button {...props} variant="outline" size="sm" class={actionButtonClass} disabled={busy[p.id]}>
+										<MoreHorizontal /><span>{m.admin_plugins_actions()}</span>
+									</Button>
+								{/snippet}
+							</DropdownMenu.Trigger>
+							<DropdownMenu.Portal>
+								<DropdownMenu.Content
+									align="end"
+									sideOffset={6}
+									class="z-50 max-h-[70dvh] w-60 overflow-y-auto rounded-lg border border-border bg-card p-1.5 shadow-xl outline-none"
+								>
+									{#each menuActions as action, i (action.id)}
+										{@const Icon = action.icon}
+										{#if action.danger && (i === 0 || !menuActions[i - 1].danger)}
+											<DropdownMenu.Separator class="my-1 h-px bg-border" />
+										{/if}
+										<DropdownMenu.Item
+											onSelect={action.run}
+											disabled={busy[p.id]}
+											class={`flex min-h-11 cursor-pointer items-center gap-3 rounded-md px-3 text-sm outline-none data-highlighted:bg-accent data-disabled:opacity-50 ${action.danger ? 'text-destructive' : ''}`}
+										>
+											<Icon class="h-4 w-4 shrink-0" /><span class="flex-1"
+												>{action.pressed === undefined ? action.label : action.title}</span
+											>
+										</DropdownMenu.Item>
+									{/each}
+								</DropdownMenu.Content>
+							</DropdownMenu.Portal>
+						</DropdownMenu.Root>
 					</div>
 				</div>
 			{/each}
 		{/if}
 	</CardContent>
 </Card>
+
+{#if webhookTarget}
+	<PluginWebhookDialog plugin={webhookTarget} onClose={() => (webhookTarget = null)} />
+{/if}
 
 {#if deleteTarget}
 	<ConfirmDialog
