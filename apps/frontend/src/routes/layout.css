@@ -148,6 +148,8 @@
 	--text-6xl: clamp(2.5rem, 9.23vw, 3.5rem);
 	--text-6xl--line-height: 1;
 
+	/* Actions are blue like tabularis.dev (--color-accent-blue); teal stays the accent. */
+	--color-primary: #2563eb;
 	--color-ring: var(--brand-accent, #35d0c0);
 	--color-brand-accent: var(--brand-accent, #35d0c0);
 	--tabularis-aurora-one: rgba(139, 92, 246, 0.6);
