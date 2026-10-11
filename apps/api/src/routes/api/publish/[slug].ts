@@ -16,6 +16,7 @@ import { recordAudit } from '$lib/audit'
 import { getSetting } from '$lib/settings'
 import { logger } from '$lib/logger'
 import type { NormalizedRelease } from '$lib/webhook'
+import { emitEvent } from '$lib/webhooks/events'
 
 const log = logger.child({ module: 'publish' })
 
@@ -190,6 +191,7 @@ export default new Elysia().use(publisherTokenMiddleware).post(
         meta: { version, tokenId: publisher.id },
         ip: request.headers.get('x-forwarded-for') ?? null,
       })
+      await emitEvent('plugin.submitted', { pluginId: slug, actor: { id: publisher.userId, name: null } })
 
       return { slug, version, claimed: true }
     }
@@ -265,11 +267,15 @@ export default new Elysia().use(publisherTokenMiddleware).post(
       tag,
       assets: body.assets.map((a) => ({ name: a.name, url: a.url })),
     }
-    const { assetMap } = await persistRelease({ id: slug, latestVersion: existing.latestVersion }, normalized, {
-      manifestSha256: manifestSha256(body.manifest),
-      manifestRaw: body.manifest,
-      minRuntimeVersion: parsed.min_runtime_version ?? null,
-    })
+    const { assetMap, created } = await persistRelease(
+      { id: slug, latestVersion: existing.latestVersion },
+      normalized,
+      {
+        manifestSha256: manifestSha256(body.manifest),
+        manifestRaw: body.manifest,
+        minRuntimeVersion: parsed.min_runtime_version ?? null,
+      },
+    )
 
     const patch = manifestPatch(
       { raw: body.manifest, parsed, readmeMarkdown: null, readmeLocales: null },
@@ -291,6 +297,13 @@ export default new Elysia().use(publisherTokenMiddleware).post(
       meta: { version, tokenId: publisher.id },
       ip: request.headers.get('x-forwarded-for') ?? null,
     })
+    if (created) {
+      await emitEvent('release.published', {
+        pluginId: slug,
+        release: { version, tag },
+        actor: { id: publisher.userId, name: null },
+      })
+    }
 
     return { slug, version, claimed: false }
   },

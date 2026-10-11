@@ -230,6 +230,10 @@ async function bootNormalMode() {
   const { setServerMode } = await import('$lib/server-mode')
   setServerMode('normal')
 
+  // Retries + lease recovery for outbound notification webhooks.
+  const { startWebhookWorker } = await import('$lib/webhooks/delivery')
+  startWebhookWorker()
+
   if (listEnabledInstances().length === 0) {
     logger.warn('No provider instances configured — admin should add at least one via /admin')
   }

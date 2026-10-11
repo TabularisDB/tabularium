@@ -7,6 +7,7 @@ import { hasScope } from '$lib/publisher-tokens'
 import { recordAudit } from '$lib/audit'
 import { cache } from '$lib/cache'
 import { latestCacheKey } from '$routes/api/plugins/[slug]/latest'
+import { emitEvent } from '$lib/webhooks/events'
 
 export default new Elysia().use(publisherTokenMiddleware).post(
   '/',
@@ -56,6 +57,13 @@ export default new Elysia().use(publisherTokenMiddleware).post(
         meta: { version, tokenId: publisher.id },
         ip: request.headers.get('x-forwarded-for') ?? null,
       })
+      if (release.yankedAt !== null) {
+        await emitEvent('release.unyanked', {
+          pluginId: slug,
+          release: { version },
+          actor: { id: publisher.userId, name: null },
+        })
+      }
       return { slug, version, yanked: false }
     }
 
@@ -75,6 +83,12 @@ export default new Elysia().use(publisherTokenMiddleware).post(
       target: `plugin:${slug}`,
       meta: { version, reason: body.reason ?? null, tokenId: publisher.id },
       ip: request.headers.get('x-forwarded-for') ?? null,
+    })
+    await emitEvent('release.yanked', {
+      pluginId: slug,
+      release: { version },
+      reason: body.reason ?? null,
+      actor: { id: publisher.userId, name: null },
     })
     return { slug, version, yanked: true }
   },

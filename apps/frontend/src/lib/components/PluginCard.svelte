@@ -31,10 +31,10 @@
 			{/if}
 		</div>
 		<div class="min-w-0 flex-1 space-y-1.5">
-			<div class="flex items-start justify-between gap-2">
+			<div class="flex flex-wrap items-start justify-between gap-x-2 gap-y-1.5">
 				<div class="flex items-center gap-1.5 min-w-0">
 					<h3
-						class="font-semibold tracking-tight group-hover:text-primary transition-colors truncate tabularis:text-[1.1rem] tabularis:font-medium tabularis:tracking-normal tabularis:group-hover:text-brand-accent"
+						class="font-semibold tracking-tight group-hover:text-primary transition-colors break-words tabularis:text-[1.1rem] tabularis:font-medium tabularis:tracking-normal tabularis:group-hover:text-brand-accent"
 					>
 						{plugin.name}
 					</h3>

@@ -5,6 +5,7 @@ import { db } from '$db'
 import { pluginTransfers, plugins } from '$db/schema'
 import { recordAudit } from '$lib/audit'
 import { expireStalePending } from '$lib/transfers'
+import { emitEvent } from '$lib/webhooks/events'
 
 const TerminalStatus = t.Union([t.Literal('accepted'), t.Literal('rejected'), t.Literal('cancelled')])
 
@@ -64,6 +65,11 @@ export default new Elysia().use(authMiddleware).post(
       action: `plugin.transfer.${status}`,
       target: `plugin:${transfer.pluginId}`,
       meta: { transferId: transfer.id, fromUserId: transfer.fromUserId, toUserId: transfer.toUserId },
+    })
+    await emitEvent(`transfer.${status}`, {
+      pluginId: transfer.pluginId,
+      actor: { id: user.sub, name: user.username ?? null },
+      transfer: { ...transfer, status },
     })
 
     return { ok: true, status }

@@ -26,6 +26,7 @@ function generateWebhookSecret(): string {
 }
 
 import { humanize } from '$lib/util'
+import { emitEvent } from '$lib/webhooks/events'
 
 export default new Elysia()
   .use(authMiddleware)
@@ -198,6 +199,8 @@ export default new Elysia()
       } catch (err) {
         log.warn({ err, slug }, 'failed to clean up matching plugin request')
       }
+
+      await emitEvent('plugin.submitted', { pluginId: slug, actor: { id: user.sub, name: identity.username } })
 
       const webhookUrl = `${env.BASE_URL}/api/webhooks/release`
       const setup = await setupWebhook(accessToken, ref, webhookUrl, webhookSecret)

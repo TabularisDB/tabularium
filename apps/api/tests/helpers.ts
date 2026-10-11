@@ -32,6 +32,8 @@ async function ensureDefaultInstance() {
 }
 
 export async function clearDb() {
+  await db.delete(schema.webhookDeliveries)
+  await db.delete(schema.webhooks)
   await db.delete(schema.oauthRecords)
   await db.delete(schema.pluginRequestClaims)
   await db.delete(schema.pluginRequestVotes)

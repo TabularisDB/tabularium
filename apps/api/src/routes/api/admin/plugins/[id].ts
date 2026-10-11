@@ -7,6 +7,7 @@ import { cache } from '$lib/cache'
 import { latestCacheKey } from '$routes/api/plugins/[slug]/latest'
 import { recordAudit } from '$lib/audit'
 import { jsonArrayOrNull } from '$lib/util'
+import { emitEvent } from '$lib/webhooks/events'
 
 const statusEnum = t.Union([t.Literal('approved'), t.Literal('pending'), t.Literal('rejected')])
 
@@ -84,6 +85,13 @@ export default new Elysia()
         meta: body as Record<string, unknown>,
         ip: request.headers.get('x-forwarded-for') ?? null,
       })
+      if (body.status !== undefined && body.status !== existing.status && body.status !== 'pending') {
+        await emitEvent(body.status === 'approved' ? 'plugin.approved' : 'plugin.rejected', {
+          pluginId: params.id,
+          actor: { id: admin.id, name: admin.displayName },
+          reason: body.status === 'rejected' ? (body.rejectionReason ?? null) : null,
+        })
+      }
       return { ok: true, id: params.id }
     },
     {

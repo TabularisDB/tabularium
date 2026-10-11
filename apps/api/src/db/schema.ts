@@ -413,3 +413,55 @@ export const oauthRecords = sqliteTable(
   },
   (t) => [index('oauth_records_user_idx').on(t.userId), index('oauth_records_expiry_idx').on(t.expiresAt)],
 )
+
+// Outbound notification webhooks. `url`, `headers` and `body` are templates
+// rendered per event (see lib/webhooks/template). `secrets` is an encrypted
+// JSON object exposed to templates as `{{secrets.NAME}}`; `signingSecret`
+// (encrypted) enables the X-Tabularium-Signature HMAC header.
+export const webhooks = sqliteTable('webhooks', {
+  id: text('id').primaryKey(),
+  name: text('name').notNull(),
+  enabled: integer('enabled').notNull().default(1),
+  preset: text('preset'),
+  events: text('events').notNull(), // JSON array of event types, or ["*"]
+  method: text('method').notNull().default('POST'),
+  url: text('url').notNull(),
+  headers: text('headers').notNull().default('[]'), // JSON [{ name, value }]
+  body: text('body'),
+  contentType: text('content_type').notNull().default('application/json'),
+  secrets: text('secrets'),
+  signingSecret: text('signing_secret'),
+  createdAt: integer('created_at').notNull().$defaultFn(now),
+  updatedAt: integer('updated_at').notNull().$defaultFn(now),
+})
+
+// One row per (webhook, event). Doubles as the retry outbox and the
+// admin-facing delivery log. `request` holds the rendered request with
+// secret values masked.
+export const webhookDeliveries = sqliteTable(
+  'webhook_deliveries',
+  {
+    id: text('id').primaryKey(),
+    webhookId: text('webhook_id')
+      .notNull()
+      .references(() => webhooks.id, { onDelete: 'cascade' }),
+    event: text('event').notNull(),
+    payload: text('payload').notNull(),
+    status: text('status', { enum: ['pending', 'sending', 'success', 'failed'] })
+      .notNull()
+      .default('pending'),
+    attempts: integer('attempts').notNull().default(0),
+    nextAttemptAt: integer('next_attempt_at'),
+    lastStatusCode: integer('last_status_code'),
+    lastError: text('last_error'),
+    request: text('request'),
+    responseBody: text('response_body'),
+    durationMs: integer('duration_ms'),
+    createdAt: integer('created_at').notNull().$defaultFn(now),
+    completedAt: integer('completed_at'),
+  },
+  (t) => ({
+    byWebhookCreated: index('webhook_deliveries_webhook_created_idx').on(t.webhookId, t.createdAt),
+    byStatusNext: index('webhook_deliveries_status_next_idx').on(t.status, t.nextAttemptAt),
+  }),
+)

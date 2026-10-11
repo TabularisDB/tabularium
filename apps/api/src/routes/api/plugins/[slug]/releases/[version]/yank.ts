@@ -7,6 +7,7 @@ import { rateLimit } from '$middleware/rate-limit'
 import { recordAudit, actorFromUser } from '$lib/audit'
 import { cache } from '$lib/cache'
 import { latestCacheKey } from '$routes/api/plugins/[slug]/latest'
+import { emitEvent } from '$lib/webhooks/events'
 
 export default new Elysia()
   .use(authMiddleware)
@@ -58,6 +59,13 @@ export default new Elysia()
           target: `plugin:${slug}`,
           meta: { version, by: 'author' },
         })
+        if (release.yankedAt !== null) {
+          await emitEvent('release.unyanked', {
+            pluginId: slug,
+            release: { version },
+            actor: { id: user.sub, name: user.username ?? null },
+          })
+        }
         return { slug, version, yanked: false }
       }
 
@@ -75,6 +83,12 @@ export default new Elysia()
         action: 'plugin.yank',
         target: `plugin:${slug}`,
         meta: { version, reason: body.reason ?? null, by: 'author' },
+      })
+      await emitEvent('release.yanked', {
+        pluginId: slug,
+        release: { version },
+        reason: body.reason ?? null,
+        actor: { id: user.sub, name: user.username ?? null },
       })
       return { slug, version, yanked: true }
     },

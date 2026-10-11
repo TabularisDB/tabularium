@@ -25,7 +25,8 @@ export function adminScope(path: string, method: string): string | null {
   const area = path.split('/')[3]
   // Account recovery, setup and token issuance require the actual interactive
   // user or a legacy full-admin token, never a scoped delegated credential.
-  if (!area || ['tokens', 'auth', 'setup'].includes(area)) return null
+  // Webhooks too: a template can send stored secrets to any URL.
+  if (!area || ['tokens', 'auth', 'setup', 'webhooks'].includes(area)) return null
   const action = ['GET', 'HEAD', 'OPTIONS'].includes(method) ? 'read' : 'write'
   return `admin:${area}:${action}`
 }
