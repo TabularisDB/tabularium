@@ -148,6 +148,7 @@ const adminTitles: Record<string, string> = {
   audit: 'Audit log',
   diagnostics: 'Diagnostics',
   requests: 'Community requests',
+  webhooks: 'Notification webhooks',
 }
 function permissionGroups(scopes: string[]) {
   const standard: string[] = []

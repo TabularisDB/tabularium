@@ -103,6 +103,16 @@ const adminOperations = new Set([
   'getAdminBranding',
   'updateBranding',
   'listAudit',
+  'adminListWebhooks',
+  'adminCreateWebhook',
+  'adminGetWebhook',
+  'adminUpdateWebhook',
+  'adminDeleteWebhook',
+  'adminTestWebhook',
+  'adminPreviewWebhook',
+  'adminWebhookPresets',
+  'adminListWebhookDeliveries',
+  'adminRedeliverWebhook',
 ])
 export type ToolRoute = {
   name: string

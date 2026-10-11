@@ -173,3 +173,31 @@ test('settings read scope cannot disclose encrypted signing keys or arbitrary en
     await client.close()
   }
 })
+test('webhook tools require the explicit admin:webhooks scope', async () => {
+  const admin = await makeAdmin()
+  const reader = await connect('admin:webhooks:read', admin)
+  try {
+    const names = (await reader.client.listTools()).tools.map((t) => t.name)
+    expect(names).toContain('admin_list_webhooks')
+    expect(names).not.toContain('admin_create_webhook')
+  } finally {
+    await reader.client.close()
+  }
+  const other = await connect('admin:settings:write', admin)
+  try {
+    expect((await other.client.listTools()).tools.map((t) => t.name)).not.toContain('admin_create_webhook')
+  } finally {
+    await other.client.close()
+  }
+  const { client } = await connect('admin:webhooks:write', admin)
+  try {
+    const result = await client.callTool({
+      name: 'admin_create_webhook',
+      arguments: { body: { name: 'MCP hook', events: ['*'], url: 'https://example.com/hook' } },
+    })
+    expect(result.isError).toBe(false)
+    expect(await db.query.webhooks.findFirst({ where: { name: 'MCP hook' } })).toBeTruthy()
+  } finally {
+    await client.close()
+  }
+})

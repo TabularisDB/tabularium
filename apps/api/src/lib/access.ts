@@ -22,11 +22,13 @@ export async function verifySessionToken(token: string): Promise<JwtPayload | nu
   return user
 }
 export function adminScope(path: string, method: string): string | null {
-  const area = path.split('/')[3]
+  const segment = path.split('/')[3]
   // Account recovery, setup and token issuance require the actual interactive
   // user or a legacy full-admin token, never a scoped delegated credential.
-  // Webhooks too: a template can send stored secrets to any URL.
-  if (!area || ['tokens', 'auth', 'setup', 'webhooks'].includes(area)) return null
+  if (!segment || ['tokens', 'auth', 'setup'].includes(segment)) return null
+  // Delivery redelivery is part of webhook management. The scope is explicit
+  // because a webhook template can send stored secrets to any URL.
+  const area = segment === 'webhook-deliveries' ? 'webhooks' : segment
   const action = ['GET', 'HEAD', 'OPTIONS'].includes(method) ? 'read' : 'write'
   return `admin:${area}:${action}`
 }
