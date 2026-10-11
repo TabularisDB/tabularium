@@ -4,6 +4,9 @@
 	import Plug from '@lucide/svelte/icons/plug'
 	import Webhook from '@lucide/svelte/icons/webhook'
 	import Globe from '@lucide/svelte/icons/globe'
+	import ChartNoAxesCombined from '@lucide/svelte/icons/chart-no-axes-combined'
+	import Download from '@lucide/svelte/icons/download'
+	import Boxes from '@lucide/svelte/icons/boxes'
 	import { PROVIDER_MARKS } from '$lib/provider-marks'
 	import Star from '@lucide/svelte/icons/star'
 	import PluginSearch from '$components/PluginSearch.svelte'
@@ -31,6 +34,7 @@
 
 	let featured = $state<Plugin[] | null>(null)
 	let recent = $state<Plugin[] | null>(null)
+	let popular = $state<Plugin[] | null>(null)
 	let total = $state(0)
 	let loading = $state(true)
 	let stats = $state<Stats | null>(null)
@@ -74,6 +78,16 @@
 		release: { title: m.home_feature_release_title, body: m.home_feature_release_body },
 	}
 
+	async function fetchPopular() {
+		try {
+			const { data, error } = await eden.api.plugins.get({ query: { sort: 'downloads', limit: '4' } })
+			if (error) throw error
+			popular = (data as PluginListResponse).plugins
+		} catch {
+			popular = []
+		}
+	}
+
 	onMount(async () => {
 		try {
 			const { data, error } = await eden.api.pages['by-path'].get({ query: { path: '/', locale: i18n.current } })
@@ -85,6 +99,7 @@
 			// no custom homepage — fall through to default
 		}
 		homepageChecked = true
+		void fetchPopular()
 		try {
 			eden.api.stats
 				.get()
@@ -132,65 +147,127 @@
 		<CmsPage html={customHomepage.html} />
 	</div>
 {:else}
-	<section class="hero-grid border-b border-border">
+	<section
+		class="home-hero hero-grid border-b border-border"
+		class:home-hero--has-stats={statItems.length > 0 && !!stats && stats.plugins > 0}
+	>
 		<div class="hero-aurora" aria-hidden="true"></div>
-		<div class="mx-auto max-w-6xl px-6 pt-20 pb-14 sm:pt-28 sm:pb-16 text-center">
-			{#if homeCopy.eyebrow.enabled}
-				<div
-					class="inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-xs text-muted-foreground mb-8"
-				>
-					<Globe class="h-3 w-3 text-primary" />
-					{homeCopy.pick(homeCopy.eyebrow.text, i18n.current) ?? m.home_eyebrow()}
-				</div>
-			{/if}
-			<h1 class="text-4xl sm:text-6xl font-semibold tracking-tight text-foreground">
-				{branding.name}<span class="text-primary">.</span>
-			</h1>
-			<p class="mt-6 text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto">
-				{branding.tagline}
-			</p>
-
-			<PluginSearch class="mx-auto mt-10 max-w-xl" />
-
-			{#if kindFacets.length > 0}
-				<div class="mt-5 flex flex-wrap items-center justify-center gap-1.5">
-					{#each kindFacets as k (k.key)}
-						<a
-							href={`/plugins?kind=${encodeURIComponent(k.key)}`}
-							class="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-border-strong hover:text-foreground"
-						>
-							{k.label}
-							<span class="font-mono text-[10px] opacity-70">{k.count}</span>
-						</a>
-					{/each}
-				</div>
-			{/if}
-
-			<p class="mt-6 text-sm text-muted-foreground">
-				<a href="/plugins" class="hover:text-foreground transition-colors">{m.home_browse_plugins()}</a>
-				{#if instanceFeatures.submissionsEnabled}
-					<span class="mx-2 opacity-50">·</span>
-					<a href="/submit" class="text-primary hover:underline">{m.home_submit_plugin()} →</a>
+		<div class="home-hero__layout mx-auto max-w-6xl px-6 pt-20 pb-14 sm:pt-28 sm:pb-16 text-center">
+			<div class="home-hero__main">
+				{#if homeCopy.eyebrow.enabled}
+					<div
+						class="home-hero__eyebrow inline-flex items-center gap-2 rounded-full border border-border bg-card px-3 py-1 text-xs text-muted-foreground mb-8"
+					>
+						<Globe class="h-3 w-3 text-primary" />
+						{homeCopy.pick(homeCopy.eyebrow.text, i18n.current) ?? m.home_eyebrow()}
+					</div>
 				{/if}
-			</p>
+				<h1 class="text-4xl sm:text-6xl font-semibold tracking-tight text-foreground tabularis:sr-only">
+					{branding.name}<span class="text-primary">.</span>
+				</h1>
+				<p class="home-hero__tagline mt-6 text-base sm:text-lg text-muted-foreground max-w-2xl mx-auto">
+					{branding.tagline}
+				</p>
+
+				<PluginSearch class="home-hero__search mx-auto mt-10 max-w-xl" />
+
+				{#if kindFacets.length > 0}
+					<div class="home-hero__kinds mt-5 flex flex-wrap items-center justify-center gap-1.5">
+						{#each kindFacets as k (k.key)}
+							<a
+								href={`/plugins?kind=${encodeURIComponent(k.key)}`}
+								class="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-medium text-muted-foreground transition-colors hover:border-border-strong hover:text-foreground"
+							>
+								{k.label}
+								<span class="font-mono text-[10px] opacity-70">{k.count}</span>
+							</a>
+						{/each}
+					</div>
+				{/if}
+
+				<p class="home-hero__actions mt-6 text-sm text-muted-foreground">
+					<a href="/plugins" class="home-hero__browse hover:text-foreground transition-colors">
+						{m.home_browse_plugins()}
+						<ArrowRight class="hidden h-4 w-4 tabularis:inline" aria-hidden="true" />
+					</a>
+					{#if instanceFeatures.submissionsEnabled}
+						<span class="home-hero__action-divider mx-2 opacity-50">·</span>
+						<a href="/submit" class="text-primary hover:underline">{m.home_submit_plugin()} →</a>
+					{/if}
+				</p>
+			</div>
 
 			{#if statItems.length > 0 && stats && stats.plugins > 0}
-				<dl
-					class="mx-auto mt-14 grid max-w-3xl grid-cols-2 gap-y-6 border-t border-border pt-8 sm:flex sm:justify-center sm:gap-x-16"
-				>
-					{#each statItems as item (item.key)}
-						<div class="flex flex-col items-center gap-1">
-							<dt class="order-2 text-xs uppercase tracking-wider text-muted-foreground">{item.label}</dt>
-							<dd class="order-1 text-2xl font-semibold text-foreground tabular-nums tabularis:font-medium">
-								{item.value}
-							</dd>
-						</div>
-					{/each}
-				</dl>
+				<div class="home-hero__overview">
+					<p class="home-hero__overview-label hidden tabularis:flex">
+						<ChartNoAxesCombined class="h-4 w-4" aria-hidden="true" />
+						{m.home_stats_label()}
+					</p>
+					<dl
+						class="home-hero__stats mx-auto mt-14 grid max-w-3xl grid-cols-2 gap-y-6 border-t border-border pt-8 sm:flex sm:justify-center sm:gap-x-16"
+					>
+						{#each statItems as item (item.key)}
+							<div class="home-hero__stat flex flex-col items-center gap-1">
+								<dt class="home-hero__stat-label order-2 text-xs uppercase tracking-wider text-muted-foreground">
+									{item.label}
+								</dt>
+								<dd
+									class="home-hero__stat-value order-1 text-2xl font-semibold text-foreground tabular-nums tabularis:font-medium"
+								>
+									{item.value}
+								</dd>
+							</div>
+						{/each}
+					</dl>
+				</div>
 			{/if}
 		</div>
 
-		{#if marqueePlugins.length >= MARQUEE_MIN_ICONS}
+		{#if branding.theme === 'tabularis'}
+			{#if popular === null || popular.length > 0}
+				<section class="home-hero__popular" aria-labelledby="home-popular-title">
+					<div class="home-hero__popular-header">
+						<h2 id="home-popular-title">{m.home_most_downloaded()}</h2>
+						<a href="/plugins?sort=downloads">
+							{m.home_see_all()}
+							<ArrowRight class="h-3.5 w-3.5" aria-hidden="true" />
+						</a>
+					</div>
+					<ol class="home-hero__popular-list" aria-busy={popular === null}>
+						{#if popular === null}
+							{#each Array(4) as _}
+								<li aria-hidden="true"><Skeleton class="h-20 rounded-md" /></li>
+							{/each}
+						{:else}
+							{#each popular as plugin (plugin.id)}
+								<li>
+									<a href={`/plugins/${plugin.id}`} class="home-hero__popular-plugin" title={plugin.name}>
+										<span class="home-hero__popular-icon">
+											{#if plugin.iconUrl}
+												<img src={plugin.iconUrl} alt="" loading="lazy" decoding="async" />
+											{:else}
+												<Boxes class="h-5 w-5" aria-hidden="true" />
+											{/if}
+										</span>
+										<span class="home-hero__popular-info">
+											<span class="home-hero__popular-name">{plugin.name}</span>
+											<span
+												class="home-hero__popular-downloads"
+												title={`${m.plugin_detail_stat_downloads()}: ${formatDownloadCount(plugin.downloads, i18n.current, false)}`}
+												aria-label={`${m.plugin_detail_stat_downloads()}: ${formatDownloadCount(plugin.downloads, i18n.current, false)}`}
+											>
+												<Download class="h-3 w-3" aria-hidden="true" />
+												{formatDownloadCount(plugin.downloads, i18n.current)}
+											</span>
+										</span>
+									</a>
+								</li>
+							{/each}
+						{/if}
+					</ol>
+				</section>
+			{/if}
+		{:else if marqueePlugins.length >= MARQUEE_MIN_ICONS}
 			<div class="marquee relative border-t border-border/60 py-6" aria-label={m.home_marquee_label()}>
 				<div class="marquee-track flex w-max gap-4">
 					{#each [0, 1] as copy (copy)}
@@ -200,7 +277,7 @@
 								title={p.name}
 								aria-hidden={copy === 1 ? 'true' : undefined}
 								tabindex={copy === 1 ? -1 : undefined}
-								class="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg border border-border bg-card p-2.5 transition-colors hover:border-primary/40 tabularis:rounded-md"
+								class="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg border border-border bg-card p-2.5 transition-colors hover:border-primary/40"
 							>
 								<img
 									src={p.iconUrl}

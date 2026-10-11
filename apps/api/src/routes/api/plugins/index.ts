@@ -104,11 +104,9 @@ export default new Elysia().get(
     const kindParam = query.kind?.trim()
     const kindFilterActive = kindParam !== undefined && kindParam.length > 0
     const kindValid = kindFilterActive && isKindKey(kindParam!)
-    // Verified plugins always lead each sort — admin-vetted entries sit
-    // above unverified at equal rank. Drizzle's relational orderBy accepts a
-    // function returning SQL fragments; `verifiedAt IS NULL` evaluates to 0
-    // for verified rows and 1 for the rest in all three dialects, so an
-    // ascending sort puts verified first regardless of NULLS-default policy.
+    // Existing catalog sorts put verified entries first. Download rankings
+    // use the actual count first, with verification and ID as stable tie-breakers.
+    // `verifiedAt IS NULL` orders verification consistently across dialects.
     const baseOrderFns: Record<string, (cols: typeof plugins) => ReturnType<typeof sql>> = {
       new: (cols) => sql`${cols.createdAt} DESC`,
       name: (cols) => sql`${cols.name} ASC`,
@@ -116,7 +114,10 @@ export default new Elysia().get(
       updated: (cols) => sql`${cols.updatedAt} DESC`,
     }
     const baseOrderFn = baseOrderFns[query.sort ?? 'updated'] ?? baseOrderFns.updated
-    const orderBy = (cols: typeof plugins) => [sql`(${cols.verifiedAt} IS NULL) ASC`, baseOrderFn(cols)]
+    const orderBy = (cols: typeof plugins) =>
+      query.sort === 'downloads'
+        ? [sql`${cols.downloads} DESC`, sql`(${cols.verifiedAt} IS NULL) ASC`, sql`${cols.id} ASC`]
+        : [sql`(${cols.verifiedAt} IS NULL) ASC`, baseOrderFn(cols)]
 
     if (kindFilterActive && !kindValid) {
       return {
@@ -244,7 +245,7 @@ export default new Elysia().get(
       summary: 'List plugins',
       description:
         'Paginated catalog. Supports `search` (name/description/slug), `category` (exact), `tag` (exact), `featured=1`, and ' +
-        '`sort=updated|new|name|featured`. Returns facets so the UI can render filter chips without an extra request. Public — no auth required.',
+        '`sort=updated|new|name|featured|downloads` (downloads ranks by total downloads). Returns facets so the UI can render filter chips without an extra request. Public — no auth required.',
       operationId: 'listPlugins',
     },
     query: t.Object(
@@ -255,7 +256,15 @@ export default new Elysia().get(
         kind: t.Optional(t.String()),
         featured: t.Optional(t.String()),
         verified: t.Optional(t.String()),
-        sort: t.Optional(t.Union([t.Literal('updated'), t.Literal('new'), t.Literal('name'), t.Literal('featured')])),
+        sort: t.Optional(
+          t.Union([
+            t.Literal('updated'),
+            t.Literal('new'),
+            t.Literal('name'),
+            t.Literal('featured'),
+            t.Literal('downloads'),
+          ]),
+        ),
         page: t.Optional(t.String()),
         limit: t.Optional(t.String()),
       },

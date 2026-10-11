@@ -1114,6 +1114,8 @@
 	"home_stat_downloads": "descargas",
 	"home_stat_authors": "autores",
 	"home_stat_requests": "solicitudes abiertas",
+	"home_stats_label": "El registro de un vistazo",
+	"home_most_downloaded": "Más descargados",
 	"home_marquee_label": "Plugins de este registro",
 	"home_dev_eyebrow": "Para desarrolladores",
 	"home_dev_title": "Una llamada HTTP para listar todos los plugins",

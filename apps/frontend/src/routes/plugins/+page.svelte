@@ -22,7 +22,7 @@
 	let category = $state('')
 	let tag = $state('')
 	let kind = $state('')
-	let sort = $state<'updated' | 'new' | 'name' | 'featured'>('updated')
+	let sort = $state<'updated' | 'new' | 'name' | 'featured' | 'downloads'>('updated')
 	let onlyFeatured = $state(false)
 	let onlyVerified = $state(false)
 
@@ -51,7 +51,7 @@
 		tag = url.searchParams.get('tag') ?? ''
 		kind = url.searchParams.get('kind') ?? ''
 		const s = url.searchParams.get('sort')
-		if (s === 'updated' || s === 'new' || s === 'name' || s === 'featured') sort = s
+		if (s === 'updated' || s === 'new' || s === 'name' || s === 'featured' || s === 'downloads') sort = s
 		onlyFeatured = url.searchParams.get('featured') === '1'
 		onlyVerified = url.searchParams.get('verified') === '1'
 		fetchPlugins()
@@ -144,6 +144,7 @@
 				<option value="new">{m.plugins_list_sort_new()}</option>
 				<option value="name">{m.plugins_list_sort_name()}</option>
 				<option value="featured">{m.plugins_list_sort_featured()}</option>
+				<option value="downloads">{m.home_most_downloaded()}</option>
 			</Select>
 			<label class="flex items-center gap-2 text-sm cursor-pointer">
 				<input type="checkbox" bind:checked={onlyFeatured} class="h-4 w-4 rounded border-input" />
