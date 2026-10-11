@@ -22,10 +22,4 @@
 	const invertInDark = $derived(!logoUrl && kind === 'github')
 </script>
 
-<img
-	{src}
-	alt={alt || kind}
-	class={[className, invertInDark && 'dark:invert']}
-	loading="lazy"
-	decoding="async"
-/>
+<img {src} alt={alt || kind} class={[className, invertInDark && 'dark:invert']} loading="lazy" decoding="async" />
