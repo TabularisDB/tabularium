@@ -5,6 +5,7 @@
 	import Hammer from '@lucide/svelte/icons/hammer'
 	import Trash2 from '@lucide/svelte/icons/trash-2'
 	import Lightbulb from '@lucide/svelte/icons/lightbulb'
+	import LogIn from '@lucide/svelte/icons/log-in'
 	import Flame from '@lucide/svelte/icons/flame'
 	import Clock from '@lucide/svelte/icons/clock'
 	import Badge from '$components/ui/Badge.svelte'
@@ -397,7 +398,21 @@
 			</section>
 
 			<aside class="lg:sticky lg:top-[calc(var(--header-height)+1.5rem)]">
-				{#if requestsEnabled}
+				{#if requestsEnabled && !auth.user && !auth.loading}
+					<Card>
+						<CardContent class="p-5 sm:p-6 space-y-4">
+							<div class="space-y-1">
+								<h2 class="text-lg font-semibold tracking-tight">{m.requests_form_title()}</h2>
+								<p class="text-sm text-muted-foreground">{m.requests_form_subtitle()}</p>
+							</div>
+							<p class="text-sm">{m.requests_sign_in_required()}</p>
+							<Button class="w-full" href={`/login?return_to=${encodeURIComponent('/requests')}`}>
+								<LogIn class="h-4 w-4" />
+								{m.requests_sign_in_to_create()}
+							</Button>
+						</CardContent>
+					</Card>
+				{:else if requestsEnabled}
 					<Card>
 						<CardContent class="p-5 sm:p-6">
 							<form onsubmit={createRequest} class="space-y-5">
@@ -417,15 +432,22 @@
 								</div>
 								{#if kinds.length > 0}
 									<div class="space-y-2">
-										<span class="text-sm font-medium leading-none">{m.requests_kind()}</span>
-										<div class="flex flex-wrap gap-1.5" role="radiogroup" aria-label={m.requests_kind()}>
+										<span class="text-sm font-medium leading-none"
+											>{m.requests_kind()} <span class="text-destructive" aria-hidden="true">*</span></span
+										>
+										<div
+											class="flex flex-wrap gap-1.5"
+											role="radiogroup"
+											aria-label={m.requests_kind()}
+											aria-required="true"
+										>
 											{#each kinds as k (k.key)}
 												<button
 													type="button"
 													role="radio"
 													aria-checked={kind === k.key}
 													title={k.description ?? undefined}
-													onclick={() => (kind = kind === k.key ? '' : k.key)}
+													onclick={() => (kind = k.key)}
 													class={cn(
 														'rounded-full border px-3 py-1.5 text-xs font-medium transition-colors',
 														kind === k.key
@@ -456,9 +478,9 @@
 										required
 									/>
 								</div>
-								<Button type="submit" class="w-full" disabled={creating || !auth.user}>
+								<Button type="submit" class="w-full" disabled={creating || !auth.user || (kinds.length > 0 && !kind)}>
 									<Plus class="h-4 w-4" />
-									{creating ? m.requests_creating() : auth.user ? m.requests_create() : m.requests_sign_in_to_create()}
+									{creating ? m.requests_creating() : m.requests_create()}
 								</Button>
 							</form>
 						</CardContent>

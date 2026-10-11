@@ -1,6 +1,7 @@
 <script lang="ts">
 	import { onMount } from 'svelte'
 	import { goto } from '$app/navigation'
+	import { page } from '$app/state'
 	import Button from '$components/ui/Button.svelte'
 	import Card from '$components/ui/Card.svelte'
 	import CardContent from '$components/ui/CardContent.svelte'
@@ -15,10 +16,21 @@
 
 	let providers = $state<ProviderInfo[] | null>(null)
 
+	// Where to land after sign-in: a path here, or a URL on a site in the API's
+	// ALLOWED_ORIGINS (e.g. a website's "Suggest a plugin" form). The API
+	// validates it in safeReturnTo before redirecting.
+	const returnTo = $derived(page.url.searchParams.get('return_to'))
+	const isLocalPath = (raw: string | null): raw is string => !!raw && raw.startsWith('/') && !raw.startsWith('//')
+
+	function providerHref(id: string): string {
+		return returnTo ? `/auth/${id}?return_to=${encodeURIComponent(returnTo)}` : `/auth/${id}`
+	}
+
 	onMount(async () => {
 		if (!auth.loaded) await auth.refresh()
 		if (auth.user) {
-			goto(auth.isAdmin ? '/admin' : '/')
+			// Already signed in: only follow local paths, absolute targets need the API's check.
+			goto(isLocalPath(returnTo) ? returnTo : auth.isAdmin ? '/admin' : '/')
 			return
 		}
 		const statusRes = await eden.api.init.status.get()
@@ -54,7 +66,7 @@
 					<Button
 						class="w-full justify-start"
 						variant="outline"
-						onclick={() => (window.location.href = `/auth/${p.id}`)}
+						onclick={() => (window.location.href = providerHref(p.id))}
 					>
 						<ProviderIcon kind={p.kind} baseUrl={p.baseUrl} logoUrl={p.logoUrl} class="h-4 w-4" />
 						{m.login_continue_with({ name: p.displayName })}

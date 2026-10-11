@@ -127,7 +127,9 @@ describe('POST /api/requests — derived slug and kind', () => {
     const ok = await post({ name: 'Mongo', description: 'NoSQL', kind: 'driver' })
     expect(ok.status).toBe(200)
     expect(((await ok.json()) as { kind: string }).kind).toBe('driver')
-    await post({ name: 'Dracula', description: 'Theme' })
+
+    const missing = await post({ name: 'Dracula', description: 'Theme' })
+    expect(missing.status).toBe(400)
 
     const res = await app.handle(new Request('http://localhost/api/requests?kind=driver'))
     const data = (await res.json()) as { total: number; requests: Array<{ slug: string; kind: string | null }> }

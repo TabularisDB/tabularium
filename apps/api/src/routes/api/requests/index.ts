@@ -7,7 +7,7 @@ import { pluginRequests, pluginRequestClaims } from '$db/schema'
 import { desc, count, eq, and, inArray } from 'drizzle-orm'
 import { getFeatures } from '$lib/features'
 import { verifySessionToken, delegatedAccess } from '$lib/access'
-import { isKindKey } from '$lib/kinds'
+import { getKinds, isKindKey } from '$lib/kinds'
 import { deriveSlug } from '$lib/slug'
 import { emitEvent } from '$lib/webhooks/events'
 
@@ -155,6 +155,11 @@ export default new Elysia()
         return { error: 'Name must contain at least one letter or digit.' }
       }
       const kind = body.kind || null
+      // Every request is filed under a kind once the instance defines any.
+      if (!kind && getKinds().length > 0) {
+        set.status = 400
+        return { error: 'Pick a plugin kind for the request.' }
+      }
       if (kind && !isKindKey(kind)) {
         set.status = 400
         return { error: `Unknown plugin kind '${kind}'.` }
@@ -187,7 +192,7 @@ export default new Elysia()
         tags: ['Requests'],
         summary: 'Create plugin request',
         description:
-          'Add a new entry to the community wishlist. Requires auth. `slug` is optional and derived from `name` when omitted; it must be unique across requests. `kind` must match a configured plugin kind key.',
+          'Add a new entry to the community wishlist. Requires auth. `slug` is optional and derived from `name` when omitted; it must be unique across requests. `kind` must match a configured plugin kind key, and is required whenever the instance defines kinds.',
         operationId: 'createRequest',
         security: [{ bearerAuth: [] }, { cookieAuth: [] }],
       },
@@ -202,7 +207,12 @@ export default new Elysia()
         ),
         name: t.String({ minLength: 1, maxLength: 120, description: 'Human-readable plugin name.' }),
         description: t.String({ minLength: 1, maxLength: 2000, description: 'What the plugin should do.' }),
-        kind: t.Optional(t.String({ maxLength: 40, description: 'Plugin kind key from `GET /api/kinds`.' })),
+        kind: t.Optional(
+          t.String({
+            maxLength: 40,
+            description: 'Plugin kind key from `GET /api/kinds`. Required when the instance defines kinds.',
+          }),
+        ),
       }),
       response: {
         200: createRequestResponseSchema,

@@ -70,7 +70,7 @@ Optional:
 | Var | Default | Notes |
 |-----|---------|-------|
 | `WEB_BASE_URL` | `BASE_URL` | Separate origin for the frontend SPA if hosted elsewhere. |
-| `ALLOWED_ORIGINS` | — | Comma-separated extra CORS origins. `BASE_URL` and `WEB_BASE_URL` are always allowed. |
+| `ALLOWED_ORIGINS` | — | Comma-separated extra CORS origins. `BASE_URL` and `WEB_BASE_URL` are always allowed. Sign-in may also return to these origins (`return_to`), so a trusted site can host its own request form. |
 | `DATA_DIR` | `./data` | Container path for the SQLite DB, uploads, `bootstrap-password`, `config.json`. Point this at the persistent volume. |
 | `DATABASE_URL` | — | Normally set via install wizard. Scheme picks the dialect (`sqlite:` / `postgres://` / `mysql://`). |
 | `BOOTSTRAP_PASSWORD` | (auto-generated) | Pins the first-run admin password. If unset, a random one is generated and written to `$DATA_DIR/bootstrap-password` (mode 0600). |

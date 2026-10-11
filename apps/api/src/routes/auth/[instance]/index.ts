@@ -2,7 +2,7 @@ import { Elysia, t } from 'elysia'
 import { GitHub, GitLab, Gitea, generateState, generateCodeVerifier } from 'arctic'
 import { verifyJwt } from '$lib/jwt'
 import { getInstance, type ProviderInstance } from '$lib/provider-instance'
-import { env, isProd } from '$lib/env'
+import { env, isProd, allowedOrigins } from '$lib/env'
 
 export function safeReturnTo(raw: string | undefined): string | null {
   if (!raw || typeof raw !== 'string' || raw.length > 512) return null
@@ -10,8 +10,12 @@ export function safeReturnTo(raw: string | undefined): string | null {
     const base = env.WEB_BASE_URL ?? env.BASE_URL
     const baseOrigin = new URL(base).origin
     const target = new URL(raw, base)
-    if (target.origin !== baseOrigin) return null
-    return target.pathname + target.search + target.hash
+    if (target.origin === baseOrigin) return target.pathname + target.search + target.hash
+    // Sites trusted for CORS (e.g. a project website hosting the request form)
+    // may also get the user back after sign-in; they keep their full URL.
+    if ((target.protocol === 'https:' || target.protocol === 'http:') && allowedOrigins().includes(target.origin))
+      return target.href
+    return null
   } catch {
     return null
   }
