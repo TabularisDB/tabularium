@@ -72,14 +72,24 @@
 	let loading = $state(true)
 	let submissionsEnabled = $state(true)
 	let selectedIdentityId = $state('')
-	let selectedUrl = $state('')
+	let selectedRepo = $state<SubmittableRepo | null>(null)
 	let search = $state('')
+	let repoPage = $state(1)
+	let reposLoading = $state(false)
+	let reposError = $state<string | null>(null)
+	let reposRequestId = 0
+	let searchTimer: ReturnType<typeof setTimeout> | undefined
 	let name = $state('')
 	let description = $state('')
 	let submitting = $state(false)
 	let success = $state<SubmitSuccess | null>(null)
 	let preview = $state<PreviewResult | null>(null)
 	let previewing = $state(false)
+
+	onMount(() => () => {
+		clearTimeout(searchTimer)
+		reposRequestId++
+	})
 
 	onMount(async () => {
 		await auth.refresh()
@@ -102,7 +112,7 @@
 			const { data, error } = await eden.api.submit.repos.get()
 			if (error) throw error
 			groups = (data as { groups: RepoGroup[] }).groups
-			const firstUsable = groups.find((g) => !g.error && g.repos.length > 0)
+			const firstUsable = groups.find((g) => !g.error && g.repos.length > 0) ?? groups[0]
 			if (firstUsable) selectedIdentityId = firstUsable.identityId
 		} catch {
 			groups = []
@@ -113,21 +123,57 @@
 
 	const selectedGroup = $derived(groups?.find((g) => g.identityId === selectedIdentityId) ?? null)
 
-	const filteredRepos = $derived.by(() => {
-		const repos = selectedGroup?.repos ?? []
-		const q = search.trim().toLowerCase()
-		if (!q) return repos
-		return repos.filter((r) => r.fullName.toLowerCase().includes(q) || (r.description ?? '').toLowerCase().includes(q))
-	})
+	const searchTooShort = $derived(search.trim().length > 0 && search.trim().length < 3)
 
-	const selectedRepo = $derived<SubmittableRepo | null>(selectedGroup?.repos.find((r) => r.url === selectedUrl) ?? null)
-
-	$effect(() => {
-		// reset repo selection when switching identities
-		void selectedIdentityId
-		selectedUrl = ''
+	function changeIdentity(identityId: string) {
+		clearTimeout(searchTimer)
+		selectedIdentityId = identityId
 		search = ''
-	})
+		repoPage = 1
+		selectedRepo = null
+		void loadRepoPage()
+	}
+
+	function changeSearch(value: string) {
+		search = value
+		repoPage = 1
+		selectedRepo = null
+		reposError = null
+		clearTimeout(searchTimer)
+		reposRequestId++
+		reposLoading = !searchTooShort
+		if (!searchTooShort) searchTimer = setTimeout(() => void loadRepoPage(), 300)
+	}
+
+	function changePage(page: number) {
+		repoPage = page
+		selectedRepo = null
+		void loadRepoPage()
+	}
+
+	async function loadRepoPage() {
+		const requestId = ++reposRequestId
+		reposLoading = true
+		reposError = null
+		try {
+			const { data, error } = await eden.api.submit.repos.get({
+				query: {
+					identityId: selectedIdentityId,
+					page: repoPage,
+					...(search.trim() ? { search: search.trim() } : {}),
+				},
+			})
+			if (requestId !== reposRequestId) return
+			if (error) throw error
+			const updated = (data as { groups: RepoGroup[] }).groups[0]
+			if (!updated) throw new Error('Linked account not found')
+			groups = groups?.map((group) => (group.identityId === updated.identityId ? updated : group)) ?? []
+		} catch {
+			if (requestId === reposRequestId) reposError = m.submit_repos_failed()
+		} finally {
+			if (requestId === reposRequestId) reposLoading = false
+		}
+	}
 
 	$effect(() => {
 		const repo = selectedRepo
@@ -138,14 +184,21 @@
 			description = ''
 			return
 		}
-		void loadPreview(repo.url)
+		let active = true
+		void loadPreview(repo.url, () => active)
+		return () => {
+			active = false
+		}
 	})
 
-	async function loadPreview(repoUrl: string) {
+	async function loadPreview(repoUrl: string, isCurrent: () => boolean) {
 		previewing = true
 		preview = null
+		name = ''
+		description = ''
 		try {
 			const { data, error } = await eden.api.submit.preview.post({ repoUrl })
+			if (!isCurrent()) return
 			if (error) {
 				const errBody = (error.value ?? { error: 'Preview failed' }) as { error?: string; reauthFor?: string }
 				if (errBody.reauthFor) {
@@ -165,9 +218,9 @@
 				description = ''
 			}
 		} catch {
-			preview = { ok: false, error: 'Preview failed' }
+			if (isCurrent()) preview = { ok: false, error: 'Preview failed' }
 		} finally {
-			previewing = false
+			if (isCurrent()) previewing = false
 		}
 	}
 
@@ -177,7 +230,7 @@
 
 	async function submit(e: SubmitEvent) {
 		e.preventDefault()
-		if (!selectedRepo) {
+		if (!selectedRepo || !preview?.ok || preview.slugTaken || previewing) {
 			toast.error('Pick a repo')
 			return
 		}
@@ -283,14 +336,10 @@
 					<div class="grid gap-2 sm:grid-cols-[1fr_auto] sm:items-end">
 						<div class="space-y-2">
 							<Label for="identity">{m.submit_identity_label()}</Label>
-							<Select id="identity" bind:value={selectedIdentityId}>
+							<Select id="identity" value={selectedIdentityId} onchange={(e) => changeIdentity(e.currentTarget.value)}>
 								{#each groups as g (g.identityId)}
-									<option value={g.identityId} disabled={Boolean(g.error) || g.repos.length === 0}>
-										{g.providerDisplayName} · {g.username}{g.error
-											? ' (re-auth needed)'
-											: g.repos.length === 0
-												? ' (no repos)'
-												: ` · ${g.repos.length} repo${g.repos.length === 1 ? '' : 's'}`}
+									<option value={g.identityId}>
+										{g.providerDisplayName} · {g.username}
 									</option>
 								{/each}
 							</Select>
@@ -303,51 +352,83 @@
 						{/if}
 					</div>
 
-					{#if selectedGroup?.error}
-						<p class="text-xs text-destructive">{selectedGroup.error}</p>
-					{:else if selectedGroup}
+					{#if selectedGroup}
 						<div class="space-y-2">
 							<div class="relative">
 								<Search class="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-								<Input bind:value={search} placeholder={m.submit_filter_placeholder()} class="pl-9" />
+								<Input
+									value={search}
+									oninput={(e) => changeSearch(e.currentTarget.value)}
+									placeholder={m.submit_filter_placeholder()}
+									maxlength={200}
+									aria-label={m.submit_filter_placeholder()}
+									aria-describedby="repo-search-status"
+									class="pl-9"
+								/>
 							</div>
-							{#if filteredRepos.length === 0}
-								<p class="text-xs text-muted-foreground">{m.submit_no_repos_match()}</p>
-							{:else}
-								<ul class="max-h-80 overflow-y-auto rounded-md border border-border divide-y divide-border">
-									{#each filteredRepos as r (r.url)}
-										<li>
-											<button
-												type="button"
-												onclick={() => (selectedUrl = r.url)}
-												class={cn(
-													'w-full flex items-start gap-3 px-3 py-2.5 text-left text-sm transition-colors hover:bg-accent/50',
-													selectedUrl === r.url && 'bg-accent text-foreground',
-												)}
-											>
-												<span class="mt-0.5 inline-flex h-5 w-5 items-center justify-center text-muted-foreground">
-													<ProviderIcon kind={selectedGroup.providerKind} baseUrl="" logoUrl={null} class="h-4 w-4" />
-												</span>
-												<span class="flex-1 min-w-0">
-													<span class="flex items-center gap-2">
-														<span class="font-medium truncate">{r.fullName}</span>
-														{#if r.isPrivate}
-															<Lock class="h-3 w-3 text-muted-foreground" />
-														{:else}
-															<Globe class="h-3 w-3 text-muted-foreground" />
+							<div id="repo-search-status" role="status" class="text-xs text-muted-foreground">
+								{#if searchTooShort}
+									{m.submit_search_min_chars()}
+								{:else if reposLoading}
+									{m.submit_loading_repos()}
+								{:else if reposError || selectedGroup.error}
+									<span class="text-destructive">{reposError ?? selectedGroup.error}</span>
+								{/if}
+							</div>
+							{#if !searchTooShort && !reposLoading && !reposError && !selectedGroup.error}
+								{#if selectedGroup.repos.length === 0}
+									<p class="text-xs text-muted-foreground">{m.submit_no_repos_match()}</p>
+								{:else}
+									<ul class="max-h-80 overflow-y-auto rounded-md border border-border divide-y divide-border">
+										{#each selectedGroup.repos as r (r.url)}
+											<li>
+												<button
+													type="button"
+													onclick={() => (selectedRepo = r)}
+													class={cn(
+														'w-full flex items-start gap-3 px-3 py-2.5 text-left text-sm transition-colors hover:bg-accent/50',
+														selectedRepo?.url === r.url && 'bg-accent text-foreground',
+													)}
+												>
+													<span class="mt-0.5 inline-flex h-5 w-5 items-center justify-center text-muted-foreground">
+														<ProviderIcon kind={selectedGroup.providerKind} baseUrl="" logoUrl={null} class="h-4 w-4" />
+													</span>
+													<span class="flex-1 min-w-0">
+														<span class="flex items-center gap-2">
+															<span class="font-medium truncate">{r.fullName}</span>
+															{#if r.isPrivate}
+																<Lock class="h-3 w-3 text-muted-foreground" />
+															{:else}
+																<Globe class="h-3 w-3 text-muted-foreground" />
+															{/if}
+														</span>
+														{#if r.description}
+															<span class="block text-xs text-muted-foreground truncate">{r.description}</span>
 														{/if}
 													</span>
-													{#if r.description}
-														<span class="block text-xs text-muted-foreground truncate">{r.description}</span>
-													{/if}
-												</span>
-											</button>
-										</li>
-									{/each}
-								</ul>
-								<p class="text-xs text-muted-foreground">
-									{m.submit_repos_shown({ shown: filteredRepos.length, total: selectedGroup.repos.length })}
-								</p>
+												</button>
+											</li>
+										{/each}
+									</ul>
+								{/if}
+								<div class="flex items-center justify-between gap-2">
+									<Button variant="outline" size="sm" disabled={repoPage <= 1} onclick={() => changePage(repoPage - 1)}
+										>{m.submit_previous_page()}</Button
+									>
+									<p class="text-xs text-muted-foreground">
+										{m.submit_repos_page({
+											page: selectedGroup.page,
+											count: selectedGroup.repos.length,
+											total: selectedGroup.total,
+										})}
+									</p>
+									<Button
+										variant="outline"
+										size="sm"
+										disabled={!selectedGroup.hasMore}
+										onclick={() => changePage(repoPage + 1)}>{m.submit_next_page()}</Button
+									>
+								</div>
 							{/if}
 						</div>
 					{/if}
@@ -477,7 +558,7 @@
 									<Textarea id="desc" bind:value={description} required minlength={10} maxlength={300} rows={3} />
 								</div>
 							{/if}
-							<Button type="submit" disabled={submitting || previewing || (preview?.ok && preview.slugTaken)}>
+							<Button type="submit" disabled={submitting || previewing || !preview?.ok || preview.slugTaken}>
 								{submitting ? m.submit_submitting() : m.submit_button()}
 							</Button>
 						</form>
