@@ -170,6 +170,10 @@ export type RepoGroup = {
   providerKind: ProviderKind
   username: string
   repos: SubmittableRepo[]
+  page: number
+  limit: number
+  total: number
+  hasMore: boolean
   error: string | null
   reauthUrl: string
 }

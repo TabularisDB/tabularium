@@ -2,7 +2,7 @@ import { Elysia, t } from 'elysia'
 import { authMiddleware } from '$middleware/auth'
 import { db } from '$db'
 import type { identities } from '$db/schema'
-import { listReposFor, type SubmittableRepo } from '$lib/list-repos'
+import { listReposFor, REPO_PAGE_SIZES, type RepoPage, type SubmittableRepo } from '$lib/list-repos'
 import { getValidAccessToken, OAuthExpiredError, UpstreamUnauthorizedError } from '$lib/oauth-tokens'
 import { getInstance } from '$lib/provider-instance'
 import { logger } from '$lib/logger'
@@ -27,31 +27,55 @@ const groupSchema = t.Object({
   providerKind: t.Union([t.Literal('github'), t.Literal('gitlab'), t.Literal('gitea')]),
   username: t.String(),
   repos: t.Array(repoSchema),
+  page: t.Number(),
+  limit: t.Number(),
+  total: t.Number(),
+  hasMore: t.Boolean(),
   error: t.Nullable(t.String()),
   reauthUrl: t.String(),
 })
 
-async function reposForIdentity(id: typeof identities.$inferSelect): Promise<SubmittableRepo[]> {
-  if (!id.accessToken) return []
+async function reposForIdentity(id: typeof identities.$inferSelect, options: { search?: string; page: number }) {
   const inst = getInstance(id.providerInstanceId)
-  if (!inst) return []
+  const empty = {
+    repos: [] as SubmittableRepo[],
+    page: options.page,
+    limit: REPO_PAGE_SIZES[inst?.kind ?? 'github'],
+    total: 0,
+    hasMore: false,
+  }
+  if (!id.accessToken) return empty
+  if (!inst || !inst.enabled) return empty
   const token = await getValidAccessToken(id, inst)
-  const raw = await listReposFor(inst, token)
-  return raw.map((r) => ({ ...r, identityId: id.id }))
+  const result = await listReposFor(inst, token, options)
+  return { ...result, repos: result.repos.map((r) => ({ ...r, identityId: id.id })) }
 }
 
 export default new Elysia().use(authMiddleware).get(
   '/',
-  async ({ user }) => {
-    const userIdentities = await db.query.identities.findMany({ where: { userId: user.sub } })
+  async ({ user, query, set }) => {
+    const search = query.search?.trim()
+    if (search !== undefined && search.length < 3) {
+      set.status = 422
+      return { error: 'Repository search requires at least 3 characters' }
+    }
+    const userIdentities = await db.query.identities.findMany({
+      where: { userId: user.sub, ...(query.identityId ? { id: query.identityId } : {}) },
+    })
 
     const groups = await Promise.all(
       userIdentities.map(async (id) => {
         const inst = getInstance(id.providerInstanceId)
-        let repos: SubmittableRepo[] = []
+        let result: Omit<RepoPage, 'repos'> & { repos: SubmittableRepo[] } = {
+          repos: [] as SubmittableRepo[],
+          page: query.page,
+          limit: REPO_PAGE_SIZES[inst?.kind ?? 'github'],
+          total: 0,
+          hasMore: false,
+        }
         let error: string | null = null
         try {
-          repos = await reposForIdentity(id)
+          result = await reposForIdentity(id, { search, page: query.page })
         } catch (e) {
           if (e instanceof OAuthExpiredError || e instanceof UpstreamUnauthorizedError) {
             error = 'reauth_required'
@@ -66,7 +90,7 @@ export default new Elysia().use(authMiddleware).get(
           providerDisplayName: inst?.displayName ?? id.providerInstanceId,
           providerKind: inst?.kind ?? 'github',
           username: id.username,
-          repos,
+          ...result,
           error,
           reauthUrl: `/auth/${id.providerInstanceId}?link=1`,
         }
@@ -79,9 +103,19 @@ export default new Elysia().use(authMiddleware).get(
     detail: {
       tags: ['Submit'],
       summary: 'List submittable repos across linked identities',
+      description:
+        'Search names and descriptions server-side with at least 3 characters. Results contain up to 100 repositories per page for GitHub and 50 for GitLab/Gitea, with the total number of eligible matches across all pages. Use identityId to paginate or search a specific linked account, and hasMore to request the next page.',
       operationId: 'listSubmittableRepos',
       security: [{ bearerAuth: [] }, { cookieAuth: [] }],
     },
-    response: { 200: t.Object({ groups: t.Array(groupSchema) }) },
+    query: t.Object({
+      identityId: t.Optional(t.String({ minLength: 1 })),
+      search: t.Optional(t.String({ minLength: 3, maxLength: 200 })),
+      page: t.Numeric({ minimum: 1, maximum: 100000, multipleOf: 1, default: 1 }),
+    }),
+    response: {
+      200: t.Object({ groups: t.Array(groupSchema) }),
+      422: t.Object({ error: t.String() }),
+    },
   },
 )
