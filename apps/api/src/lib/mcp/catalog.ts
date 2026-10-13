@@ -26,7 +26,7 @@ const groups: Record<string, string[]> = {
     'getI18nConfig',
     'listProviders',
   ],
-  'account:read': ['getMe', 'listTransfers', 'listSubmittableRepos'],
+  'account:read': ['getMe', 'listTransfers', 'listSubmittableRepos', 'listRepoOwners'],
   'plugins:write': [
     'publishRelease',
     'submitPreview',
@@ -38,7 +38,7 @@ const groups: Record<string, string[]> = {
     'authorRehashRelease',
     'authorYankRelease',
   ],
-  'requests:write': ['createRequest', 'toggleRequestClaim', 'toggleUpvote', 'scaffoldRequest'],
+  'requests:write': ['createRequest', 'toggleRequestClaim', 'toggleUpvote', 'scaffoldRequest', 'linkRequestRepo'],
 }
 // Explicit allowlist: new REST endpoints are never exposed automatically.
 const adminOperations = new Set([

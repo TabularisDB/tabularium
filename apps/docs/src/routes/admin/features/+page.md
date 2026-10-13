@@ -34,6 +34,6 @@ Plugin requests are reviewed before they become public bounties:
 
 Claimers of a `driver` or `theme` request can create a repository scaffolded by `@tabularis/create-plugin` from `/requests` (`POST /api/requests/:id/scaffold`). GitHub asks for the extra `workflow` scope the first time, because the scaffold includes CI workflows.
 
-Each transition emits a webhook event: `request.created`, `request.approved`, `request.rejected`, `request.claimed`, `request.unclaimed`, `request.scaffolded` and `request.fulfilled`. The **Static site rebuild** preset posts them to a deploy hook, for sites that bake request data in at build time.
+Each transition emits a webhook event: `request.created`, `request.approved`, `request.rejected`, `request.claimed`, `request.unclaimed`, `request.scaffolded`, `request.repo_linked` and `request.fulfilled`. The **Static site rebuild** preset posts them to a deploy hook, for sites that bake request data in at build time.
 
 To seed requests from a curated list in the tabularis.dev `pluginBounties.json` format, run `bun run import:bounties [file-or-url]` in `apps/api` (inside the running container: `bun scripts/import-bounties.ts`). It uses the same database as the server — `database.url` from the instance `config.json`, falling back to `DATABASE_URL`. Use `--dry-run` to preview.

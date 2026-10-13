@@ -1217,5 +1217,12 @@
 	"requests_scaffold_done": "{repo} ist bereit.",
 	"requests_scaffold_next": "Entwickle das Plugin, veröffentliche ein Release und reiche dann das Repository bei der Registry ein.",
 	"requests_scaffold_open_repo": "Repository öffnen",
-	"requests_scaffold_submit": "Bei der Registry einreichen"
+	"requests_scaffold_submit": "Bei der Registry einreichen",
+	"requests_scaffold_mode_create": "Neues Repository",
+	"requests_scaffold_mode_link": "Vorhandenes verknüpfen",
+	"requests_scaffold_link_repo": "Repository-URL",
+	"requests_scaffold_link_hint": "Wähle eines deiner Repositories oder füge seine URL ein. Du brauchst Maintain-Rechte, wie beim Einreichen eines Plugins.",
+	"requests_scaffold_link": "Repository verknüpfen",
+	"requests_scaffold_linking": "Wird verknüpft…",
+	"requests_scaffold_linked": "{repo} ist mit deinem Claim verknüpft."
 }
