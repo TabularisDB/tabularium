@@ -62,6 +62,7 @@ export type PluginManifestUpdate = {
 }
 
 import { jsonArrayOrNull as jsonArray } from './util'
+import { fulfillRequestForPlugin } from './request-fulfillment'
 
 /**
  * Convert a parsed manifest into a column patch for the `plugins` row.
@@ -125,4 +126,7 @@ export async function applyManifestToPlugin(slug: string, patch: PluginManifestU
   // plugins were stuck on a repo-derived label that the manifest never
   // matched), so it's gone.
   await db.update(plugins).set(patch).where(eq(plugins.id, slug))
+  // The first ingested manifest is what puts a plugin in the catalog, so it
+  // may be the moment a matching request ships.
+  if (patch.manifestVersion) await fulfillRequestForPlugin(slug)
 }

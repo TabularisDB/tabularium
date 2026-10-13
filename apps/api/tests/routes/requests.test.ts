@@ -20,8 +20,24 @@ describe('GET /api/requests', () => {
   it('sorts by upvotes by default', async () => {
     const user = await makeUser()
     await db.insert(pluginRequests).values([
-      { id: ulid(), slug: 'mongo', name: 'MongoDB', description: 'Mongo', requesterId: user.id, upvotes: 5 },
-      { id: ulid(), slug: 'mysql', name: 'MySQL', description: 'MySQL', requesterId: user.id, upvotes: 10 },
+      {
+        id: ulid(),
+        slug: 'mongo',
+        name: 'MongoDB',
+        description: 'Mongo',
+        requesterId: user.id,
+        upvotes: 5,
+        status: 'approved',
+      },
+      {
+        id: ulid(),
+        slug: 'mysql',
+        name: 'MySQL',
+        description: 'MySQL',
+        requesterId: user.id,
+        upvotes: 10,
+        status: 'approved',
+      },
     ])
 
     const app = await buildApp()
@@ -131,6 +147,11 @@ describe('POST /api/requests — derived slug and kind', () => {
     const missing = await post({ name: 'Dracula', description: 'Theme' })
     expect(missing.status).toBe(400)
 
+    // New requests wait for review before they are listed publicly.
+    const hidden = await app.handle(new Request('http://localhost/api/requests?kind=driver'))
+    expect(((await hidden.json()) as { total: number }).total).toBe(0)
+    await db.update(pluginRequests).set({ status: 'approved' })
+
     const res = await app.handle(new Request('http://localhost/api/requests?kind=driver'))
     const data = (await res.json()) as { total: number; requests: Array<{ slug: string; kind: string | null }> }
     expect(data.total).toBe(1)
@@ -157,6 +178,7 @@ describe('POST /api/requests/:id/claim', () => {
       description: 'Wide-column store',
       requesterId: user.id,
       upvotes: 0,
+      status: 'approved',
     })
 
     const app = await buildApp()
@@ -224,6 +246,7 @@ describe('POST /api/requests/:id/claim', () => {
       description: 'KV',
       requesterId: user.id,
       upvotes: 0,
+      status: 'approved',
     })
     await db.insert(pluginRequestClaims).values([
       { requestId, userId: user.id },
@@ -267,6 +290,7 @@ describe('DELETE /api/admin/requests/:id', () => {
       description: 'Streaming',
       requesterId: admin.id,
       upvotes: 0,
+      status: 'approved',
     })
     await db.insert(pluginRequestClaims).values({ requestId, userId: claimer.id })
 
@@ -341,6 +365,7 @@ describe('POST /api/requests/:id/upvote', () => {
       description: 'Search engine',
       requesterId: user.id,
       upvotes: 0,
+      status: 'approved',
     })
 
     const app = await buildApp()

@@ -26,7 +26,8 @@
     "generate": "bunx drizzle-kit generate",
     "generate:pg": "bunx drizzle-kit generate --config=drizzle.pg.config.ts",
     "generate:mysql": "bunx drizzle-kit generate --config=drizzle.mysql.config.ts",
-    "export:manifest-schema": "bun scripts/export-manifest-schema.ts"
+    "export:manifest-schema": "bun scripts/export-manifest-schema.ts",
+    "import:bounties": "bun scripts/import-bounties.ts"
   },
   "devDependencies": {
     "@tabularium/tsconfig": "workspace:*",
@@ -44,6 +45,7 @@
     "@elysiajs/static": "^1.4.10",
     "@modelcontextprotocol/sdk": "1.32.1",
     "@sinclair/typebox": "^0.34.49",
+    "@tabularis/create-plugin": "0.4.1",
     "@tabularium/manifest": "workspace:*",
     "arctic": "^3.7.0",
     "croner": "^10.0.1",

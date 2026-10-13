@@ -60,7 +60,8 @@ RUN printf '%s\n' \
   && bun install --production --no-save \
   && rm -rf /root/.bun/install/cache \
   # Prune type-only and dev-only artifacts not loaded by bun at runtime.
-  && find node_modules -type f \
+  # create-plugin templates are scaffolded into new repos, READMEs included.
+  && find node_modules -type f -not -path '*/@tabularis/create-plugin/templates/*' \
        \( -name '*.cjs.map' -o -name '*.js.map' -o -name '*.mjs.map' \
           -o -name '*.d.ts' -o -name '*.d.cts' -o -name '*.d.mts' \
           -o -name '*.d.ts.map' -o -name '*.d.cts.map' -o -name '*.d.mts.map' \

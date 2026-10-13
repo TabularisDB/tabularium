@@ -3,13 +3,15 @@ import { ulid } from 'ulid'
 import { authMiddleware } from '$middleware/auth'
 import { rateLimit } from '$middleware/rate-limit'
 import { db } from '$db'
-import { pluginRequests, pluginRequestClaims } from '$db/schema'
-import { desc, count, eq, and, inArray } from 'drizzle-orm'
+import { pluginRequests } from '$db/schema'
+import { desc, count, eq, and, or, inArray, type SQL } from 'drizzle-orm'
 import { getFeatures } from '$lib/features'
-import { verifySessionToken, delegatedAccess } from '$lib/access'
 import { getKinds, isKindKey } from '$lib/kinds'
 import { deriveSlug } from '$lib/slug'
 import { emitEvent } from '$lib/webhooks/events'
+import { resolveOptionalViewer } from '$lib/optional-viewer'
+import { isRequestStatus, PUBLIC_REQUEST_STATUSES, type RequestStatus } from '$lib/request-bounty'
+import { requestViewSchema, toRequestViews } from '$lib/request-view'
 
 // Same normalisation submissions apply to repo names, so a request for
 // "Awesome Plugin" is closed automatically when `awesome` gets published.
@@ -22,24 +24,11 @@ function slugFromName(name: string): string {
   ).slice(0, 80)
 }
 
-const requestSchema = t.Object({
-  id: t.String(),
-  slug: t.String(),
-  name: t.String(),
-  description: t.String(),
-  kind: t.Nullable(t.String()),
-  requesterId: t.String(),
-  upvotes: t.Number(),
-  createdAt: t.Number(),
-  claims: t.Number(),
-  claimedByMe: t.Boolean(),
-})
-
 const requestListResponseSchema = t.Object({
   total: t.Number(),
   page: t.Number(),
   limit: t.Number(),
-  requests: t.Array(requestSchema),
+  requests: t.Array(requestViewSchema),
 })
 
 const createRequestResponseSchema = t.Object({
@@ -49,6 +38,7 @@ const createRequestResponseSchema = t.Object({
   description: t.String(),
   kind: t.Nullable(t.String()),
   requesterId: t.String(),
+  status: t.String(),
 })
 
 const errorSchema = t.Object({ error: t.String() })
@@ -59,18 +49,28 @@ function clampInt(raw: unknown, def: number, min: number, max: number): number {
   return Math.max(min, Math.min(max, Math.trunc(n)))
 }
 
-async function resolveOptionalViewer(
-  headers: Record<string, string | undefined>,
-  cookie: Record<string, { value?: unknown } | undefined>,
-): Promise<{ sub: string } | null> {
-  const authHeader = headers.authorization
-  const bearerToken = authHeader?.startsWith('Bearer ') ? authHeader.slice(7) : undefined
-  const raw = cookie.auth?.value
-  const cookieToken = typeof raw === 'string' ? raw : undefined
-  const token = bearerToken ?? cookieToken
-  if (!token) return null
-  const payload = await verifySessionToken(token)
-  return payload ? { sub: payload.sub } : null
+function parseStatuses(raw: string | undefined): RequestStatus[] {
+  if (!raw) return PUBLIC_REQUEST_STATUSES
+  const list = [...new Set(raw.split(',').map((s) => s.trim()))].filter(isRequestStatus)
+  return list.length > 0 ? list : PUBLIC_REQUEST_STATUSES
+}
+
+// Public statuses are visible to everyone; pending and rejected ones only to
+// admins, and to the requester for their own requests.
+async function visibilityFilter(statuses: RequestStatus[], viewerId: string | null): Promise<SQL | undefined> {
+  const isAdmin = viewerId
+    ? (await db.query.users.findFirst({ where: { id: viewerId }, columns: { role: true } }))?.role === 'admin'
+    : false
+  if (isAdmin) return inArray(pluginRequests.status, statuses)
+  const open = statuses.filter((s) => PUBLIC_REQUEST_STATUSES.includes(s))
+  const own = statuses.filter((s) => !PUBLIC_REQUEST_STATUSES.includes(s))
+  const parts: SQL[] = []
+  if (open.length > 0) parts.push(inArray(pluginRequests.status, open))
+  if (own.length > 0 && viewerId) {
+    parts.push(and(inArray(pluginRequests.status, own), eq(pluginRequests.requesterId, viewerId)) as SQL)
+  }
+  if (parts.length === 0) return eq(pluginRequests.id, '')
+  return parts.length === 1 ? parts[0] : or(...parts)
 }
 
 export default new Elysia()
@@ -81,50 +81,27 @@ export default new Elysia()
       const limit = clampInt(query.limit, 20, 1, 100)
       const offset = (page - 1) * limit
       const sort = query.sort === 'recent' ? pluginRequests.createdAt : pluginRequests.upvotes
-      const where = query.kind ? eq(pluginRequests.kind, query.kind) : undefined
+      const viewer = await resolveOptionalViewer(request, headers, cookie)
+      const visible = await visibilityFilter(parseStatuses(query.status), viewer?.sub ?? null)
+      const where = query.kind ? and(visible, eq(pluginRequests.kind, query.kind)) : visible
 
       const [{ total }] = await db.select({ total: count() }).from(pluginRequests).where(where)
+      const rows = await db
+        .select()
+        .from(pluginRequests)
+        .where(where)
+        .orderBy(desc(sort), desc(pluginRequests.createdAt))
+        .limit(limit)
+        .offset(offset)
 
-      const rows = await db.select().from(pluginRequests).where(where).orderBy(desc(sort)).limit(limit).offset(offset)
-
-      const viewer = delegatedAccess(request)?.user ?? (await resolveOptionalViewer(headers, cookie))
-      const ids = rows.map((r) => r.id)
-      const claimRows =
-        ids.length === 0
-          ? []
-          : await db
-              .select({ requestId: pluginRequestClaims.requestId, n: count() })
-              .from(pluginRequestClaims)
-              .where(inArray(pluginRequestClaims.requestId, ids))
-              .groupBy(pluginRequestClaims.requestId)
-      const claimsByRequest = new Map<string, number>(claimRows.map((r) => [r.requestId, r.n]))
-
-      let myClaimSet = new Set<string>()
-      if (viewer && ids.length > 0) {
-        const mine = await db
-          .select({ requestId: pluginRequestClaims.requestId })
-          .from(pluginRequestClaims)
-          .where(and(eq(pluginRequestClaims.userId, viewer.sub), inArray(pluginRequestClaims.requestId, ids)))
-        myClaimSet = new Set(mine.map((r) => r.requestId))
-      }
-
-      return {
-        total,
-        page,
-        limit,
-        requests: rows.map((r) => ({
-          ...r,
-          claims: claimsByRequest.get(r.id) ?? 0,
-          claimedByMe: myClaimSet.has(r.id),
-        })),
-      }
+      return { total, page, limit, requests: await toRequestViews(rows, viewer?.sub ?? null) }
     },
     {
       detail: {
         tags: ['Requests'],
         summary: 'List plugin requests',
         description:
-          'Browse the community wishlist of plugins users would like to see. Sorted by upvotes by default. Public — no auth required.',
+          'Browse the community wishlist of plugins users would like to see, with bounty metadata, claimers and the fulfilling plugin. Sorted by upvotes by default. Public — no auth required; with a session, `claimedByMe` and `votedByMe` are filled in. Only `approved` and `fulfilled` requests are public: `pending` and `rejected` ones are returned to admins, and to their requester.',
         operationId: 'listRequests',
       },
       query: t.Object({
@@ -136,6 +113,12 @@ export default new Elysia()
           }),
         ),
         kind: t.Optional(t.String({ description: 'Only requests for this plugin kind key (see `GET /api/kinds`).' })),
+        status: t.Optional(
+          t.String({
+            description:
+              'Comma-separated statuses: `pending`, `approved`, `rejected`, `fulfilled`. Default `approved,fulfilled`.',
+          }),
+        ),
       }),
       response: { 200: requestListResponseSchema },
     },
@@ -179,6 +162,7 @@ export default new Elysia()
         description: body.description,
         kind,
         requesterId: user.sub,
+        status: 'pending' as const,
       }
       await db.insert(pluginRequests).values(request)
       await emitEvent('request.created', {
@@ -192,7 +176,7 @@ export default new Elysia()
         tags: ['Requests'],
         summary: 'Create plugin request',
         description:
-          'Add a new entry to the community wishlist. Requires auth. `slug` is optional and derived from `name` when omitted; it must be unique across requests. `kind` must match a configured plugin kind key, and is required whenever the instance defines kinds.',
+          'Add a new entry to the community wishlist. Requires auth. New requests are `pending` until an admin approves them. `slug` is optional and derived from `name` when omitted; it must be unique across requests. `kind` must match a configured plugin kind key, and is required whenever the instance defines kinds.',
         operationId: 'createRequest',
         security: [{ bearerAuth: [] }, { cookieAuth: [] }],
       },

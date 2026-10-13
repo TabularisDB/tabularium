@@ -7,6 +7,7 @@ import { cache } from '$lib/cache'
 import { latestCacheKey } from '$routes/api/plugins/[slug]/latest'
 import { recordAudit, actorFromAdmin } from '$lib/audit'
 import { emitEvent } from '$lib/webhooks/events'
+import { fulfillRequestForPlugin } from '$lib/request-fulfillment'
 
 const actionEnum = t.Union([t.Literal('approve'), t.Literal('reject'), t.Literal('delete'), t.Literal('transfer')])
 
@@ -83,6 +84,9 @@ export default new Elysia().use(adminMiddleware).post(
           actor: { id: admin.id, name: admin.displayName },
           reason: body.action === 'reject' ? (body.rejectionReason ?? null) : null,
         })
+        if (body.action === 'approve') {
+          await fulfillRequestForPlugin(p.id, { id: admin.id, name: admin.displayName })
+        }
       }
     }
 

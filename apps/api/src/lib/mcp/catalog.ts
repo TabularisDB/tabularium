@@ -10,6 +10,7 @@ const groups: Record<string, string[]> = {
     'getPluginDownloadStats',
     'getReleaseIntegrity',
     'listRequests',
+    'getRequest',
     'listKinds',
     'listPages',
     'getPage',
@@ -37,7 +38,7 @@ const groups: Record<string, string[]> = {
     'authorRehashRelease',
     'authorYankRelease',
   ],
-  'requests:write': ['createRequest', 'toggleRequestClaim', 'toggleUpvote'],
+  'requests:write': ['createRequest', 'toggleRequestClaim', 'toggleUpvote', 'scaffoldRequest'],
 }
 // Explicit allowlist: new REST endpoints are never exposed automatically.
 const adminOperations = new Set([
@@ -53,6 +54,7 @@ const adminOperations = new Set([
   'adminGetHomeCopy',
   'adminUpdateHomeCopy',
   'adminDeleteRequest',
+  'adminUpdateRequest',
   'listUsers',
   'getUser',
   'patchUser',

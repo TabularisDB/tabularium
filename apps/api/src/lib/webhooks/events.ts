@@ -21,6 +21,12 @@ export const WEBHOOK_EVENTS = [
   'transfer.rejected',
   'transfer.cancelled',
   'request.created',
+  'request.approved',
+  'request.rejected',
+  'request.claimed',
+  'request.unclaimed',
+  'request.scaffolded',
+  'request.fulfilled',
 ] as const
 
 export type WebhookEvent = (typeof WEBHOOK_EVENTS)[number]
@@ -42,6 +48,12 @@ const META: Record<WebhookEvent, { title: string; color: number }> = {
   'transfer.rejected': { title: 'Ownership transfer rejected', color: 0xef4444 },
   'transfer.cancelled': { title: 'Ownership transfer cancelled', color: 0x64748b },
   'request.created': { title: 'Plugin requested', color: 0x64748b },
+  'request.approved': { title: 'Plugin request approved', color: 0x22c55e },
+  'request.rejected': { title: 'Plugin request rejected', color: 0xef4444 },
+  'request.claimed': { title: 'Plugin request claimed', color: 0x06b6d4 },
+  'request.unclaimed': { title: 'Plugin request claim released', color: 0x64748b },
+  'request.scaffolded': { title: 'Plugin repository created', color: 0x8b5cf6 },
+  'request.fulfilled': { title: 'Plugin request fulfilled', color: 0x22c55e },
 }
 
 export type EventActor = { id: string | null; name: string | null } | null
@@ -52,7 +64,16 @@ export type EventInput = {
   reason?: string | null
   release?: { version: string; tag?: string | null }
   transfer?: { id: string; fromUserId: string; toUserId: string; message?: string | null; status: string }
-  request?: { id: string; slug: string; name: string; description: string; kind?: string | null }
+  request?: {
+    id: string
+    slug: string
+    name: string
+    description: string
+    kind?: string | null
+    status?: string
+    claims?: number
+    repoUrl?: string | null
+  }
 }
 
 type UserRef = { id: string; displayName: string; username: string | null }
@@ -86,7 +107,17 @@ export type EventContext = {
   owner?: UserRef
   release?: { version: string; tag: string | null; url: string }
   transfer?: { id: string; status: string; message: string | null; from: UserRef | null; to: UserRef | null }
-  request?: { id: string; slug: string; name: string; description: string; kind: string | null; url: string }
+  request?: {
+    id: string
+    slug: string
+    name: string
+    description: string
+    kind: string | null
+    status: string
+    claims: number | null
+    repoUrl: string | null
+    url: string
+  }
 }
 
 export function webBaseUrl(): string {
@@ -163,7 +194,17 @@ export async function buildContext(type: WebhookEvent, input: EventInput): Promi
   if (input.request) {
     const r = input.request
     const url = `${base}/requests`
-    ctx.request = { id: r.id, slug: r.slug, name: r.name, description: r.description, kind: r.kind ?? null, url }
+    ctx.request = {
+      id: r.id,
+      slug: r.slug,
+      name: r.name,
+      description: r.description,
+      kind: r.kind ?? null,
+      status: r.status ?? 'pending',
+      claims: r.claims ?? null,
+      repoUrl: r.repoUrl ?? null,
+      url,
+    }
     ctx.subject = { kind: 'request', id: r.id, name: r.name, description: r.description, url }
     ctx.event.url = url
   }
@@ -210,11 +251,17 @@ export async function emitEvent(type: WebhookEvent, input: EventInput = {}): Pro
   }
 }
 
+const SAMPLE_REQUEST_STATUS: Partial<Record<WebhookEvent, string>> = {
+  'request.created': 'pending',
+  'request.rejected': 'rejected',
+  'request.fulfilled': 'fulfilled',
+}
+
 // Sample context for previews and "send test" — real registry values, fake subject.
 export function sampleContext(type: WebhookEvent): EventContext {
   const base = webBaseUrl()
   const meta = META[type]
-  const isRequest = type === 'request.created'
+  const isRequest = type.startsWith('request.')
   const url = isRequest ? `${base}/requests` : `${base}/plugins/example-plugin`
   const owner = { id: '01EXAMPLEOWNER', displayName: 'Jane Doe', username: 'janedoe' }
   const ctx: EventContext = {
@@ -244,6 +291,9 @@ export function sampleContext(type: WebhookEvent): EventContext {
       name: 'Example Plugin',
       description: 'A sample plugin used to preview webhook templates.',
       kind: null,
+      status: SAMPLE_REQUEST_STATUS[type] ?? 'approved',
+      claims: type === 'request.created' ? 0 : 1,
+      repoUrl: type === 'request.scaffolded' ? 'https://github.com/janedoe/example-plugin' : null,
       url,
     }
     return ctx

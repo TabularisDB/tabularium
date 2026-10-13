@@ -161,18 +161,34 @@ export const releaseAssets = mysqlTable(
   }),
 )
 
-export const pluginRequests = mysqlTable('plugin_requests', {
-  id: id('id').primaryKey(),
-  slug: varchar('slug', { length: 80 }).notNull().unique(),
-  name: varchar('name', { length: 120 }).notNull(),
-  description: varchar('description', { length: 500 }).notNull(),
-  kind: varchar('kind', { length: 40 }),
-  requesterId: id('requester_id')
-    .notNull()
-    .references(() => users.id),
-  upvotes: int('upvotes').notNull().default(0),
-  createdAt: ts('created_at').notNull().$defaultFn(now),
-})
+export const pluginRequests = mysqlTable(
+  'plugin_requests',
+  {
+    id: id('id').primaryKey(),
+    slug: varchar('slug', { length: 80 }).notNull().unique(),
+    name: varchar('name', { length: 120 }).notNull(),
+    description: varchar('description', { length: 500 }).notNull(),
+    kind: varchar('kind', { length: 40 }),
+    requesterId: id('requester_id')
+      .notNull()
+      .references(() => users.id),
+    upvotes: int('upvotes').notNull().default(0),
+    status: varchar('status', { length: 16, enum: ['pending', 'approved', 'rejected', 'fulfilled'] })
+      .notNull()
+      .default('pending'),
+    rejectionReason: varchar('rejection_reason', { length: 500 }),
+    reviewedBy: id('reviewed_by'),
+    reviewedAt: ts('reviewed_at'),
+    fulfilledPluginId: varchar('fulfilled_plugin_id', { length: 80 }),
+    fulfilledAt: ts('fulfilled_at'),
+    bounty: text('bounty'),
+    createdAt: ts('created_at').notNull().$defaultFn(now),
+    updatedAt: ts('updated_at'),
+  },
+  (t) => ({
+    byStatus: index('plugin_requests_status_idx').on(t.status),
+  }),
+)
 
 export const pluginRequestVotes = mysqlTable(
   'plugin_request_votes',
@@ -198,6 +214,8 @@ export const pluginRequestClaims = mysqlTable(
     userId: id('user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
+    repoUrl: varchar('repo_url', { length: 500 }),
+    scaffoldedAt: ts('scaffolded_at'),
     createdAt: ts('created_at').notNull().$defaultFn(now),
   },
   (t) => ({

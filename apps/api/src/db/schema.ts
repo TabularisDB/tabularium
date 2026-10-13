@@ -170,19 +170,39 @@ export const releaseAssets = sqliteTable(
   }),
 )
 
-export const pluginRequests = sqliteTable('plugin_requests', {
-  id: text('id').primaryKey(),
-  slug: text('slug').notNull().unique(),
-  name: text('name').notNull(),
-  description: text('description').notNull(),
-  // Optional plugin kind (admin-defined key, see lib/kinds). NULL = unspecified.
-  kind: text('kind'),
-  requesterId: text('requester_id')
-    .notNull()
-    .references(() => users.id),
-  upvotes: integer('upvotes').notNull().default(0),
-  createdAt: integer('created_at').notNull().$defaultFn(now),
-})
+export const pluginRequests = sqliteTable(
+  'plugin_requests',
+  {
+    id: text('id').primaryKey(),
+    slug: text('slug').notNull().unique(),
+    name: text('name').notNull(),
+    description: text('description').notNull(),
+    // Optional plugin kind (admin-defined key, see lib/kinds). NULL = unspecified.
+    kind: text('kind'),
+    requesterId: text('requester_id')
+      .notNull()
+      .references(() => users.id),
+    upvotes: integer('upvotes').notNull().default(0),
+    // Review lifecycle: pending (hidden until an admin reviews it) → approved
+    // (public bounty) or rejected; approved → fulfilled once a plugin with the
+    // same slug is approved in the registry.
+    status: text('status', { enum: ['pending', 'approved', 'rejected', 'fulfilled'] })
+      .notNull()
+      .default('pending'),
+    rejectionReason: text('rejection_reason'),
+    reviewedBy: text('reviewed_by'),
+    reviewedAt: integer('reviewed_at'),
+    fulfilledPluginId: text('fulfilled_plugin_id'),
+    fulfilledAt: integer('fulfilled_at'),
+    // Bounty board metadata (JSON, see lib/request-bounty). NULL until an admin fills it in.
+    bounty: text('bounty'),
+    createdAt: integer('created_at').notNull().$defaultFn(now),
+    updatedAt: integer('updated_at'),
+  },
+  (t) => ({
+    byStatus: index('plugin_requests_status_idx').on(t.status),
+  }),
+)
 
 export const pluginRequestVotes = sqliteTable(
   'plugin_request_votes',
@@ -208,6 +228,9 @@ export const pluginRequestClaims = sqliteTable(
     userId: text('user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
+    // Repository created for this claim by POST /api/requests/:id/scaffold.
+    repoUrl: text('repo_url'),
+    scaffoldedAt: integer('scaffolded_at'),
     createdAt: integer('created_at').notNull().$defaultFn(now),
   },
   (t) => ({

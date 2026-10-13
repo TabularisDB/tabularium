@@ -12,7 +12,7 @@ import { env, isProd } from '$lib/env'
 import { logger } from '$lib/logger'
 import { getSetting, setSetting, isSettingsInitialized } from '$lib/settings'
 import { recordAudit } from '$lib/audit'
-import { safeReturnTo } from './index'
+import { safeReturnTo } from '$lib/return-to'
 
 const log = logger.child({ module: 'auth-callback' })
 
