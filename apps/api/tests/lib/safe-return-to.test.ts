@@ -1,6 +1,6 @@
 import { afterEach, expect, test } from 'bun:test'
 import { env } from '$lib/env'
-import { safeReturnTo } from '../../src/routes/auth/[instance]/index'
+import { safeReturnTo } from '../../src/lib/return-to'
 
 const original = env.ALLOWED_ORIGINS
 
@@ -26,4 +26,18 @@ test('returns the full URL for an ALLOWED_ORIGINS site', () => {
     'https://tabularis.dev/plugins/bounties?request=1',
   )
   expect(safeReturnTo('https://tabularis.dev.evil.example/')).toBeNull()
+})
+
+test('GET /auth/return follows trusted URLs and sends anything else home', async () => {
+  const { buildApp } = await import('../helpers')
+  const { webBaseUrl } = await import('../../src/lib/webhooks/events')
+  env.ALLOWED_ORIGINS = 'https://tabularis.dev'
+  const app = await buildApp()
+  const go = async (to: string) =>
+    (await app.handle(new Request(`http://localhost/auth/return?to=${encodeURIComponent(to)}`))).headers.get('location')
+  expect(await go('https://tabularis.dev/plugins/bounties?claim=firebird')).toBe(
+    'https://tabularis.dev/plugins/bounties?claim=firebird',
+  )
+  expect(await go('/requests')).toBe(`${webBaseUrl()}/requests`)
+  expect(await go('https://evil.example.com/')).toBe(`${webBaseUrl()}/`)
 })

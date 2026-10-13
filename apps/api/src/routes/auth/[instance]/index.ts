@@ -2,24 +2,8 @@ import { Elysia, t } from 'elysia'
 import { GitHub, GitLab, Gitea, generateState, generateCodeVerifier } from 'arctic'
 import { verifyJwt } from '$lib/jwt'
 import { getInstance, type ProviderInstance } from '$lib/provider-instance'
-import { env, isProd, allowedOrigins } from '$lib/env'
-
-export function safeReturnTo(raw: string | undefined): string | null {
-  if (!raw || typeof raw !== 'string' || raw.length > 512) return null
-  try {
-    const base = env.WEB_BASE_URL ?? env.BASE_URL
-    const baseOrigin = new URL(base).origin
-    const target = new URL(raw, base)
-    if (target.origin === baseOrigin) return target.pathname + target.search + target.hash
-    // Sites trusted for CORS (e.g. a project website hosting the request form)
-    // may also get the user back after sign-in; they keep their full URL.
-    if ((target.protocol === 'https:' || target.protocol === 'http:') && allowedOrigins().includes(target.origin))
-      return target.href
-    return null
-  } catch {
-    return null
-  }
-}
+import { env, isProd } from '$lib/env'
+import { safeReturnTo } from '$lib/return-to'
 
 async function s256Challenge(verifier: string): Promise<string> {
   const data = new TextEncoder().encode(verifier)
@@ -30,16 +14,22 @@ async function s256Challenge(verifier: string): Promise<string> {
   return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
 }
 
+// Scopes a feature may ask for on top of the sign-in set, only when it needs
+// them (e.g. pushing CI workflow files when scaffolding a repository).
+const OPTIONAL_GITHUB_SCOPES = ['workflow']
+
 async function buildAuthUrl(
   inst: ProviderInstance,
   state: string,
   linking: boolean,
+  extraScopes: string[] = [],
 ): Promise<{ url: URL; codeVerifier?: string }> {
   const callback = `${env.BASE_URL}/auth/${inst.id}/callback`
 
   if (inst.kind === 'github') {
     const gh = new GitHub(inst.clientId, inst.clientSecret, callback)
-    const url = gh.createAuthorizationURL(state, ['read:user', 'read:org', 'public_repo', 'admin:repo_hook'])
+    const extra = extraScopes.filter((s) => OPTIONAL_GITHUB_SCOPES.includes(s))
+    const url = gh.createAuthorizationURL(state, ['read:user', 'read:org', 'public_repo', 'admin:repo_hook', ...extra])
     if (linking) url.searchParams.set('prompt', 'consent')
     if (inst.baseUrl === 'https://github.com') {
       const codeVerifier = generateCodeVerifier()
@@ -89,7 +79,8 @@ export default new Elysia().get(
 
     const state = generateState()
     const returnTo = safeReturnTo(query.return_to)
-    const { url, codeVerifier } = await buildAuthUrl(inst, state, linking)
+    const extraScopes = query.scope ? query.scope.split(/[\s,]+/).filter(Boolean) : []
+    const { url, codeVerifier } = await buildAuthUrl(inst, state, linking, extraScopes)
 
     cookie.oauth_state.set({
       value: { nonce: state, instanceId: inst.id, codeVerifier, linking, returnTo },
@@ -107,13 +98,14 @@ export default new Elysia().get(
       tags: ['Auth'],
       summary: 'Start OAuth flow for a provider instance',
       description:
-        "Redirects to the provider instance's authorize page. Instance IDs are configured by the admin (e.g. `github`, `gitlab`, `forgejo-acme`). Set `link=1` to attach this identity to the currently signed-in user.",
+        "Redirects to the provider instance's authorize page. Instance IDs are configured by the admin (e.g. `github`, `gitlab`, `forgejo-acme`). Set `link=1` to attach this identity to the currently signed-in user. `scope=workflow` additionally asks GitHub for the `workflow` scope (needed to create scaffolded repositories with CI); other values are ignored.",
       operationId: 'startOAuth',
     },
     params: t.Object({ instance: t.String() }),
     query: t.Object({
       link: t.Optional(t.String()),
       return_to: t.Optional(t.String()),
+      scope: t.Optional(t.String({ maxLength: 100 })),
     }),
   },
 )

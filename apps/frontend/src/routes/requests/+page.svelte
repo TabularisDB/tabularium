@@ -8,6 +8,9 @@
 	import LogIn from '@lucide/svelte/icons/log-in'
 	import Flame from '@lucide/svelte/icons/flame'
 	import Clock from '@lucide/svelte/icons/clock'
+	import PackageCheck from '@lucide/svelte/icons/package-check'
+	import GitBranch from '@lucide/svelte/icons/git-branch'
+	import ScaffoldDialog from '$components/requests/ScaffoldDialog.svelte'
 	import Badge from '$components/ui/Badge.svelte'
 	import Button from '$components/ui/Button.svelte'
 	import Card from '$components/ui/Card.svelte'
@@ -24,7 +27,7 @@
 	import { m } from '$lib/paraglide/messages'
 	import { toast } from 'svelte-sonner'
 	import { cn } from '$lib/utils'
-	import type { Kind, PluginRequest, PageRendered } from '$lib/types'
+	import type { Kind, PluginRequest, PageRendered, RequestClaimer } from '$lib/types'
 
 	const DESCRIPTION_MAX = 2000
 
@@ -41,6 +44,10 @@
 	let filterKind = $state('')
 	let sort = $state<'upvotes' | 'recent'>('upvotes')
 	let total = $state(0)
+	let scaffoldTarget = $state<PluginRequest | null>(null)
+
+	// Kinds @tabularis/create-plugin can scaffold a repository for.
+	const SCAFFOLD_KINDS = new Set(['driver', 'theme'])
 
 	const kindLabels = $derived(new Map(kinds.map((k) => [k.key, k.label])))
 	const totalVotes = $derived(requests.reduce((sum, r) => sum + r.upvotes, 0))
@@ -70,7 +77,13 @@
 		loading = true
 		try {
 			const { data, error } = await eden.api.requests.get({
-				query: { sort, limit: '100', ...(filterKind ? { kind: filterKind } : {}) },
+				query: {
+					sort,
+					limit: '100',
+					// Signed-in users also see their own requests still waiting for review.
+					status: auth.user ? 'approved,fulfilled,pending' : 'approved,fulfilled',
+					...(filterKind ? { kind: filterKind } : {}),
+				},
 			})
 			if (error) throw error
 			const res = data as { total: number; requests: PluginRequest[] }
@@ -127,7 +140,7 @@
 						: ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`),
 				)
 			const result = data as { upvotes: number; voted: boolean }
-			requests = requests.map((r) => (r.id === req.id ? { ...r, upvotes: result.upvotes } : r))
+			requests = requests.map((r) => (r.id === req.id ? { ...r, upvotes: result.upvotes, votedByMe: result.voted } : r))
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : 'Upvote failed')
 		}
@@ -152,9 +165,9 @@
 						? error.value
 						: ((error.value as { error?: string })?.error ?? `Request failed (${error.status})`),
 				)
-			const result = data as { claimed: boolean; claims: number }
+			const result = data as { claimed: boolean; claims: number; claimers: RequestClaimer[] }
 			requests = requests.map((r) =>
-				r.id === req.id ? { ...r, claimedByMe: result.claimed, claims: result.claims } : r,
+				r.id === req.id ? { ...r, claimedByMe: result.claimed, claims: result.claims, claimers: result.claimers } : r,
 			)
 		} catch (e) {
 			requests = requests.map((r) =>
@@ -209,7 +222,7 @@
 			description = ''
 			kind = ''
 			await load()
-			toast.success('Request created')
+			toast.success(m.requests_created_pending())
 		} catch (e) {
 			toast.error(e instanceof Error ? e.message : 'Failed to create request')
 		} finally {
@@ -338,7 +351,12 @@
 											type="button"
 											onclick={() => vote(r)}
 											aria-label={m.requests_upvote()}
-											class="flex h-16 w-14 shrink-0 flex-col items-center justify-center gap-0.5 rounded-md border border-border transition-colors hover:border-primary/40 hover:bg-primary/5 hover:text-primary"
+											aria-pressed={r.votedByMe}
+											disabled={r.status !== 'approved'}
+											class={cn(
+												'flex h-16 w-14 shrink-0 flex-col items-center justify-center gap-0.5 rounded-md border transition-colors hover:border-primary/40 hover:bg-primary/5 hover:text-primary disabled:pointer-events-none disabled:opacity-60',
+												r.votedByMe ? 'border-primary/60 text-primary' : 'border-border',
+											)}
 										>
 											<ArrowUp class="h-4 w-4" />
 											<span class="font-mono text-sm tabular-nums">{r.upvotes}</span>
@@ -352,6 +370,13 @@
 												{#if r.kind}
 													<Badge variant="outline">{kindLabels.get(r.kind) ?? r.kind}</Badge>
 												{/if}
+												{#if r.status === 'pending'}
+													<Badge variant="secondary">{m.requests_status_pending()}</Badge>
+												{:else if r.status === 'fulfilled'}
+													<Badge>{m.requests_status_shipped()}</Badge>
+												{:else if r.claims > 0}
+													<Badge variant="secondary">{m.requests_status_in_progress()}</Badge>
+												{/if}
 											</div>
 											<p class="text-sm text-muted-foreground line-clamp-3 whitespace-pre-line">{r.description}</p>
 											<div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
@@ -362,15 +387,58 @@
 														{m.requests_claim_count({ count: r.claims })}
 													</span>
 												{/if}
+												{#if r.fulfilledPlugin}
+													<a
+														href={`/plugins/${encodeURIComponent(r.fulfilledPlugin.id)}`}
+														class="inline-flex items-center gap-1 text-primary hover:underline"
+													>
+														<PackageCheck class="h-3 w-3" />
+														{m.requests_view_plugin()}
+													</a>
+												{/if}
 											</div>
+											{#if r.claimers.length > 0}
+												<ul class="flex flex-wrap items-center gap-2 pt-1">
+													{#each r.claimers as c (c.userId)}
+														<li class="inline-flex items-center gap-1.5 text-xs text-muted-foreground">
+															{#if c.avatarUrl}
+																<img
+																	src={c.avatarUrl}
+																	alt=""
+																	class="h-5 w-5 rounded-full border border-border"
+																	loading="lazy"
+																/>
+															{/if}
+															<span>{c.username ?? c.displayName}</span>
+															{#if c.repoUrl}
+																<a
+																	href={c.repoUrl}
+																	target="_blank"
+																	rel="noopener noreferrer"
+																	class="inline-flex items-center gap-0.5 text-primary hover:underline"
+																>
+																	<GitBranch class="h-3 w-3" />
+																	{m.requests_repo()}
+																</a>
+															{/if}
+														</li>
+													{/each}
+												</ul>
+											{/if}
 										</div>
 										<div class="flex shrink-0 flex-col items-end gap-2 sm:flex-row sm:items-start">
+											{#if r.claimedByMe && r.status === 'approved' && r.kind && SCAFFOLD_KINDS.has(r.kind)}
+												<Button type="button" size="sm" onclick={() => (scaffoldTarget = r)}>
+													<GitBranch class="h-4 w-4" />
+													<span class="hidden sm:inline">{m.requests_start_building()}</span>
+												</Button>
+											{/if}
 											<Button
 												type="button"
 												variant={r.claimedByMe ? 'default' : 'outline'}
 												size="sm"
 												onclick={() => claim(r)}
-												disabled={!auth.user}
+												disabled={!auth.user || (r.status !== 'approved' && !r.claimedByMe)}
 												title={auth.user ? undefined : m.requests_sign_in_to_claim()}
 											>
 												<Hammer class="h-4 w-4" />
@@ -493,6 +561,16 @@
 			</aside>
 		</div>
 	</div>
+{/if}
+
+{#if scaffoldTarget}
+	{@const target = scaffoldTarget}
+	<ScaffoldDialog
+		request={target}
+		onClose={() => (scaffoldTarget = null)}
+		onScaffolded={(claimers) =>
+			(requests = requests.map((r) => (r.id === target.id ? { ...r, claimers, claims: claimers.length } : r)))}
+	/>
 {/if}
 
 {#if deleteTarget}

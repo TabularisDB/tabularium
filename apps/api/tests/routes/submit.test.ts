@@ -62,7 +62,7 @@ describe('POST /api/submit/oauth', () => {
     expect(saved).toBeDefined()
   })
 
-  it('removes the matching plugin request on success', async () => {
+  it('keeps the matching request in progress until the plugin is in the catalog', async () => {
     const user = await makeUser({ username: 'alice' })
     const token = await signJwt({
       sub: user.id,
@@ -78,6 +78,7 @@ describe('POST /api/submit/oauth', () => {
       description: 'desc',
       requesterId: user.id,
       upvotes: 0,
+      status: 'approved',
     })
     await db.insert(pluginRequestClaims).values({ requestId, userId: user.id })
 
@@ -105,10 +106,12 @@ describe('POST /api/submit/oauth', () => {
     fetchSpy.mockRestore()
     expect(res.status).toBe(200)
 
-    const gone = await db.query.pluginRequests.findFirst({ where: { id: requestId } })
-    expect(gone).toBeUndefined()
-    const claimGone = await db.query.pluginRequestClaims.findFirst({ where: { requestId } })
-    expect(claimGone).toBeUndefined()
+    // No release yet, so no manifest: the plugin is not listed and the
+    // request stays open (and claimed) instead of being deleted.
+    const pending = await db.query.pluginRequests.findFirst({ where: { id: requestId } })
+    expect(pending).toMatchObject({ status: 'approved', fulfilledPluginId: null })
+    const claim = await db.query.pluginRequestClaims.findFirst({ where: { requestId } })
+    expect(claim).toBeDefined()
   })
 
   it('returns 403 when user does not own the repo', async () => {

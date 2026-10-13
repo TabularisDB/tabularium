@@ -8,6 +8,7 @@ import { latestCacheKey } from '$routes/api/plugins/[slug]/latest'
 import { recordAudit } from '$lib/audit'
 import { jsonArrayOrNull } from '$lib/util'
 import { emitEvent } from '$lib/webhooks/events'
+import { fulfillRequestForPlugin } from '$lib/request-fulfillment'
 
 const statusEnum = t.Union([t.Literal('approved'), t.Literal('pending'), t.Literal('rejected')])
 
@@ -91,6 +92,9 @@ export default new Elysia()
           actor: { id: admin.id, name: admin.displayName },
           reason: body.status === 'rejected' ? (body.rejectionReason ?? null) : null,
         })
+        if (body.status === 'approved') {
+          await fulfillRequestForPlugin(params.id, { id: admin.id, name: admin.displayName })
+        }
       }
       return { ok: true, id: params.id }
     },

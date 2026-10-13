@@ -161,18 +161,34 @@ export const releaseAssets = pgTable(
   }),
 )
 
-export const pluginRequests = pgTable('plugin_requests', {
-  id: text('id').primaryKey(),
-  slug: text('slug').notNull().unique(),
-  name: text('name').notNull(),
-  description: text('description').notNull(),
-  kind: text('kind'),
-  requesterId: text('requester_id')
-    .notNull()
-    .references(() => users.id),
-  upvotes: integer('upvotes').notNull().default(0),
-  createdAt: ts('created_at').notNull().$defaultFn(now),
-})
+export const pluginRequests = pgTable(
+  'plugin_requests',
+  {
+    id: text('id').primaryKey(),
+    slug: text('slug').notNull().unique(),
+    name: text('name').notNull(),
+    description: text('description').notNull(),
+    kind: text('kind'),
+    requesterId: text('requester_id')
+      .notNull()
+      .references(() => users.id),
+    upvotes: integer('upvotes').notNull().default(0),
+    status: text('status', { enum: ['pending', 'approved', 'rejected', 'fulfilled'] })
+      .notNull()
+      .default('pending'),
+    rejectionReason: text('rejection_reason'),
+    reviewedBy: text('reviewed_by'),
+    reviewedAt: ts('reviewed_at'),
+    fulfilledPluginId: text('fulfilled_plugin_id'),
+    fulfilledAt: ts('fulfilled_at'),
+    bounty: text('bounty'),
+    createdAt: ts('created_at').notNull().$defaultFn(now),
+    updatedAt: ts('updated_at'),
+  },
+  (t) => ({
+    byStatus: index('plugin_requests_status_idx').on(t.status),
+  }),
+)
 
 export const pluginRequestVotes = pgTable(
   'plugin_request_votes',
@@ -198,6 +214,8 @@ export const pluginRequestClaims = pgTable(
     userId: text('user_id')
       .notNull()
       .references(() => users.id, { onDelete: 'cascade' }),
+    repoUrl: text('repo_url'),
+    scaffoldedAt: ts('scaffolded_at'),
     createdAt: ts('created_at').notNull().$defaultFn(now),
   },
   (t) => ({

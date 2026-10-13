@@ -21,6 +21,7 @@
 	import KeyRound from '@lucide/svelte/icons/key-round'
 	import Webhook from '@lucide/svelte/icons/webhook'
 	import Languages from '@lucide/svelte/icons/languages'
+	import Lightbulb from '@lucide/svelte/icons/lightbulb'
 	import Menu from '@lucide/svelte/icons/menu'
 	import X from '@lucide/svelte/icons/x'
 	import { auth } from '$lib/stores/auth.svelte'
@@ -30,6 +31,7 @@
 	let { children } = $props()
 	let gated = $state(true)
 	let pendingCount = $state(0)
+	let pendingRequests = $state(0)
 	let drawerOpen = $state(false)
 
 	onMount(async () => {
@@ -57,12 +59,20 @@
 		} catch {
 			// ignore
 		}
+		try {
+			const { data, error } = await eden.api.requests.get({ query: { status: 'pending', limit: '1' } })
+			if (error) throw error
+			pendingRequests = (data as { total: number }).total
+		} catch {
+			// ignore
+		}
 	})
 
 	const sections = $derived([
 		{ href: '/admin', label: m.admin_nav_overview(), icon: LayoutDashboard, badge: 0 },
 		{ href: '/admin/providers', label: m.admin_nav_providers(), icon: Plug, badge: 0 },
 		{ href: '/admin/plugins', label: m.admin_nav_plugins(), icon: Boxes, badge: pendingCount },
+		{ href: '/admin/requests', label: m.admin_nav_requests(), icon: Lightbulb, badge: pendingRequests },
 		{ href: '/admin/users', label: m.admin_nav_users(), icon: UsersRound, badge: 0 },
 		{ href: '/admin/pages', label: m.admin_nav_pages(), icon: FileText, badge: 0 },
 		{ href: '/admin/infra', label: m.admin_nav_infrastructure(), icon: ServerCog, badge: 0 },

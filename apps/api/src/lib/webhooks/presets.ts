@@ -98,6 +98,18 @@ export const WEBHOOK_PRESETS: WebhookPreset[] = [
     secrets: ['CONSUMER_KEY', 'CONSUMER_SECRET'],
   },
   {
+    key: 'deploy-hook',
+    label: 'Static site rebuild',
+    description:
+      'Trigger a deploy hook (Vercel, Netlify, Cloudflare Pages…) so a static site that bakes in registry data rebuilds. Subscribe it to the request.* lifecycle events, not to votes.',
+    method: 'POST',
+    url: '{{secrets.DEPLOY_HOOK_URL | raw}}',
+    headers: [],
+    body: '{}',
+    contentType: 'application/json',
+    secrets: ['DEPLOY_HOOK_URL'],
+  },
+  {
     key: 'generic',
     label: 'Generic JSON',
     description: 'POST the full event context as JSON. Set a signing secret to verify X-Tabularium-Signature.',

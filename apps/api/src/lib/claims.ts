@@ -1,4 +1,4 @@
-import { and, eq, count } from 'drizzle-orm'
+import { and, eq } from 'drizzle-orm'
 import { db, getDialect } from '$db'
 import { pluginRequestClaims } from '$db/schema'
 
@@ -20,14 +20,6 @@ export async function unclaimRequest(requestId: string, userId: string): Promise
   await db
     .delete(pluginRequestClaims)
     .where(and(eq(pluginRequestClaims.requestId, requestId), eq(pluginRequestClaims.userId, userId)))
-}
-
-export async function claimCount(requestId: string): Promise<number> {
-  const rows = await db
-    .select({ n: count() })
-    .from(pluginRequestClaims)
-    .where(eq(pluginRequestClaims.requestId, requestId))
-  return rows[0]?.n ?? 0
 }
 
 export async function hasClaimedRequest(requestId: string, userId: string): Promise<boolean> {

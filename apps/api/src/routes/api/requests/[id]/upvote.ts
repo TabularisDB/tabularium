@@ -21,6 +21,10 @@ export default new Elysia()
         set.status = 404
         return { error: 'Request not found' }
       }
+      if (request.status !== 'approved') {
+        set.status = 409
+        return { error: 'Only approved requests can be upvoted.' }
+      }
 
       try {
         return await toggleVote(user.sub, params.id)
@@ -36,7 +40,7 @@ export default new Elysia()
         summary: 'Toggle upvote on a request',
         description:
           "Toggles the current user's vote on the request: if not yet voted, adds a vote; if already voted, removes it. " +
-          "Returns the new total and the user's new vote state. Requires auth.",
+          "Returns the new total and the user's new vote state. Requires auth. Only `approved` requests take votes.",
         operationId: 'toggleUpvote',
         security: [{ bearerAuth: [] }, { cookieAuth: [] }],
       },

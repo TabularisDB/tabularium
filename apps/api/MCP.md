@@ -23,13 +23,13 @@ Effective access is the intersection of granted scopes, the user's current role 
 | `catalog:read` | Plugin search/detail/stats/integrity, docs, pages, kinds, public instance metadata, community requests, manifest validation |
 | `account:read` | Own profile, linked repositories and transfers |
 | `plugins:write` | Submit/preview, publish, delete own plugins, transfers, manifest refresh, rehash and yank |
-| `requests:write` | Create requests, vote and claim |
+| `requests:write` | Create requests, vote, claim and create a scaffolded repository for a claimed request |
 | `admin:<area>:read` | Read an administrative area as a current admin |
 | `admin:<area>:write` | Change an administrative area as a current admin |
 
 Admin areas: `plugins`, `users`, `manifest`, `docs`, `pages`, `settings`, `provider-instances`, `features`, `kinds`, `branding`, `home-copy`, `i18n`, `instance`, `infra`, `audit`, `diagnostics`, `requests`. Unknown scopes are rejected. A non-admin cannot grant admin scopes. Role demotion removes access on the next request even if the token has not expired.
 
-Examples: a catalog assistant requests `catalog:read`; a publishing assistant requests `catalog:read account:read plugins:write`; a moderation assistant requests `catalog:read admin:plugins:read admin:plugins:write`. The default when scope is omitted is only `catalog:read`.
+Examples: a catalog assistant requests `catalog:read`; a publishing assistant requests `catalog:read account:read plugins:write`; a moderation assistant requests `catalog:read admin:plugins:read admin:plugins:write`. A request-review assistant requests `catalog:read admin:requests:write` to list pending requests and approve, reject or edit their bounty details. The default when scope is omitted is only `catalog:read`.
 
 Existing `tbm_` admin API tokens now enforce these exact area scopes too. Legacy `scopes: null` retains full-admin access; unknown legacy scope strings grant no matching action. Scoped credentials cannot create tokens or alter recovery authentication. Browser session JWTs and publisher/admin API tokens are not accepted as MCP access tokens.
 
