@@ -29,8 +29,13 @@
 	onMount(async () => {
 		if (!auth.loaded) await auth.refresh()
 		if (auth.user) {
-			// Already signed in: only follow local paths, absolute targets need the API's check.
-			goto(isLocalPath(returnTo) ? returnTo : auth.isAdmin ? '/admin' : '/')
+			// Already signed in: follow local paths here; absolute targets (a trusted
+			// website) go through the API, which checks them against ALLOWED_ORIGINS.
+			if (returnTo && !isLocalPath(returnTo)) {
+				window.location.href = `/auth/return?to=${encodeURIComponent(returnTo)}`
+				return
+			}
+			goto(returnTo ?? (auth.isAdmin ? '/admin' : '/'))
 			return
 		}
 		const statusRes = await eden.api.init.status.get()

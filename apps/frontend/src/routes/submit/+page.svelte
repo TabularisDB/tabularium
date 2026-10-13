@@ -1,5 +1,6 @@
 <script lang="ts">
 	import { onMount } from 'svelte'
+	import { page } from '$app/state'
 	import { goto } from '$app/navigation'
 	import CheckCircle2 from '@lucide/svelte/icons/circle-check'
 	import ExternalLink from '@lucide/svelte/icons/external-link'
@@ -104,7 +105,23 @@
 			return
 		}
 		await loadRepos()
+		await preselectRepo(page.url.searchParams.get('repo'))
 	})
+
+	// `?repo=<url>` (e.g. from a scaffolded bounty repository) picks that repo
+	// when one of the linked accounts can submit it.
+	async function preselectRepo(url: string | null) {
+		if (!url || !groups) return
+		const repoName = url.replace(/\/+$/, '').split('/').pop() ?? ''
+		const owner = url.toLowerCase()
+		const group = groups.find((g) => !g.error && owner.includes(`/${g.username.toLowerCase()}/`))
+		if (group) selectedIdentityId = group.identityId
+		if (repoName.length >= 3) {
+			search = repoName
+			await loadRepoPage()
+		}
+		selectedRepo = selectedGroup?.repos.find((r) => r.url === url) ?? null
+	}
 
 	async function loadRepos() {
 		loading = true

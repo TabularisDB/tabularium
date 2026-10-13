@@ -139,6 +139,33 @@ export type PageRendered = {
   updatedAt: number
 }
 
+export type RequestStatus = 'pending' | 'approved' | 'rejected' | 'fulfilled'
+
+export type BoardStatus = 'open' | 'most-wanted' | 'scoped' | 'coming-soon'
+
+export type RequestBounty = {
+  boardStatus?: BoardStatus
+  tagline?: string
+  stage?: string
+  nextStep?: string
+  difficulty?: 'Low' | 'Medium' | 'High' | 'Extreme'
+  accent?: string
+  radar?: { x: number; y: number; scale: number }
+  tags?: string[]
+  capabilities?: { label: string; state: 'ready' | 'needed' | 'stretch' }[]
+  signal?: string
+  sponsorUrl?: string
+}
+
+export type RequestClaimer = {
+  userId: string
+  username: string | null
+  displayName: string
+  avatarUrl: string | null
+  repoUrl: string | null
+  claimedAt: number
+}
+
 export type PluginRequest = {
   id: string
   slug: string
@@ -146,10 +173,18 @@ export type PluginRequest = {
   description: string
   kind: string | null
   requesterId: string
+  status: RequestStatus
+  rejectionReason: string | null
+  bounty: RequestBounty | null
   upvotes: number
   createdAt: number
+  updatedAt: number | null
+  fulfilledAt: number | null
+  fulfilledPlugin: { id: string; name: string } | null
   claims: number
+  claimers: RequestClaimer[]
   claimedByMe: boolean
+  votedByMe: boolean
 }
 
 export type SubmittableRepo = {
