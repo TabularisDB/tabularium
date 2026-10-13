@@ -107,23 +107,27 @@
 	--color-input: rgba(148, 163, 184, 0.16);
 }
 
+/* Light palette after tabularis.dev `[data-theme='light']`: white page, cool-grey
+   surfaces, slate hairlines and a darker teal accent for contrast. */
 :root[data-theme='tabularis']:not(.dark) {
-	--color-background: #f7f8fb;
-	--color-foreground: #0b1020;
-	--color-card: #ffffff;
-	--color-card-foreground: #0b1020;
+	--color-background: #ffffff;
+	--color-foreground: #0b1220;
+	--color-card: #f6f7f9;
+	--color-card-foreground: #0b1220;
 	--color-popover: #ffffff;
-	--color-popover-foreground: #0b1020;
-	--color-secondary: #eef1f6;
-	--color-secondary-foreground: #0b1020;
-	--color-muted: #eef1f6;
+	--color-popover-foreground: #0b1220;
+	--color-secondary: #eef0f4;
+	--color-secondary-foreground: #0b1220;
+	--color-muted: #eef0f4;
 	--color-muted-foreground: #4b5563;
-	--color-accent: rgba(15, 23, 42, 0.05);
-	--color-accent-foreground: #0b1020;
-	--color-border: rgba(15, 23, 42, 0.1);
-	--color-border-strong: rgba(15, 23, 42, 0.22);
-	--color-input: rgba(15, 23, 42, 0.14);
-	--tabularis-aurora-opacity: 0.14;
+	--color-accent: #e8ebf0;
+	--color-accent-foreground: #0b1220;
+	--color-destructive: #dc2626;
+	--color-border: rgba(15, 23, 42, 0.12);
+	--color-border-strong: rgba(15, 23, 42, 0.24);
+	--color-input: rgba(15, 23, 42, 0.12);
+	--color-ring: var(--color-brand-accent);
+	--tabularis-aurora-opacity: 0.1;
 }
 
 /* Tabularis typography: airy tracking, lighter display weights, teal selection. */
