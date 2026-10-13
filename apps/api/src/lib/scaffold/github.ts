@@ -60,6 +60,22 @@ export async function grantedScopes(
   }
 }
 
+export type RepoOwner = { login: string; type: 'user' | 'org'; avatarUrl: string | null }
+
+/** The user's own account, then every org they belong to (needs `read:org` for private memberships). */
+export async function listGithubOwners(instance: ProviderInstance, token: string): Promise<RepoOwner[]> {
+  const gh = client(instance, token)
+  type Account = { login: string; avatar_url?: string }
+  const { data: me } = await gh<Account>('GET', '/user')
+  const { data: orgs } = await gh<Account[]>('GET', '/user/orgs?per_page=100')
+  return [
+    { login: me.login, type: 'user' as const, avatarUrl: me.avatar_url ?? null },
+    ...orgs
+      .map((o) => ({ login: o.login, type: 'org' as const, avatarUrl: o.avatar_url ?? null }))
+      .sort((a, b) => a.login.localeCompare(b.login)),
+  ]
+}
+
 export type CreatedRepo = { owner: string; name: string; fullName: string; htmlUrl: string; defaultBranch: string }
 
 /**

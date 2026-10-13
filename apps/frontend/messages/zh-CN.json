@@ -1217,5 +1217,12 @@
 	"requests_scaffold_done": "{repo} 已就绪。",
 	"requests_scaffold_next": "开发插件、发布一个 release，然后将仓库提交到注册中心。",
 	"requests_scaffold_open_repo": "打开仓库",
-	"requests_scaffold_submit": "提交到注册中心"
+	"requests_scaffold_submit": "提交到注册中心",
+	"requests_scaffold_mode_create": "新建仓库",
+	"requests_scaffold_mode_link": "关联已有仓库",
+	"requests_scaffold_link_repo": "仓库 URL",
+	"requests_scaffold_link_hint": "选择你的某个仓库或粘贴其 URL。需要 maintain 权限，与提交插件相同。",
+	"requests_scaffold_link": "关联仓库",
+	"requests_scaffold_linking": "正在关联…",
+	"requests_scaffold_linked": "{repo} 已关联到你的认领。"
 }

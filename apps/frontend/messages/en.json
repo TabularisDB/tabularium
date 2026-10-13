@@ -1242,5 +1242,12 @@
 	"requests_scaffold_done": "{repo} is ready.",
 	"requests_scaffold_next": "Build the plugin, publish a release, then submit the repository to the registry.",
 	"requests_scaffold_open_repo": "Open repository",
-	"requests_scaffold_submit": "Submit to the registry"
+	"requests_scaffold_submit": "Submit to the registry",
+	"requests_scaffold_mode_create": "New repository",
+	"requests_scaffold_mode_link": "Link an existing one",
+	"requests_scaffold_link_repo": "Repository URL",
+	"requests_scaffold_link_hint": "Pick one of your repositories or paste its URL. You need maintain access, as when submitting a plugin.",
+	"requests_scaffold_link": "Link repository",
+	"requests_scaffold_linking": "Linking…",
+	"requests_scaffold_linked": "{repo} is linked to your claim."
 }

@@ -1217,5 +1217,12 @@
 	"requests_scaffold_done": "{repo} está listo.",
 	"requests_scaffold_next": "Desarrolla el plugin, publica una release y luego envía el repositorio al registro.",
 	"requests_scaffold_open_repo": "Abrir repositorio",
-	"requests_scaffold_submit": "Enviar al registro"
+	"requests_scaffold_submit": "Enviar al registro",
+	"requests_scaffold_mode_create": "Repositorio nuevo",
+	"requests_scaffold_mode_link": "Vincular uno existente",
+	"requests_scaffold_link_repo": "URL del repositorio",
+	"requests_scaffold_link_hint": "Elige uno de tus repositorios o pega su URL. Necesitas permiso de maintain, igual que para enviar un plugin.",
+	"requests_scaffold_link": "Vincular repositorio",
+	"requests_scaffold_linking": "Vinculando…",
+	"requests_scaffold_linked": "{repo} está vinculado a tu reclamación."
 }

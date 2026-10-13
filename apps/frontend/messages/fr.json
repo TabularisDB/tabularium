@@ -1217,5 +1217,12 @@
 	"requests_scaffold_done": "{repo} est prêt.",
 	"requests_scaffold_next": "Développez le plugin, publiez une release, puis soumettez le dépôt au registre.",
 	"requests_scaffold_open_repo": "Ouvrir le dépôt",
-	"requests_scaffold_submit": "Soumettre au registre"
+	"requests_scaffold_submit": "Soumettre au registre",
+	"requests_scaffold_mode_create": "Nouveau dépôt",
+	"requests_scaffold_mode_link": "Lier un dépôt existant",
+	"requests_scaffold_link_repo": "URL du dépôt",
+	"requests_scaffold_link_hint": "Choisissez l'un de vos dépôts ou collez son URL. Il faut le droit maintain, comme pour soumettre un plugin.",
+	"requests_scaffold_link": "Lier le dépôt",
+	"requests_scaffold_linking": "Liaison…",
+	"requests_scaffold_linked": "{repo} est lié à votre réservation."
 }

@@ -17,8 +17,16 @@
 		onClose: () => void
 		onScaffolded: (claimers: RequestClaimer[]) => void
 	}
-	type ScaffoldResult = { repoUrl: string; fullName: string; submitUrl: string; claimers: RequestClaimer[] }
+	type ScaffoldResult = {
+		repoUrl: string
+		fullName: string
+		submitUrl: string
+		claimers: RequestClaimer[]
+		linked?: boolean
+	}
 	type ScaffoldError = { error?: string; reauthUrl?: string; hint?: string }
+	type Owner = { login: string; type: 'user' | 'org' }
+	type Repo = { fullName: string; url: string }
 
 	let { request, onClose, onScaffolded }: Props = $props()
 
@@ -27,6 +35,10 @@
 	// svelte-ignore state_referenced_locally
 	let repoName = $state(request.slug)
 	let owner = $state('')
+	let owners = $state<Owner[] | null>(null)
+	let mode = $state<'create' | 'link'>('create')
+	let linkUrl = $state('')
+	let repos = $state<Repo[]>([])
 	let isPrivate = $state(false)
 	let dbType = $state<'network' | 'file' | 'folder' | 'api'>('network')
 	let withUi = $state(false)
@@ -45,6 +57,65 @@
 	$effect(() => {
 		if (!open) onClose()
 	})
+
+	// Accounts the user can create the repository in; falls back to a free-text field.
+	async function loadOwners() {
+		try {
+			const { data, error: err } = await eden.api.submit.owners.get({ query: {} })
+			if (!err) owners = (data as { owners: Owner[] }).owners
+		} catch {
+			// Keep the free-text field.
+		}
+	}
+	$effect(() => {
+		loadOwners()
+	})
+
+	// Repositories the user maintains, as suggestions for the link field.
+	let reposLoaded = false
+	async function loadRepos() {
+		if (reposLoaded) return
+		reposLoaded = true
+		try {
+			const { data, error: err } = await eden.api.submit.repos.get({ query: { page: 1 } })
+			if (err) throw err
+			const { groups } = data as { groups: Array<{ repos: Repo[] }> }
+			repos = groups.flatMap((g) => g.repos.map((r) => ({ fullName: r.fullName, url: r.url })))
+		} catch {
+			reposLoaded = false
+		}
+	}
+
+	function setMode(next: 'create' | 'link') {
+		mode = next
+		error = null
+		if (next === 'link') loadRepos()
+	}
+
+	async function link(e: SubmitEvent) {
+		e.preventDefault()
+		busy = true
+		error = null
+		try {
+			const { data, error: err } = await eden.api.requests({ id: request.id }).repo.post({
+				repoUrl: linkUrl.trim(),
+				returnTo: window.location.href,
+			})
+			if (err) {
+				error =
+					typeof err.value === 'object' && err.value
+						? (err.value as ScaffoldError)
+						: { error: `Request failed (${err.status})` }
+				return
+			}
+			result = { ...(data as ScaffoldResult), linked: true }
+			onScaffolded(result.claimers)
+		} catch (e) {
+			error = { error: e instanceof Error ? e.message : String(e) }
+		} finally {
+			busy = false
+		}
+	}
 
 	async function create(e: SubmitEvent) {
 		e.preventDefault()
@@ -97,7 +168,11 @@
 
 			{#if result}
 				<div class="mt-5 space-y-4">
-					<p class="text-sm">{m.requests_scaffold_done({ repo: result.fullName })}</p>
+					<p class="text-sm">
+						{result.linked
+							? m.requests_scaffold_linked({ repo: result.fullName })
+							: m.requests_scaffold_done({ repo: result.fullName })}
+					</p>
 					<p class="text-sm text-muted-foreground">{m.requests_scaffold_next()}</p>
 					<div class="flex flex-wrap justify-end gap-2">
 						<Button variant="outline" size="sm" href={result.repoUrl} target="_blank" rel="noopener noreferrer">
@@ -108,6 +183,67 @@
 					</div>
 				</div>
 			{:else}
+				<div class="mt-5 grid grid-cols-2 gap-1 rounded-md border border-border p-1 text-sm" role="tablist">
+					{#each [['create', m.requests_scaffold_mode_create()], ['link', m.requests_scaffold_mode_link()]] as [id, label] (id)}
+						<button
+							type="button"
+							role="tab"
+							aria-selected={mode === id}
+							class="rounded px-3 py-1.5 transition-colors {mode === id
+								? 'bg-primary/10 font-medium text-primary'
+								: 'text-muted-foreground hover:text-foreground'}"
+							onclick={() => setMode(id as 'create' | 'link')}
+						>
+							{label}
+						</button>
+					{/each}
+				</div>
+			{/if}
+
+			{#if !result && mode === 'link'}
+				<form class="mt-5 space-y-4" onsubmit={link}>
+					<div class="space-y-2">
+						<Label for="link-repo">{m.requests_scaffold_link_repo()}</Label>
+						<Input
+							id="link-repo"
+							type="url"
+							bind:value={linkUrl}
+							list="link-repo-options"
+							placeholder="https://github.com/owner/repo"
+							autocomplete="off"
+							class="font-mono"
+							required
+						/>
+						<datalist id="link-repo-options">
+							{#each repos as repo (repo.url)}
+								<option value={repo.url}>{repo.fullName}</option>
+							{/each}
+						</datalist>
+						<p class="text-xs text-muted-foreground">{m.requests_scaffold_link_hint()}</p>
+					</div>
+
+					{#if error}
+						<div class="space-y-2 rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm" role="alert">
+							<p>{error.error}</p>
+							{#if error.reauthUrl}
+								<Button size="sm" href={error.reauthUrl}>
+									<KeyRound class="h-4 w-4" />
+									{m.requests_scaffold_grant()}
+								</Button>
+							{/if}
+						</div>
+					{/if}
+
+					<div class="flex items-center justify-end gap-2">
+						<Button variant="ghost" size="sm" type="button" onclick={() => (open = false)} disabled={busy}>
+							{m.confirm_dialog_cancel()}
+						</Button>
+						<Button size="sm" type="submit" disabled={busy}>
+							{busy ? m.requests_scaffold_linking() : m.requests_scaffold_link()}
+						</Button>
+					</div>
+				</form>
+			{:else if !result}
 				<form class="mt-5 space-y-4" onsubmit={create}>
 					<div class="grid gap-4 sm:grid-cols-2">
 						<div class="space-y-2">
@@ -116,12 +252,23 @@
 						</div>
 						<div class="space-y-2">
 							<Label for="scaffold-owner">{m.requests_scaffold_owner()}</Label>
-							<Input
-								id="scaffold-owner"
-								bind:value={owner}
-								maxlength={39}
-								placeholder={m.requests_scaffold_owner_hint()}
-							/>
+							{#if owners}
+								<Select id="scaffold-owner" bind:value={owner}>
+									{#each owners as o, i (o.login)}
+										<option value={i === 0 ? '' : o.login}>
+											{i === 0 ? `${o.login} (${m.requests_scaffold_owner_hint()})` : o.login}
+										</option>
+									{/each}
+								</Select>
+							{:else}
+								<Input
+									id="scaffold-owner"
+									bind:value={owner}
+									maxlength={39}
+									autocomplete="off"
+									placeholder={m.requests_scaffold_owner_hint()}
+								/>
+							{/if}
 						</div>
 					</div>
 

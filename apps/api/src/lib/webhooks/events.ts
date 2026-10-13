@@ -26,6 +26,7 @@ export const WEBHOOK_EVENTS = [
   'request.claimed',
   'request.unclaimed',
   'request.scaffolded',
+  'request.repo_linked',
   'request.fulfilled',
 ] as const
 
@@ -53,6 +54,7 @@ const META: Record<WebhookEvent, { title: string; color: number }> = {
   'request.claimed': { title: 'Plugin request claimed', color: 0x06b6d4 },
   'request.unclaimed': { title: 'Plugin request claim released', color: 0x64748b },
   'request.scaffolded': { title: 'Plugin repository created', color: 0x8b5cf6 },
+  'request.repo_linked': { title: 'Plugin repository linked', color: 0x8b5cf6 },
   'request.fulfilled': { title: 'Plugin request fulfilled', color: 0x22c55e },
 }
 
@@ -293,7 +295,10 @@ export function sampleContext(type: WebhookEvent): EventContext {
       kind: null,
       status: SAMPLE_REQUEST_STATUS[type] ?? 'approved',
       claims: type === 'request.created' ? 0 : 1,
-      repoUrl: type === 'request.scaffolded' ? 'https://github.com/janedoe/example-plugin' : null,
+      repoUrl:
+        type === 'request.scaffolded' || type === 'request.repo_linked'
+          ? 'https://github.com/janedoe/example-plugin'
+          : null,
       url,
     }
     return ctx
