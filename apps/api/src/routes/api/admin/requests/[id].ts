@@ -39,6 +39,8 @@ export default new Elysia()
       if (body.description !== undefined) patch.description = body.description
       if (body.kind !== undefined) patch.kind = body.kind
       if (body.bounty !== undefined) patch.bounty = body.bounty === null ? null : JSON.stringify(body.bounty)
+      // Backfilling history (e.g. requests imported from a curated list).
+      if (body.createdAt !== undefined) patch.createdAt = body.createdAt
 
       let event: WebhookEvent | null = null
       if (body.status !== undefined && body.status !== row.status) {
@@ -54,7 +56,7 @@ export default new Elysia()
             return { error: `No plugin '${pluginId}' to link the request to.` }
           }
           patch.fulfilledPluginId = plugin.id
-          patch.fulfilledAt = now
+          patch.fulfilledAt = body.fulfilledAt ?? now
         } else {
           patch.fulfilledPluginId = null
           patch.fulfilledAt = null
@@ -64,6 +66,10 @@ export default new Elysia()
         else if (body.status === 'fulfilled') event = 'request.fulfilled'
       } else if (body.status === 'rejected' && body.rejectionReason !== undefined) {
         patch.rejectionReason = body.rejectionReason
+      }
+      // Only a shipped request has a shipping date.
+      if (body.fulfilledAt !== undefined && (patch.status ?? row.status) === 'fulfilled') {
+        patch.fulfilledAt = body.fulfilledAt
       }
 
       await db.update(pluginRequests).set(patch).where(eq(pluginRequests.id, params.id))
@@ -89,7 +95,7 @@ export default new Elysia()
         tags: ['Admin'],
         summary: 'Review or edit a plugin request',
         description:
-          'Approve, reject (with an optional reason), reopen as pending or mark fulfilled a request, and edit its name, description, kind and bounty board metadata. Status changes emit `request.approved`, `request.rejected` or `request.fulfilled`. `fulfilledPluginId` defaults to the request slug.',
+          'Approve, reject (with an optional reason), reopen as pending or mark fulfilled a request, and edit its name, description, kind and bounty board metadata. `createdAt` and `fulfilledAt` (epoch ms) backfill dates for requests imported from elsewhere; `fulfilledAt` only applies to fulfilled requests. Status changes emit `request.approved`, `request.rejected` or `request.fulfilled`. `fulfilledPluginId` defaults to the request slug.',
         operationId: 'adminUpdateRequest',
         security: [{ bearerAuth: [] }, { cookieAuth: [] }],
       },
@@ -104,6 +110,15 @@ export default new Elysia()
         description: t.Optional(t.String({ minLength: 1, maxLength: 2000 })),
         kind: t.Optional(t.Nullable(t.String({ maxLength: 40 }))),
         bounty: t.Optional(t.Nullable(bountySchema)),
+        createdAt: t.Optional(
+          t.Integer({ minimum: 0, description: 'When the request was made (epoch ms), to backfill history.' }),
+        ),
+        fulfilledAt: t.Optional(
+          t.Integer({
+            minimum: 0,
+            description: 'When the request shipped (epoch ms). Only applies to fulfilled requests.',
+          }),
+        ),
       }),
       response: { 200: requestViewSchema, 400: errorSchema, 404: errorSchema },
     },

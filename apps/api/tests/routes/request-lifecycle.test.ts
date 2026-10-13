@@ -261,3 +261,25 @@ describe('fulfillment on first manifest', () => {
     expect((await db.query.pluginRequests.findFirst({ where: { id: row.id } }))?.status).toBe('fulfilled')
   })
 })
+
+describe('PATCH /api/admin/requests/:id — backfilled dates', () => {
+  beforeEach(clearDb)
+
+  it('sets createdAt and, on fulfilled requests only, fulfilledAt', async () => {
+    const user = await makeUser()
+    const admin = await makeAdmin()
+    const open = await seedRequest(user, { slug: 'firebird', status: 'approved' })
+    const shipped = await seedRequest(user, { slug: 'oracle', status: 'fulfilled', fulfilledAt: 1 })
+
+    await call(
+      `/api/admin/requests/${open.id}`,
+      json({ createdAt: 1777000000000, fulfilledAt: 1 }, adminHeaders(admin)),
+    )
+    await call(`/api/admin/requests/${shipped.id}`, json({ fulfilledAt: 1790000000000 }, adminHeaders(admin)))
+
+    const a = await db.query.pluginRequests.findFirst({ where: { id: open.id } })
+    const b = await db.query.pluginRequests.findFirst({ where: { id: shipped.id } })
+    expect(a).toMatchObject({ createdAt: 1777000000000, fulfilledAt: null })
+    expect(b?.fulfilledAt).toBe(1790000000000)
+  })
+})
