@@ -4,7 +4,9 @@
  *
  *   bun scripts/import-bounties.ts [file-or-url] [--map bounty=plugin ...] [--kind driver] [--dry-run]
  *
- * Runs against DATABASE_URL like the seed scripts. Each bounty becomes a
+ * Runs against the same database as the server: `database.url` from the
+ * instance's config.json (DATA_DIR / CONFIG_PATH), falling back to
+ * DATABASE_URL for installs without one. Each bounty becomes a
  * request keyed by its `id` (the slug): active ones `approved` with their
  * board metadata, shipped ones `fulfilled` and linked to the registry plugin
  * with the same id (or the one given with --map). Existing slugs are updated
@@ -14,7 +16,8 @@ import { parseArgs } from 'node:util'
 import { readFile } from 'node:fs/promises'
 import { ulid } from 'ulid'
 import { eq } from 'drizzle-orm'
-import { connectDB, db } from '../src/db'
+import { connectDB, db, getDialect } from '../src/db'
+import { configPath, loadConfig } from '../src/lib/config-file'
 import { pluginRequests } from '../src/db/schema'
 import type { Bounty } from '../src/lib/request-bounty'
 import { parseBounty } from '../src/lib/request-bounty'
@@ -62,7 +65,13 @@ const dryRun = values['dry-run']
 const raw = /^https?:\/\//.test(source) ? await (await fetch(source)).text() : await readFile(source, 'utf8')
 const bounties = (JSON.parse(raw) as { bounties: SourceBounty[] }).bounties
 
-await connectDB(process.env.DATABASE_URL ?? './data/registry.db')
+// The server connects to config.json's database, not DATABASE_URL: use the same one.
+const config = await loadConfig()
+const databaseUrl = config.database?.url ?? process.env.DATABASE_URL ?? './data/registry.db'
+await connectDB(databaseUrl)
+console.log(
+  `database: ${getDialect()} (${config.database?.url ? `from ${configPath()}` : 'from DATABASE_URL'})${dryRun ? ' [dry run]' : ''}`,
+)
 const admin = await db.query.users.findFirst({ where: { role: 'admin' }, columns: { id: true } })
 if (!admin) {
   console.error('No admin user to file the requests under — sign in once first.')
@@ -132,14 +141,11 @@ for (const b of bounties) {
 
   const existing = await db.query.pluginRequests.findFirst({ where: { slug: b.id }, columns: { id: true } })
   console.log(`${existing ? '~' : '+'} ${b.id} → ${status}${fulfilledPluginId ? ` (${fulfilledPluginId})` : ''}`)
+  if (existing) report.updated++
+  else report.created++
   if (dryRun) continue
-  if (existing) {
-    await db.update(pluginRequests).set(fields).where(eq(pluginRequests.id, existing.id))
-    report.updated++
-  } else {
-    await db.insert(pluginRequests).values({ id: ulid(), slug: b.id, requesterId: admin.id, ...fields })
-    report.created++
-  }
+  if (existing) await db.update(pluginRequests).set(fields).where(eq(pluginRequests.id, existing.id))
+  else await db.insert(pluginRequests).values({ id: ulid(), slug: b.id, requesterId: admin.id, ...fields })
 }
 
 console.log(
