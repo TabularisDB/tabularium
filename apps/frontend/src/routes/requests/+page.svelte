@@ -49,6 +49,23 @@
 	// Kinds @tabularis/create-plugin can scaffold a repository for.
 	const SCAFFOLD_KINDS = new Set(['driver', 'theme'])
 
+	// Claimable requests first (open, then already in progress), then the ones
+	// waiting for review, shipped and rejected. The API order (top or new) is
+	// kept within each group.
+	function statusRank(r: PluginRequest): number {
+		if (r.status === 'approved') return r.claims > 0 ? 1 : 0
+		if (r.status === 'pending') return 2
+		if (r.status === 'fulfilled') return 3
+		return 4
+	}
+
+	function byClaimability(list: PluginRequest[]): PluginRequest[] {
+		return list
+			.map((r, i) => ({ r, i }))
+			.sort((a, b) => statusRank(a.r) - statusRank(b.r) || a.i - b.i)
+			.map(({ r }) => r)
+	}
+
 	const kindLabels = $derived(new Map(kinds.map((k) => [k.key, k.label])))
 	const totalVotes = $derived(requests.reduce((sum, r) => sum + r.upvotes, 0))
 	const totalBuilders = $derived(requests.reduce((sum, r) => sum + r.claims, 0))
@@ -81,13 +98,14 @@
 					sort,
 					limit: '100',
 					// Signed-in users also see their own requests still waiting for review.
-					status: auth.user ? 'approved,fulfilled,pending' : 'approved,fulfilled',
+					// Every status; pending and rejected ones come back only to admins and their requester.
+					status: 'approved,pending,fulfilled,rejected',
 					...(filterKind ? { kind: filterKind } : {}),
 				},
 			})
 			if (error) throw error
 			const res = data as { total: number; requests: PluginRequest[] }
-			requests = res.requests
+			requests = byClaimability(res.requests)
 			total = res.total
 		} catch {
 			requests = []
@@ -363,7 +381,7 @@
 										</button>
 										<div class="min-w-0 flex-1 space-y-1.5">
 											<div class="flex flex-wrap items-center gap-2">
-												{#if sort === 'upvotes' && i < 3 && r.upvotes > 0}
+												{#if sort === 'upvotes' && i < 3 && r.upvotes > 0 && r.status === 'approved'}
 													<span class="font-mono text-xs text-primary">#{i + 1}</span>
 												{/if}
 												<h3 class="font-semibold tracking-tight">{r.name}</h3>
@@ -374,11 +392,16 @@
 													<Badge variant="secondary">{m.requests_status_pending()}</Badge>
 												{:else if r.status === 'fulfilled'}
 													<Badge>{m.requests_status_shipped()}</Badge>
+												{:else if r.status === 'rejected'}
+													<Badge variant="destructive">{m.requests_status_rejected()}</Badge>
 												{:else if r.claims > 0}
 													<Badge variant="secondary">{m.requests_status_in_progress()}</Badge>
 												{/if}
 											</div>
 											<p class="text-sm text-muted-foreground line-clamp-3 whitespace-pre-line">{r.description}</p>
+											{#if r.status === 'rejected' && r.rejectionReason}
+												<p class="text-xs text-destructive">{r.rejectionReason}</p>
+											{/if}
 											<div class="flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-muted-foreground">
 												<span>{timeAgo(r.createdAt)}</span>
 												{#if r.claims > 0}
