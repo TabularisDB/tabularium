@@ -49,14 +49,12 @@
 	// Kinds @tabularis/create-plugin can scaffold a repository for.
 	const SCAFFOLD_KINDS = new Set(['driver', 'theme'])
 
-	// Claimable requests first (open, then already in progress), then the ones
-	// waiting for review, shipped and rejected. The API order (top or new) is
-	// kept within each group.
+	// Claimable requests first (open, then already in progress), then shipped
+	// and rejected. The API order (top or new) is kept within each group.
 	function statusRank(r: PluginRequest): number {
 		if (r.status === 'approved') return r.claims > 0 ? 1 : 0
-		if (r.status === 'pending') return 2
-		if (r.status === 'fulfilled') return 3
-		return 4
+		if (r.status === 'fulfilled') return 2
+		return 3
 	}
 
 	function byClaimability(list: PluginRequest[]): PluginRequest[] {
@@ -97,9 +95,8 @@
 				query: {
 					sort,
 					limit: '100',
-					// Signed-in users also see their own requests still waiting for review.
-					// Every status; pending and rejected ones come back only to admins and their requester.
-					status: 'approved,pending,fulfilled,rejected',
+					// Keep pending requests out of this page, including for admins and requesters.
+					status: 'approved,fulfilled,rejected',
 					...(filterKind ? { kind: filterKind } : {}),
 				},
 			})
@@ -388,9 +385,7 @@
 												{#if r.kind}
 													<Badge variant="outline">{kindLabels.get(r.kind) ?? r.kind}</Badge>
 												{/if}
-												{#if r.status === 'pending'}
-													<Badge variant="secondary">{m.requests_status_pending()}</Badge>
-												{:else if r.status === 'fulfilled'}
+												{#if r.status === 'fulfilled'}
 													<Badge>{m.requests_status_shipped()}</Badge>
 												{:else if r.status === 'rejected'}
 													<Badge variant="destructive">{m.requests_status_rejected()}</Badge>
