@@ -14,12 +14,12 @@
 	}
 </script>
 
-<div class={cn('relative rounded-md border border-border bg-card', className)}>
-	<pre class="overflow-x-auto p-4 pr-12 text-xs font-mono text-foreground">{value}</pre>
+<div class={cn('flex items-start rounded-md border border-border bg-card', className)}>
+	<pre class="min-w-0 flex-1 overflow-x-auto p-4 pr-2 text-xs font-mono text-foreground">{value}</pre>
 	<button
 		type="button"
 		onclick={copy}
-		class="absolute right-2 top-2 inline-flex h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
+		class="mr-2 mt-2 inline-flex shrink-0 h-8 w-8 items-center justify-center rounded-md text-muted-foreground hover:bg-accent hover:text-foreground"
 		aria-label="Copy"
 	>
 		{#if copied}

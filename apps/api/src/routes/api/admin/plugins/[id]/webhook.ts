@@ -8,7 +8,7 @@ import { env } from '$lib/env'
 
 export default new Elysia().use(adminMiddleware).get(
   '/',
-  async ({ params, set }) => {
+  async ({ params, set, admin }) => {
     // This response contains the plugin's signing secret for manual setup.
     set.headers['cache-control'] = 'no-store'
     const plugin = await db.query.plugins.findFirst({ where: { id: params.id } })
@@ -23,27 +23,48 @@ export default new Elysia().use(adminMiddleware).get(
     }
     const webhookUrl = `${env.BASE_URL.replace(/\/$/, '')}/api/webhooks/release`
     const repoUrl = `${ref.instance.baseUrl}/${ref.fullName}`
-    const ownerIdentity = await db.query.identities.findFirst({
-      where: { userId: plugin.ownerId, providerInstanceId: ref.instance.id },
-    })
-    let inspection: WebhookInspection = {
-      status: 'unknown',
-      reason: 'No stored access token for the owner. Re-link their provider account to check webhooks.',
-      hooks: [],
-    }
-    if (ownerIdentity?.accessToken) {
+
+    // Returns null when the user has no usable token for this provider instance.
+    async function inspectAs(userId: string): Promise<WebhookInspection | null> {
+      const identity = await db.query.identities.findFirst({
+        where: { userId, providerInstanceId: ref!.instance.id },
+      })
+      if (!identity?.accessToken) return null
       try {
-        const token = await getValidAccessToken(ownerIdentity, ref.instance)
-        inspection = await inspectWebhook(token, ref, webhookUrl)
+        const token = await getValidAccessToken(identity, ref!.instance)
+        return await inspectWebhook(token, ref!, webhookUrl)
       } catch (err) {
         if (!(err instanceof OAuthExpiredError)) throw err
-        inspection.reason = 'The owner must re-link their provider account to check webhooks.'
+        return null
+      }
+    }
+
+    let checkedAs: 'owner' | 'admin' | null = null
+    let inspection = await inspectAs(plugin.ownerId)
+    if (inspection && inspection.status !== 'unknown') checkedAs = 'owner'
+    else {
+      inspection ??= {
+        status: 'unknown',
+        reason: 'The owner must link or re-link their provider account to check webhooks.',
+        hooks: [],
+      }
+      // The owner's token may lack access (e.g. org OAuth app restrictions);
+      // the reviewing admin may still be able to read the repository hooks.
+      if (admin.id !== plugin.ownerId) {
+        const fallback = await inspectAs(admin.id)
+        if (fallback && fallback.status !== 'unknown') {
+          inspection = fallback
+          checkedAs = 'admin'
+        } else {
+          inspection.reason = `${inspection.reason} Your own linked account could not read them either.`
+        }
       }
     }
     // Manual configuration remains available even if OAuth or provider
     // permissions prevent inspection. Reuse the secret that verifies ingress.
     return {
       ...inspection,
+      checkedAs,
       webhookUrl,
       webhookSecret: plugin.webhookSecret,
       provider: ref.instance.displayName,
@@ -57,7 +78,7 @@ export default new Elysia().use(adminMiddleware).get(
       tags: ['Admin'],
       summary: 'Check the repository release webhook and retrieve manual setup details',
       description:
-        "Inspects repository hooks using the owner's OAuth token. Returns the expected URL and existing plugin secret " +
+        "Inspects repository hooks using the owner's OAuth token, falling back to the calling admin's token when the owner's cannot read them. Returns the expected URL and existing plugin secret " +
         'even when the provider check is unavailable. The provider does not reveal the configured secret, so it cannot be compared.',
       operationId: 'adminGetPluginWebhook',
       security: [{ bearerAuth: [] }, { cookieAuth: [] }],
@@ -72,6 +93,7 @@ export default new Elysia().use(adminMiddleware).get(
           t.Literal('unknown'),
         ]),
         reason: t.Nullable(t.String()),
+        checkedAs: t.Nullable(t.Union([t.Literal('owner'), t.Literal('admin')])),
         hooks: t.Array(
           t.Object({
             id: t.Number(),

@@ -1170,6 +1170,7 @@
 	"admin_plugins_webhook_missing": "Webhook non trovato",
 	"admin_plugins_webhook_misconfigured": "Webhook da configurare",
 	"admin_plugins_webhook_unknown": "Impossibile verificare il webhook",
+	"admin_plugins_webhook_checked_as_admin": "Verificato con il tuo account collegato, perché l'account del proprietario non può leggere i webhook del repository.",
 	"admin_plugins_webhook_active": "Attivo",
 	"admin_plugins_webhook_inactive": "Disattivato",
 	"admin_plugins_webhook_release_enabled": "Eventi release abilitati",

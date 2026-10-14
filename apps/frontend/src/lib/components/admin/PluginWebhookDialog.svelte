@@ -12,6 +12,7 @@
 	type WebhookDetails = {
 		status: 'configured' | 'missing' | 'misconfigured' | 'unknown'
 		reason: string | null
+		checkedAs: 'owner' | 'admin' | null
 		hooks: { id: number; active: boolean; releaseEvents: boolean; contentType: string | null }[]
 		webhookUrl: string
 		webhookSecret: string
@@ -81,6 +82,9 @@
 							{/if}
 						</Badge>
 						{#if details.reason}<p class="text-sm text-muted-foreground">{details.reason}</p>{/if}
+						{#if details.checkedAs === 'admin'}
+							<p class="text-xs text-muted-foreground">{m.admin_plugins_webhook_checked_as_admin()}</p>
+						{/if}
 						{#each details.hooks as hook (hook.id)}
 							<div class="text-xs text-muted-foreground">
 								<span class="font-mono">#{hook.id}</span> ·
