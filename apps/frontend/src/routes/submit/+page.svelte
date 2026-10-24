@@ -362,7 +362,7 @@
 							</Select>
 						</div>
 						{#if selectedGroup}
-							<Button variant="ghost" size="sm" href={selectedGroup.reauthUrl}>
+							<Button variant="ghost" size="sm" href={selectedGroup.reauthUrl} data-sveltekit-reload>
 								<RefreshCw class="h-3 w-3" />
 								{m.submit_reauthorize()}
 							</Button>
