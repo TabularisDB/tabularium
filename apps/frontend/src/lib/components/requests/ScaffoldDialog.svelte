@@ -226,7 +226,7 @@
 						<div class="space-y-2 rounded-md border border-destructive/40 bg-destructive/5 p-3 text-sm" role="alert">
 							<p>{error.error}</p>
 							{#if error.reauthUrl}
-								<Button size="sm" href={error.reauthUrl}>
+								<Button size="sm" href={error.reauthUrl} data-sveltekit-reload>
 									<KeyRound class="h-4 w-4" />
 									{m.requests_scaffold_grant()}
 								</Button>
@@ -308,7 +308,7 @@
 							<p>{error.error}</p>
 							{#if error.hint}<p class="text-muted-foreground">{error.hint}</p>{/if}
 							{#if error.reauthUrl}
-								<Button size="sm" href={error.reauthUrl}>
+								<Button size="sm" href={error.reauthUrl} data-sveltekit-reload>
 									<KeyRound class="h-4 w-4" />
 									{m.requests_scaffold_grant()}
 								</Button>
