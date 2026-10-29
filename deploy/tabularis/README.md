@@ -20,3 +20,32 @@ The registry's strict authoring endpoint rejects unknown properties; lenient ing
 The frontend follow-up shows compact locale-aware counts, exact accessible card labels, and distinct loading/empty/unavailable/populated states. It does not change counting APIs or perform tracked downloads. It can ship independently of theme-package support.
 
 Keep the theme rollout gated: packaged platform acceptance, real runtime/tooling version assignments, old-client/profile protection, staged kind admission, and published author journeys are still separate requirements. Neither this operator delta nor the statistics UI enables themes.
+
+## Declarative AI assistant providers
+
+`ai-assistant-kind.json` is a complete operator kind preset for Tabularis. It
+adds the manifest extension contract, a Runcrate example and an optional public
+catalogue page. Packages contain data only; Tabularis owns HTTP, credentials,
+proxies, templates and response parsing. ChatGPT account login remains built in.
+
+Operator rollout:
+
+1. Deploy the supporting Tabularium version with separate `id` and display
+   `name` fields, and back up the current kind configuration.
+2. Create the kind through authenticated `POST /api/admin/kinds` using the preset
+   body, or copy it into the kind editor. For an existing kind, review the
+   current configuration before applying `PUT /api/admin/kinds/ai-assistant`.
+   Leave driver, theme and global extension settings intact.
+3. Validate complete provider manifests using `/api/manifest/validate`, including
+   the public Runcrate and Opper examples in the Tabularis repository. Confirm
+   that missing required contract fields and executable extensions are rejected.
+4. Publish each provider as a separate release with a universal ZIP and a
+   standalone `.tabularium` manifest. Keep the existing IDs `openai`, `anthropic`,
+   `ollama`, `openrouter`, `requesty`, `minimax`, and `custom-openai` so upgrade
+   migration can retain configuration and credentials.
+5. Publish all seven replacements before releasing the Tabularis change that
+   removes their built-in adapters. Assign the actual first supporting runtime
+   version; deploying this preset does not prove compatibility with old clients.
+
+The preset is not applied automatically by deploying this repository. Registry
+configuration and provider publication remain explicit rollout operations.
