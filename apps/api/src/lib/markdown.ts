@@ -175,10 +175,35 @@ function reloadApiLinks(html: string): string {
   return html.replace(/<a\s+([^>]*?)href="\/api\/([^"]*)"([^>]*)>/g, '<a $1href="/api/$2" data-sveltekit-reload$3>')
 }
 
-export async function renderMarkdown(raw: string): Promise<string> {
+type MarkdownOptions = { baseUrl?: string; imageBaseUrl?: string }
+
+function resolveRelativeUrl(value: string, baseUrl: string | undefined): string {
+  if (!baseUrl || !value || /^(?:#|\/|[a-z][a-z\d+.-]*:)/i.test(value)) return value
+  try {
+    return new URL(value, baseUrl).href
+  } catch {
+    return value
+  }
+}
+
+export async function renderMarkdown(raw: string, options: MarkdownOptions = {}): Promise<string> {
   if (!raw) return ''
   const html = await marked.parse(raw)
-  const safe = sanitizeHtml(html, SANITIZE_OPTS)
+  const safe = sanitizeHtml(html, {
+    ...SANITIZE_OPTS,
+    transformTags: {
+      a: (tagName, attribs) => ({
+        tagName,
+        attribs: attribs.href ? { ...attribs, href: resolveRelativeUrl(attribs.href, options.baseUrl) } : attribs,
+      }),
+      img: (tagName, attribs) => ({
+        tagName,
+        attribs: attribs.src
+          ? { ...attribs, src: resolveRelativeUrl(attribs.src, options.imageBaseUrl ?? options.baseUrl) }
+          : attribs,
+      }),
+    },
+  })
   return reloadApiLinks(safe)
 }
 

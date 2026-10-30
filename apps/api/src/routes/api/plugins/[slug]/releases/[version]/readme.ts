@@ -1,8 +1,7 @@
 import { Elysia, t } from 'elysia'
 import { db } from '$db'
-import { renderMarkdown } from '$lib/markdown'
 import { cache, isString } from '$lib/cache'
-import { pickReadme, README_TTL } from '$lib/readme'
+import { pickReadme, renderReadme, README_TTL } from '$lib/readme'
 
 // The README as it stood at a specific release. Captured at ingest from the
 // release's tag, so browsing an older version shows the docs that shipped with
@@ -14,7 +13,7 @@ export default new Elysia().get(
   async ({ params, query, set }) => {
     const plugin = await db.query.plugins.findFirst({
       where: { id: params.slug },
-      columns: { id: true, status: true },
+      columns: { id: true, status: true, repoUrl: true },
     })
     if (!plugin || plugin.status !== 'approved') {
       set.status = 404
@@ -41,10 +40,10 @@ export default new Elysia().get(
       }
     }
 
-    const cacheKey = `release:readme:${plugin.id}:${release.id}:${picked.locale ?? 'default'}`
+    const cacheKey = `release:readme:v2:${plugin.id}:${release.id}:${picked.locale ?? 'default'}`
     let readmeHtml = await cache().get<string>(cacheKey, isString)
     if (!readmeHtml) {
-      readmeHtml = await renderMarkdown(picked.markdown)
+      readmeHtml = await renderReadme(picked.markdown, plugin.repoUrl)
       await cache().set(cacheKey, readmeHtml, README_TTL)
     }
 

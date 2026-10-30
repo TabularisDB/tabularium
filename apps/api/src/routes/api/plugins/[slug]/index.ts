@@ -4,9 +4,8 @@ import { plugins, releases } from '$db/schema'
 import { eq } from 'drizzle-orm'
 import { authMiddleware } from '$middleware/auth'
 import { projectPluginDetail } from '$lib/plugin-projection'
-import { renderMarkdown } from '$lib/markdown'
 import { cache, isString } from '$lib/cache'
-import { pickReadme, README_TTL } from '$lib/readme'
+import { pickReadme, renderReadme, README_TTL } from '$lib/readme'
 import { buildIntegrity } from '$lib/release-integrity'
 
 const screenshotSchema = t.Object({
@@ -98,10 +97,10 @@ export default new Elysia()
       const picked = pickReadme(detail.readmeMarkdown, query.locale)
       let readmeHtml: string | null = null
       if (picked.markdown) {
-        const cacheKey = `plugin:readme:${plugin.id}:${plugin.updatedAt}:${picked.locale ?? 'default'}`
+        const cacheKey = `plugin:readme:v2:${plugin.id}:${plugin.updatedAt}:${picked.locale ?? 'default'}`
         readmeHtml = await cache().get<string>(cacheKey, isString)
         if (!readmeHtml) {
-          readmeHtml = await renderMarkdown(picked.markdown)
+          readmeHtml = await renderReadme(picked.markdown, plugin.repoUrl)
           await cache().set(cacheKey, readmeHtml, README_TTL)
         }
       }
