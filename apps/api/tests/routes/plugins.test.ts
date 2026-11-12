@@ -85,6 +85,35 @@ describe('GET /api/plugins', () => {
 describe('GET /api/plugins/:slug', () => {
   beforeEach(clearDb)
 
+  it('resolves repository links in the plugin and release READMEs, including cached responses', async () => {
+    const user = await makeUser()
+    const readme = '[Compatibility](docs/compatibility.md) [Limitations](#limitations)'
+    const plugin = await makePlugin(user.id, {
+      readme,
+      repoUrl: 'https://github.com/Xrondev/tabularis-opensearch-plugin-go',
+    })
+    await db.insert(releases).values({
+      id: ulid(),
+      pluginId: plugin.id,
+      version: '0.1.1',
+      readme,
+      assets: '{}',
+    })
+
+    const app = await buildApp()
+    for (const suffix of ['', '/releases/0.1.1/readme']) {
+      for (let request = 0; request < 2; request++) {
+        const res = await app.handle(new Request(`http://localhost/api/plugins/${plugin.id}${suffix}`))
+        expect(res.status).toBe(200)
+        const data = (await res.json()) as { readmeHtml: string }
+        expect(data.readmeHtml).toContain(
+          'href="https://github.com/Xrondev/tabularis-opensearch-plugin-go/blob/HEAD/docs/compatibility.md"',
+        )
+        expect(data.readmeHtml).toContain('href="#limitations"')
+      }
+    }
+  })
+
   it('returns 404 for unknown slug', async () => {
     const app = await buildApp()
     const res = await app.handle(new Request('http://localhost/api/plugins/nope'))

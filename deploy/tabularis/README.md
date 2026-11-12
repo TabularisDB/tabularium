@@ -24,7 +24,7 @@ Keep the theme rollout gated: packaged platform acceptance, real runtime/tooling
 ## Declarative AI assistant providers
 
 `ai-assistant-kind.json` is a complete operator kind preset for Tabularis. It
-adds the manifest extension contract, a Runcrate example and an optional public
+adds the manifest extension contract, a Gemini example and an optional public
 catalogue page. Packages contain data only; Tabularis owns HTTP, credentials,
 proxies, templates and response parsing. ChatGPT account login remains built in.
 
@@ -36,16 +36,24 @@ Operator rollout:
    body, or copy it into the kind editor. For an existing kind, review the
    current configuration before applying `PUT /api/admin/kinds/ai-assistant`.
    Leave driver, theme and global extension settings intact.
-3. Validate complete provider manifests using `/api/manifest/validate`, including
-   the public Runcrate and Opper examples in the Tabularis repository. Confirm
-   that missing required contract fields and executable extensions are rejected.
-4. Publish each provider as a separate release with a universal ZIP and a
-   standalone `.tabularium` manifest. Keep the existing IDs `openai`, `anthropic`,
-   `ollama`, `openrouter`, `requesty`, `minimax`, and `custom-openai` so upgrade
-   migration can retain configuration and credentials.
-5. Publish all seven replacements before releasing the Tabularis change that
-   removes their built-in adapters. Assign the actual first supporting runtime
-   version; deploying this preset does not prove compatibility with old clients.
+3. Validate Gemini's complete standalone manifest against the merged core and
+   kind schema using `/api/manifest/validate`, including the HTTPS icon, native
+   `generateContent` recipe, model-resource URL and discovery filter. Confirm
+   that missing contract fields and executable extensions are rejected.
+4. Keep the existing providers embedded in Tabularis. OpenAI, Anthropic, Ollama,
+   OpenRouter, Requesty, MiniMax, OpenAI Compatible and API Route need no external
+   replacement packages. ChatGPT account login remains built in too.
+5. Assign the actual first supporting Tabularis runtime version when the
+   application release is determined. Publish a successor Gemini release with
+   `min_runtime_version` before enabling its production listing. Version 1.0.1
+   is a development prerelease without that gate, not evidence of compatibility.
+6. Register `TabularisDB/tabularis-gemini-plugin` as slug `gemini`, kind
+   `ai-assistant`. Ingest its standalone `.tabularium` and `universal` ZIP,
+   checking release version, SHA-256, size and release-integrity metadata.
+7. Verify kind filtering, icons, install/select, model discovery, generation,
+   update/remove/reinstall and offline availability of embedded providers in
+   both transports. Source deployment alone does not apply the kind or publish
+   the provider.
 
 The preset is not applied automatically by deploying this repository. Registry
 configuration and provider publication remain explicit rollout operations.

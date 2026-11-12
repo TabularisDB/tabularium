@@ -9,9 +9,11 @@ const schema = buildSchema({
 })
 
 describe('Tabularis AI assistant kind preset', () => {
-  it('accepts the declarative Runcrate example with a stable id and display name', () => {
+  it('accepts the native Gemini example with a stable id and display name', () => {
     const manifest = JSON.parse(preset.customExample.json) as Record<string, unknown>
     expect(validateManifest(manifest, schema).ok).toBe(true)
+    expect(manifest.id).toBe('gemini')
+    expect((manifest.ai_assistant as Record<string, unknown>).api_key_header).toBe('x-goog-api-key')
   })
 
   it('requires the provider contract and excludes executable extension fields', () => {
