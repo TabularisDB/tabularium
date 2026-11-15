@@ -30,7 +30,13 @@ async function setupGithubFlavored(
         }
       : { type: 'gitea', active: true, events: ['release'], config: { url: webhookUrl, content_type: 'json', secret } }
 
-  const res = await fetch(url, { method: 'POST', headers, body: JSON.stringify(body) })
+  const res = await fetch(url, {
+    method: 'POST',
+    headers,
+    body: JSON.stringify(body),
+    redirect: 'error',
+    signal: AbortSignal.timeout(10_000),
+  })
   if (res.status === 201) {
     const data = (await res.json()) as { id: number }
     log.info({ repo: ref.fullName, hookId: data.id, kind }, 'webhook installed')
@@ -50,6 +56,8 @@ async function setupGitlab(
   const projectId = encodeURIComponent(ref.fullName)
   const res = await fetch(`${baseUrl}/api/v4/projects/${projectId}/hooks`, {
     method: 'POST',
+    redirect: 'error',
+    signal: AbortSignal.timeout(10_000),
     headers: { Authorization: `Bearer ${accessToken}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
       url: webhookUrl,
@@ -74,12 +82,19 @@ export async function setupWebhook(
   secret: string,
 ): Promise<WebhookSetupResult> {
   const { instance } = ref
-  if (instance.kind === 'github') {
-    const apiBase = instance.baseUrl === 'https://github.com' ? 'https://api.github.com' : `${instance.baseUrl}/api/v3`
-    return setupGithubFlavored(apiBase, accessToken, ref, webhookUrl, secret, 'github')
+  try {
+    if (instance.kind === 'github') {
+      const apiBase =
+        instance.baseUrl === 'https://github.com' ? 'https://api.github.com' : `${instance.baseUrl}/api/v3`
+      return await setupGithubFlavored(apiBase, accessToken, ref, webhookUrl, secret, 'github')
+    }
+    if (instance.kind === 'gitea') {
+      return await setupGithubFlavored(`${instance.baseUrl}/api/v1`, accessToken, ref, webhookUrl, secret, 'gitea')
+    }
+    return await setupGitlab(instance.baseUrl, accessToken, ref, webhookUrl, secret)
+  } catch {
+    // Submission is already saved; webhook setup must never hide its URL and secret.
+    log.warn({ repo: ref.fullName, kind: instance.kind }, 'webhook setup unavailable')
+    return { installed: false, reason: 'Automatic webhook setup is unavailable. Configure the webhook manually.' }
   }
-  if (instance.kind === 'gitea') {
-    return setupGithubFlavored(`${instance.baseUrl}/api/v1`, accessToken, ref, webhookUrl, secret, 'gitea')
-  }
-  return setupGitlab(instance.baseUrl, accessToken, ref, webhookUrl, secret)
 }

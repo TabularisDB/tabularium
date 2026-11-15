@@ -101,6 +101,27 @@ describe('POST /api/requests/:id/scaffold', () => {
     expect(res.status).toBe(400)
   })
 
+  it.each([
+    'read:user, read:org',
+    'workflow',
+    'repo',
+  ])('requests both write permissions before scaffolding with scopes %s', async (scopes) => {
+    const user = await makeUser()
+    const row = await seed(user)
+    await db.insert(pluginRequestClaims).values({ requestId: row.id, userId: user.id })
+    const gh = mockGithub(scopes)
+    try {
+      const res = await scaffold(user, row.id)
+      expect(res.status).toBe(403)
+      const data = (await res.json()) as { missingScope: string; reauthUrl: string }
+      expect(data.missingScope).toBe(scopes === 'repo' ? 'workflow' : 'public_repo')
+      expect(new URL(data.reauthUrl).searchParams.get('scope')).toBe('workflow')
+      expect(gh.calls.some((call) => call.method !== 'GET')).toBe(false)
+    } finally {
+      gh.restore()
+    }
+  })
+
   it('creates the repository with the generated driver and records it on the claim', async () => {
     const user = await makeUser()
     const row = await seed(user)

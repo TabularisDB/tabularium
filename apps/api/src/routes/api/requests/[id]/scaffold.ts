@@ -97,11 +97,16 @@ export default new Elysia()
       try {
         const granted = await grantedScopes(instance, token)
         login = granted.login
-        if (granted.scopes && !granted.scopes.includes('workflow') && !granted.scopes.includes('repo')) {
+        if (
+          granted.scopes &&
+          (!granted.scopes.includes('workflow') ||
+            (!granted.scopes.includes('public_repo') && !granted.scopes.includes('repo')))
+        ) {
           set.status = 403
           return {
-            error: `${instance.displayName} only lets apps add CI workflows with the \`workflow\` permission. Grant it once to create the repository.`,
-            missingScope: 'workflow',
+            error: `${instance.displayName} needs repository write access and the \`workflow\` permission to create a repository with CI. Grant them once to create the repository.`,
+            missingScope:
+              granted.scopes.includes('public_repo') || granted.scopes.includes('repo') ? 'workflow' : 'public_repo',
             reauthUrl: reauthUrl(instance.id, body.returnTo, 'workflow'),
           }
         }
@@ -194,7 +199,7 @@ export default new Elysia()
         tags: ['Requests'],
         summary: 'Create a plugin repository for a claimed request',
         description:
-          "Generates the project with @tabularis/create-plugin (the request slug becomes the plugin name, so the request ships when that plugin is listed) and pushes it as the first commit of a new repository in the caller's GitHub account or one of their orgs. Requires an active claim on an approved `driver` or `theme` request. GitHub only accepts CI workflow files from tokens with the `workflow` scope: without it the call returns 403 with a `reauthUrl` that grants it and comes back to `returnTo`.",
+          "Generates the project with @tabularis/create-plugin (the request slug becomes the plugin name, so the request ships when that plugin is listed) and pushes it as the first commit of a new repository in the caller's GitHub account or one of their orgs. Requires an active claim on an approved `driver` or `theme` request. Repository write and `workflow` permissions are requested only for scaffolding: without them the call returns 403 with a `reauthUrl` that grants them and comes back to `returnTo`.",
         operationId: 'scaffoldRequest',
         security: [{ bearerAuth: [] }, { cookieAuth: [] }],
       },

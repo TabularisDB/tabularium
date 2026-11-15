@@ -105,16 +105,18 @@
 			return
 		}
 		await loadRepos()
-		await preselectRepo(page.url.searchParams.get('repo'))
+		await preselectRepo(page.url.searchParams.get('repo'), page.url.searchParams.get('identityId'))
 	})
 
 	// `?repo=<url>` (e.g. from a scaffolded bounty repository) picks that repo
 	// when one of the linked accounts can submit it.
-	async function preselectRepo(url: string | null) {
+	async function preselectRepo(url: string | null, identityId: string | null) {
 		if (!url || !groups) return
 		const repoName = url.replace(/\/+$/, '').split('/').pop() ?? ''
 		const owner = url.toLowerCase()
-		const group = groups.find((g) => !g.error && owner.includes(`/${g.username.toLowerCase()}/`))
+		const group =
+			groups.find((g) => !g.error && g.identityId === identityId) ??
+			groups.find((g) => !g.error && owner.includes(`/${g.username.toLowerCase()}/`))
 		if (group) selectedIdentityId = group.identityId
 		if (repoName.length >= 3) {
 			search = repoName
@@ -139,6 +141,11 @@
 	}
 
 	const selectedGroup = $derived(groups?.find((g) => g.identityId === selectedIdentityId) ?? null)
+	const webhookSettingsUrl = $derived(
+		success
+			? `${success.repoUrl.replace(/\/+$/, '').replace(/\.git$/, '')}/${success.providerKind === 'gitlab' ? '-/hooks' : 'settings/hooks'}`
+			: '',
+	)
 
 	const searchTooShort = $derived(search.trim().length > 0 && search.trim().length < 3)
 
@@ -307,6 +314,26 @@
 					<CardDescription>{m.submit_webhook_needed_body()}</CardDescription>
 				</CardHeader>
 				<CardContent class="space-y-3">
+					<ol class="list-decimal space-y-2 pl-5 text-sm text-muted-foreground">
+						<li>
+							{#if success.providerKind === 'gitlab'}
+								{m.submit_webhook_manual_gitlab()}
+							{:else if success.providerKind === 'gitea'}
+								{m.submit_webhook_manual_gitea()}
+							{:else}
+								{m.submit_webhook_manual_github()}
+							{/if}
+						</li>
+						<li>{m.submit_webhook_manual_finish()}</li>
+					</ol>
+					<a
+						href={webhookSettingsUrl}
+						target="_blank"
+						rel="noopener noreferrer"
+						class="inline-flex items-center gap-1.5 text-sm text-primary hover:underline"
+					>
+						{m.submit_webhook_manual_open()}<ExternalLink class="h-3.5 w-3.5" />
+					</a>
 					<div class="space-y-1">
 						<div class="text-xs uppercase tracking-wider text-muted-foreground">{m.submit_webhook_url_label()}</div>
 						<CodeBlock value={success.webhookUrl} />
@@ -565,6 +592,16 @@
 						{/if}
 
 						<form onsubmit={submit} class="space-y-4">
+							<div class="space-y-2 text-sm text-muted-foreground">
+								<p>{m.submit_webhook_permissions_hint()}</p>
+								<a
+									class="text-primary hover:underline"
+									href={`/auth/${selectedRepo.providerInstanceId}?link=1&scope=webhook&return_to=${encodeURIComponent(`/submit?repo=${encodeURIComponent(selectedRepo.url)}&identityId=${encodeURIComponent(selectedIdentityId)}`)}`}
+									data-sveltekit-reload
+								>
+									{m.submit_webhook_authorize()}
+								</a>
+							</div>
 							{#if preview?.ok && !preview.fromManifest}
 								<div class="space-y-2">
 									<Label for="name">{m.submit_display_name()}</Label>

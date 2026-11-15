@@ -14,10 +14,6 @@ async function s256Challenge(verifier: string): Promise<string> {
   return btoa(str).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '')
 }
 
-// Scopes a feature may ask for on top of the sign-in set, only when it needs
-// them (e.g. pushing CI workflow files when scaffolding a repository).
-const OPTIONAL_GITHUB_SCOPES = ['workflow']
-
 async function buildAuthUrl(
   inst: ProviderInstance,
   state: string,
@@ -28,8 +24,10 @@ async function buildAuthUrl(
 
   if (inst.kind === 'github') {
     const gh = new GitHub(inst.clientId, inst.clientSecret, callback)
-    const extra = extraScopes.filter((s) => OPTIONAL_GITHUB_SCOPES.includes(s))
-    const url = gh.createAuthorizationURL(state, ['read:user', 'read:org', 'public_repo', 'admin:repo_hook', ...extra])
+    const scopes = ['read:user', 'read:org']
+    if (extraScopes.includes('webhook')) scopes.push('write:repo_hook')
+    if (extraScopes.includes('workflow')) scopes.push('public_repo', 'workflow')
+    const url = gh.createAuthorizationURL(state, scopes)
     if (linking) url.searchParams.set('prompt', 'consent')
     if (inst.baseUrl === 'https://github.com') {
       const codeVerifier = generateCodeVerifier()
@@ -42,14 +40,18 @@ async function buildAuthUrl(
 
   if (inst.kind === 'gitlab') {
     const gl = new GitLab(inst.baseUrl, inst.clientId, inst.clientSecret, callback)
-    const url = gl.createAuthorizationURL(state, ['read_user', 'api'])
+    const url = gl.createAuthorizationURL(state, ['read_user', extraScopes.includes('webhook') ? 'api' : 'read_api'])
     if (linking) url.searchParams.set('prompt', 'consent')
     return { url }
   }
 
   const codeVerifier = generateCodeVerifier()
   const gt = new Gitea(inst.baseUrl, inst.clientId, inst.clientSecret, callback)
-  const url = gt.createAuthorizationURL(state, codeVerifier, ['read:user', 'write:repository', 'read:organization'])
+  const url = gt.createAuthorizationURL(state, codeVerifier, [
+    'read:user',
+    extraScopes.includes('webhook') ? 'write:repository' : 'read:repository',
+    'read:organization',
+  ])
   if (linking) url.searchParams.set('prompt', 'consent')
   return { url, codeVerifier }
 }
@@ -98,7 +100,7 @@ export default new Elysia().get(
       tags: ['Auth'],
       summary: 'Start OAuth flow for a provider instance',
       description:
-        "Redirects to the provider instance's authorize page. Instance IDs are configured by the admin (e.g. `github`, `gitlab`, `forgejo-acme`). Set `link=1` to attach this identity to the currently signed-in user. `scope=workflow` additionally asks GitHub for the `workflow` scope (needed to create scaffolded repositories with CI); other values are ignored.",
+        "Redirects to the provider instance's authorize page with read-only access by default. Instance IDs are configured by the admin (e.g. `github`, `gitlab`, `forgejo-acme`). Set `link=1` to attach this identity to the currently signed-in user. `scope=webhook` optionally requests webhook creation access. `scope=workflow` requests GitHub public repository write and workflow access for scaffolding; other values are ignored.",
       operationId: 'startOAuth',
     },
     params: t.Object({ instance: t.String() }),
