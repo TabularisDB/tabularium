@@ -1,12 +1,83 @@
-import { describe, it, expect, beforeEach, spyOn } from 'bun:test'
+import { describe, it, expect, beforeEach, afterEach, spyOn } from 'bun:test'
 import { ulid } from 'ulid'
 import { clearDb, makeUser, buildApp } from '../helpers'
 import { signJwt } from '../../src/lib/jwt'
 import { db } from '../../src/db'
-import { pluginRequests, pluginRequestClaims } from '../../src/db/schema'
+import { pluginRequests, pluginRequestClaims, providerInstances } from '../../src/db/schema'
+import { encryptToken } from '../../src/lib/crypto'
+import { initProviderInstances } from '../../src/lib/provider-instance'
 
 describe('POST /api/submit/oauth', () => {
+  let webhookFetchSpy: ReturnType<typeof spyOn<typeof globalThis, 'fetch'>> | undefined
   beforeEach(clearDb)
+  afterEach(() => webhookFetchSpy?.mockRestore())
+
+  for (const kind of ['github', 'gitlab', 'gitea'] as const) {
+    for (const failure of [403, 404, 'network', 'timeout', 'invalid-response', 'installed'] as const) {
+      it(`submits with ${kind} read access when webhook setup returns ${failure}`, async () => {
+        const baseUrl = kind === 'github' ? 'https://github.com' : `https://${kind}.example.com`
+        if (kind !== 'github') {
+          await db.insert(providerInstances).values({
+            id: kind,
+            kind,
+            displayName: kind,
+            baseUrl,
+            clientId: 'test-client-id',
+            clientSecret: encryptToken('test-secret'),
+            enabled: 1,
+          })
+          await initProviderInstances()
+        }
+        const user = await makeUser({ username: 'alice', providerInstanceId: kind })
+        const repoUrl = `${baseUrl}/alice/my-plugin`
+        webhookFetchSpy = spyOn(globalThis, 'fetch').mockImplementation((async (input, init) => {
+          const url = new URL(String(input))
+          if (url.pathname.endsWith('/hooks')) {
+            expect(init?.method).toBe('POST')
+            expect(init?.signal).toBeInstanceOf(AbortSignal)
+            if (failure === 'network') throw new TypeError('Connection failed')
+            if (failure === 'timeout') throw new DOMException('Timed out', 'TimeoutError')
+            if (failure === 'invalid-response') return new Response('invalid JSON', { status: 201 })
+            if (failure === 'installed') return Response.json({ id: 1 }, { status: 201 })
+            return new Response('Insufficient scope', { status: failure })
+          }
+          if (url.pathname.endsWith('/repos/alice/my-plugin') || url.pathname.endsWith('/projects/alice%2Fmy-plugin')) {
+            // The account's role is independent of the app's read-only OAuth grant.
+            return Response.json({
+              permissions:
+                kind === 'gitlab' ? { project_access: { access_level: 40 } } : { admin: true, maintain: true },
+            })
+          }
+          return new Response('Not found', { status: 404 })
+        }) as typeof fetch)
+
+        const app = await buildApp()
+        const res = await app.handle(
+          new Request('http://localhost/api/submit/oauth', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${user.jwt}` },
+            body: JSON.stringify({ repoUrl }),
+          }),
+        )
+
+        expect(res.status).toBe(200)
+        const data = (await res.json()) as {
+          slug: string
+          webhookInstalled: boolean
+          webhookSetupReason: string | null
+          webhookUrl: string
+          webhookSecret: string
+        }
+        expect(data.webhookInstalled).toBe(failure === 'installed')
+        if (failure === 'installed') expect(data.webhookSetupReason).toBeNull()
+        else expect(data.webhookSetupReason).toBeTruthy()
+        expect(data.webhookUrl).toBe('http://localhost:3000/api/webhooks/release')
+        expect(data.webhookSecret).toHaveLength(64)
+        const saved = await db.query.plugins.findFirst({ where: { id: data.slug } })
+        expect(saved).toMatchObject({ ownerId: user.id, repoUrl, webhookSecret: data.webhookSecret })
+      })
+    }
+  }
 
   it('returns 401 without auth', async () => {
     const app = await buildApp()

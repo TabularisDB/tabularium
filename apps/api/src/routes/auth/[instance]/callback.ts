@@ -149,6 +149,14 @@ async function resolveLinkUserId(authCookieValue: string | undefined): Promise<s
   return payload?.sub ?? null
 }
 
+function returnUrl(returnTo: string | null | undefined, linking: boolean): string {
+  const safeTarget = safeReturnTo(returnTo ?? undefined)
+  const target = safeTarget ?? (linking ? '/settings' : '/welcome')
+  if (safeTarget && !safeTarget.startsWith('/')) return safeTarget
+  const base = safeTarget?.startsWith('/oauth/') ? env.BASE_URL : (env.WEB_BASE_URL ?? env.BASE_URL)
+  return `${base}${target}`
+}
+
 export default new Elysia().get(
   '/',
   async ({ params, query, cookie, set, redirect, request }) => {
@@ -184,6 +192,18 @@ export default new Elysia().get(
     if (stateData.linking && !linkUserId) {
       set.status = 401
       return { error: 'Linking session expired — sign in and try again' }
+    }
+
+    if (query.error) {
+      if (query.error === 'access_denied' && linkUserId) {
+        return redirect(returnUrl(stateData.returnTo, true), 302)
+      }
+      set.status = 400
+      return { error: 'OAuth authorization was not completed' }
+    }
+    if (!query.code) {
+      set.status = 400
+      return { error: 'Missing authorization code' }
     }
 
     try {
@@ -301,12 +321,7 @@ export default new Elysia().get(
         ip: request.headers.get('x-forwarded-for') ?? request.headers.get('x-real-ip') ?? null,
       })
 
-      const webBase = env.WEB_BASE_URL ?? env.BASE_URL
-      const safeTarget = safeReturnTo(stateData.returnTo ?? undefined)
-      const target = safeTarget ?? (linkUserId ? '/settings' : '/welcome')
-      if (safeTarget && !safeTarget.startsWith('/')) return redirect(safeTarget, 302)
-      const returnBase = safeTarget?.startsWith('/oauth/') ? env.BASE_URL : webBase
-      return redirect(`${returnBase}${target}`, 302)
+      return redirect(returnUrl(stateData.returnTo, Boolean(linkUserId)), 302)
     } catch (e) {
       if (e instanceof OAuth2RequestError) {
         set.status = 400
@@ -325,7 +340,8 @@ export default new Elysia().get(
     },
     params: t.Object({ instance: t.String() }),
     query: t.Object({
-      code: t.String(),
+      code: t.Optional(t.String()),
+      error: t.Optional(t.String()),
       state: t.String(),
     }),
   },
